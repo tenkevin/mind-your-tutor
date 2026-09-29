@@ -1,4 +1,4 @@
-Corinne E. Hyde# Canon — MindyourTutor
+# Canon — MindyourTutor
 
 Status: authoritative. Where anything disagrees with this, this wins.
 Companions: `TASKS.md` (the work list), `PROJECT_BRIEF.md` and `STUDENT_EXPERIENCE.md` (the why)
@@ -8,13 +8,13 @@ Supersedes: everything in `archive/`
 
 ## 1. What we are building
 
-A mastery-tracking mathematics tutor for secondary algebra, ages 12–16. It holds a persistent model of what a student knows, decides what they work on next, teaches it, and schedules retrieval so the knowledge survives.
+A mastery-tracking mathematics tutor for secondary mathematics, ages 12–16, starting with Grade 7 (D37). It holds a persistent model of what a student knows, decides what they work on next, teaches it, and schedules retrieval so the knowledge survives.
 
 Three platforms:
 
 - **P1 — the app.** Student and adult surfaces.
 - **P2 — the system.** Storage, tenancy, row-level security, identity, retention.
-- **P3 — the agents.** Three, on self-hosted servers: a **procedural agent** that generates curriculum artifacts, an **evaluator** with fixed standards, and a **lesson instructor** that is the only per-student agent.
+- **P3 — the agents.** Three: a **procedural agent** that generates curriculum artifacts and an **evaluator** with fixed standards, both on a cloud server (D40), and a **lesson instructor** that is the only per-student agent, self-hosted with the student data.
 
 P1 works with P3's procedural and evaluator agents to produce KC graphs, objectives, assessments, lesson plans and media. Those artifacts are produced **per curriculum**, not per student, and a human approves them before any student sees them.
 
@@ -92,7 +92,7 @@ Violating one of these breaks something that will not be obvious for months.
 **D28** Pedagogical principles become gate rules where they are mechanical — worked example before independent practice, three load levels per KC, retrieval at a delay rather than at lesson end — and critique where they are not.
 **D29** The lesson instructor is the only per-student agent. Personality templates are **parameters** — verbosity, directness, pacing, worked-example frequency — not personas. A named character with a backstory is designing for attachment and destroys attribution in evaluation.
 **D30** Student modelling for relevance uses in-task signal only. Not an interest profile collected from a fourteen-year-old. Test: describable to a parent in one sentence they would agree to.
-**D31** Pre-generate per curriculum and cache. Self-hosted inference at ~4 tok/s cannot serve per-session generation, and a timeout that injects nothing is inert rather than degraded.
+**D31** Pre-generate per curriculum and cache. Curriculum generation runs in the cloud (D40), but per-student inference is self-hosted, and self-hosted inference at ~4 tok/s cannot serve per-session generation. A timeout that injects nothing is inert rather than degraded.
 
 ### Practice
 
@@ -104,18 +104,25 @@ Violating one of these breaks something that will not be obvious for months.
 
 ---
 
+### Phase 0
+
+**D37** *(Q1)* The first curriculum is **IM 6–8 Math, Grade 7**, the current edition published at accessim.org. Unit 2, *Introducing Proportional Relationships*, is the vertical slice (D27). Standards are annotated as **CCSS-M** (Unit 2: 7.RP.A.2a–d). IM is openly licensed, so the copyright half of I7 does not apply to it; the ground-truth half does — an IM problem carries evidence only after it becomes a template with a verified key, calibration and attested KC alignment.
+**D38** *(Q2)* **The project lead** (a classroom teacher) reviews and approves every curriculum artifact before student exposure, **15 hours a week**. **Prof. Corinne E. Hyde** (USC, Department of Education) advises; she is not a reviewer, and her advice does not substitute for approval.
+**D39** *(Q4, partial)* **I3 stands.** The tracer is deterministic. An LLM knowledge-tracing method (e.g. Thinking-KT, arXiv 2601.01708) may propose and explain — feedback, recommendations — but never sets learner state or selects work. It may enter the replay harness (task 4.4) as a comparison, not as the tracer. Evidence is captured first and completely (I8, D34) regardless of which tracer is chosen.
+**D40** *(Q3, partial)* **Curriculum generation runs on a cloud server; minors' data is self-hosted.** No student data, evidence event or identifier is sent to the cloud generation tier; it sees curriculum sources and artifacts only. Intended models: DeepSeek R1 for procedural reasoning and code, Qwen 3.5 for retrieval-grounded (RAG) lookup.
+**D41** *(Q5)* **Age floor 12.** A student under 13 gets access only through their school or with a signed parent consent form. No self-sign-up under 13.
+**D42** *(Q6, partial)* **Pilot: the project lead's own classroom.** Parents receive and sign the terms of agreement (consent) before any student is given a code.
+
 ## 4. Open questions
 
-| #      | Question                                                       | Blocks                                                                  |
-| ------ | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Q1** | Which curriculum                                               | All ingestion                                                           |
-| **Q2** | Who reviews and approves — the SME                             | The review surface, the benchmark, the premise of curriculum production |
-| **Q3** | Which model, and the cost/latency budget                       | All proposal stages                                                     |
-| **Q4** | Tracer theory — one prediction BKT cannot make                 | The whole learner model                                                 |
-| **Q5** | Age floor: 12 with institutional and guardian mediation, or 13 | Consent design, pilot scoping                                           |
-| **Q6** | Pilot site                                                     | Outcome measurement, efficacy                                           |
-
----
+| #      | Question                                                       | Status                                                                  | Blocks                                                                  |
+| ------ | -------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Q1** | Which curriculum                                               | Decided — D37                                                           | All ingestion                                                           |
+| **Q2** | Who reviews and approves — the SME                             | Decided — D38                                                           | The review surface, the benchmark, the premise of curriculum production |
+| **Q3** | Which model, and the cost/latency budget                       | Models and hosting decided (D40). **Open:** R1 size, cost and latency ceiling per unit | All proposal stages                                                     |
+| **Q4** | Tracer theory — one prediction BKT cannot make                 | I3 kept (D39). **Open:** the deterministic tracer model, and the one-sentence prediction | The whole learner model                                                 |
+| **Q5** | Age floor: 12 with institutional and guardian mediation, or 13 | Decided — D41                                                           | Consent design, pilot scoping                                           |
+| **Q6** | Pilot site                                                     | Site decided (D42). **Open:** school/district approval, IRB if research, retention policy | Outcome measurement, efficacy                                           |
 
 ## 5. Not decided here
 

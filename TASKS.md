@@ -24,25 +24,21 @@ A layer has its own failure mode. Ordered by dependency, not by appeal.
 
 ## Phase 0 — Decide. No code.
 
-| #   | Task                              | Output                                                                   |
-| --- | --------------------------------- | ------------------------------------------------------------------------ |
-| 0.1 | **Q1** — which curriculum         | Named, with annotation framework and version                             |
-| 0.2 | **Q2** — who reviews and approves | A named person with allocated time                                       |
-| 0.3 | **Q4** — tracer theory, 2–3 pages | One sentence stating a prediction the tracer should make that BKT cannot |
-| 0.4 | **Q3** — model and budget         | Model class, cost and latency ceiling per unit                           |
-| 0.5 | **Q5** — age floor                | 12 with institutional and guardian mediation, or 13                      |
-| 0.6 | **Q6** — pilot approach           | A site conversation opened; consent and retention drafted                |
+| #   | Task                              | Output                                                                   | Status |
+| --- | --------------------------------- | ------------------------------------------------------------------------ | ------ |
+| 0.1 | **Q1** — which curriculum         | Named, with annotation framework and version                             | **Done — D37.** IM 6–8 Math Grade 7 (accessim.org, current edition); CCSS-M; Unit 2 is the slice |
+| 0.2 | **Q2** — who reviews and approves | A named person with allocated time                                       | **Done — D38.** Project lead reviews, 15 h/week; Prof. Corinne E. Hyde advises |
+| 0.3 | **Q4** — tracer theory, 2–3 pages | One sentence stating a prediction the tracer should make that BKT cannot | **Open.** I3 kept (D39). Research a deterministic tracer; write the sentence |
+| 0.4 | **Q3** — model and budget         | Model class, cost and latency ceiling per unit                           | **Partial — D40.** Cloud generation (DeepSeek R1, Qwen 3.5 RAG), self-hosted minors' data. Missing: R1 size, cost and latency ceiling per unit |
+| 0.5 | **Q5** — age floor                | 12 with institutional and guardian mediation, or 13                      | **Done — D41.** 12, via school or signed parent consent |
+| 0.6 | **Q6** — pilot approach           | A site conversation opened; consent and retention drafted                | **Partial — D42.** Own classroom, parent-signed agreement. Missing: consent and retention drafts, school/district sign-off |
 
-1. IM Math Curriculum. 7th grade. The links I gave might be unit specific, feel free to explore these objectives.
-	1. Teacher-facing Objectives and Criteria: https://accessim.org/6-8/grade-7/unit-2?a=teacher
-	2. Student-facing objectives and Criteria: https://im.kendallhunt.com/MS/students/2/2/learning_targets.html
-2. I review the curriculum and approve it. Also I have a mentor: Corinne E. Hyde, professor at USC in the Department of Education
-3. BKT is outdated and too rigid in its mathmatical calculation. Instead, we will collect data (first and foremost) and use LLM to interpret. https://arxiv.org/abs/2601.01708
-4. For high level procedural we will use Deepseek R1 to reason and code
-	1. For low level retrieval we will use Qwen 3.5 to retrieve via RAG
-	2. For planning next steps, we will use Think-KC.
-5. 12 - 13 years old for the first curriculum
-6. 
+### Remaining Phase 0 work
+
+- **0.3** Candidate predictions to choose between: **(a) forgetting** — two students with identical first-session success on a KC diverge in unassisted success at a 9+ day delay according to their spacing history; BKT, with no forgetting term, predicts no difference (ties to D6, 4.5). **(b) graph attribution** — failure on a KC predicts failure on its structural dependents but not the reverse; BKT treats KCs as independent (ties to D4).
+- **0.4** Fix the R1 variant and a cost/latency ceiling per unit. Rough scale: ~15 lessons × ~5 stages ≈ 75 reasoning calls per unit before retries.
+- **0.6** Draft the parent agreement to carry the I9 disclosure sentence and a retention period; confirm the school or district permits the tool and whether its data-privacy agreement applies; if results will be published (e.g. with USC), IRB approval comes before collection.
+- **Propagation (D35):** D40 revised the P3 hosting line and D31's rationale in `CANON.md`. Check `PROJECT_BRIEF.md` when it is added, and any deployment docs, for "self-hosted" claims about the generation tier.
 
 0.2 is now the most consequential question in the project. When generation is cheap, the reviewer is the quality ceiling — and a review surface designed before the reviewer is named is a guess at someone's workflow.
 
