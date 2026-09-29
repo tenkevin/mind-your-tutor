@@ -1,7 +1,7 @@
 # Canon — MindyourTutor
 
 Status: authoritative. Where anything disagrees with this, this wins.
-Companions: `TASKS.md` (the work list), `PROJECT_BRIEF.md` and `STUDENT_EXPERIENCE.md` (the why)
+Companions: `TASKS.md` (the work list), `PROJECT_BRIEF.md` and `STUDENT_EXPERIENCE.md` (the why), `ARCHITECTURE.md` (the how)
 Supersedes: everything in `archive/`
 
 ---
