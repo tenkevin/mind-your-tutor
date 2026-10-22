@@ -60,5 +60,25 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Domain logic is pure: no network, file or database access (ARCHITECTURE.md §7).
+    files: ['packages/domain/src/**/*.ts'],
+    ignores: ['packages/domain/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^(node:)?(fs|fs/promises|net|http|https|http2|dgram|child_process)$',
+              message: 'Domain logic does no I/O.',
+            },
+            { regex: '^@ideamap/(db|ai|connectors)$', message: 'Domain logic does no I/O.' },
+          ],
+        },
+      ],
+      'no-restricted-globals': ['error', { name: 'fetch', message: 'Domain logic does no I/O.' }],
+    },
+  },
   prettier,
 );
