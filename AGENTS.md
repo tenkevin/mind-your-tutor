@@ -22,9 +22,18 @@ Read this before starting any task.
    ```
    If the push is rejected, run `git pull --rebase origin idea-map`, then `node scripts/plan.mjs show <ID>`. If someone else now owns the task, reset your claim (`git reset --hard origin/idea-map`) and pick another task.
 4. Do the work on a branch named `task/<ID>-<short-name>`, cut from `idea-map`. The task's `done_when` field is the bar for finishing.
-5. Open a pull request into `idea-map`. Then, on `idea-map`, run `node scripts/plan.mjs review <ID>` and commit and push the plan change. A person reviews and merges. Agents don't merge their own PRs.
-6. After the PR merges, run `node scripts/plan.mjs done <ID>` on `idea-map`, then commit and push.
+5. Open a pull request into `idea-map`. Then, on `idea-map`, run `node scripts/plan.mjs review <ID>` and commit and push the plan change. Agents don't merge their own PRs.
+6. The coordinator reviews the PR (see below), merges it, and marks the task done. If it asks for changes, fix them on the same branch.
 7. If you can't finish, run `node scripts/plan.mjs release <ID>` and leave a note in the PR or commit saying why.
+
+## Coordinator
+
+One coordinator session runs the swarm:
+
+- **Launching:** it starts an agent for each ready task, with at most 4 agents working at once. Each agent gets one task.
+- **Review:** it reviews each PR against the task's `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only when CI is green, then runs `node scripts/plan.mjs done <ID>`.
+- **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
+- **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
 
 ## Conventions
 
