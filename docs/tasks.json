@@ -55,7 +55,7 @@
       ],
       "done_when": "packages/ui exports Nocturne tokens and the btn, input, tag, table and field classes",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f2",
       "updated": "2026-10-22"
     },
