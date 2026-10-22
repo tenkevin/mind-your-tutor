@@ -18,6 +18,7 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D7 | Independent QA before anything moves on | Every task has written criteria (functional, security, performance, usability) before it's claimed, and a separate agent tests against them before merge (`docs/qa/`) |
 | D8 | The Curriculum Pack is the import format | Eight tabs (Course, Units, Ideas, Links, Categories, Assessment, Personas, Library), defined field by field in `docs/spec/`. Each field is `sheet`, `app` or `both` (the sheet seeds it, and Teacher Settings can override it per class) |
 | D9 | Idea explanations: sheet first, AI fallback | `Ideas.explanation` is optional. If it's empty, Ms. Ivy drafts one from the idea's objective and links. A draft reaches students only after a teacher approves it (and can edit it) in Teacher Settings. Approved text is stored per curriculum, shared by all its classes, and reused on re-import until the sheet supplies its own |
+| D10 | Keep the Nocturne design's colours as they are | Three known pairs fall short of WCAG AA and are accepted: `.input` border (1.58:1, needs 3:1), `.btn-primary:active` text (3.92:1, needs 4.5:1) and `.card-meta` on surface (4.25:1, needs 4.5:1). No other exceptions; new colours and components must meet AA. `packages/ui` tests keep the list so a new failure can't slip in |
 
 ## 2. The core split
 
@@ -287,7 +288,7 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
 | Security | TLS everywhere, encryption at rest, per-org row-level security in Postgres |
-| Accessibility | WCAG 2.1 AA for both apps; read-aloud for K–2 later |
+| Accessibility | WCAG 2.1 AA for both apps, except the three design-system colour pairs accepted in D10; read-aloud for K–2 later |
 
 ## 11. Teacher Settings page: how each section maps
 
