@@ -144,7 +144,7 @@
       ],
       "done_when": "fixtures/water-cycle imports from the eight CSVs, water-cycle.xlsx and pack.json into identical parsed packs using the column mapping",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c1",
       "updated": "2026-10-22"
     },
