@@ -291,7 +291,7 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
 | Security | TLS everywhere, encryption at rest, per-org row-level security in Postgres |
-| Accessibility | WCAG 2.1 AA for both apps, except the three design-system colour pairs accepted in D10; read-aloud for K–2 later |
+| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; read-aloud for K–2 later |
 
 ## 11. Teacher Settings page: how each section maps
 
