@@ -42,7 +42,7 @@
       "deps": [],
       "done_when": "pnpm workspaces build, lint and test in CI on every push",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f1",
       "updated": "2026-10-22"
     },
