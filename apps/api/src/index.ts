@@ -4,6 +4,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 export function buildServer(): FastifyInstance {
   const app = Fastify({ logger: false });
   app.get('/health', () => ({ ok: true }));
+  // A fixed body, so unknown paths aren't echoed back.
+  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
   return app;
 }
 

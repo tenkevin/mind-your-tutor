@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    // The build reads workspace packages from their built output.
+    // Build against the dependencies' built output (pnpm builds them first).
     "customConditions": []
   },
   "exclude": ["src/**/*.test.ts", "src/**/testing.ts"]

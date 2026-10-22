@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { VersionDerivedSchema, type Pack } from '@ideamap/contracts';
+import { VersionDerivedSchema, parsePack, type Pack } from '@ideamap/contracts';
 import { derive } from '../index.js';
-import { expectRules, makePack, randomPack, samplePack, type LinkInput } from './testing.js';
+import { expectRules, makePack, randomPack, type LinkInput } from './testing.js';
+
+function samplePack(): Pack {
+  const url = new URL('../../../../fixtures/water-cycle/pack.json', import.meta.url);
+  const result = parsePack(JSON.parse(readFileSync(url, 'utf8')));
+  if (!result.ok) throw new Error('The water-cycle fixture should parse.');
+  return result.value;
+}
 
 const sample = samplePack();
 

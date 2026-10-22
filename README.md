@@ -21,7 +21,7 @@ node scripts/plan.mjs check     # validate the plan (CI runs this)
 
 ## Development
 
-Needs Node 22 (see `.nvmrc`) and pnpm 10 (`corepack enable` picks up the version pinned in `package.json`).
+Check out the `idea-map` branch first (`git checkout idea-map`): the repo's default branch, `main`, holds MindyourTutor, a different project. Needs Node 22 (see `.nvmrc`) and pnpm 10 (`corepack enable` picks up the version pinned in `package.json`).
 
 ```
 pnpm install          # install all workspaces

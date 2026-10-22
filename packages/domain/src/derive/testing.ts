@@ -1,16 +1,8 @@
 // Test helpers: build packs and check derived data against the C3 rules.
-import { readFileSync } from 'node:fs';
 import { expect } from 'vitest';
 import { parsePack, type Pack, type VersionDerived } from '@ideamap/contracts';
 import { seeded } from './random.js';
 import { statement } from './quiz.js';
-
-export function samplePack(): Pack {
-  const url = new URL('../../../../fixtures/water-cycle/pack.json', import.meta.url);
-  const result = parsePack(JSON.parse(readFileSync(url, 'utf8')));
-  if (!result.ok) throw new Error('The water-cycle fixture should parse.');
-  return result.value;
-}
 
 export interface IdeaInput {
   idea_id: string;
