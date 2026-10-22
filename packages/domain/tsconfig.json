@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Read workspace packages from source, so typecheck and tests don't need a build.
+    "customConditions": ["@ideamap/source"]
+  },
   "include": ["src"]
 }
