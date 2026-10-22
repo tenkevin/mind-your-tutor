@@ -312,3 +312,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
 6. **`Ideas.explanation`:** the Curriculum Pack has no column for the student-facing explanation, and `notes` is teacher-only. Add an optional `explanation` column? It's proposed in `docs/spec` and the fixtures, pending a decision.
+7. **Library and class settings:** the field spec marks every Library column (`title`, `file_url`, `use_for`) as `edit: both`, but §2 and §6 keep the library list as curriculum data with no class override. F3's `ClassConfig` follows §6 and leaves Library out. Should a class be able to override library entries (for example, hide a document from the tutor), or should the spec change those columns to `sheet`?
