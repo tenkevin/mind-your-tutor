@@ -6,7 +6,9 @@ Read this before starting any task.
 
 - **Architecture:** `docs/ARCHITECTURE.md`. Decisions there are settled. Raise a question instead of working around them.
 - **Living to-do list and dependency map:** `docs/PLAN.md`, generated from `docs/tasks.json`.
-- **Sample curriculum for tests:** `fixtures/water-cycle/` (CSV and XLSX; read its README for the deliberate data errors).
+- **Independent QA:** `docs/qa/README.md` and `docs/qa/<ID>.md`. Each task's criteria cover functional, security, performance and usability testing, and are written before the task can be claimed.
+- **Import format spec:** `docs/spec/` (the Curriculum Pack: eight tabs, field by field).
+- **Sample curriculum for tests:** `fixtures/water-cycle/` (CSV, XLSX and pack JSON; read its README for the deliberate data errors).
 - **Design reference:** `project/` (Claude Design export, HTML prototypes) and `chats/chat1.md` for intent. The prototypes show what to build, not how. Match the visuals; don't copy their structure.
 
 ## Picking up work
@@ -21,17 +23,19 @@ Read this before starting any task.
    git push origin idea-map
    ```
    If the push is rejected, run `git pull --rebase origin idea-map`, then `node scripts/plan.mjs show <ID>`. If someone else now owns the task, reset your claim (`git reset --hard origin/idea-map`) and pick another task.
-4. Do the work on a branch named `task/<ID>-<short-name>`, cut from `idea-map`. The task's `done_when` field is the bar for finishing.
+4. Do the work on a branch named `task/<ID>-<short-name>`, cut from `idea-map`. The bar for finishing is the task's `done_when` **and** every check in `docs/qa/<ID>.md`. Build to the criteria, but don't mark them yourself; an independent QA agent does that.
 5. Open a pull request into `idea-map`. Then, on `idea-map`, run `node scripts/plan.mjs review <ID>` and commit and push the plan change. Agents don't merge their own PRs.
-6. The coordinator reviews the PR (see below), merges it, and marks the task done. If it asks for changes, fix them on the same branch.
+6. An independent QA agent runs `docs/qa/<ID>.md` against your PR and posts a report. The coordinator merges only on a QA PASS with CI green, then marks the task done. If QA or the coordinator asks for changes, fix them on the same branch; QA then runs again.
 7. If you can't finish, run `node scripts/plan.mjs release <ID>` and leave a note in the PR or commit saying why.
 
 ## Coordinator
 
 One coordinator session runs the swarm:
 
-- **Launching:** it starts an agent for each ready task, with at most 4 agents working at once. Each agent gets one task.
-- **Review:** it reviews each PR against the task's `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only when CI is green, then runs `node scripts/plan.mjs done <ID>`.
+- **Criteria first:** before a task becomes claimable, it writes `docs/qa/<ID>.md` from the spec, never from an implementation, and pushes it to `idea-map`.
+- **Launching:** it starts a build agent for each ready task that has criteria, with at most 4 build agents working at once. Each agent gets one task.
+- **QA:** when a PR is open and CI is green, it starts a separate QA agent session for that PR. The QA agent never wrote the code, and QA agents don't count towards the limit of 4.
+- **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
 - **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
 - **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
 

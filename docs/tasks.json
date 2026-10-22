@@ -1,5 +1,5 @@
 {
-  "note": "Source of truth for the plan. Agents: read AGENTS.md, and change status only through scripts/plan.mjs. size: 1 = up to a week, 2 = one to two weeks, 3 = two to three weeks. placeholder: true means the spec is not written yet, so the task cannot be claimed.",
+  "note": "Source of truth for the plan. Agents: read AGENTS.md, and change status only through scripts/plan.mjs. size: 1 = up to a week, 2 = one to two weeks, 3 = two to three weeks. placeholder: true means the spec is not written yet, so the task cannot be claimed. Every task needs docs/qa/<ID>.md (independent QA criteria) before it can be claimed; see docs/qa/README.md.",
   "phases": [
     {
       "id": "F",
@@ -66,7 +66,7 @@
       "deps": [
         "F1"
       ],
-      "done_when": "zod schemas for the Ideas, Links, Units, Categories and Assessment tabs, class config and versions, with tests",
+      "done_when": "zod schemas in packages/contracts for all eight Curriculum Pack tabs (docs/spec), ClassConfig and CurriculumVersion, with tests; fixtures/water-cycle parses from JSON, CSV and XLSX rows",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -118,7 +118,7 @@
       "deps": [
         "F3"
       ],
-      "done_when": "fixtures/water-cycle imports from both the CSVs and water-cycle.xlsx into identical RawTabs using the column mapping",
+      "done_when": "fixtures/water-cycle imports from the eight CSVs, water-cycle.xlsx and pack.json into identical parsed packs using the column mapping",
       "placeholder": false,
       "status": "todo",
       "owner": null,

@@ -15,6 +15,8 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D4 | No live database connections; import and export only | Connectors are file parsers. Google Drive and Cloudinary come later behind the same interfaces |
 | D5 | K-12 audience | COPPA, FERPA and state student-privacy law shape auth, AI logging, retention and vendors |
 | D6 | Determinism lives in the tracker | The interaction tracker is fully deterministic and replayable. Map generation and AI may vary, but everything they show students is stored and recorded as an event |
+| D7 | Independent QA before anything moves on | Every task has written criteria (functional, security, performance, usability) before it's claimed, and a separate agent tests against them before merge (`docs/qa/`) |
+| D8 | The Curriculum Pack is the import format | Eight tabs (Course, Units, Ideas, Links, Categories, Assessment, Personas, Library), defined field by field in `docs/spec/`. Each field is `sheet`, `app` or `both` (the sheet seeds it, and Teacher Settings can override it per class) |
 
 ## 2. The core split
 
@@ -24,7 +26,7 @@ The prototype already draws the line that drives everything else:
 |---|---|---|
 | Owner | Curriculum author (teacher, department, district) | Teacher of one class |
 | Edited in | The spreadsheet or database export, then re-imported | The app |
-| Contents | Ideas, links, units, categories, prerequisites (`requires`), standards codes, media URLs, assessment questions | Subject and topic wording, grade, framework, persona prompts, due dates, card rarity overrides, column mapping |
+| Contents | Ideas, links, units, categories, prerequisites (`requires`), standards codes, media URLs, assessment questions, library list; plus starting values for course details, due dates, rarity and personas | Overrides of the course details, pass mark, persona prompts, due dates and card rarity; column mapping |
 | Versioned as | Immutable `CurriculumVersion` snapshots | Mutable config rows with an audit trail |
 
 The app never writes curriculum data back to the source. Atlas drafts rows; the teacher pastes or exports them and re-imports.
@@ -309,3 +311,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 3. Which SSO and rostering providers does the first school use?
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
+6. **`Ideas.explanation`:** the Curriculum Pack has no column for the student-facing explanation, and `notes` is teacher-only. Add an optional `explanation` column? It's proposed in `docs/spec` and the fixtures, pending a decision.

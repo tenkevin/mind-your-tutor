@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Idea Map curriculum pack",
+  "type": "object",
+  "required": [
+    "version",
+    "course",
+    "units",
+    "ideas",
+    "links"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "course": {
+      "type": "object",
+      "description": "One row of key/value pairs that names the map and sets the reading level.",
+      "required": [
+        "subject",
+        "topic",
+        "grade"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string",
+          "description": "text · If missing: Blocks import · Edited in: both"
+        },
+        "topic": {
+          "type": "string",
+          "description": "text · Map title shown to students · If missing: Blocks import · Edited in: both"
+        },
+        "grade": {
+          "type": "string",
+          "description": "K | 1–12 · Sets every persona's {age}, {style} and {length} · If missing: Blocks import · Edited in: both"
+        },
+        "framework": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "text · Labels the standards codes · If missing: Custom · Edited in: both"
+        },
+        "map_objective": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "text · If missing: Hidden on the map · Edited in: both"
+        },
+        "pass_mark": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "percent · Quiz and teach-back threshold · If missing: 70 · Edited in: app"
+        }
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Groups ideas into missions. Each unit ends in a teach-back with Milo.",
+        "required": [
+          "unit",
+          "name",
+          "objective"
+        ],
+        "properties": {
+          "unit": {
+            "type": "integer",
+            "description": "integer · If missing: Blocks import · Edited in: sheet"
+          },
+          "name": {
+            "type": "string",
+            "description": "text · If missing: Shows “Unit n” · Edited in: sheet"
+          },
+          "objective": {
+            "type": "string",
+            "description": "text · If missing: Flagged in data checks · Edited in: sheet"
+          },
+          "standard_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list · If missing: No codes shown · Edited in: sheet"
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "date · If missing: No due date · Edited in: both"
+          }
+        }
+      }
+    },
+    "ideas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "One row per node on the map. The most connected idea becomes the centre.",
+        "required": [
+          "idea_id",
+          "title",
+          "category",
+          "unit"
+        ],
+        "properties": {
+          "idea_id": {
+            "type": "string",
+            "description": "slug · Unique, lowercase, no spaces · If missing: Blocks import · Edited in: sheet"
+          },
+          "title": {
+            "type": "string",
+            "description": "text · If missing: Blocks import · Edited in: sheet"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categories.category · If missing: Uses first category · Edited in: sheet"
+          },
+          "unit": {
+            "type": "integer",
+            "description": "Units.unit · If missing: Blocks import · Edited in: sheet"
+          },
+          "objective": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: Tutor writes one from links · Edited in: sheet"
+          },
+          "standard_codes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list · If missing: Flagged in data checks · Edited in: sheet"
+          },
+          "requires": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list of idea_id · If missing: Unlocks from a mastered neighbour · Edited in: sheet"
+          },
+          "media_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "url or file · Video or image · If missing: Placeholder card · Edited in: sheet"
+          },
+          "rarity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "auto | Common | Rare | Legendary · Auto: most connected = Legendary, inner ring = Rare · If missing: auto · Edited in: both"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · Teacher-only; Atlas can read it · If missing: — · Edited in: sheet"
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · PROPOSED, not yet in the Curriculum Pack design: student-facing explanation shown on the idea page · If missing: Tutor writes one from links · Edited in: sheet"
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Directed connections between ideas. Each idea shows its 3 strongest links in and out.",
+        "required": [
+          "from_id",
+          "to_id",
+          "relation"
+        ],
+        "properties": {
+          "from_id": {
+            "type": "string",
+            "description": "Ideas.idea_id · If missing: Row skipped · Edited in: sheet"
+          },
+          "to_id": {
+            "type": "string",
+            "description": "Ideas.idea_id · If missing: Row skipped · Edited in: sheet"
+          },
+          "relation": {
+            "type": "string",
+            "description": "short verb phrase · Becomes quiz questions · If missing: Row skipped · Edited in: sheet"
+          },
+          "importance": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "1–5 · Ranks which links are shown · If missing: 3 · Edited in: sheet"
+          },
+          "media_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "url or file · If missing: Opens the AI tutor · Edited in: sheet"
+          }
+        }
+      }
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Kinds of idea. Used for card icons, map labels and “what kind of idea is it?” questions.",
+        "required": [
+          "category"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "text · If missing: One category “Idea” · Edited in: sheet"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Phosphor icon name · If missing: circle · Edited in: sheet"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: Quiz skips category questions · Edited in: sheet"
+          }
+        }
+      }
+    },
+    "assessment": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Fixed teach-back questions. Milo asks one per lesson objective.",
+        "required": [
+          "unit",
+          "idea_id",
+          "question"
+        ],
+        "properties": {
+          "unit": {
+            "type": "integer",
+            "description": "Units.unit · If missing: Row skipped · Edited in: sheet"
+          },
+          "idea_id": {
+            "type": "string",
+            "description": "Ideas.idea_id · If missing: Row skipped · Edited in: sheet"
+          },
+          "question": {
+            "type": "string",
+            "description": "text · If missing: Placeholder; Atlas can draft · Edited in: sheet"
+          },
+          "key_points": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list · If missing: Milo checks against the objective · Edited in: sheet"
+          }
+        }
+      }
+    },
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "AI prompt templates. Variables in braces are filled from the Course tab.",
+        "required": [
+          "persona_id",
+          "name"
+        ],
+        "properties": {
+          "persona_id": {
+            "type": "string",
+            "description": "tutor | peer | agent | custom · If missing: Built-in default · Edited in: both"
+          },
+          "name": {
+            "type": "string",
+            "description": "text · If missing: Built-in default · Edited in: both"
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: Built-in default · Edited in: both"
+          },
+          "audience": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Students | Teachers · If missing: Students · Edited in: both"
+          },
+          "tone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "warm | calm | playful | socratic · If missing: warm · Edited in: both"
+          },
+          "prompt_template": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text with {vars} · Vars: {name} {tone} {subject} {topic} {grade} {age} {peerAge} {style} {length} · If missing: Built-in default · Edited in: both"
+          }
+        }
+      }
+    },
+    "library": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Documents Atlas indexes for retrieval: unit plans, standards, labs, pacing guides.",
+        "required": [
+          "title",
+          "file_url"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "text · If missing: File name · Edited in: both"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "url or file · If missing: Row skipped · Edited in: both"
+          },
+          "use_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "agent | tutor | both · Who can retrieve it · If missing: agent · Edited in: both"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Exported from project/curriculum-pack.js jsonSchema(), with two fixes so the prototype own pack output validates: columns referencing Units.unit are integers, and optional columns accept null. ideas.explanation is a proposed addition."
+}

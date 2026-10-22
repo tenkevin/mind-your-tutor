@@ -8,15 +8,15 @@ Critical path: F1 → F3 → F4 → F5 → M2 → S1 → S2 → S4 → L1 (up to
 
 ## Ready to start
 
-Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`.
+Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task can be claimed only once its QA criteria exist.
 
-| ID | Task | Phase | Size |
-|---|---|---|---|
-| F2 | Port Nocturne tokens and components to packages/ui | Foundations | ≤1 wk |
-| F3 | Domain types and zod contracts for import tabs and config | Foundations | 1–2 wks · critical |
+| ID | Task | Phase | Size | QA |
+|---|---|---|---|---|
+| F2 | Port Nocturne tokens and components to packages/ui | Foundations | ≤1 wk | [criteria](qa/F2.md) |
+| F3 | Domain types and zod contracts for import tabs and config | Foundations | 1–2 wks · critical | [criteria](qa/F3.md) |
 
 - **F2 done when:** packages/ui exports Nocturne tokens and the btn, input, tag, table and field classes
-- **F3 done when:** zod schemas for the Ideas, Links, Units, Categories and Assessment tabs, class config and versions, with tests
+- **F3 done when:** zod schemas in packages/contracts for all eight Curriculum Pack tabs (docs/spec), ClassConfig and CurriculumVersion, with tests; fixtures/water-cycle parses from JSON, CSV and XLSX rows
 
 ## In progress
 

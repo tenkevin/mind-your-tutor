@@ -1,0 +1,436 @@
+[
+  {
+    "tab": "Course",
+    "kind": "keyvalue",
+    "desc": "One row of key/value pairs that names the map and sets the reading level.",
+    "cols": [
+      {
+        "name": "subject",
+        "type": "text",
+        "req": true,
+        "edit": "both",
+        "missing": "Blocks import",
+        "example": "Science",
+        "note": ""
+      },
+      {
+        "name": "topic",
+        "type": "text",
+        "req": true,
+        "edit": "both",
+        "missing": "Blocks import",
+        "example": "The water cycle",
+        "note": "Map title shown to students"
+      },
+      {
+        "name": "grade",
+        "type": "K | 1–12",
+        "req": true,
+        "edit": "both",
+        "missing": "Blocks import",
+        "example": "6",
+        "note": "Sets every persona's {age}, {style} and {length}"
+      },
+      {
+        "name": "framework",
+        "type": "text",
+        "req": false,
+        "edit": "both",
+        "missing": "Custom",
+        "example": "NGSS",
+        "note": "Labels the standards codes"
+      },
+      {
+        "name": "map_objective",
+        "type": "text",
+        "req": false,
+        "edit": "both",
+        "missing": "Hidden on the map",
+        "example": "Explain how water moves around the Earth…",
+        "note": ""
+      },
+      {
+        "name": "pass_mark",
+        "type": "percent",
+        "req": false,
+        "edit": "app",
+        "missing": "70",
+        "example": "70",
+        "note": "Quiz and teach-back threshold"
+      }
+    ]
+  },
+  {
+    "tab": "Units",
+    "kind": "rows",
+    "desc": "Groups ideas into missions. Each unit ends in a teach-back with Milo.",
+    "cols": [
+      {
+        "name": "unit",
+        "type": "integer",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Blocks import",
+        "example": "1",
+        "note": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Shows “Unit n”",
+        "example": "Water goes up",
+        "note": ""
+      },
+      {
+        "name": "objective",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Flagged in data checks",
+        "example": "Describe how heat from the Sun…",
+        "note": ""
+      },
+      {
+        "name": "standard_codes",
+        "type": "list",
+        "req": false,
+        "edit": "sheet",
+        "missing": "No codes shown",
+        "example": "MS-ESS2-4, MS-PS1-4",
+        "note": ""
+      },
+      {
+        "name": "due_date",
+        "type": "date",
+        "req": false,
+        "edit": "both",
+        "missing": "No due date",
+        "example": "2026-10-30",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "tab": "Ideas",
+    "kind": "rows",
+    "desc": "One row per node on the map. The most connected idea becomes the centre.",
+    "cols": [
+      {
+        "name": "idea_id",
+        "type": "slug",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Blocks import",
+        "example": "evap",
+        "note": "Unique, lowercase, no spaces"
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Blocks import",
+        "example": "Evaporation",
+        "note": ""
+      },
+      {
+        "name": "category",
+        "type": "Categories.category",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Uses first category",
+        "example": "Process",
+        "note": ""
+      },
+      {
+        "name": "unit",
+        "type": "Units.unit",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Blocks import",
+        "example": "1",
+        "note": ""
+      },
+      {
+        "name": "objective",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Tutor writes one from links",
+        "example": "Explain how heat turns water into vapour.",
+        "note": ""
+      },
+      {
+        "name": "standard_codes",
+        "type": "list",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Flagged in data checks",
+        "example": "MS-ESS2-4, MS-PS1-4",
+        "note": ""
+      },
+      {
+        "name": "requires",
+        "type": "list of idea_id",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Unlocks from a mastered neighbour",
+        "example": "evap, cond",
+        "note": ""
+      },
+      {
+        "name": "media_url",
+        "type": "url or file",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Placeholder card",
+        "example": "evaporation.mp4",
+        "note": "Video or image"
+      },
+      {
+        "name": "rarity",
+        "type": "auto | Common | Rare | Legendary",
+        "req": false,
+        "edit": "both",
+        "missing": "auto",
+        "example": "Rare",
+        "note": "Auto: most connected = Legendary, inner ring = Rare"
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "—",
+        "example": "Lab on day 2",
+        "note": "Teacher-only; Atlas can read it"
+      }
+    ]
+  },
+  {
+    "tab": "Links",
+    "kind": "rows",
+    "desc": "Directed connections between ideas. Each idea shows its 3 strongest links in and out.",
+    "cols": [
+      {
+        "name": "from_id",
+        "type": "Ideas.idea_id",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "sun",
+        "note": ""
+      },
+      {
+        "name": "to_id",
+        "type": "Ideas.idea_id",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "evap",
+        "note": ""
+      },
+      {
+        "name": "relation",
+        "type": "short verb phrase",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "heats water for",
+        "note": "Becomes quiz questions"
+      },
+      {
+        "name": "importance",
+        "type": "1–5",
+        "req": false,
+        "edit": "sheet",
+        "missing": "3",
+        "example": "5",
+        "note": "Ranks which links are shown"
+      },
+      {
+        "name": "media_url",
+        "type": "url or file",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Opens the AI tutor",
+        "example": "sun-heats-sea.mp4",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "tab": "Categories",
+    "kind": "rows",
+    "desc": "Kinds of idea. Used for card icons, map labels and “what kind of idea is it?” questions.",
+    "cols": [
+      {
+        "name": "category",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "One category “Idea”",
+        "example": "Process",
+        "note": ""
+      },
+      {
+        "name": "icon",
+        "type": "Phosphor icon name",
+        "req": false,
+        "edit": "sheet",
+        "missing": "circle",
+        "example": "arrows-clockwise",
+        "note": ""
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Quiz skips category questions",
+        "example": "Something that happens or changes",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "tab": "Assessment",
+    "kind": "rows",
+    "desc": "Fixed teach-back questions. Milo asks one per lesson objective.",
+    "cols": [
+      {
+        "name": "unit",
+        "type": "Units.unit",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "1",
+        "note": ""
+      },
+      {
+        "name": "idea_id",
+        "type": "Ideas.idea_id",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "evap",
+        "note": ""
+      },
+      {
+        "name": "question",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Placeholder; Atlas can draft",
+        "example": "Why does a puddle disappear on a sunny day?",
+        "note": ""
+      },
+      {
+        "name": "key_points",
+        "type": "list",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Milo checks against the objective",
+        "example": "heat, liquid to gas, vapour rises",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "tab": "Personas",
+    "kind": "rows",
+    "desc": "AI prompt templates. Variables in braces are filled from the Course tab.",
+    "cols": [
+      {
+        "name": "persona_id",
+        "type": "tutor | peer | agent | custom",
+        "req": true,
+        "edit": "both",
+        "missing": "Built-in default",
+        "example": "tutor",
+        "note": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "req": true,
+        "edit": "both",
+        "missing": "Built-in default",
+        "example": "Ms. Ivy",
+        "note": ""
+      },
+      {
+        "name": "role",
+        "type": "text",
+        "req": false,
+        "edit": "both",
+        "missing": "Built-in default",
+        "example": "AI tutor",
+        "note": ""
+      },
+      {
+        "name": "audience",
+        "type": "Students | Teachers",
+        "req": false,
+        "edit": "both",
+        "missing": "Students",
+        "example": "Students",
+        "note": ""
+      },
+      {
+        "name": "tone",
+        "type": "warm | calm | playful | socratic",
+        "req": false,
+        "edit": "both",
+        "missing": "warm",
+        "example": "warm",
+        "note": ""
+      },
+      {
+        "name": "prompt_template",
+        "type": "text with {vars}",
+        "req": false,
+        "edit": "both",
+        "missing": "Built-in default",
+        "example": "You are {name}, a {tone} {subject} tutor…",
+        "note": "Vars: {name} {tone} {subject} {topic} {grade} {age} {peerAge} {style} {length}"
+      }
+    ]
+  },
+  {
+    "tab": "Library",
+    "kind": "rows",
+    "desc": "Documents Atlas indexes for retrieval: unit plans, standards, labs, pacing guides.",
+    "cols": [
+      {
+        "name": "title",
+        "type": "text",
+        "req": true,
+        "edit": "both",
+        "missing": "File name",
+        "example": "Water cycle unit plan",
+        "note": ""
+      },
+      {
+        "name": "file_url",
+        "type": "url or file",
+        "req": true,
+        "edit": "both",
+        "missing": "Row skipped",
+        "example": "unit-plan.pdf",
+        "note": ""
+      },
+      {
+        "name": "use_for",
+        "type": "agent | tutor | both",
+        "req": false,
+        "edit": "both",
+        "missing": "agent",
+        "example": "both",
+        "note": "Who can retrieve it"
+      }
+    ]
+  }
+]
