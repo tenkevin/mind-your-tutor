@@ -3,6 +3,7 @@ export * from './spec.js';
 export * from './pack.js';
 export * from './issues.js';
 export * from './parse.js';
+export * from './import.js';
 export {
   LIMITS,
   isSafeMediaRef,

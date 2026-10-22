@@ -1,7 +1,7 @@
 import { z } from 'zod';
+import { ColumnMappingSchema } from './import.js';
 import { PackIssueSchema } from './issues.js';
 import { PackSchema } from './pack.js';
-import { TAB_NAMES } from './spec.js';
 
 // An immutable snapshot of a curriculum (ARCHITECTURE.md §5 and §7): the validated
 // pack body, what was derived from it, the issues found and where it came from.
@@ -17,16 +17,7 @@ export const VersionSourceSchema = z.object({
   /** SHA-256 of the source bytes, lowercase hex. */
   checksum: z.string().regex(/^[0-9a-f]{64}$/),
   /** How source columns were mapped onto pack columns (C1). */
-  column_mapping: z
-    .array(
-      z.object({
-        tab: z.enum(TAB_NAMES),
-        column: z.string().min(1).max(100),
-        source_column: z.string().min(1).max(200),
-      }),
-    )
-    .max(500)
-    .default([]),
+  column_mapping: ColumnMappingSchema.default([]),
 });
 
 /**
