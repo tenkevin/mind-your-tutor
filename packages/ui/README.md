@@ -88,6 +88,7 @@ them per page.
 Text tokens pass WCAG AA (4.5:1) on `--color-bg` and `--color-surface`:
 `--color-text`, `--color-neutral-300/400/500`, the accent, field labels, table
 headers and every `.tag-*` variant. Don't use `--color-neutral-600` or darker
-for text. A few design-system pairs fall short and are listed under "Open
-questions" in `docs/ARCHITECTURE.md` rather than changed here: `.btn-primary`
-text while pressed, `.card-meta` on a surface, and the `.input` border.
+for text. Three design-system pairs fall short and are accepted as designed
+(decision D10 in `docs/ARCHITECTURE.md`): `.btn-primary` text while pressed,
+`.card-meta` on a surface, and the `.input` border. New colours and components
+must meet AA; `src/styles.test.ts` fails if any other pair drops below it.

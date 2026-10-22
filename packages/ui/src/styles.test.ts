@@ -174,19 +174,22 @@ describe('contrast (WCAG AA)', () => {
     ['.input border on bg', over(text, bg, 0.16), bg, 3],
   );
 
-  // Design-system pairs below the bar. Listed in docs/ARCHITECTURE.md "Open questions"
-  // rather than retuned here; remove an entry once the design is changed.
-  const belowAA = new Set([
-    '.card-meta on surface',
-    '.btn-primary:active',
-    '.input border on surface',
-    '.input border on bg',
-  ]);
+  // The only pairs allowed below AA: the three accepted in docs/ARCHITECTURE.md D10.
+  // Any other pair below the bar fails. Don't add to this list without a new decision.
+  const acceptedBelowAA = ['.input border', '.btn-primary:active', '.card-meta on surface'];
+  // '.input border' covers the border on both grounds.
+  const exceptionFor = (name: string) =>
+    acceptedBelowAA.find((a) => name === a || name.startsWith(`${a} on `));
+
+  it('has exactly the three D10 pairs below AA', () => {
+    const failing = pairs.filter(([, fg, back, min]) => contrast(fg, back) < min);
+    // A new failure maps to undefined; a fixed exception goes missing. Either breaks this.
+    expect(new Set(failing.map(([name]) => exceptionFor(name)))).toEqual(new Set(acceptedBelowAA));
+  });
 
   it.each(pairs)('%s', (name, fg, back, min) => {
     const ratio = contrast(fg, back);
-    if (belowAA.has(name))
-      expect(ratio, `${name} now passes; drop it from belowAA`).toBeLessThan(min);
-    else expect(ratio, `${name} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(min);
+    if (!exceptionFor(name))
+      expect(ratio, `${name} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(min);
   });
 });

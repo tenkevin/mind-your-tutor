@@ -313,8 +313,3 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 3. Which SSO and rostering providers does the first school use?
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
-6. **Nocturne pairs below WCAG AA (F2).** `packages/ui` ports the design system unchanged, so these pairs fall short of §10's WCAG 2.1 AA. Retune the tokens, or accept them? `src/styles.test.ts` in `packages/ui` tracks the list.
-   - `.btn-primary:active`: accent text on its 22% accent press tint, 3.92:1 (needs 4.5:1 for 14px text). Only while the button is held down. Used by every primary button, e.g. Teacher Settings "Re-sync".
-   - `.card-meta` on `--color-surface`: text at 50%, 4.25:1 (needs 4.5:1). Fine on `--color-bg` (4.52:1). Cards aren't used in Teacher Settings yet.
-   - `.input` border (`--color-divider`, text at 16%): 1.58:1 on `--color-surface` and 1.55:1 on `--color-bg` (WCAG 1.4.11 asks 3:1 for the boundary of a control). The input's surface fill against `--color-bg` is 1.16:1, so the field's edge is hard to see. Used by every field in Teacher Settings. `.btn-secondary` has the same border, but its text label identifies it.
-   - Not failing, but close: `--color-neutral-600` is 4.08:1 on bg and 3.52:1 on surface, so it isn't safe for body text.
