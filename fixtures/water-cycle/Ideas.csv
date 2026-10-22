@@ -1,0 +1,19 @@
+idea_id,title,category,unit,objective,standard_codes,requires,media_url,notes
+cycle,Water cycle,Process,3,I can name the main stages of the water cycle in order.,MS-ESS2-4,"evap, cond, prec, coll",water-cycle-overview.mp4,"The journey water takes as it moves between the sky, the land and the sea, over and over again."
+evap,Evaporation,Process,1,I can explain how the Sun’s heat turns liquid water into vapour.,"MS-ESS2-4, MS-PS1-4",,evaporation.mp4,"When the Sun warms water in oceans, lakes and puddles, some of it turns into an invisible gas and rises into the air."
+cond,Condensation,Process,2,I can explain why water vapour turns back into drops when it cools.,"MS-ESS2-4, MS-PS1-4",evap,,As water vapour rises it cools down and turns back into tiny drops of liquid water.
+prec,Precipitation,Process,2,I can describe what makes water fall from clouds.,MS-ESS2-4,cond,precipitation.mp4,"When cloud drops grow too heavy, they fall back to the ground."
+coll,Collection,Process,3,I can list places where fallen water gathers.,MS-ESS2-4,prec,,"Water that falls gathers in oceans, rivers, lakes and underground, ready to start the cycle again."
+trans,Transpiration,Process,1,I can explain how plants put water back into the air.,MS-ESS2-4,plants,,Plants pull water up from their roots and let some of it escape from their leaves as vapour.
+ice,Freezing,Process,3,I can explain what happens to water when it freezes.,MS-PS1-4,temp,,When water gets cold enough it turns into solid ice.
+sun,The Sun,Force,1,I can explain why the Sun is the engine of the water cycle.,MS-ESS2-4,,sun-energy.mp4,The Sun gives off heat and light. Its energy is what keeps the water cycle moving.
+temp,Temperature,Force,1,I can describe how warming and cooling change water.,MS-PS1-4,sun,,How hot or cold something is. Warm air can hold more water vapour than cold air.
+climate,Climate,Force,2,I can explain how climate affects rain and snow in a place.,MS-ESS2-6,"temp, prec",,The usual weather of a place over many years. It changes how much rain and snow falls.
+vap,Water vapour,Thing,1,I can describe water vapour and where it comes from.,MS-ESS2-4,evap,water-vapour.png,"Water in the form of a gas. You cannot see it, but it is all around you in the air."
+clouds,Clouds,Thing,2,I can explain what clouds are made of.,MS-ESS2-5,cond,clouds.mp4,Millions of tiny water drops or ice crystals floating together in the sky.
+rain,Rain & snow,Thing,2,I can tell the difference between rain and snow.,,prec,,The forms precipitation takes. Snow forms when the air is cold enough to freeze the drops.
+ocean,Oceans,Thing,1,I can explain why oceans matter to the water cycle.,MS-ESS2-6,,oceans.jpg,Huge bodies of salt water that cover most of the Earth and hold most of its water.
+rivers,Rivers,Thing,3,I can trace how rivers carry water back to the sea.,MS-ESS2-4,rain,,Flowing fresh water that carries rain and melted snow from the land back to the sea.
+plants,Plants,Thing,1,I can explain how plants take in and give back water.,MS-LS1-6,,,Living things that drink water through their roots and return some of it to the air.
+glacier,Glaciers,Thing,3,I can explain how glaciers store and release water.,MS-ESS2-4,ice,,"Giant, slow rivers of ice that store fresh water for hundreds of years."
+ground,Groundwater,Thing,3,I can describe how water is stored underground.,MS-ESS3-1,"coll, aquifer",,Water that soaks into the soil and is stored between rocks underground.

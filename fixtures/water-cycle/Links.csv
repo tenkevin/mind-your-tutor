@@ -1,0 +1,32 @@
+from_id,to_id,relation,importance,media_url
+sun,evap,powers,5,how-the-sun-powers-evaporation.mp4
+evap,vap,creates,5,from-puddle-to-vapour.mp4
+vap,cond,turns into,5,why-vapour-turns-back-into-drops.mp4
+cond,clouds,forms,5,
+clouds,prec,release,5,when-clouds-get-too-heavy.mp4
+evap,cycle,is a stage of,5,
+cond,cycle,is a stage of,5,
+prec,cycle,is a stage of,4,
+coll,cycle,is a stage of,4,
+trans,cycle,is a stage of,2,
+sun,temp,raises,4,
+temp,evap,speeds up,4,
+temp,cond,controls,4,
+temp,ice,causes,3,
+temp,climate,shapes,2,
+ocean,evap,supplies,4,
+prec,rain,falls as,4,
+rain,rivers,feeds,4,
+rain,ground,soaks in as,3,
+rivers,ocean,flow into,4,
+coll,ocean,gathers in,3,
+coll,ground,stores water as,3,
+plants,trans,perform,4,
+trans,vap,releases,4,
+ice,glacier,builds,3,
+glacier,rivers,melt into,3,
+climate,prec,shapes,3,
+ocean,climate,moderates,3,
+clouds,climate,affect,2,
+sun,plants,gives energy to,2,
+sun,ocean,warms,2,

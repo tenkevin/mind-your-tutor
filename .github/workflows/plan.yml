@@ -1,0 +1,15 @@
+name: plan
+on:
+  push:
+    branches: [idea-map]
+  pull_request:
+    branches: [idea-map]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/plan.mjs check

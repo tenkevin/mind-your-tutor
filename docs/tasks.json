@@ -1,0 +1,571 @@
+{
+  "note": "Source of truth for the plan. Agents: read AGENTS.md, and change status only through scripts/plan.mjs. size: 1 = up to a week, 2 = one to two weeks, 3 = two to three weeks. placeholder: true means the spec is not written yet, so the task cannot be claimed.",
+  "phases": [
+    {
+      "id": "F",
+      "name": "Foundations"
+    },
+    {
+      "id": "C",
+      "name": "Curriculum pipeline"
+    },
+    {
+      "id": "M",
+      "name": "Tracker & map generation"
+    },
+    {
+      "id": "T",
+      "name": "Teacher console"
+    },
+    {
+      "id": "A",
+      "name": "AI layer"
+    },
+    {
+      "id": "S",
+      "name": "Student app hooks"
+    },
+    {
+      "id": "L",
+      "name": "Launch"
+    },
+    {
+      "id": "X",
+      "name": "Later"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "F1",
+      "title": "Monorepo, CI, lint and test setup",
+      "size": 1,
+      "deps": [],
+      "done_when": "pnpm workspaces build, lint and test in CI on every push",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "F2",
+      "title": "Port Nocturne tokens and components to packages/ui",
+      "size": 1,
+      "deps": [
+        "F1"
+      ],
+      "done_when": "packages/ui exports Nocturne tokens and the btn, input, tag, table and field classes",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "F3",
+      "title": "Domain types and zod contracts for import tabs and config",
+      "size": 2,
+      "deps": [
+        "F1"
+      ],
+      "done_when": "zod schemas for the Ideas, Links, Units, Categories and Assessment tabs, class config and versions, with tests",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "F4",
+      "title": "Postgres schema and migrations",
+      "size": 2,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "Migrations create every entity in ARCHITECTURE.md section 5 and run in CI",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "F5",
+      "title": "SSO sign-in, roles and org tenancy",
+      "size": 3,
+      "deps": [
+        "F4"
+      ],
+      "done_when": "Teachers and students sign in with SSO; every API route checks role and org",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "F6",
+      "title": "Privacy baseline: data inventory, retention, audit log",
+      "size": 2,
+      "deps": [
+        "F4"
+      ],
+      "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C1",
+      "title": "CSV and XLSX import with column mapping",
+      "size": 2,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "fixtures/water-cycle imports from both the CSVs and water-cycle.xlsx into identical RawTabs using the column mapping",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C2",
+      "title": "Data checks engine",
+      "size": 1,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "The data checks from project/curriculum.js are ported to packages/domain, with a test for each check, including the deliberate errors in fixtures/water-cycle",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C3",
+      "title": "Derivation: link ranking, layout, quiz generation",
+      "size": 2,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "Link ranking, ring layout and 8-question quiz generation run on import and are stored on the draft version; tests check the rules (at most 3 links in and 3 out, centre and rings, 8 questions) rather than exact output",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C4",
+      "title": "Job queue and import job producing a draft version",
+      "size": 2,
+      "deps": [
+        "C1",
+        "C2",
+        "C3",
+        "F4"
+      ],
+      "done_when": "Uploading a file runs a pg-boss job that stores a draft CurriculumVersion with derived data and issues",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C5",
+      "title": "Draft vs published diff and Publish flow",
+      "size": 2,
+      "deps": [
+        "C4"
+      ],
+      "done_when": "The API returns a draft vs published diff, and publishing moves the pinned version for the chosen classes",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C6",
+      "title": "Exports: template, data-check and alignment reports",
+      "size": 1,
+      "deps": [
+        "C2",
+        "F4"
+      ],
+      "done_when": "Template workbook, data-check report and alignment report download as files",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C7",
+      "title": "Progress migration rules on publish",
+      "size": 2,
+      "deps": [
+        "C5",
+        "S1"
+      ],
+      "done_when": "Publishing carries mastery over by idea_id and archives removed ideas, covered by tests",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M1",
+      "title": "Tracker event catalogue and schemas",
+      "size": 1,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "Every event type in ARCHITECTURE.md section 8.2 has a zod schema in packages/tracker, and the open items in 8.6 are written up",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M2",
+      "title": "Event ingest API and append-only event store",
+      "size": 2,
+      "deps": [
+        "M1",
+        "F4",
+        "F5"
+      ],
+      "done_when": "POST /events validates, sets seq, drops duplicate ids and writes partitioned rows; typed text goes to InteractionText; events stream continuously from the client with an offline queue",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M3",
+      "title": "Deterministic tracker rules: progress, behaviour metrics, signals",
+      "size": 2,
+      "deps": [
+        "M1",
+        "C3"
+      ],
+      "done_when": "apply() in packages/tracker is pure with no clock, randomness or network; replaying the same events always gives identical progress, metrics and signals, covered by property tests",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M4",
+      "title": "Map generation from tracker state",
+      "size": 2,
+      "deps": [
+        "C3",
+        "M3"
+      ],
+      "done_when": "generateMap returns a MapView from the version, class config and tracker state; every view is stored and logged with a map.shown event; a check rejects any view that shows a locked idea as open",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M5",
+      "title": "Teacher trace views: student timeline and class heatmap",
+      "size": 2,
+      "deps": [
+        "M2",
+        "M3",
+        "T1"
+      ],
+      "done_when": "A teacher can open any progress number or signal and see the events behind it, plus a class heatmap of stalls",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T1",
+      "title": "Teacher console shell, nav and save state",
+      "size": 1,
+      "deps": [
+        "F2",
+        "F5"
+      ],
+      "done_when": "Teacher app shell with header, section nav and the Saving and Saved indicator, behind sign-in",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T2",
+      "title": "Curriculum data section: import, pipeline, data checks",
+      "size": 2,
+      "deps": [
+        "T1",
+        "C4"
+      ],
+      "done_when": "Import, pipeline steps and data checks render from the API, matching the design",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T3",
+      "title": "Course details with layered config",
+      "size": 2,
+      "deps": [
+        "T1",
+        "F4"
+      ],
+      "done_when": "Course details edit class overrides and show whether each value comes from the curriculum or the class",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T4",
+      "title": "Schedule: due dates per unit",
+      "size": 1,
+      "deps": [
+        "T3"
+      ],
+      "done_when": "Due dates per unit save and appear in the API's missions feed",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T5",
+      "title": "Card classification overrides",
+      "size": 1,
+      "deps": [
+        "T3",
+        "C3"
+      ],
+      "done_when": "Rarity overrides save, with Auto computed from the layout",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T6",
+      "title": "Read-only data tabs and column mapping UI",
+      "size": 1,
+      "deps": [
+        "T2",
+        "C1"
+      ],
+      "done_when": "The Prerequisites, Categories, Standards codes, Media and Assessment tabs and the column mapping editor work",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T7",
+      "title": "Persona editor: templates, variables, preview, test",
+      "size": 2,
+      "deps": [
+        "T3",
+        "A1"
+      ],
+      "done_when": "Templates edit with variable insertion, filled preview and Test through the gateway",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "T8",
+      "title": "Publish screen: diff review and class picker",
+      "size": 1,
+      "deps": [
+        "T2",
+        "C5"
+      ],
+      "done_when": "The teacher reviews the diff and checks, picks classes and publishes",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A1",
+      "title": "AI gateway: server-side calls, prompt fill, rate limits",
+      "size": 2,
+      "deps": [
+        "F5",
+        "F6"
+      ],
+      "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A2",
+      "title": "Student safety: moderation, guardrails, teacher flags",
+      "size": 2,
+      "deps": [
+        "A1"
+      ],
+      "done_when": "Student turns are moderated, fixed guardrails are added after templates, and flags reach the teacher",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A3",
+      "title": "Resource library and RAG indexing",
+      "size": 2,
+      "deps": [
+        "A1",
+        "C4"
+      ],
+      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A4",
+      "title": "Atlas agent with tools",
+      "size": 2,
+      "deps": [
+        "A3",
+        "C2",
+        "T2"
+      ],
+      "done_when": "Atlas answers with tools (searchIdeas, getDataChecks, getDiff, searchLibrary, draftRows)",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A5",
+      "title": "Persona eval harness per grade band",
+      "size": 1,
+      "deps": [
+        "A1"
+      ],
+      "done_when": "Fixed eval prompts run per grade band in CI with a pass threshold",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "S1",
+      "title": "Progress snapshots: cached state rebuilt from events",
+      "size": 2,
+      "deps": [
+        "M2",
+        "M3"
+      ],
+      "done_when": "The API serves mastery, attempts, XP, cards and Milo stage from ProgressSnapshot, and dropping the cache rebuilds identical values",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "S2",
+      "title": "Student explorer reads published version and class config",
+      "size": 3,
+      "deps": [
+        "S1",
+        "C5",
+        "F2",
+        "M4"
+      ],
+      "done_when": "The student explorer draws the MapView for the class's pinned version and sends interaction events",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "S3",
+      "title": "Missions driven by due dates",
+      "size": 1,
+      "deps": [
+        "S2",
+        "T4"
+      ],
+      "done_when": "Missions list uses teacher due dates",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "S4",
+      "title": "Tutor and peer chat through the gateway",
+      "size": 2,
+      "deps": [
+        "S2",
+        "A2"
+      ],
+      "done_when": "Ms. Ivy and Milo chats call the gateway with safety on",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "L1",
+      "title": "Pilot: one curriculum shared by two classes",
+      "size": 2,
+      "deps": [
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "A4",
+        "A5",
+        "S3",
+        "S4",
+        "C6",
+        "C7",
+        "M5"
+      ],
+      "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "X1",
+      "title": "Google Drive import picker",
+      "size": 1,
+      "deps": [
+        "C1",
+        "L1"
+      ],
+      "done_when": "Pick a Sheet from Google Drive and import it as a draft",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "X2",
+      "title": "Cloudinary media provider",
+      "size": 1,
+      "deps": [
+        "C4",
+        "L1"
+      ],
+      "done_when": "media_url values that point to Cloudinary resolve through a MediaProvider",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    }
+  ]
+}

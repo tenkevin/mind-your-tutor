@@ -1,0 +1,534 @@
+<title>Idea Map Blueprint</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky header with three views (architecture, dependency graph, board); content capped near 1200px. Palette follows the project's Nocturne design system. */
+:root {
+  --bg: #161826; --surface: #232532; --raise: #2b2d3b; --text: #e9e9ed; --muted: #b2b6ca; --faint: #75798c;
+  --line: color-mix(in srgb, #e9e9ed 16%, transparent); --line-soft: color-mix(in srgb, #e9e9ed 8%, transparent);
+  --accent: #9184d9; --accent-soft: #2b2741; --accent-ink: #e7e5fe; --accent-edge: #796cbf;
+  --ok: #6fcf97; --ok-soft: #1d3329; --warn: #e6b45c; --warn-soft: #3a2f1b; --err: #ef8a80;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 8px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f6fb; --surface: #ffffff; --raise: #eeeef6; --text: #1c1e2b; --muted: #555a6e; --faint: #868a9c;
+  --line: color-mix(in srgb, #1c1e2b 16%, transparent); --line-soft: color-mix(in srgb, #1c1e2b 8%, transparent);
+  --accent: #5d50b0; --accent-soft: #ebe8fb; --accent-ink: #3b3180; --accent-edge: #8b80d6;
+  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e;
+  color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f6fb; --surface: #ffffff; --raise: #eeeef6; --text: #1c1e2b; --muted: #555a6e; --faint: #868a9c;
+  --line: color-mix(in srgb, #1c1e2b 16%, transparent); --line-soft: color-mix(in srgb, #1c1e2b 8%, transparent);
+  --accent: #5d50b0; --accent-soft: #ebe8fb; --accent-ink: #3b3180; --accent-edge: #8b80d6;
+  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e;
+  color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 var(--font-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); box-shadow: 0 1px 0 var(--line); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 12px; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand b { font-weight: 600; font-size: 15px; }
+.brand span { color: var(--muted); font-size: 12px; }
+nav { display: flex; gap: 4px; padding: 3px; border-radius: var(--r); background: var(--surface); margin-left: auto; }
+nav button { font: 500 13px var(--font-body); color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+nav button[aria-selected="true"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-edge); }
+nav button:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { padding-block: 24px 64px; }
+h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 6px; text-wrap: balance; }
+h2 { font-size: 18px; font-weight: 600; margin: 0 0 10px; text-wrap: balance; }
+h3 { font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+p { margin: 0 0 10px; max-width: 72ch; }
+.lede { color: var(--muted); max-width: 72ch; }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.label { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+section.view { display: flex; flex-direction: column; gap: 28px; }
+.block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+td:first-child { white-space: nowrap; }
+
+/* architecture diagram */
+.stack { display: grid; gap: 8px; }
+.tier { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: stretch; }
+.tier > .label { padding-top: 10px; }
+.boxes { display: flex; flex-wrap: wrap; gap: 8px; }
+.box { flex: 1 1 160px; min-width: 0; padding: 10px 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.box b { display: block; font-weight: 500; font-size: 13px; }
+.box small { color: var(--muted); font-size: 12px; }
+.box.key { border-color: var(--accent-edge); background: var(--accent-soft); }
+.box.key b { color: var(--accent-ink); }
+.box.later { border-style: dashed; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.step { padding: 6px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; }
+.step.gate { border-color: var(--accent-edge); color: var(--accent-ink); background: var(--accent-soft); font-weight: 500; }
+.arrow { color: var(--faint); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.note { font-size: 12px; color: var(--muted); }
+
+/* graph */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1.5px solid; }
+.graphbox { overflow: auto; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); max-height: 72vh; }
+svg text { font-family: var(--font-body); }
+.node { cursor: pointer; }
+.node:focus-visible rect.body { stroke: var(--accent); stroke-width: 2.5; }
+.detail { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; padding: 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.detail .meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 12px var(--font-body); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-edge); background: var(--accent-soft); }
+
+/* board */
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--text); font-weight: 600; }
+.cols { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); min-height: 160px; }
+.col.over { border-color: var(--accent); }
+.col h3 { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 2px; }
+.col h3 span { font-weight: 400; color: var(--faint); font-variant-numeric: tabular-nums; }
+.card { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); cursor: grab; }
+.card.crit { border-left: 3px solid var(--accent); }
+.card .top { display: flex; align-items: center; gap: 8px; }
+.card .t { font-size: 13px; line-height: 1.4; }
+.pill { font-size: 11px; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.pill.ready { color: var(--ok); background: var(--ok-soft); }
+.pill.wait { color: var(--warn); background: var(--warn-soft); }
+.pill.spec { color: var(--accent-ink); background: var(--accent-soft); }
+.pill.phase { color: var(--muted); background: var(--raise); }
+.card .foot { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 11px; color: var(--faint); }
+select { font: 12px var(--font-body); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.banner { font-size: 12px; color: var(--muted); padding: 8px 12px; border-radius: 6px; background: var(--surface); border: 1px dashed var(--line); }
+.empty { font-size: 12px; color: var(--faint); padding: 6px 2px; }
+@media (max-width: 640px) { .tier { grid-template-columns: 1fr; } .tier > .label { padding-top: 0; } nav { margin-left: 0; } }
+@media (prefers-reduced-motion: no-preference) { .card, .col, .node rect { transition: border-color .15s, opacity .15s; } }
+</style>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.1 · 22 Oct 2026</span></div>
+    <nav role="tablist" aria-label="Views">
+      <button role="tab" id="tab-architecture" data-view="architecture">Architecture</button>
+      <button role="tab" id="tab-graph" data-view="graph">Dependencies</button>
+      <button role="tab" id="tab-board" data-view="board">Board</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ARCHITECTURE -->
+  <section class="view" id="view-architecture" role="tabpanel" aria-labelledby="tab-architecture">
+    <div class="block">
+      <h1>How Idea Map fits together</h1>
+      <p class="lede">A TypeScript platform that turns a curriculum spreadsheet into a published mind map that many classes share, with server-side AI personas, built for K-12 privacy rules. The Teacher Settings page is the first surface. The full write-up is <span class="mono">docs/ARCHITECTURE.md</span> in the repo.</p>
+    </div>
+
+    <div class="block">
+      <h2>Decisions</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Decision</th><th>What it means for the build</th></tr></thead>
+        <tbody>
+          <tr><td>TypeScript throughout</td><td>One monorepo. Data checks, link ranking, layout and prompt filling live in one pure package used by browser, API and workers.</td></tr>
+          <tr><td>Publish separate from sync</td><td>An import makes a <b>draft</b> version. Students see only <b>published</b> versions, and each class is pinned to one.</td></tr>
+          <tr><td>Shared across classes</td><td>A Curriculum is shared; a Class holds the teacher's overrides, due dates and roster.</td></tr>
+          <tr><td>Import and export only</td><td>Connectors are file parsers (CSV, XLSX, database dumps). Google Drive and Cloudinary plug in later behind the same interfaces.</td></tr>
+          <tr><td>K-12</td><td>COPPA, FERPA and state law decide sign-in, AI logging, retention and which vendors can be used.</td></tr>
+          <tr><td>Determinism lives in the tracker</td><td>The interaction tracker is fully deterministic and replayable. Map generation and AI may vary, but whatever they show a student is stored and logged.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="block">
+      <h2>System layers</h2>
+      <div class="stack">
+        <div class="tier"><span class="label">Browser</span><div class="boxes">
+          <div class="box key"><b>Teacher console</b><small>Settings, import, publish, Atlas</small></div>
+          <div class="box"><b>Student explorer</b><small>Map, quizzes, Milo, missions</small></div>
+        </div></div>
+        <div class="tier"><span class="label">API</span><div class="boxes">
+          <div class="box"><b>Auth &amp; roles</b><small>SSO, org tenancy</small></div>
+          <div class="box"><b>Curricula &amp; classes</b><small>Versions, layered config</small></div>
+          <div class="box key"><b>Interaction tracker</b><small>Event log and deterministic rules</small></div>
+          <div class="box"><b>Map generation</b><small>Reads tracker state; views stored</small></div>
+          <div class="box key"><b>AI gateway</b><small>Prompt fill, safety, rate limits</small></div>
+        </div></div>
+        <div class="tier"><span class="label">Workers</span><div class="boxes">
+          <div class="box"><b>Import</b><small>Parse, map columns, validate</small></div>
+          <div class="box"><b>Derive</b><small>Checks, ranking, layout, quizzes</small></div>
+          <div class="box"><b>Index</b><small>Library chunks and embeddings</small></div>
+          <div class="box"><b>Export</b><small>Templates, reports, drafted rows</small></div>
+        </div></div>
+        <div class="tier"><span class="label">Storage</span><div class="boxes">
+          <div class="box"><b>Postgres</b><small>Data, job queue (pg-boss), vectors (pgvector)</small></div>
+          <div class="box"><b>Object storage</b><small>Uploads, exports</small></div>
+          <div class="box later"><b>Later: Drive, Cloudinary</b><small>Import picker, media provider</small></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="two">
+      <div class="block">
+        <h2>Who owns which data</h2>
+        <div class="scroll"><table>
+          <thead><tr><th></th><th>Curriculum data</th><th>Class settings</th></tr></thead>
+          <tbody>
+            <tr><td>Edited in</td><td>Spreadsheet, re-imported</td><td>The app</td></tr>
+            <tr><td>Holds</td><td>Ideas, links, units, categories, prerequisites, standards codes, media, assessment questions</td><td>Subject, topic, grade, framework, prompts, due dates, card rarity</td></tr>
+            <tr><td>Stored as</td><td>Immutable versions</td><td>Overrides on curriculum defaults</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="block">
+        <h2>Import to classroom</h2>
+        <div class="flow">
+          <span class="step">Upload file</span><span class="arrow">→</span>
+          <span class="step">Map columns</span><span class="arrow">→</span>
+          <span class="step">Validate</span><span class="arrow">→</span>
+          <span class="step">Derive</span><span class="arrow">→</span>
+          <span class="step">Draft version</span><span class="arrow">→</span>
+          <span class="step">Review checks &amp; diff</span><span class="arrow">→</span>
+          <span class="step gate">Publish to classes</span>
+        </div>
+        <p class="note">Errors such as an unknown <span class="mono">requires</span> id or a prerequisite loop block publishing. Mastery carries across versions by <span class="mono">idea_id</span>; a newly added prerequisite never takes away an idea a student has already unlocked. Rolling back means pinning an earlier version.</p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h2>Interaction tracker and map generation <span class="pill spec" style="font-size:11px;vertical-align:middle">Placeholder</span></h2>
+      <p>The tracker records every student action and input as it happens, in a log that is only ever added to. Progress, rewards and behaviour metrics such as time on each idea, attempts, hint use, idle time, stalls and guessing are calculated from that log by fixed rules. The same events always give the same numbers.</p>
+      <div class="scroll"><table>
+        <thead><tr><th></th><th>Interaction tracker</th><th>Map generation and AI</th></tr></thead>
+        <tbody>
+          <tr><td>Job</td><td>Record behaviour and work out progress and signals</td><td>Decide what the map shows; write explanations, feedback and questions</td></tr>
+          <tr><td>Deterministic?</td><td><b>Yes, always.</b> No clock, randomness or model calls in the rules</td><td><b>No need.</b> May use heuristics, randomness or a model</td></tr>
+          <tr><td>Kept honest by</td><td>Replaying events gives identical results</td><td>Everything shown to a student is stored and recorded as a tracker event</td></tr>
+        </tbody>
+      </table></div>
+      <div class="flow">
+        <span class="step">Student acts</span><span class="arrow">→</span>
+        <span class="step gate">Tracker records the event</span><span class="arrow">→</span>
+        <span class="step gate">Rules update progress and signals</span><span class="arrow">→</span>
+        <span class="step">Map generator reads that state</span><span class="arrow">→</span>
+        <span class="step">Generated view saved and logged</span>
+      </div>
+      <p class="note">An AI verdict on a teach-back answer is saved as an event, so the tracker's rules use the recorded verdict and never ask the model again. Generated maps must still respect the tracker's locks. Typed text is stored separately with its own retention period. The event list and metric definitions still need writing up, so tasks M1–M5 can't be claimed yet.</p>
+    </div>
+
+    <div class="block">
+      <h2>AI personas</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Persona</th><th>Who talks to it</th><th>What it can see or do</th></tr></thead>
+        <tbody>
+          <tr><td>Ms. Ivy · tutor</td><td>Students</td><td>Current idea or link, its objective, library passages</td></tr>
+          <tr><td>Milo · peer</td><td>Students</td><td>Unit assessment questions and key points; checks answers</td></tr>
+          <tr><td>Atlas · logistics</td><td>Teachers</td><td>Looks up ideas, data checks, the draft diff and the library; drafts rows to export. Never edits curriculum data.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Teachers edit the templates. Fixed safety rules are added after every student-facing template, so editing a prompt can't remove them. All calls run on the server, and the model never receives student names.</p>
+    </div>
+
+    <div class="block">
+      <h2>K-12 privacy</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Area</th><th>Approach</th></tr></thead>
+        <tbody>
+          <tr><td>COPPA</td><td>School-authorised consent; collect only name, school email and roster ids</td></tr>
+          <tr><td>FERPA</td><td>District owns the data; signed data processing agreement; export and delete on request</td></tr>
+          <tr><td>AI vendor</td><td>Zero-retention, no-training terms; pseudonymous ids in prompts</td></tr>
+          <tr><td>Transcripts</td><td>Stored redacted, retention set per district (default 90 days), visible to the class teacher</td></tr>
+          <tr><td>Access</td><td>Admin, author, teacher and student roles; row-level security per org; audit log on config changes and publishes</td></tr>
+          <tr><td>Sign-in</td><td>Google Workspace for Education, Clever or ClassLink; rosters imported from OneRoster CSV</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="block">
+      <h2>Open questions</h2>
+      <div class="scroll"><table>
+        <tbody>
+          <tr><td>Shared edits</td><td>Who may change defaults on a shared curriculum: its author only, or any teacher (by making a copy)?</td></tr>
+          <tr><td>Changed questions</td><td>If a new version changes a unit's assessment questions, do students who already taught Milo keep the trophy?</td></tr>
+          <tr><td>First school</td><td>Which SSO and rostering provider, transcript retention period and hosting region?</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- GRAPH -->
+  <section class="view" id="view-graph" role="tabpanel" aria-labelledby="tab-graph" hidden>
+    <div class="block">
+      <h1>Dependency graph</h1>
+      <p class="lede">Generated from the task list. Each column is the earliest a task can start, given what it waits on. The highlighted chain is the critical path to the pilot, and colours follow the board.</p>
+    </div>
+    <div class="toolbar">
+      <div class="legend">
+        <span><i style="border-color:var(--faint)"></i>To do</span>
+        <span><i style="border-color:var(--accent)"></i>In progress</span>
+        <span><i style="border-color:var(--warn)"></i>Review</span>
+        <span><i style="border-color:var(--ok);background:var(--ok-soft)"></i>Done</span>
+        <span><i style="border-color:var(--accent);background:var(--accent)"></i>Critical path</span>
+        <span><i style="border-color:var(--accent-edge);border-style:dashed"></i>Needs a spec</span>
+      </div>
+      <span class="stats" id="critStat"></span>
+    </div>
+    <div class="graphbox" id="graphbox"></div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </section>
+
+  <!-- BOARD -->
+  <section class="view" id="view-board" role="tabpanel" aria-labelledby="tab-board" hidden>
+    <div class="block">
+      <h1>Project board</h1>
+      <p class="lede">Drag a card between columns, or pick its status from the menu. Cards in To do say whether they're ready to start or which tasks they're waiting on.</p>
+    </div>
+    <div class="banner" id="saveBanner">Connecting to the shared board…</div>
+    <div class="toolbar">
+      <div class="chips" id="phaseChips" role="group" aria-label="Filter by phase"></div>
+      <div class="stats" id="boardStats"></div>
+    </div>
+    <div class="cols" id="cols"></div>
+  </section>
+</main>
+
+<script>
+const PLAN = {
+  phases: [
+    {"id": "F", "name": "Foundations"},
+    {"id": "C", "name": "Curriculum pipeline"},
+    {"id": "M", "name": "Tracker & map generation"},
+    {"id": "T", "name": "Teacher console"},
+    {"id": "A", "name": "AI layer"},
+    {"id": "S", "name": "Student app hooks"},
+    {"id": "L", "name": "Launch"},
+    {"id": "X", "name": "Later"}
+  ],
+  tasks: [
+    {"id": "F1", "title": "Monorepo, CI, lint and test setup", "size": 1, "deps": []},
+    {"id": "F2", "title": "Port Nocturne tokens and components to packages/ui", "size": 1, "deps": ["F1"]},
+    {"id": "F3", "title": "Domain types and zod contracts for import tabs and config", "size": 2, "deps": ["F1"]},
+    {"id": "F4", "title": "Postgres schema and migrations", "size": 2, "deps": ["F3"]},
+    {"id": "F5", "title": "SSO sign-in, roles and org tenancy", "size": 3, "deps": ["F4"]},
+    {"id": "F6", "title": "Privacy baseline: data inventory, retention, audit log", "size": 2, "deps": ["F4"]},
+    {"id": "C1", "title": "CSV and XLSX import with column mapping", "size": 2, "deps": ["F3"]},
+    {"id": "C2", "title": "Data checks engine", "size": 1, "deps": ["F3"]},
+    {"id": "C3", "title": "Derivation: link ranking, layout, quiz generation", "size": 2, "deps": ["F3"]},
+    {"id": "C4", "title": "Job queue and import job producing a draft version", "size": 2, "deps": ["C1", "C2", "C3", "F4"]},
+    {"id": "C5", "title": "Draft vs published diff and Publish flow", "size": 2, "deps": ["C4"]},
+    {"id": "C6", "title": "Exports: template, data-check and alignment reports", "size": 1, "deps": ["C2", "F4"]},
+    {"id": "C7", "title": "Progress migration rules on publish", "size": 2, "deps": ["C5", "S1"]},
+    {"id": "M1", "title": "Tracker event catalogue and schemas", "size": 1, "deps": ["F3"], "placeholder": true},
+    {"id": "M2", "title": "Event ingest API and append-only event store", "size": 2, "deps": ["M1", "F4", "F5"], "placeholder": true},
+    {"id": "M3", "title": "Deterministic tracker rules: progress, behaviour metrics, signals", "size": 2, "deps": ["M1", "C3"], "placeholder": true},
+    {"id": "M4", "title": "Map generation from tracker state", "size": 2, "deps": ["C3", "M3"], "placeholder": true},
+    {"id": "M5", "title": "Teacher trace views: student timeline and class heatmap", "size": 2, "deps": ["M2", "M3", "T1"], "placeholder": true},
+    {"id": "T1", "title": "Teacher console shell, nav and save state", "size": 1, "deps": ["F2", "F5"]},
+    {"id": "T2", "title": "Curriculum data section: import, pipeline, data checks", "size": 2, "deps": ["T1", "C4"]},
+    {"id": "T3", "title": "Course details with layered config", "size": 2, "deps": ["T1", "F4"]},
+    {"id": "T4", "title": "Schedule: due dates per unit", "size": 1, "deps": ["T3"]},
+    {"id": "T5", "title": "Card classification overrides", "size": 1, "deps": ["T3", "C3"]},
+    {"id": "T6", "title": "Read-only data tabs and column mapping UI", "size": 1, "deps": ["T2", "C1"]},
+    {"id": "T7", "title": "Persona editor: templates, variables, preview, test", "size": 2, "deps": ["T3", "A1"]},
+    {"id": "T8", "title": "Publish screen: diff review and class picker", "size": 1, "deps": ["T2", "C5"]},
+    {"id": "A1", "title": "AI gateway: server-side calls, prompt fill, rate limits", "size": 2, "deps": ["F5", "F6"]},
+    {"id": "A2", "title": "Student safety: moderation, guardrails, teacher flags", "size": 2, "deps": ["A1"]},
+    {"id": "A3", "title": "Resource library and RAG indexing", "size": 2, "deps": ["A1", "C4"]},
+    {"id": "A4", "title": "Atlas agent with tools", "size": 2, "deps": ["A3", "C2", "T2"]},
+    {"id": "A5", "title": "Persona eval harness per grade band", "size": 1, "deps": ["A1"]},
+    {"id": "S1", "title": "Progress snapshots: cached state rebuilt from events", "size": 2, "deps": ["M2", "M3"]},
+    {"id": "S2", "title": "Student explorer reads published version and class config", "size": 3, "deps": ["S1", "C5", "F2", "M4"]},
+    {"id": "S3", "title": "Missions driven by due dates", "size": 1, "deps": ["S2", "T4"]},
+    {"id": "S4", "title": "Tutor and peer chat through the gateway", "size": 2, "deps": ["S2", "A2"]},
+    {"id": "L1", "title": "Pilot: one curriculum shared by two classes", "size": 2, "deps": ["T5", "T6", "T7", "T8", "A4", "A5", "S3", "S4", "C6", "C7", "M5"]},
+    {"id": "X1", "title": "Google Drive import picker", "size": 1, "deps": ["C1", "L1"]},
+    {"id": "X2", "title": "Cloudinary media provider", "size": 1, "deps": ["C4", "L1"]}
+  ]
+};
+const STATUSES = [["todo", "To do"], ["doing", "In progress"], ["review", "Review"], ["done", "Done"]];
+const SIZE = { 1: "≤1 wk", 2: "1–2 wks", 3: "2–3 wks" };
+const byId = Object.fromEntries(PLAN.tasks.map(t => [t.id, t]));
+const phaseName = id => (PLAN.phases.find(p => p.id === id[0]) || {}).name || "";
+const dependents = {}; PLAN.tasks.forEach(t => t.deps.forEach(d => (dependents[d] = dependents[d] || []).push(t.id)));
+
+// ---- derived structure: layers, critical path ----
+const layer = {}; const lay = id => layer[id] ?? (layer[id] = byId[id].deps.length ? 1 + Math.max(...byId[id].deps.map(lay)) : 0);
+PLAN.tasks.forEach(t => lay(t.id));
+const ef = {}; const finish = id => ef[id] ?? (ef[id] = byId[id].size + (byId[id].deps.length ? Math.max(...byId[id].deps.map(finish)) : 0));
+PLAN.tasks.forEach(t => finish(t.id));
+const crit = new Set(), critEdges = new Set();
+(function walk(id) { crit.add(id); const ds = byId[id].deps; if (!ds.length) return; const prev = ds.reduce((a, b) => ef[a] >= ef[b] ? a : b); critEdges.add(prev + ">" + id); walk(prev); })("L1");
+
+// ---- state ----
+let status = {};           // id -> status, from the shared store
+let canWrite = false, db = null, selected = "C4", phaseFilter = null;
+const st = id => status[id] || "todo";
+const waitingOn = id => byId[id].deps.filter(d => st(d) !== "done");
+const needsSpec = id => !!byId[id].placeholder && st(id) === "todo";
+
+// ---- tabs ----
+const VIEWS = ["architecture", "graph", "board"];
+function show(v) {
+  if (!VIEWS.includes(v)) v = "architecture";
+  VIEWS.forEach(x => { document.getElementById("view-" + x).hidden = x !== v; document.getElementById("tab-" + x).setAttribute("aria-selected", String(x === v)); });
+  try { localStorage.setItem("blueprint.view", v); } catch (e) {}
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => show(b.dataset.view)));
+let startView = location.hash.slice(1);
+if (!VIEWS.includes(startView)) { try { startView = localStorage.getItem("blueprint.view") || "architecture"; } catch (e) { startView = "architecture"; } }
+show(startView);
+
+// ---- graph ----
+const NS = "http://www.w3.org/2000/svg";
+const NW = 176, NH = 54, CW = 214, RH = 70, PAD = 18;
+function layoutGraph() {
+  const cols = {}; PLAN.tasks.forEach(t => (cols[layer[t.id]] = cols[layer[t.id]] || []).push(t.id));
+  const order = {}; const pIdx = id => PLAN.phases.findIndex(p => p.id === id[0]);
+  Object.keys(cols).sort((a, b) => a - b).forEach(c => {
+    const bary = id => { const ds = byId[id].deps; return ds.length ? ds.reduce((s, d) => s + order[d], 0) / ds.length : pIdx(id); };
+    cols[c].sort((a, b) => bary(a) - bary(b) || pIdx(a) - pIdx(b));
+    cols[c].forEach((id, i) => { order[id] = i; });
+  });
+  const maxRows = Math.max(...Object.values(cols).map(c => c.length));
+  const pos = {};
+  Object.entries(cols).forEach(([c, ids]) => { const off = (maxRows - ids.length) * RH / 2; ids.forEach((id, i) => { pos[id] = { x: PAD + c * CW, y: PAD + off + i * RH }; }); });
+  return { pos, w: PAD * 2 + (Object.keys(cols).length - 1) * CW + NW, h: PAD * 2 + (maxRows - 1) * RH + NH };
+}
+const G = layoutGraph();
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const COLOR = { todo: "var(--faint)", doing: "var(--accent)", review: "var(--warn)", done: "var(--ok)" };
+function drawGraph() {
+  const box = document.getElementById("graphbox"); box.textContent = "";
+  const svg = el("svg", { width: G.w, height: G.h, viewBox: `0 0 ${G.w} ${G.h}`, role: "img", "aria-label": "Task dependency graph" }, box);
+  const rel = new Set([selected, ...byId[selected].deps, ...(dependents[selected] || [])]);
+  PLAN.tasks.forEach(t => t.deps.forEach(d => {
+    const a = G.pos[d], b = G.pos[t.id], x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+    const onCrit = critEdges.has(d + ">" + t.id);
+    const touch = d === selected || t.id === selected;
+    el("path", { d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`, fill: "none",
+      stroke: touch ? "var(--accent-ink)" : onCrit ? "var(--accent)" : "var(--line)", "stroke-width": touch || onCrit ? 2 : 1.2,
+      opacity: touch || onCrit ? 1 : 0.9 }, svg);
+  }));
+  PLAN.tasks.forEach(t => {
+    const p = G.pos[t.id], s = st(t.id), g = el("g", { class: "node", transform: `translate(${p.x},${p.y})`, tabindex: 0, role: "button", "aria-label": `${t.id} ${t.title}, ${STATUSES.find(x => x[0] === s)[1]}` }, svg);
+    g.style.opacity = rel.has(t.id) || selected === null ? 1 : 0.55;
+    el("rect", { class: "body", width: NW, height: NH, rx: 7, fill: s === "done" ? "var(--ok-soft)" : t.id === selected ? "var(--accent-soft)" : "var(--bg)", stroke: needsSpec(t.id) ? "var(--accent-edge)" : COLOR[s], "stroke-width": s === "todo" ? 1.2 : 2, "stroke-dasharray": t.id[0] === "X" ? "4 3" : byId[t.id].placeholder ? "6 4" : "none" }, g);
+    if (crit.has(t.id)) el("rect", { x: 0, y: 8, width: 3, height: NH - 16, rx: 1.5, fill: "var(--accent)" }, g);
+    const idT = el("text", { x: 10, y: 17, "font-size": 11, "font-weight": 600, fill: "var(--muted)" }, g); idT.textContent = t.id + "  ·  " + SIZE[t.size];
+    wrapText(t.title, 26).slice(0, 2).forEach((line, i) => { const tx = el("text", { x: 10, y: 33 + i * 14, "font-size": 12, fill: "var(--text)" }, g); tx.textContent = line; });
+    const pick = () => { selected = t.id; drawGraph(); drawDetail(); };
+    g.addEventListener("click", pick); g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+}
+function wrapText(s, n) { const out = []; let cur = ""; s.split(" ").forEach(w => { if ((cur + " " + w).trim().length > n) { out.push(cur); cur = w; } else cur = (cur + " " + w).trim(); }); if (cur) out.push(cur); if (out.length > 2) out[1] = out[1].replace(/.{0,2}$/, "…"); return out; }
+function drawDetail() {
+  const t = byId[selected], d = document.getElementById("detail"), w = waitingOn(t.id);
+  d.innerHTML = "";
+  const left = document.createElement("div");
+  const h = document.createElement("h3"); h.textContent = t.id + " · " + t.title; left.appendChild(h);
+  const sub = document.createElement("div"); sub.className = "note";
+  sub.textContent = phaseName(t.id) + " · " + SIZE[t.size] + (crit.has(t.id) ? " · on the critical path" : "") + (needsSpec(t.id) ? " · placeholder: needs a spec before anyone can start" : st(t.id) === "todo" ? (w.length ? " · waiting on " + w.join(", ") : " · ready to start") : "");
+  left.appendChild(sub); d.appendChild(left);
+  d.appendChild(statusSelect(t.id));
+  const meta = document.createElement("div"); meta.className = "meta";
+  const deps = document.createElement("span"); deps.textContent = "Needs: " + (t.deps.length ? t.deps.join(", ") : "nothing");
+  const next = document.createElement("span"); next.textContent = "Unblocks: " + ((dependents[t.id] || []).join(", ") || "nothing");
+  meta.append(deps, next); d.appendChild(meta);
+}
+const critWeeks = ef["L1"];
+document.getElementById("critStat").innerHTML = `<span>Critical path to pilot: <b>${[...crit].length} tasks</b>, up to <b>${critWeeks} weeks</b> with one person per task</span>`;
+
+// ---- board ----
+function statusSelect(id) {
+  const s = document.createElement("select"); s.id = "status-" + id + "-" + Math.random().toString(36).slice(2, 6);
+  s.setAttribute("aria-label", "Status of " + id);
+  STATUSES.forEach(([v, l]) => { const o = document.createElement("option"); o.value = v; o.textContent = l; if (v === st(id)) o.selected = true; s.appendChild(o); });
+  s.disabled = !canWrite;
+  s.addEventListener("change", () => setStatus(id, s.value));
+  s.addEventListener("click", e => e.stopPropagation());
+  return s;
+}
+function drawChips() {
+  const c = document.getElementById("phaseChips"); c.textContent = "";
+  [{ id: null, name: "All phases" }, ...PLAN.phases].forEach(p => {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = p.name;
+    b.setAttribute("aria-pressed", String(phaseFilter === p.id)); b.addEventListener("click", () => { phaseFilter = p.id; drawChips(); drawBoard(); });
+    c.appendChild(b);
+  });
+}
+function drawBoard() {
+  const cols = document.getElementById("cols"); cols.textContent = "";
+  const tasks = PLAN.tasks.filter(t => !phaseFilter || t.id[0] === phaseFilter);
+  STATUSES.forEach(([key, label]) => {
+    const list = tasks.filter(t => st(t.id) === key);
+    if (key === "todo") { const rank = id => needsSpec(id) ? 2 : waitingOn(id).length ? 1 : 0; list.sort((a, b) => rank(a.id) - rank(b.id) || layer[a.id] - layer[b.id]); }
+    const col = document.createElement("div"); col.className = "col"; col.dataset.status = key;
+    const h = document.createElement("h3"); h.textContent = label; const n = document.createElement("span"); n.textContent = list.length; h.appendChild(n); col.appendChild(h);
+    if (!list.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = key === "todo" ? "Nothing left to start." : "Drop a card here."; col.appendChild(e); }
+    list.forEach(t => col.appendChild(card(t)));
+    col.addEventListener("dragover", e => { if (!canWrite) return; e.preventDefault(); col.classList.add("over"); });
+    col.addEventListener("dragleave", () => col.classList.remove("over"));
+    col.addEventListener("drop", e => { e.preventDefault(); col.classList.remove("over"); const id = e.dataTransfer.getData("text/plain"); if (byId[id]) setStatus(id, key); });
+    cols.appendChild(col);
+  });
+  const done = PLAN.tasks.filter(t => st(t.id) === "done").length;
+  const ready = PLAN.tasks.filter(t => st(t.id) === "todo" && !needsSpec(t.id) && !waitingOn(t.id).length).length;
+  const critLeft = [...crit].filter(id => st(id) !== "done").length;
+  document.getElementById("boardStats").innerHTML = `<span><b>${done}</b> of ${PLAN.tasks.length} done</span><span><b>${ready}</b> ready to start</span><span><b>${critLeft}</b> critical-path tasks left</span>`;
+}
+function card(t) {
+  const c = document.createElement("div"); c.className = "card" + (crit.has(t.id) ? " crit" : ""); c.draggable = canWrite;
+  c.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", t.id));
+  const top = document.createElement("div"); top.className = "top";
+  const id = document.createElement("span"); id.className = "mono"; id.textContent = t.id;
+  const ph = document.createElement("span"); ph.className = "pill phase"; ph.textContent = phaseName(t.id);
+  top.append(id, ph);
+  if (needsSpec(t.id)) { const p = document.createElement("span"); p.className = "pill spec"; p.textContent = "Needs a spec"; top.appendChild(p); }
+  else if (st(t.id) === "todo") { const w = waitingOn(t.id), p = document.createElement("span"); p.className = "pill " + (w.length ? "wait" : "ready"); p.textContent = w.length ? "Waiting on " + (w.length > 3 ? w.slice(0, 3).join(", ") + " +" + (w.length - 3) : w.join(", ")) : "Ready"; top.appendChild(p); }
+  const tt = document.createElement("div"); tt.className = "t"; tt.textContent = t.title;
+  const foot = document.createElement("div"); foot.className = "foot";
+  const sz = document.createElement("span"); sz.textContent = SIZE[t.size] + (crit.has(t.id) ? " · critical path" : "");
+  foot.append(sz, statusSelect(t.id));
+  c.append(top, tt, foot);
+  c.addEventListener("dblclick", () => { selected = t.id; show("graph"); drawGraph(); drawDetail(); });
+  return c;
+}
+function renderAll() { drawGraph(); drawDetail(); drawBoard(); }
+async function setStatus(id, value) {
+  if (!canWrite || !db || st(id) === value) return;
+  const prev = status[id]; status = { ...status, [id]: value }; renderAll();
+  try { await db.doc("board/" + id).set({ status: value, updatedAt: new Date().toISOString() }); }
+  catch (e) {
+    status = { ...status, [id]: prev }; if (!prev) delete status[id]; renderAll();
+    if (e && e.code === "invalid_argument") { canWrite = false; banner("You can view this board but not change it. Ask the owner for Contributor access."); renderAll(); }
+    else banner("That change didn't save. Check your connection and try again.");
+  }
+}
+function banner(text) { const b = document.getElementById("saveBanner"); b.textContent = text; b.hidden = !text; }
+
+drawChips(); renderAll();
+
+// ---- shared store ----
+(async () => {
+  const claude = window.claude;
+  if (!claude || !claude.use) { banner("Statuses are stored on the shared board, which isn't available here, so everything shows as To do."); return; }
+  const [dbNs, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!dbNs) { banner("Sign in to see and change task statuses. Until then everything shows as To do."); return; }
+  db = dbNs;
+  const w = user ? await user.can("data.write") : null;
+  canWrite = w !== false;
+  banner(canWrite ? "" : "You can view this board but not change it. Ask the owner for Contributor access.");
+  db.collection("board").onSnapshot(snap => {
+    const next = {}; snap.docs.forEach(d => { const v = d.data(); if (v && STATUSES.some(s => s[0] === v.status)) next[d.id] = v.status; });
+    status = next; renderAll();
+  }, () => banner("Lost the connection to the shared board. Reload to see the latest statuses."));
+  renderAll();
+})();
+</script>
