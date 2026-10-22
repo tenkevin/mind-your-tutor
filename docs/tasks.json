@@ -429,13 +429,13 @@
     },
     {
       "id": "A3",
-      "title": "Resource library and RAG indexing",
+      "title": "Resource library and RAG indexing, with per-class library settings and uploads",
       "size": 2,
       "deps": [
         "A1",
         "C4"
       ],
-      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages",
+      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings",
       "placeholder": false,
       "status": "todo",
       "owner": null,

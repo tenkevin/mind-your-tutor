@@ -43,7 +43,7 @@ _Nothing is ready. Everything left is claimed or waiting._
 | T8 | Publish screen: diff review and class picker | T2, C5 |
 | A1 | AI gateway: server-side calls, prompt fill, rate limits | F5, F6 |
 | A2 | Student safety: moderation, guardrails, teacher flags | A1 |
-| A3 | Resource library and RAG indexing | A1, C4 |
+| A3 | Resource library and RAG indexing, with per-class library settings and uploads | A1, C4 |
 | A4 | Atlas agent with tools | A3, C2, T2 |
 | A5 | Persona eval harness per grade band | A1 |
 | A6 | Draft missing idea explanations and teacher approval | A1, C4, T2 |
@@ -107,7 +107,7 @@ flowchart LR
   T8["T8 · Publish screen: diff review and class picker"]
   A1["A1 · AI gateway: server-side calls, prompt fill, rate limits"]
   A2["A2 · Student safety: moderation, guardrails, teacher flags"]
-  A3["A3 · Resource library and RAG indexing"]
+  A3["A3 · Resource library and RAG indexing, with per-class library settings and uploads"]
   A4["A4 · Atlas agent with tools"]
   A5["A5 · Persona eval harness per grade band"]
   A6["A6 · Draft missing idea explanations and teacher approval"]
