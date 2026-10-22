@@ -459,6 +459,21 @@
       "updated": null
     },
     {
+      "id": "A6",
+      "title": "Draft missing idea explanations and teacher approval",
+      "size": 2,
+      "deps": [
+        "A1",
+        "C4",
+        "T2"
+      ],
+      "done_when": "For each idea with no explanation after import, Ms. Ivy drafts one from its objective and links. Teachers review, edit and approve drafts in Teacher Settings, and only approved text reaches students. Approvals are stored per curriculum and survive re-import (D9)",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
       "id": "S1",
       "title": "Progress snapshots: cached state rebuilt from events",
       "size": 2,
@@ -531,7 +546,8 @@
         "S4",
         "C6",
         "C7",
-        "M5"
+        "M5",
+        "A6"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,

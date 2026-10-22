@@ -184,7 +184,7 @@
               "string",
               "null"
             ],
-            "description": "text · PROPOSED, not yet in the Curriculum Pack design: student-facing explanation shown on the idea page · If missing: Tutor writes one from links · Edited in: sheet"
+            "description": "text · Student-facing explanation on the idea page. Also given to Ms. Ivy and Milo as context · If missing: Tutor drafts one from the objective and links; shown to students only after a teacher approves it · Edited in: both"
           }
         }
       }
@@ -373,5 +373,5 @@
       }
     }
   },
-  "$comment": "Exported from project/curriculum-pack.js jsonSchema(), with two fixes so the prototype own pack output validates: columns referencing Units.unit are integers, and optional columns accept null. ideas.explanation is a proposed addition."
+  "$comment": "Exported from project/curriculum-pack.js jsonSchema(), with two fixes so the prototype's own pack output validates (columns referencing Units.unit are integers; optional columns accept null), plus ideas.explanation, added by decision D9."
 }
