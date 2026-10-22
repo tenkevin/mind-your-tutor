@@ -53,7 +53,7 @@
       "deps": [],
       "done_when": "Every must failure in docs/qa/reports/F1.md passes on re-test (F1-F4, F1-S3, F1-U2, plus the tracker-lint gaps found during testing)",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f1b",
       "updated": "2026-10-22"
     },
