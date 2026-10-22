@@ -241,9 +241,9 @@
       ],
       "done_when": "Findings 1-4 in docs/qa/reports/C2.md and C3.md are fixed with regression tests (coverage by idea, loop messages, grouped knock-on warnings, missing objective, true-sentence distractors, plural grammar, seed storage)",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c8",
+      "updated": "2026-10-22"
     },
     {
       "id": "M1",
