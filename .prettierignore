@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+dist/
+coverage/
+# Existing reference material and plan files keep their own formatting.
+project/
+chats/
+fixtures/
+docs/
+scripts/
+AGENTS.md
+CLAUDE.md
