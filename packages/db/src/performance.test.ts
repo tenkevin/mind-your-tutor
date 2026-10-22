@@ -13,6 +13,7 @@ const STUDENTS = 1_000;
 const CURRICULA = 50;
 const VERSIONS_PER_CURRICULUM = 4;
 const CLASSES = 2_000;
+const PER_STUDENT = Math.ceil(EVENTS / STUDENTS);
 
 async function plan(t: TestDatabase, orgId: string, query: ReturnType<typeof sql>) {
   const rows = await asApp(t.db, orgId, (trx) =>
@@ -61,14 +62,13 @@ describe.skipIf(!hasDatabase)('performance', () => {
     `.execute(t.db);
 
     // Events: each student gets a run of seq numbers in the seeded class.
-    const perStudent = Math.ceil(EVENTS / STUDENTS);
     await sql`
       INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type, payload)
       SELECT
         lpad(upper(to_hex(s.rn)), 10, '0') || lpad(upper(to_hex(g)), 16, '0'),
         ${org}, s.id, ${sql.lit(a.classId)}, ${sql.lit(a.publishedId)}, g, now(), 'idea.opened', '{}'
       FROM (SELECT id, row_number() OVER (ORDER BY id) AS rn FROM app_user WHERE role = 'student' AND name LIKE 'Student %' AND name <> 'Student perf') s
-      CROSS JOIN generate_series(1, ${sql.lit(perStudent)}) g
+      CROSS JOIN generate_series(1, ${sql.lit(PER_STUDENT)}) g
     `.execute(t.db);
 
     // Chunks across the curricula's library documents.
@@ -109,10 +109,18 @@ describe.skipIf(!hasDatabase)('performance', () => {
     const text = await plan(
       t,
       a.orgId,
-      sql`SELECT * FROM interaction_event WHERE student_id = ${sql.lit(studentId)} AND seq > 500 ORDER BY seq`,
+      sql`SELECT * FROM interaction_event WHERE student_id = ${sql.lit(studentId)} AND seq > ${sql.lit(Math.floor(PER_STUDENT / 2))} ORDER BY seq`,
     );
     expect(text).toMatch(/Index Scan|Index Only Scan|Bitmap Index Scan/);
-    expect(text).not.toContain('Seq Scan');
+    // Every partition holding events is read by index. For a small result the planner
+    // may still "scan" next month's empty, analyzed partition: zero pages, zero cost.
+    const seqScanned = [...text.matchAll(/Seq Scan on (\w+)/g)].map((m) => m[1]!);
+    for (const partition of seqScanned) {
+      const { rows } = await sql<{ n: number }>`
+        SELECT count(*)::int AS n FROM ${sql.table(partition)}
+      `.execute(t.db);
+      expect(rows[0]!.n, `${partition} is sequentially scanned but has rows`).toBe(0);
+    }
   });
 
   it("reads a class's pinned version by index (F4-P2)", async () => {
