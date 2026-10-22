@@ -66,9 +66,9 @@
       ],
       "done_when": "The bypasses in docs/qa/reports/F1b.md Found during testing items 1-4 are closed by lint or by a runtime guard test that runs in CI",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-f1c",
+      "updated": "2026-10-22"
     },
     {
       "id": "F2",
