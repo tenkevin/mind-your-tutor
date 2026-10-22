@@ -584,6 +584,12 @@ export const COLUMNS = {
 /** Tables whose rows belong to one organization, with row-level security forced. */
 export const TENANT_TABLES = Object.keys(COLUMNS) as TableName[];
 
+/** Tables also scoped to one class (D11): visible only inside `withClass`. */
+export const CLASS_SCOPED_TABLES = [
+  'class_library_doc',
+  'class_chunk',
+] as const satisfies readonly TableName[];
+
 // Fails to compile if a `Database` column is missing from COLUMNS.
 type MissingColumns = {
   [T in TableName]: Exclude<keyof Database[T], (typeof COLUMNS)[T][number]>;

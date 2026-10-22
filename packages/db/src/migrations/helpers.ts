@@ -9,6 +9,9 @@ export const APP_ROLE = 'ideamap_app';
 /** The session setting that carries the caller's organization for row-level security. */
 export const ORG_SETTING = 'app.org_id';
 
+/** The session setting that carries the class for class-scoped tables (D11, from 0010). */
+export const CLASS_SETTING = 'app.class_id';
+
 type Db = Kysely<unknown>;
 
 /**

@@ -72,7 +72,12 @@ const db = createDb(process.env.DATABASE_URL!);
 const classes = await withOrg(db, orgId, (trx) => trx.selectFrom('class').selectAll().execute());
 ```
 
-With no organization set, the app role sees no rows. Children reference parents by
+With no organization set, the app role sees no rows.
+
+Class uploads (`class_library_doc`, `class_chunk`; D11) are also scoped to one class by
+a restrictive policy: they're visible only inside `withClass(db, orgId, classId, fn)`,
+for that class, so one class never sees another's uploads, even in the same
+organization. Children reference parents by
 `(org_id, id)`, so a row can't point at another organization's data either.
 
 ## Append-only and immutable data

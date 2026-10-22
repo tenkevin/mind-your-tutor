@@ -1,6 +1,6 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
 import pg from 'pg';
-import { ORG_SETTING } from './migrations/helpers.js';
+import { CLASS_SETTING, ORG_SETTING } from './migrations/helpers.js';
 import type { Database, JsonText } from './schema.js';
 
 export type Db = Kysely<Database>;
@@ -56,4 +56,20 @@ export function toVector(values: readonly number[]): string {
 
 export function fromVector(text: string): number[] {
   return JSON.parse(text) as number[];
+}
+
+/**
+ * As `withOrg`, also acting for one class. Class uploads (class_library_doc,
+ * class_chunk; D11) are visible only inside `withClass` for their own class.
+ */
+export function withClass<T>(
+  db: Db,
+  orgId: string,
+  classId: string,
+  fn: (trx: Transaction<Database>) => Promise<T>,
+) {
+  return withOrg(db, orgId, async (trx) => {
+    await sql`SELECT set_config(${CLASS_SETTING}, ${classId}, true)`.execute(trx);
+    return fn(trx);
+  });
 }

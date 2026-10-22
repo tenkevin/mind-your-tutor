@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { sql, type Transaction } from 'kysely';
 import { createDb, type Db } from '../client.js';
 import { migrateUp } from '../migrate.js';
-import { APP_ROLE, ORG_SETTING } from '../migrations/helpers.js';
+import { APP_ROLE, CLASS_SETTING, ORG_SETTING } from '../migrations/helpers.js';
 import type { Database } from '../schema.js';
 
 // Test databases. DATABASE_URL names a server and a role that may create databases
@@ -73,10 +73,12 @@ export function asApp<T>(
   db: Db,
   orgId: string | null,
   fn: (trx: Transaction<Database>) => Promise<T>,
+  classId: string | null = null,
 ): Promise<T> {
   return db.transaction().execute(async (trx) => {
     await sql`SET LOCAL ROLE ${sql.id(APP_ROLE)}`.execute(trx);
     if (orgId) await sql`SELECT set_config(${ORG_SETTING}, ${orgId}, true)`.execute(trx);
+    if (classId) await sql`SELECT set_config(${CLASS_SETTING}, ${classId}, true)`.execute(trx);
     return fn(trx);
   });
 }

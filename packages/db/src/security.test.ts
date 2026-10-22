@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
 import { APP_ROLE } from './migrations/helpers.js';
-import { TENANT_TABLES } from './schema.js';
+import { CLASS_SCOPED_TABLES, TENANT_TABLES } from './schema.js';
 import {
   asApp,
   errorCode,
@@ -11,7 +11,7 @@ import {
   PG,
   type TestDatabase,
 } from './test/harness.js';
-import { seedOrg, testUlid, type SeededOrg } from './test/seed.js';
+import { embedding, seedOrg, testUlid, type SeededOrg } from './test/seed.js';
 
 // F4-S1 to F4-S5 and F4-F4: row-level security, the app role, append-only events
 // and where student text lives.
@@ -39,16 +39,24 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
       ORDER BY 1
     `.execute(t.db);
     expect(rows.map((r) => r.relname)).toEqual([...TENANT_TABLES].sort());
-    for (const row of rows)
-      expect(row, row.relname).toMatchObject({ on: true, forced: true, policies: 1 });
+    const classScoped: readonly string[] = CLASS_SCOPED_TABLES;
+    for (const row of rows) {
+      const policies = classScoped.includes(row.relname) ? 2 : 1;
+      expect(row, row.relname).toMatchObject({ on: true, forced: true, policies });
+    }
   });
 
   it.each(TENANT_TABLES)('shows org A only its own rows in %s', async (table) => {
     const orgColumn = table === 'organization' ? 'id' : 'org_id';
-    const rows = await asApp(t.db, a.orgId, (trx) =>
-      sql<{
-        org: string;
-      }>`SELECT ${sql.ref(orgColumn)}::text AS org FROM ${sql.table(table)}`.execute(trx),
+    const classScoped: readonly string[] = CLASS_SCOPED_TABLES;
+    const rows = await asApp(
+      t.db,
+      a.orgId,
+      (trx) =>
+        sql<{
+          org: string;
+        }>`SELECT ${sql.ref(orgColumn)}::text AS org FROM ${sql.table(table)}`.execute(trx),
+      classScoped.includes(table) ? a.classId : null,
     );
     expect(rows.rows.length, `${table} has rows for org A`).toBeGreaterThan(0);
     expect(rows.rows.filter((r) => r.org !== a.orgId)).toEqual([]);
@@ -76,6 +84,91 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
         .executeTakeFirst(),
     );
     expect(update.numUpdatedRows).toBe(0n);
+  });
+});
+
+describe.skipIf(!hasDatabase)('class uploads are scoped to their class (D11)', () => {
+  let t: TestDatabase;
+  let a: SeededOrg;
+  let otherClassId: string;
+  beforeAll(async () => {
+    t = await freshDatabase();
+    a = await seedOrg(t.db, 'a');
+    // A second class in the same organization, with an upload of its own.
+    const other = await t.db
+      .insertInto('class')
+      .values({
+        org_id: a.orgId,
+        curriculum_id: a.curriculumId,
+        pinned_version_id: a.publishedId,
+        teacher_id: a.teacherId,
+        name: 'Other class',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    otherClassId = other.id;
+    const upload = await t.db
+      .insertInto('class_library_doc')
+      .values({
+        org_id: a.orgId,
+        class_id: otherClassId,
+        title: 'Other notes',
+        file_url: 'other.pdf',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await t.db
+      .insertInto('class_chunk')
+      .values({
+        org_id: a.orgId,
+        class_id: otherClassId,
+        class_library_doc_id: upload.id,
+        ordinal: 0,
+        content: 'Other class only.',
+        embedding: embedding(9),
+      })
+      .execute();
+  });
+  afterAll(async () => {
+    await t?.drop();
+  });
+
+  it.each(CLASS_SCOPED_TABLES)('shows a class only its own rows in %s', async (table) => {
+    const rows = await asApp(
+      t.db,
+      a.orgId,
+      (trx) =>
+        sql<{ class_id: string }>`SELECT class_id::text FROM ${sql.table(table)}`.execute(trx),
+      a.classId,
+    );
+    expect(rows.rows.length).toBeGreaterThan(0);
+    expect(rows.rows.filter((r) => r.class_id !== a.classId)).toEqual([]);
+  });
+
+  it.each(CLASS_SCOPED_TABLES)(
+    'shows nothing in %s with an org but no class set',
+    async (table) => {
+      const rows = await asApp(t.db, a.orgId, (trx) =>
+        sql`SELECT 1 FROM ${sql.table(table)}`.execute(trx),
+      );
+      expect(rows.rows).toEqual([]);
+    },
+  );
+
+  it('refuses to add an upload to another class', async () => {
+    const code = await errorCode(() =>
+      asApp(
+        t.db,
+        a.orgId,
+        (trx) =>
+          trx
+            .insertInto('class_library_doc')
+            .values({ org_id: a.orgId, class_id: otherClassId, title: 'Sneaky', file_url: 's.pdf' })
+            .execute(),
+        a.classId,
+      ),
+    );
+    expect(code).toBe(PG.rlsViolation);
   });
 });
 
