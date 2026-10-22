@@ -1,0 +1,4 @@
+{
+  "note": "Codex review files the coordinator has processed. The coordinator adds an entry for each new Codex-* file found on idea-map. Agents never edit or delete Codex-* files. See docs/qa/README.md, External review (Codex).",
+  "processed": []
+}

@@ -56,6 +56,8 @@ Until F1 lands, these are the defaults it must set up. After F1, the repo config
 
 ## Rules
 
+- Never edit, move or delete a file whose name starts with `Codex-`. Those are an external reviewer's findings (docs/qa/README.md, External review). Tasks named `<ID>cx<n>` fix Codex errors and take priority.
+
 - Change task status only through `scripts/plan.mjs`. Never edit `docs/PLAN.md` by hand.
 - Own one task at a time.
 - Tasks marked `placeholder: true` have no spec yet and can't be claimed. Don't build them on your own initiative. If one blocks you, say so. A person writes the spec, then sets `placeholder` to false.
