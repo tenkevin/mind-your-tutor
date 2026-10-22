@@ -105,6 +105,26 @@ describe.skipIf(!hasDatabase)('keys and references (F4-F2)', () => {
         `INSERT INTO enrollment (org_id, class_id, student_id) VALUES ('${a.orgId}', '${a.classId}', '${b.studentId}')`,
     ],
     [
+      'class_library_setting → shared doc of another curriculum',
+      () =>
+        `INSERT INTO class_library_setting (org_id, class_id, curriculum_id, library_doc_id, use_for) VALUES ('${a.orgId}', '${a.classId}', '${a.curriculumId}', '${b.libraryDocId}', 'off')`,
+    ],
+    [
+      "class_library_setting → curriculum that isn't the class's",
+      () =>
+        `INSERT INTO class_library_setting (org_id, class_id, curriculum_id, library_doc_id, use_for) VALUES ('${a.orgId}', '${a.classId}', '${b.curriculumId}', '${b.libraryDocId}', 'off')`,
+    ],
+    [
+      'class_library_doc → class in another org',
+      () =>
+        `INSERT INTO class_library_doc (org_id, class_id, title, file_url) VALUES ('${a.orgId}', '${b.classId}', 'T', 'up.pdf')`,
+    ],
+    [
+      'class_chunk → upload of another class',
+      () =>
+        `INSERT INTO class_chunk (org_id, class_id, class_library_doc_id, ordinal, content, embedding) VALUES ('${a.orgId}', '${missing}', '${a.classLibraryDocId}', 5, 'c', '${embedding(2)}')`,
+    ],
+    [
       'interaction_event → class',
       () =>
         `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${a.studentId}', '${missing}', '${a.publishedId}', 100, now(), 'x.y')`,
@@ -163,6 +183,26 @@ describe.skipIf(!hasDatabase)('keys and references (F4-F2)', () => {
 
   it.each(cases)('rejects a broken reference: %s', async (_name, statement) => {
     expect(await errorCode(() => sql.raw(statement()).execute(t.db))).toBe(PG.foreignKey);
+  });
+
+  it("accepts a class's use_for settings for shared documents, including off, and nothing else (D11)", async () => {
+    const set = (useFor: string) =>
+      sql`
+        UPDATE class_library_setting SET use_for = ${useFor}
+        WHERE class_id = ${a.classId} AND library_doc_id = ${a.libraryDocId}
+      `.execute(t.db);
+    for (const useFor of ['agent', 'tutor', 'both', 'off']) {
+      expect(await errorCode(() => set(useFor)), useFor).toBeNull();
+    }
+    expect(await errorCode(() => set('hidden'))).toBe(PG.check);
+    // Off is a class setting only; a shared document or an upload can't be off.
+    expect(
+      await errorCode(() =>
+        sql`UPDATE class_library_doc SET use_for = 'off' WHERE id = ${a.classLibraryDocId}`.execute(
+          t.db,
+        ),
+      ),
+    ).toBe(PG.check);
   });
 
   it('rejects a duplicate (curriculum_id, number)', async () => {

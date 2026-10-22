@@ -33,6 +33,8 @@ export type VectorText = string;
 export type UserRole = 'admin' | 'author' | 'teacher' | 'student';
 export type SsoProvider = 'google' | 'clever' | 'classlink';
 export type UseFor = 'agent' | 'tutor' | 'both';
+/** A class's setting for a shared document (D11): a UseFor, or `off` to hide it. */
+export type ClassUseFor = UseFor | 'off';
 export type IndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 export type ExportKind =
@@ -130,6 +132,44 @@ export interface ChunkTable {
   org_id: string;
   curriculum_id: string;
   library_doc_id: string;
+  ordinal: number;
+  content: string;
+  embedding: VectorText;
+  created_at: CreatedAt;
+}
+
+/** D11: how one class uses one shared library document. */
+export interface ClassLibrarySettingTable {
+  class_id: string;
+  library_doc_id: string;
+  org_id: string;
+  curriculum_id: string;
+  use_for: ClassUseFor;
+  updated_by: string | null;
+  updated_at: CreatedAt;
+}
+
+/** D11: a document uploaded for one class only. */
+export interface ClassLibraryDocTable {
+  id: Generated<string>;
+  org_id: string;
+  class_id: string;
+  title: string;
+  file_url: string;
+  use_for: ColumnType<UseFor, UseFor | undefined, UseFor>;
+  checksum: string | null;
+  index_status: ColumnType<IndexStatus, IndexStatus | undefined, IndexStatus>;
+  indexed_at: NullableTimestamp;
+  uploaded_by: string | null;
+  created_at: CreatedAt;
+  updated_at: CreatedAt;
+}
+
+export interface ClassChunkTable {
+  id: Generated<string>;
+  org_id: string;
+  class_id: string;
+  class_library_doc_id: string;
   ordinal: number;
   content: string;
   embedding: VectorText;
@@ -304,6 +344,9 @@ export interface Database {
   class: ClassTable;
   class_config: ClassConfigTable;
   enrollment: EnrollmentTable;
+  class_library_setting: ClassLibrarySettingTable;
+  class_library_doc: ClassLibraryDocTable;
+  class_chunk: ClassChunkTable;
   interaction_event: InteractionEventTable;
   interaction_event_key: InteractionEventKeyTable;
   interaction_text: InteractionTextTable;
@@ -404,6 +447,39 @@ export const COLUMNS = {
   ],
   class_config: ['class_id', 'org_id', 'config', 'updated_by', 'updated_at'],
   enrollment: ['class_id', 'student_id', 'org_id', 'created_at'],
+  class_library_setting: [
+    'class_id',
+    'library_doc_id',
+    'org_id',
+    'curriculum_id',
+    'use_for',
+    'updated_by',
+    'updated_at',
+  ],
+  class_library_doc: [
+    'id',
+    'org_id',
+    'class_id',
+    'title',
+    'file_url',
+    'use_for',
+    'checksum',
+    'index_status',
+    'indexed_at',
+    'uploaded_by',
+    'created_at',
+    'updated_at',
+  ],
+  class_chunk: [
+    'id',
+    'org_id',
+    'class_id',
+    'class_library_doc_id',
+    'ordinal',
+    'content',
+    'embedding',
+    'created_at',
+  ],
   interaction_event: [
     'id',
     'org_id',

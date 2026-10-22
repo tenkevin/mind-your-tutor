@@ -51,6 +51,7 @@ export interface SeededOrg {
   publishedId: string;
   classId: string;
   libraryDocId: string;
+  classLibraryDocId: string;
   textId: string;
 }
 
@@ -186,6 +187,42 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
     .values({ org_id: orgId, class_id: classId, student_id: studentId })
     .execute();
 
+  // D11: the class hides the shared document and adds an upload of its own.
+  await db
+    .insertInto('class_library_setting')
+    .values({
+      org_id: orgId,
+      class_id: classId,
+      curriculum_id: curriculumId,
+      library_doc_id: doc.id,
+      use_for: 'off',
+      updated_by: teacherId,
+    })
+    .execute();
+  const upload = await db
+    .insertInto('class_library_doc')
+    .values({
+      org_id: orgId,
+      class_id: classId,
+      title: 'Lab sheet',
+      file_url: 'lab-sheet.pdf',
+      use_for: 'tutor',
+      uploaded_by: teacherId,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('class_chunk')
+    .values({
+      org_id: orgId,
+      class_id: classId,
+      class_library_doc_id: upload.id,
+      ordinal: 0,
+      content: 'Fill the jar and mark the water line.',
+      embedding: embedding(3),
+    })
+    .execute();
+
   const text = await db
     .insertInto('interaction_text')
     .values({
@@ -284,6 +321,7 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
     publishedId: published.id,
     classId,
     libraryDocId: doc.id,
+    classLibraryDocId: upload.id,
     textId: text.id,
   };
 }

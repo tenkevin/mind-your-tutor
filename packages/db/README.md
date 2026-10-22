@@ -40,17 +40,18 @@ query builder, so one dependency covers both. Each migration is a TypeScript fil
 Pending migrations run in one transaction under a lock. Never edit a migration that has
 run; add a new one.
 
-| Migration        | Creates                                                                                                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001 extensions  | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                  |
-| 0002 app role    | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                            |
-| 0003 job queue   | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                            |
-| 0004 tenancy     | `organization`, `app_user`                                                                                                                    |
-| 0005 curricula   | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                        |
-| 0006 library     | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                      |
-| 0007 classes     | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                              |
-| 0008 tracker     | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot` |
-| 0009 jobs, audit | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
+| Migration          | Creates                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001 extensions    | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                  |
+| 0002 app role      | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                            |
+| 0003 job queue     | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                            |
+| 0004 tenancy       | `organization`, `app_user`                                                                                                                    |
+| 0005 curricula     | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                        |
+| 0006 library       | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                      |
+| 0007 classes       | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                              |
+| 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot` |
+| 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
+| 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                   |
 
 ## Roles and row-level security
 
