@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface);font-family:var(--font-body);color:var(--color-text)">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="width:28px;height:28px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent-600);color:var(--color-accent-200);font-size:14px"><i class="{{ personaIcon }}"></i></span>
+    <div style="display:flex;flex-direction:column;gap:1px">
+      <span style="font:500 14px var(--font-heading)">{{ personaName }}</span>
+      <span style="font-size:11px;color:var(--color-neutral-400)">{{ personaRole }}</span>
+    </div>
+    <div style="flex:1"></div>
+    <sc-if value="{{ tag }}"><span class="tag tag-neutral">{{ tag }}</span></sc-if>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;max-height:{{ height }}px;overflow:auto">
+    <sc-for list="{{ msgs }}" as="m">
+      <div style="display:flex;justify-content:{{ m.align }}">
+        <div style="max-width:88%;padding:9px 12px;border-radius:var(--radius-md);background:{{ m.bg }};border:1px solid {{ m.border }};font-size:13px;line-height:1.55;color:var(--color-neutral-100);white-space:pre-wrap;text-wrap:pretty">{{ m.text }}</div>
+      </div>
+    </sc-for>
+    <sc-if value="{{ loading }}"><span style="font-size:12px;color:var(--color-neutral-400)">{{ loadingText }}</span></sc-if>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px">
+    <sc-for list="{{ suggestions }}" as="q">
+      <button onClick="{{ q.ask }}" style="padding:5px 10px;border-radius:999px;background:transparent;border:1px solid var(--color-neutral-700);color:var(--color-neutral-200);font:12px var(--font-body);cursor:pointer" style-hover="border-color:var(--color-accent-500);color:var(--color-accent-200)">{{ q.text }}</button>
+    </sc-for>
+  </div>
+  <div style="display:flex;gap:8px">
+    <input class="input" value="{{ input }}" onChange="{{ onInput }}" onKeyDown="{{ onKey }}" placeholder="{{ placeholder }}" style="flex:1;min-width:0">
+    <button class="btn btn-primary" onClick="{{ send }}">Send</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:360},&quot;personaName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Ms. Ivy&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;personaRole&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;AI tutor&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;personaIcon&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;ph ph-chalkboard-teacher&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tag&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;msgs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{text:string,align:string,bg:string,border:string}[]&quot;},&quot;loading&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;loadingText&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Typing…&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;input&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onInput&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(e)=&gt;void&quot;},&quot;onKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(e)=&gt;void&quot;},&quot;send&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;},&quot;suggestions&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{text:string,ask:()=&gt;void}[]&quot;},&quot;placeholder&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Type a message…&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;height&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:240,&quot;tsType&quot;:&quot;number&quot;}}"></script>
+</body>
+</html>

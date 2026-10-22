@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="curriculum.js"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <div style="position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 22px;background:var(--color-bg);box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading);white-space:nowrap">Idea Map</span>
+    <span class="tag tag-accent">Teacher</span>
+    <span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--color-neutral-300)">{{ headerTitle }}</span>
+    <div style="flex:1"></div>
+    <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--color-neutral-400)"><i class="{{ saveIcon }}"></i>{{ saveText }}</span>
+    <a class="btn btn-ghost" href="Curriculum Pack.dc.html" style="text-decoration:none"><i class="ph ph-package"></i> Pack template</a>
+    <a class="btn btn-secondary" href="Idea Map Explorer v2.dc.html" style="text-decoration:none"><i class="ph ph-eye"></i> Preview as student</a>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 22px;box-shadow:0 1px 0 var(--color-divider)">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7">
+      <button onClick="{{ n.go }}" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-200);font:500 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500);color:var(--color-accent-200)"><i class="{{ n.icon }}"></i>{{ n.label }}<sc-if value="{{ n.hasBadge }}"><span style="padding:0 6px;border-radius:999px;background:var(--color-accent-800);color:var(--color-accent-100);font-size:10px;line-height:16px">{{ n.badge }}</span></sc-if></button>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;padding:22px;max-width:1440px;box-sizing:border-box">
+    <div style="flex:1 1 640px;min-width:0;display:flex;flex-direction:column;gap:36px">
+
+      <section id="sec-source" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <h2 style="margin:0;font:500 20px var(--font-heading)">Curriculum data</h2>
+          <span style="font-size:13px;color:var(--color-neutral-400);max-width:70ch">The spreadsheet or database is the source of truth for ideas, links, categories, prerequisites, standards codes, media and assessment questions. Edit those there, then re-sync.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--radius-md);background:var(--color-surface)">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <span style="width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent-600);color:var(--color-accent-200);font-size:18px"><i class="{{ source.icon }}"></i></span>
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px">
+              <span style="font:500 15px var(--font-heading)">{{ source.name }}</span>
+              <span style="font-size:12px;color:var(--color-neutral-400)">{{ source.kind }} · last synced {{ source.synced }}</span>
+            </div>
+            <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+            <select class="input" value="{{ source.kind }}" onChange="{{ source.onKind }}" style="width:auto">
+              <option value="Google Sheets">Google Sheets</option>
+              <option value="CSV upload">CSV upload</option>
+              <option value="Excel upload">Excel upload</option>
+              <option value="PostgreSQL">PostgreSQL</option>
+            </select>
+            <button class="btn btn-primary" onClick="{{ resync }}" disabled="{{ syncing }}" style="white-space:nowrap"><i class="ph ph-arrows-clockwise"></i> {{ syncLabel }}</button>
+            <button class="btn btn-ghost" onClick="{{ openSheet }}" style="white-space:nowrap"><i class="ph ph-arrow-square-out"></i> Open source</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ source.tabs }}" as="t" hint-placeholder-count="5">
+              <span style="display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;background:var(--color-bg);font-size:12px;color:var(--color-neutral-200)"><i class="ph ph-table" style="color:var(--color-accent-300)"></i>{{ t.name }}<span style="color:var(--color-neutral-500)">{{ t.rows }}</span></span>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-400)">How Atlas builds the map</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+              <sc-for list="{{ pipeline }}" as="p" hint-placeholder-count="6">
+                <div style="display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:var(--radius-md);border:1px solid {{ p.border }};background:{{ p.bg }}">
+                  <span style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;font-size:12px;line-height:1.4;font-weight:500;color:var(--color-neutral-100)"><i class="{{ p.icon }}" style="color:{{ p.iconColor }};margin-top:2px"></i><span>{{ p.label }}</span></span>
+                  <span style="font-size:11px;line-height:1.4;color:var(--color-neutral-400)">{{ p.sub }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:12px;color:var(--color-neutral-400)">Data checks · {{ issueSummary }}</span>
+          <sc-for list="{{ issues }}" as="i">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+              <i class="{{ i.icon }}" style="font-size:16px;margin-top:1px;color:{{ i.color }}"></i>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:13px;color:var(--color-neutral-100)">{{ i.text }}</span>
+                <sc-if value="{{ i.hasItems }}"><span style="font-size:11px;color:var(--color-neutral-400)">{{ i.items }}</span></sc-if>
+              </div>
+              <button class="btn btn-ghost" onClick="{{ i.ask }}" style="flex:none;white-space:nowrap"><i class="ph ph-sparkle"></i> Ask Atlas</button>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="sec-course" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font:500 20px var(--font-heading)">Course details</h2><span class="tag tag-outline">Editable here</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+          <div class="field"><label>Subject</label><input class="input" value="{{ cfg.subject }}" onChange="{{ on.subject }}"></div>
+          <div class="field"><label>Map title (topic)</label><input class="input" value="{{ cfg.topic }}" onChange="{{ on.topic }}"></div>
+          <div class="field"><label>Grade level</label>
+            <select class="input" value="{{ cfg.grade }}" onChange="{{ on.grade }}">
+              <sc-for list="{{ grades }}" as="g"><option value="{{ g.v }}">{{ g.label }}</option></sc-for>
+            </select>
+          </div>
+          <div class="field"><label>Standards framework</label>
+            <select class="input" value="{{ cfg.framework }}" onChange="{{ on.framework }}">
+              <option value="NGSS">NGSS</option><option value="Common Core">Common Core</option><option value="IB">IB</option><option value="Cambridge">Cambridge</option><option value="State standards">State standards</option><option value="Custom">Custom</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Whole-map objective</label><textarea class="input" value="{{ cfg.mapObjective }}" onChange="{{ on.mapObjective }}" style="min-height:54px;resize:vertical;font-family:var(--font-body)"></textarea></div>
+        <span style="font-size:12px;color:var(--color-neutral-400)">Students see “{{ headerTitle }}” in the map header. The grade sets the reading level for every persona: {{ bandText }}.</span>
+      </section>
+
+      <section id="sec-personas" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px">
+          <h2 style="margin:0;font:500 20px var(--font-heading)">AI personas &amp; prompts</h2><span class="tag tag-outline">Editable here</span>
+          <div style="flex:1"></div>
+          <button class="btn btn-secondary" onClick="{{ addPersona }}"><i class="ph ph-plus"></i> Add persona</button>
+        </div>
+        <span style="font-size:13px;color:var(--color-neutral-400);max-width:72ch">Each prompt is a template. Variables in braces are filled from the course details, so the same persona adapts from Kindergarten to Grade 12. Click a variable to add it to the prompt.</span>
+        <sc-for list="{{ personas }}" as="p" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--radius-md);background:var(--color-surface)">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+              <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent-600);color:var(--color-accent-200);font-size:16px"><i class="{{ p.icon }}"></i></span>
+              <input class="input" value="{{ p.name }}" onChange="{{ p.onName }}" style="width:150px;font-weight:500">
+              <input class="input" value="{{ p.role }}" onChange="{{ p.onRole }}" style="width:170px">
+              <span class="tag tag-neutral">For {{ p.audience }}</span>
+              <div style="flex:1"></div>
+              <select class="input" value="{{ p.tone }}" onChange="{{ p.onTone }}" style="width:auto">
+                <option value="warm">Warm</option><option value="calm">Calm</option><option value="playful">Playful</option><option value="socratic">Socratic</option>
+              </select>
+              <sc-if value="{{ p.builtin }}"><button class="btn btn-ghost" onClick="{{ p.reset }}">Reset</button></sc-if>
+              <sc-if value="{{ p.custom }}"><button class="btn btn-ghost btn-icon" onClick="{{ p.remove }}" aria-label="Remove persona"><i class="ph ph-trash"></i></button></sc-if>
+            </div>
+            <span style="font-size:12px;color:var(--color-neutral-400)">Appears in: {{ p.where }}</span>
+            <textarea class="input" data-ptext="{{ p.id }}" value="{{ p.template }}" onChange="{{ p.onTemplate }}" style="min-height:92px;resize:vertical;font:12px/1.55 ui-monospace,Menlo,monospace"></textarea>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px">
+              <span style="font-size:11px;color:var(--color-neutral-500)">Insert:</span>
+              <sc-for list="{{ p.vars }}" as="v">
+                <button onClick="{{ v.insert }}" style="padding:2px 8px;border-radius:5px;border:1px solid var(--color-neutral-700);background:var(--color-bg);color:var(--color-accent-200);font:11px ui-monospace,Menlo,monospace;cursor:pointer" style-hover="border-color:var(--color-accent-500)">{{ v.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button class="btn btn-ghost" onClick="{{ p.togglePreview }}"><i class="{{ p.previewIcon }}"></i> Preview filled prompt</button>
+              <div style="flex:1"></div>
+              <input class="input" value="{{ p.testInput }}" onChange="{{ p.onTestInput }}" onKeyDown="{{ p.onTestKey }}" placeholder="Test it: type a message as a student or teacher" style="flex:1 1 260px;min-width:0">
+              <button class="btn btn-secondary" onClick="{{ p.test }}" disabled="{{ p.testing }}">Test</button>
+            </div>
+            <sc-if value="{{ p.showPreview }}">
+              <div style="padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);font-size:12px;line-height:1.55;color:var(--color-neutral-200);white-space:pre-wrap">{{ p.filled }}</div>
+            </sc-if>
+            <sc-if value="{{ p.hasTest }}">
+              <div style="display:flex;gap:10px;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--color-accent-700);background:var(--color-bg)">
+                <i class="{{ p.icon }}" style="color:var(--color-accent-300);margin-top:2px"></i>
+                <span style="font-size:13px;line-height:1.55;color:var(--color-neutral-100);white-space:pre-wrap">{{ p.testOut }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </section>
+
+      <section id="sec-schedule" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font:500 20px var(--font-heading)">Schedule</h2><span class="tag tag-outline">Editable here</span></div>
+        <span style="font-size:13px;color:var(--color-neutral-400)">Due dates drive the students' Missions list. Each unit's teach-back assessment opens when every idea in the unit is mastered.</span>
+        <table class="table">
+          <thead><tr><th>Unit</th><th>Objective (from data)</th><th>Ideas</th><th>Assessment due</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ units }}" as="u" hint-placeholder-count="3">
+              <tr>
+                <td style="white-space:nowrap"><span style="font-weight:500">{{ u.label }}</span></td>
+                <td style="font-size:12px;color:var(--color-neutral-300);max-width:340px">{{ u.objective }}</td>
+                <td style="font-size:12px;color:var(--color-neutral-300)">{{ u.count }}</td>
+                <td><div style="display:flex;align-items:center;gap:8px"><input class="input" type="date" value="{{ u.due }}" onChange="{{ u.onDue }}" style="width:auto"><span style="font-size:11px;color:var(--color-neutral-400);white-space:nowrap">{{ u.dueText }}</span></div></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="sec-cards" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px"><h2 style="margin:0;font:500 20px var(--font-heading)">Card classification</h2><span class="tag tag-outline">Editable here</span><div style="flex:1"></div><span style="font-size:12px;color:var(--color-neutral-400)">{{ rarityCounts }}</span></div>
+        <span style="font-size:13px;color:var(--color-neutral-400);max-width:72ch">Auto gives Legendary to the most connected idea, Rare to the inner ring and Common to the rest. Override any card to reward the ideas you care most about. Rarer cards get bigger reveals.</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px">
+          <sc-for list="{{ cards }}" as="c" hint-placeholder-count="9">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid {{ c.border }}">
+              <span style="width:28px;height:38px;flex:none;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--color-bg);border:1px solid {{ c.border }};color:var(--color-accent-200);font-size:14px;box-shadow:{{ c.glow }}"><i class="{{ c.icon }}"></i></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:13px;font-weight:500">{{ c.title }}</span><span style="font-size:10px;color:var(--color-neutral-400)">{{ c.meta }}</span></div>
+              <select class="input" value="{{ c.value }}" onChange="{{ c.onChange }}" style="width:auto;font-size:12px;padding-top:4px;padding-bottom:4px">
+                <option value="auto">Auto</option><option value="Common">Common</option><option value="Rare">Rare</option><option value="Legendary">Legendary</option>
+              </select>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section id="sec-data" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:110px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px"><h2 style="margin:0;font:500 20px var(--font-heading)">From the spreadsheet</h2><span class="tag tag-neutral"><i class="ph ph-lock-simple"></i> Read-only</span></div>
+        <span style="font-size:13px;color:var(--color-neutral-400);max-width:72ch">These come straight from your data so they stay consistent across classes and reports. To change them, edit the column shown, then re-sync.</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:3px;border-radius:var(--radius-md);background:var(--color-surface);align-self:flex-start">
+          <sc-for list="{{ dataTabs }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};font:500 12px var(--font-body);cursor:pointer"><i class="{{ t.icon }}"></i>{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-400)"><i class="ph ph-table"></i>Source: {{ dataSource }}</span>
+
+        <sc-if value="{{ isPrereq }}">
+          <table class="table">
+            <thead><tr><th>Idea</th><th>Requires (all must be mastered)</th><th>Status</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ prereqs }}" as="r">
+                <tr>
+                  <td style="font-weight:500">{{ r.title }}</td>
+                  <td><div style="display:flex;flex-wrap:wrap;gap:4px"><sc-for list="{{ r.reqs }}" as="q"><span style="padding:2px 8px;border-radius:5px;border:1px solid {{ q.border }};font-size:11px;color:{{ q.color }}">{{ q.label }}</span></sc-for><sc-if value="{{ r.none }}"><span style="font-size:11px;color:var(--color-neutral-500)">None · unlocks from a mastered neighbour</span></sc-if></div></td>
+                  <td style="font-size:11px;color:{{ r.statusColor }};white-space:nowrap">{{ r.status }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </sc-if>
+        <sc-if value="{{ isCats }}">
+          <table class="table">
+            <thead><tr><th>Category</th><th>Icon</th><th>Description</th><th>Ideas</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ cats }}" as="c">
+                <tr><td style="font-weight:500">{{ c.name }}</td><td><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-300)"><i class="{{ c.icon }}" style="font-size:18px;color:var(--color-accent-200)"></i>{{ c.iconName }}</span></td><td style="font-size:12px;color:var(--color-neutral-300)">{{ c.description }}</td><td style="font-size:12px">{{ c.count }}</td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <span style="font-size:12px;color:var(--color-neutral-400)">Categories are used in quiz questions (“What kind of idea is it?”), card icons and map labels. Icons use Phosphor names.</span>
+        </sc-if>
+        <sc-if value="{{ isCodes }}">
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ codeSummary }}" as="c">
+              <button onClick="{{ c.pick }}" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid {{ c.border }};background:{{ c.bg }};color:var(--color-neutral-100);font:12px var(--font-body);cursor:pointer">{{ c.code }}<span style="color:var(--color-neutral-400)">{{ c.count }}</span></button>
+            </sc-for>
+          </div>
+          <table class="table">
+            <thead><tr><th>Idea</th><th>Unit</th><th>{{ cfg.framework }} codes</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ codeRows }}" as="r">
+                <tr><td style="font-weight:500">{{ r.title }}</td><td style="font-size:12px;color:var(--color-neutral-300)">{{ r.unit }}</td><td><div style="display:flex;flex-wrap:wrap;gap:4px"><sc-for list="{{ r.codes }}" as="c"><span class="tag tag-neutral">{{ c.code }}</span></sc-for><sc-if value="{{ r.missing }}"><span style="font-size:11px;color:var(--color-accent-300)">Missing: add to standard_codes</span></sc-if></div></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </sc-if>
+        <sc-if value="{{ isMedia }}">
+          <table class="table">
+            <thead><tr><th>Idea</th><th>media_url</th><th>Students see</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ mediaRows }}" as="r">
+                <tr><td style="font-weight:500">{{ r.title }}</td><td style="font:12px ui-monospace,Menlo,monospace;color:{{ r.color }}">{{ r.file }}</td><td><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-300)"><i class="{{ r.icon }}"></i>{{ r.shows }}</span></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </sc-if>
+        <sc-if value="{{ isAssess }}">
+          <table class="table">
+            <thead><tr><th>Unit</th><th>Questions</th><th>Status</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ assessRows }}" as="r">
+                <tr><td style="font-weight:500">{{ r.label }}</td><td style="font-size:12px">{{ r.count }}</td><td style="font-size:12px;color:var(--color-neutral-300)">{{ r.status }}</td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <span style="font-size:12px;color:var(--color-neutral-400)">Each question matches one lesson objective. Missing rows can be drafted by Atlas, then approved and written back to the Assessment tab.</span>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <button onClick="{{ toggleMap }}" style="display:flex;align-items:center;gap:8px;padding:0;background:none;border:0;color:var(--color-text);font:500 14px var(--font-heading);cursor:pointer;text-align:left"><i class="ph ph-plugs-connected" style="color:var(--color-accent-300)"></i><span style="flex:1">Column mapping</span><i class="{{ mapChevron }}"></i></button>
+          <sc-if value="{{ mapOpen }}">
+            <span style="font-size:12px;color:var(--color-neutral-400)">Tell the app which column holds each field, so any curriculum spreadsheet or table can plug in.</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+              <sc-for list="{{ mapping }}" as="m">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--color-surface)">
+                  <span style="flex:1;font-size:12px">{{ m.label }} <span style="color:var(--color-neutral-500)">· {{ m.tab }}</span></span>
+                  <select class="input" value="{{ m.value }}" onChange="{{ m.onChange }}" style="width:auto;font:11px ui-monospace,Menlo,monospace;padding-top:3px;padding-bottom:3px">
+                    <sc-for list="{{ m.options }}" as="o"><option value="{{ o }}">{{ o }}</option></sc-for>
+                  </select>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+      <div style="display:flex;gap:8px;padding-bottom:40px"><button class="btn btn-ghost" onClick="{{ resetAll }}"><i class="ph ph-arrow-counter-clockwise"></i> Reset all app-side settings</button></div>
+    </div>
+
+    <div style="flex:0 1 360px;min-width:300px;position:sticky;top:110px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-md)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent);color:var(--color-accent-200);font-size:16px;box-shadow:0 0 18px var(--color-accent-800)"><i class="ph ph-compass"></i></span>
+          <div style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font:500 15px var(--font-heading)">{{ agentName }}</span><span style="font-size:11px;color:var(--color-neutral-400)">Logistics agent · builds the map and answers app questions</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-500)">Knowledge sources</span>
+          <sc-for list="{{ knowledge }}" as="k" hint-placeholder-count="3">
+            <button onClick="{{ k.toggle }}" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:0;background:var(--color-bg);color:var(--color-text);font:12px var(--font-body);cursor:pointer;text-align:left">
+              <i class="{{ k.icon }}" style="color:var(--color-accent-300)"></i><span style="flex:1">{{ k.label }}</span><span style="font-size:11px;color:var(--color-neutral-400)">{{ k.meta }}</span><i class="{{ k.chev }}" style="color:var(--color-neutral-500)"></i>
+            </button>
+            <sc-if value="{{ k.open }}">
+              <div style="display:flex;flex-direction:column;gap:3px;padding:2px 8px 6px 30px">
+                <sc-for list="{{ k.items }}" as="d"><span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-neutral-300)"><i class="{{ d.icon }}"></i>{{ d.name }}</span></sc-for>
+                <sc-if value="{{ k.canAdd }}"><button class="btn btn-ghost" onClick="{{ addDoc }}" style="align-self:flex-start;font-size:11px"><i class="ph ph-upload-simple"></i> Add to library</button></sc-if>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </div>
+      <dc-import name="Chat Panel" persona-name="{{ agentChat.name }}" persona-role="{{ agentChat.role }}" persona-icon="{{ agentChat.icon }}" tag="{{ agentChat.tag }}" msgs="{{ agentChat.msgs }}" loading="{{ agentChat.loading }}" loading-text="{{ agentChat.loadingText }}" input="{{ agentChat.input }}" on-input="{{ agentChat.onInput }}" on-key="{{ agentChat.onKey }}" send="{{ agentChat.send }}" suggestions="{{ agentChat.suggestions }}" placeholder="{{ agentChat.placeholder }}" height="{{ agentChat.height }}" hint-size="100%,420px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const APP_GUIDE = [
+  'Ideas and links come from the Ideas and Links tabs. Each idea keeps at most 3 links in and 3 out, chosen by the importance column (1-5); weaker links are hidden.',
+  'Layout: the most connected idea sits in the centre, the next 6 in an inner ring, the rest outside.',
+  'Students see the current idea, its direct links, and a blurred preview two steps away. Clicking a link opens its media_url video, or the AI tutor if empty.',
+  'Unlocking: an idea with a requires value unlocks only when every listed idea is mastered. Without requires, it unlocks once a linked idea is mastered.',
+  'Mastery: an idea is mastered by scoring more than 70% on its 8-question quiz (generated from its links). Below that, the tutor reviews mistakes and the student rebuilds the missed links before retrying.',
+  'Summative: when every idea in a unit is mastered, the student teaches Milo. Milo asks one question per lesson objective from the Assessment tab, checks each answer, asks one follow-up if needed, and sends the student to review gaps.',
+  'Rewards: XP, combo multipliers up to x4, day streaks, collectible cards (Common, Rare, Legendary; shiny for a perfect quiz), unit cards and a trophy for teaching Milo.',
+  'Teachers edit subject, topic, grade, framework, persona prompts, due dates and card rarity in the app. Categories, prerequisites, standards codes, media and assessment questions come from the spreadsheet.'
+];
+class Component extends DCLogic {
+  state = { ready: false, cfg: null, saved: true, syncing: false, step: -1, dataTab: 'prereq', codeFilter: null, mapOpen: false,
+    open: {}, tests: {}, kOpen: { lib: false }, library: null, chat: null, chatInput: '', chatLoading: false };
+  componentDidMount() {
+    const boot = () => {
+      const C = window.IdeaMapCurriculum;
+      if (!C) { this._bt = setTimeout(boot, 60); return; }
+      this.setState({ ready: true, cfg: C.load(), library: C.LIBRARY.slice() });
+    };
+    boot();
+  }
+  componentWillUnmount() { clearTimeout(this._bt); clearTimeout(this._st); this._steps && this._steps.forEach(clearTimeout); }
+  C() { return window.IdeaMapCurriculum; }
+  update(fn) {
+    this.setState(s => { const cfg = fn(JSON.parse(JSON.stringify(s.cfg))); return { cfg, saved: false }; }, () => {
+      clearTimeout(this._st);
+      this._st = setTimeout(() => { this.C().save(this.state.cfg); this.setState({ saved: true }); }, 400);
+    });
+  }
+  setField(k) { return ev => { const v = ev.target.value; this.update(c => { c[k] = k === 'grade' ? +v : v; return c; }); }; }
+  setPersona(id, k) { return ev => { const v = ev.target.value; this.update(c => { const p = c.personas.find(x => x.id === id); if (p) p[k] = v; return c; }); }; }
+  insertVar(id, v) {
+    const ta = document.querySelector('[data-ptext="' + id + '"]'), tok = '{' + v + '}';
+    this.update(c => {
+      const p = c.personas.find(x => x.id === id); if (!p) return c;
+      const at = ta && ta.selectionStart != null ? ta.selectionStart : p.template.length;
+      p.template = p.template.slice(0, at) + tok + p.template.slice(at);
+      return c;
+    });
+  }
+  goTo(id) {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 104, behavior: 'smooth' });
+  }
+  resync() {
+    if (this.state.syncing) return;
+    this.setState({ syncing: true, step: 0 });
+    this._steps = [0, 1, 2, 3, 4, 5].map(i => setTimeout(() => this.setState({ step: i + 1 }), 450 * (i + 1)));
+    this._steps.push(setTimeout(() => { const now = new Date().toISOString().slice(0, 19); this.update(c => { c.lastSync = now; return c; }); this.setState({ syncing: false, step: -1 }); }, 450 * 7));
+  }
+  async test(p) {
+    const t = this.state.tests[p.id] || {}, msg = (t.input || '').trim();
+    if (!msg || t.loading) return;
+    this.setState(s => ({ tests: { ...s.tests, [p.id]: { ...t, loading: true, out: '…' } } }));
+    let out;
+    try { out = await window.claude.complete({ system: this.C().fill(this.state.cfg, p), messages: [{ role: 'user', content: msg }], max_tokens: 300 }); } catch (e) { out = 'Could not reach the model just now.'; }
+    this.setState(s => ({ tests: { ...s.tests, [p.id]: { ...s.tests[p.id], loading: false, out: String(out || '').trim() } } }));
+  }
+  agentSystem() {
+    const C = this.C(), cfg = this.state.cfg, S = C.SHEET, ag = C.persona(cfg, 'agent') || C.PERSONAS[2];
+    const ctx = {
+      course: { subject: cfg.subject, topic: cfg.topic, grade: C.gradeLabel(cfg.grade), framework: cfg.framework, mapObjective: cfg.mapObjective },
+      source: { kind: cfg.sourceKind, name: S.source.name, lastSync: cfg.lastSync, rows: S.counts, columnMapping: cfg.mapping },
+      units: S.units.map(u => ({ unit: u.n, name: u.name, due: cfg.due[u.n], codes: u.codes, assessmentQuestions: S.assessment[u.n] })),
+      ideas: S.ideas.map(r => ({ id: r.id, title: r.title, category: r.category, unit: r.unit, codes: r.codes || '(none)', requires: r.requires || '(none)', media: r.media || '(placeholder)', rarity: cfg.rarity[r.id] || 'auto' })),
+      categories: S.categories, personas: cfg.personas.map(p => ({ name: p.name, role: p.role, audience: p.audience, where: p.where })),
+      dataChecks: C.issues(cfg).map(i => i.text), resourceLibrary: this.state.library.map(d => d.name)
+    };
+    return C.fill(cfg, ag) + '\n\nHow the application works:\n- ' + APP_GUIDE.join('\n- ') + '\n\nCurrent setup (JSON):\n' + JSON.stringify(ctx) + '\n\nIf asked to draft content, write it so the teacher can paste it into the named spreadsheet tab. You cannot change spreadsheet data yourself; the teacher edits it and re-syncs. No markdown headings; short paragraphs or simple dashes are fine.';
+  }
+  async askAgent(q) {
+    const text = (q || '').trim(), s = this.state;
+    if (!text || s.chatLoading) return;
+    const chat = s.chat || [];
+    const next = [...chat, { me: true, text }];
+    this.setState({ chat: next, chatInput: '', chatLoading: true });
+    let out;
+    try { out = await window.claude.complete({ system: this.agentSystem(), messages: next.map(m => ({ role: m.me ? 'user' : 'assistant', content: m.text })), max_tokens: 600 }); } catch (e) { out = null; }
+    this.setState(p => ({ chatLoading: false, chat: [...p.chat, { me: false, text: out ? String(out).trim() : 'I could not answer just now. Try again in a moment.' }] }));
+  }
+  renderVals() {
+    const C = this.C(), s = this.state;
+    if (!s.ready || !C || !s.cfg) return { nav: [], issues: [], pipeline: [], personas: [], units: [], cards: [], dataTabs: [], knowledge: [], grades: [], mapping: [], cfg: {}, source: { tabs: [] }, agentChat: { msgs: [], suggestions: [] } };
+    const cfg = s.cfg, S = C.SHEET, ideasById = {}, b = C.band(cfg.grade);
+    S.ideas.forEach(r => { ideasById[r.id] = r; });
+    const catIcon = name => { const c = S.categories.find(x => x.name === name); return 'ph ph-' + (c ? c.icon : 'circle'); };
+    const iss = C.issues(cfg);
+    const ago = iso => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); };
+    const fmtDue = iso => { const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? 'No date' : 'Due ' + d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); };
+    const ISS = { error: ['ph ph-warning-octagon', 'var(--color-accent-200)'], warn: ['ph ph-warning', 'var(--color-accent-300)'], info: ['ph ph-info', 'var(--color-neutral-300)'] };
+    const STEPS = [['Read sheet', 'ph ph-download-simple', S.counts.Ideas + ' ideas, ' + S.counts.Links + ' links'], ['Check data', 'ph ph-list-checks', iss.length + ' notes'], ['Rank links', 'ph ph-funnel', 'Top 3 in and out per idea'], ['Lay out map', 'ph ph-graph', 'Most connected in the centre'], ['Make quizzes', 'ph ph-exam', '8 per idea from links'], ['Index library', 'ph ph-books', s.library.length + ' documents for RAG']];
+    const pipeline = STEPS.map((st, i) => {
+      const active = s.syncing && s.step === i, done = !s.syncing || s.step > i;
+      return { label: st[0], sub: st[2], icon: active ? 'ph ph-circle-notch' : done ? 'ph ph-check-circle' : st[1], iconColor: done || active ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', border: active ? 'var(--color-accent-600)' : 'var(--color-neutral-800)', bg: active ? 'var(--color-accent-900)' : 'var(--color-bg)' };
+    });
+    const nav = [['sec-source', 'Curriculum data', 'ph ph-table', iss.filter(i => i.level !== 'info').length], ['sec-course', 'Course details', 'ph ph-graduation-cap', 0], ['sec-personas', 'AI personas', 'ph ph-chats-circle', 0], ['sec-schedule', 'Schedule', 'ph ph-calendar-dots', 0], ['sec-cards', 'Cards', 'ph ph-cards', 0], ['sec-data', 'From spreadsheet', 'ph ph-lock-simple', 0]]
+      .map(n => ({ label: n[1], icon: n[2], badge: n[3], hasBadge: n[3] > 0, go: () => this.goTo(n[0]) }));
+    const personas = cfg.personas.map(p => {
+      const t = s.tests[p.id] || {};
+      return {
+        id: p.id, name: p.name, role: p.role, audience: p.audience, where: p.where, tone: p.tone, template: p.template,
+        icon: p.id === 'tutor' ? 'ph ph-chalkboard-teacher' : p.id === 'peer' ? 'ph ph-student' : p.id === 'agent' ? 'ph ph-compass' : 'ph ph-user-sound',
+        builtin: !!p.builtin, custom: !p.builtin,
+        onName: this.setPersona(p.id, 'name'), onRole: this.setPersona(p.id, 'role'), onTone: this.setPersona(p.id, 'tone'), onTemplate: this.setPersona(p.id, 'template'),
+        reset: () => this.update(c => { const d = C.PERSONAS.find(x => x.id === p.id); const i = c.personas.findIndex(x => x.id === p.id); if (d && i >= 0) c.personas[i] = JSON.parse(JSON.stringify(d)); return c; }),
+        remove: () => this.update(c => { c.personas = c.personas.filter(x => x.id !== p.id); return c; }),
+        vars: C.VARS.map(v => ({ label: '{' + v + '}', insert: () => this.insertVar(p.id, v) })),
+        showPreview: !!s.open[p.id], previewIcon: s.open[p.id] ? 'ph ph-caret-up' : 'ph ph-caret-down',
+        togglePreview: () => this.setState(st => ({ open: { ...st.open, [p.id]: !st.open[p.id] } })),
+        filled: C.fill(cfg, p),
+        testInput: t.input || '', testing: !!t.loading, hasTest: !!t.out, testOut: t.out || '',
+        onTestInput: ev => { const v = ev.target.value; this.setState(st => ({ tests: { ...st.tests, [p.id]: { ...(st.tests[p.id] || {}), input: v } } })); },
+        onTestKey: ev => { if (ev.key === 'Enter') this.test(p); },
+        test: () => this.test(p)
+      };
+    });
+    const units = S.units.map(u => ({ label: 'Unit ' + u.n + ' · ' + u.name, objective: u.objective, count: S.ideas.filter(r => r.unit === u.n).length + ' ideas', due: cfg.due[u.n] || '', dueText: fmtDue(cfg.due[u.n]),
+      onDue: ev => { const v = ev.target.value; this.update(c => { c.due[u.n] = v; return c; }); } }));
+    const rc = { Common: 0, Rare: 0, Legendary: 0, auto: 0 };
+    const cards = S.ideas.map(r => {
+      const v = cfg.rarity[r.id] || 'auto'; rc[v]++;
+      const look = v === 'Legendary' ? ['var(--color-accent)', '0 0 12px var(--color-accent-700)'] : v === 'Rare' ? ['var(--color-accent-600)', 'none'] : v === 'Common' ? ['var(--color-neutral-600)', 'none'] : ['var(--color-neutral-700)', 'none'];
+      return { title: r.title, meta: r.category + ' · Unit ' + r.unit, icon: catIcon(r.category), value: v, border: look[0], glow: look[1],
+        onChange: ev => { const val = ev.target.value; this.update(c => { if (val === 'auto') delete c.rarity[r.id]; else c.rarity[r.id] = val; return c; }); } };
+    });
+    const tab = (k, label, icon) => { const on = s.dataTab === k; return { label, icon, pick: () => this.setState({ dataTab: k }), bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent-600)' : 'transparent', color: on ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' }; };
+    const M = cfg.mapping;
+    const srcText = { prereq: 'Ideas tab · column ' + M.requires, cats: 'Categories tab · column ' + M.catIcon + ', and Ideas tab · column ' + M.category, codes: 'Ideas tab · column ' + M.codes + ' (unit codes from Units tab)', media: 'Ideas tab · column ' + M.media + ', and Links tab · column ' + M.linkMedia, assess: 'Assessment tab · column ' + M.question }[s.dataTab];
+    const ids = new Set(S.ideas.map(r => r.id));
+    const prereqs = S.ideas.map(r => {
+      const reqs = C.codes(r.requires), bad = reqs.filter(x => !ids.has(x));
+      return { title: r.title, none: !reqs.length, reqs: reqs.map(x => ({ label: ideasById[x] ? ideasById[x].title : x + ' (unknown)', border: ids.has(x) ? 'var(--color-neutral-600)' : 'var(--color-accent-500)', color: ids.has(x) ? 'var(--color-neutral-200)' : 'var(--color-accent-200)' })),
+        status: bad.length ? 'Unknown idea_id' : reqs.length ? 'OK' : '—', statusColor: bad.length ? 'var(--color-accent-200)' : 'var(--color-neutral-400)' };
+    }).sort((a, b2) => (a.none ? 1 : 0) - (b2.none ? 1 : 0));
+    const cats = S.categories.map(c => ({ name: c.name, icon: 'ph ph-' + c.icon, iconName: c.icon, description: c.description, count: S.ideas.filter(r => r.category === c.name).length }));
+    const codeCount = {};
+    S.ideas.forEach(r => C.codes(r.codes).forEach(x => { codeCount[x] = (codeCount[x] || 0) + 1; }));
+    const codeSummary = Object.keys(codeCount).sort().map(code => { const on = s.codeFilter === code; return { code, count: codeCount[code], bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent-600)' : 'var(--color-neutral-700)', pick: () => this.setState({ codeFilter: on ? null : code }) }; });
+    const codeRows = S.ideas.filter(r => !s.codeFilter || C.codes(r.codes).includes(s.codeFilter)).map(r => ({ title: r.title, unit: 'Unit ' + r.unit, codes: C.codes(r.codes).map(code => ({ code })), missing: !C.codes(r.codes).length }));
+    const mediaRows = S.ideas.map(r => ({ title: r.title, file: r.media || '(empty)', color: r.media ? 'var(--color-neutral-200)' : 'var(--color-neutral-500)', icon: r.media ? (/\.(png|jpe?g|gif|webp)$/i.test(r.media) ? 'ph ph-image' : 'ph ph-play-circle') : 'ph ph-selection', shows: r.media ? (/\.(png|jpe?g|gif|webp)$/i.test(r.media) ? 'Image' : 'Video') : 'Placeholder' }));
+    const assessRows = S.units.map(u => { const n = S.ideas.filter(r => r.unit === u.n).length, q = S.assessment[u.n] || 0; return { label: 'Unit ' + u.n + ' · ' + u.name, count: q + ' of ' + n, status: q >= n ? 'Complete: one per objective' : (n - q) + ' missing' }; });
+    const mapping = C.FIELDS.map(f => ({ label: f.label, tab: f.tab, value: M[f.key], options: S.headers[f.tab], onChange: ev => { const v = ev.target.value; this.update(c => { c.mapping[f.key] = v; return c; }); } }));
+    const lib = s.library;
+    const knowledge = [
+      { id: 'cur', label: 'Curriculum data', meta: S.counts.Ideas + ' ideas · synced', icon: 'ph ph-table', items: Object.keys(S.counts).map(k => ({ name: k + ' tab · ' + S.counts[k] + ' rows', icon: 'ph ph-table' })) },
+      { id: 'lib', label: 'Resource library (RAG)', meta: lib.length + ' docs', icon: 'ph ph-books', items: lib.map(d => ({ name: d.name, icon: 'ph ph-' + d.kind })), canAdd: true },
+      { id: 'guide', label: 'Application guide', meta: 'built in', icon: 'ph ph-book-open-text', items: [{ name: 'How maps, unlocking, quizzes and rewards work', icon: 'ph ph-file-text' }] }
+    ].map(k => ({ ...k, canAdd: !!k.canAdd, open: !!s.kOpen[k.id], chev: s.kOpen[k.id] ? 'ph ph-caret-up' : 'ph ph-caret-down', toggle: () => this.setState(st => ({ kOpen: { ...st.kOpen, [k.id]: !st.kOpen[k.id] } })) }));
+    const ag = C.persona(cfg, 'agent') || C.PERSONAS[2];
+    const intro = 'Hi, I\'m ' + ag.name + '. I build the map from your curriculum data and library, and I can answer anything about how Idea Map works. ' + (iss.filter(i => i.level === 'error').length ? 'I found ' + iss.filter(i => i.level === 'error').length + ' data problem to fix before students start.' : 'Your data looks ready.');
+    const msgs = [{ me: false, text: intro }, ...(s.chat || [])];
+    const sendAgent = () => this.askAgent(this.state.chatInput);
+    return {
+      cfg, headerTitle: cfg.subject + ' · ' + cfg.topic, bandText: C.gradeLabel(cfg.grade) + ' is “' + b.level + '”',
+      saveIcon: s.saved ? 'ph ph-check-circle' : 'ph ph-circle-notch', saveText: s.saved ? 'Saved' : 'Saving…',
+      nav,
+      source: { name: S.source.name, kind: cfg.sourceKind, icon: cfg.sourceKind === 'PostgreSQL' ? 'ph ph-database' : cfg.sourceKind === 'Google Sheets' ? 'ph ph-google-drive-logo' : 'ph ph-file-csv', synced: ago(cfg.lastSync),
+        tabs: Object.keys(S.counts).map(k => ({ name: k, rows: S.counts[k] })), onKind: ev => { const v = ev.target.value; this.update(c => { c.sourceKind = v; return c; }); } },
+      syncing: s.syncing, syncLabel: s.syncing ? 'Syncing…' : 'Re-sync', resync: () => this.resync(),
+      openSheet: () => this.askAgent('Where do I edit prerequisites, categories and standards codes in my ' + cfg.sourceKind + ' source?'),
+      pipeline,
+      issueSummary: iss.length ? iss.length + ' to review' : 'all clear',
+      issues: iss.map(i => ({ text: i.text, items: i.items.join(', '), hasItems: !!i.items.length, icon: ISS[i.level][0], color: ISS[i.level][1], ask: () => this.askAgent('How do I fix this data check: "' + i.text + '"' + (i.items.length ? ' (' + i.items.join(', ') + ')' : '') + '?') })),
+      on: { subject: this.setField('subject'), topic: this.setField('topic'), grade: this.setField('grade'), framework: this.setField('framework'), mapObjective: this.setField('mapObjective') },
+      grades: Array.from({ length: 13 }, (_, g) => ({ v: g, label: C.gradeLabel(g) })),
+      personas,
+      addPersona: () => this.update(c => { const id = 'p' + Date.now(); c.personas.push({ id, name: 'New persona', role: 'Custom role', audience: 'Students', where: 'Not placed yet: ask Atlas where it could appear', tone: 'warm', builtin: false, template: 'You are {name}, a {tone} helper for {grade} students studying {subject}: "{topic}". {style} Answer in {length}.' }); return c; }),
+      units, cards, rarityCounts: rc.Legendary + ' Legendary · ' + rc.Rare + ' Rare · ' + rc.Common + ' Common · ' + rc.auto + ' auto',
+      dataTabs: [tab('prereq', 'Prerequisites', 'ph ph-tree-structure'), tab('cats', 'Categories', 'ph ph-shapes'), tab('codes', 'Standards codes', 'ph ph-seal-check'), tab('media', 'Media', 'ph ph-play-circle'), tab('assess', 'Assessment questions', 'ph ph-student')],
+      dataSource: srcText, isPrereq: s.dataTab === 'prereq', isCats: s.dataTab === 'cats', isCodes: s.dataTab === 'codes', isMedia: s.dataTab === 'media', isAssess: s.dataTab === 'assess',
+      prereqs, cats, codeSummary, codeRows, mediaRows, assessRows,
+      mapOpen: s.mapOpen, mapChevron: s.mapOpen ? 'ph ph-caret-up' : 'ph ph-caret-down', toggleMap: () => this.setState(st => ({ mapOpen: !st.mapOpen })), mapping,
+      resetAll: () => { const d = C.reset(); this.setState({ cfg: d, saved: true, tests: {} }); },
+      agentName: ag.name, knowledge,
+      addDoc: () => this.setState(st => ({ library: [...st.library, { name: 'New upload ' + (st.library.length + 1) + '.pdf', kind: 'file-pdf' }] })),
+      agentChat: {
+        name: ag.name, role: 'Logistics agent', icon: 'ph ph-compass', tag: 'Teacher',
+        msgs: msgs.map(m => ({ text: m.text, align: m.me ? 'flex-end' : 'flex-start', bg: m.me ? 'var(--color-accent-900)' : 'var(--color-bg)', border: m.me ? 'var(--color-accent-700)' : 'var(--color-neutral-700)' })),
+        loading: s.chatLoading, loadingText: ag.name + ' is checking your setup…', input: s.chatInput,
+        onInput: ev => this.setState({ chatInput: ev.target.value }), onKey: ev => { if (ev.key === 'Enter') sendAgent(); }, send: sendAgent,
+        suggestions: ['Why might Groundwater never unlock?', 'Which ideas still need media?', 'Draft assessment questions for Unit 2', 'How does mastery work?'].map(q => ({ text: q, ask: () => this.askAgent(q) })),
+        placeholder: 'Ask about your map or the app…', height: 320
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
