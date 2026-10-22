@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ideamap/ui": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
