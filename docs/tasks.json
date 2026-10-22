@@ -68,7 +68,7 @@
       ],
       "done_when": "zod schemas in packages/contracts for all eight Curriculum Pack tabs (docs/spec), ClassConfig and CurriculumVersion, with tests; fixtures/water-cycle parses from JSON, CSV and XLSX rows",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f3",
       "updated": "2026-10-22"
     },
