@@ -142,6 +142,9 @@ importers:
 
   apps/teacher:
     dependencies:
+      '@ideamap/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: 'catalog:'
         version: 19.3.1
