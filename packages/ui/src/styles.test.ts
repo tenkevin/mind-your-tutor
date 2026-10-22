@@ -148,6 +148,20 @@ describe('contrast (WCAG AA)', () => {
   const accent = hex('--color-accent');
   const grounds = { bg, surface } as const;
 
+  // A state's background tint, read from styles.css so the test follows the CSS:
+  // `<selector> { background: color-mix(in srgb, var(--token) N%, transparent); }`.
+  const tint = (selector: string, ground: Rgb): Rgb => {
+    const escaped = selector.replace(/[.:]/g, '\\$&');
+    const m = new RegExp(
+      `${escaped} \\{ background: color-mix\\(in srgb, var\\((--[\\w-]+)\\) (\\d+)%, transparent\\); \\}`,
+    ).exec(squash(css));
+    if (!m) throw new Error(`no background tint for ${selector}`);
+    return over(hex(m[1] as Token), ground, Number(m[2]) / 100);
+  };
+
+  // Button text is 14px at weight 500, so it needs 4.5:1. Each variant's text colour:
+  const buttons = { '.btn-primary': accent, '.btn-secondary': text, '.btn-ghost': accent };
+
   // [name, foreground, background, minimum ratio]. 4.5 for text, 3 for UI parts.
   const pairs: [string, Rgb, Rgb, number][] = [];
   for (const [g, ground] of Object.entries(grounds)) {
@@ -156,40 +170,56 @@ describe('contrast (WCAG AA)', () => {
       [`--color-neutral-300 on ${g}`, hex('--color-neutral-300'), ground, 4.5],
       [`--color-neutral-400 on ${g}`, hex('--color-neutral-400'), ground, 4.5],
       [`--color-neutral-500 on ${g}`, hex('--color-neutral-500'), ground, 4.5],
-      [`.btn-primary / .tag-outline / a on ${g}`, accent, ground, 4.5],
+      [`.tag-outline / a on ${g}`, accent, ground, 4.5],
       [`.field > label on ${g}`, over(text, ground, 0.7), ground, 4.5],
       [`.table th on ${g}`, over(text, ground, 0.6), ground, 4.5],
       [`.text-muted on ${g}`, over(text, ground, 0.55), ground, 4.5],
       [`.card-meta on ${g}`, over(text, ground, 0.5), ground, 4.5],
       [`:focus-visible ring on ${g}`, accent, ground, 3],
+      [`.input border on ${g}`, over(text, ground, 0.16), ground, 3],
     );
+    for (const [btn, fg] of Object.entries(buttons)) {
+      pairs.push(
+        [`${btn} on ${g}`, fg, ground, 4.5],
+        [`${btn}:hover on ${g}`, fg, tint(`${btn}:hover`, ground), 4.5],
+        [`${btn}:active on ${g}`, fg, tint(`${btn}:active`, ground), 4.5],
+      );
+    }
   }
   pairs.push(
     ['.tag-accent', hex('--color-accent-100'), hex('--color-accent-800'), 4.5],
     ['.tag-accent-2', hex('--color-accent-2-100'), hex('--color-accent-2-800'), 4.5],
     ['.tag-neutral', hex('--color-neutral-100'), hex('--color-neutral-800'), 4.5],
-    ['.btn-primary:hover', accent, over(accent, bg, 0.12), 4.5],
-    ['.btn-primary:active', accent, over(accent, bg, 0.22), 4.5],
-    ['.input border on surface', over(text, surface, 0.16), surface, 3],
-    ['.input border on bg', over(text, bg, 0.16), bg, 3],
   );
 
-  // The only pairs allowed below AA: the three accepted in docs/ARCHITECTURE.md D10.
+  // The only pairs allowed below AA: those accepted in docs/ARCHITECTURE.md D10.
   // Any other pair below the bar fails. Don't add to this list without a new decision.
-  const acceptedBelowAA = ['.input border', '.btn-primary:active', '.card-meta on surface'];
-  // '.input border' covers the border on both grounds.
-  const exceptionFor = (name: string) =>
-    acceptedBelowAA.find((a) => name === a || name.startsWith(`${a} on `));
+  const acceptedBelowAA = [
+    '.input border on bg',
+    '.input border on surface',
+    '.card-meta on surface',
+    '.btn-primary:hover on surface',
+    '.btn-primary:active on bg',
+    '.btn-primary:active on surface',
+    '.btn-ghost:hover on surface',
+    '.btn-ghost:active on bg',
+    '.btn-ghost:active on surface',
+  ];
 
-  it('has exactly the three D10 pairs below AA', () => {
+  it('measures every listed exception', () => {
+    const names = pairs.map(([name]) => name);
+    for (const a of acceptedBelowAA) expect(names).toContain(a);
+  });
+
+  it('has exactly the D10 pairs below AA', () => {
+    // A new failure, or a fixed exception still on the list, breaks this.
     const failing = pairs.filter(([, fg, back, min]) => contrast(fg, back) < min);
-    // A new failure maps to undefined; a fixed exception goes missing. Either breaks this.
-    expect(new Set(failing.map(([name]) => exceptionFor(name)))).toEqual(new Set(acceptedBelowAA));
+    expect(failing.map(([name]) => name).sort()).toEqual([...acceptedBelowAA].sort());
   });
 
   it.each(pairs)('%s', (name, fg, back, min) => {
     const ratio = contrast(fg, back);
-    if (!exceptionFor(name))
+    if (!acceptedBelowAA.includes(name))
       expect(ratio, `${name} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(min);
   });
 });

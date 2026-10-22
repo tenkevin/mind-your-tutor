@@ -10,6 +10,12 @@ export default defineConfig({
     rolldownOptions: {
       // reference.html renders every @ideamap/ui class, for QA and visual checks.
       input: { main: page('index.html'), reference: page('reference.html') },
+      // Both pages share @ideamap/ui; name its chunk (and so its CSS) ui-*.
+      output: {
+        codeSplitting: {
+          groups: [{ name: 'ui', test: /[\\/]packages[\\/]ui[\\/]/ }],
+        },
+      },
     },
   },
 });

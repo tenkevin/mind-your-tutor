@@ -38,6 +38,9 @@ tokens['--radius-md']; // '8px'
    `font-display: swap`, about 97 KB in total) in `fonts/`. Student IP addresses
    must not go to third parties. Inter is under the SIL Open Font License 1.1;
    see `fonts/OFL.txt`. The files come from `@fontsource/inter` 5.2.8.
+   Weight 600 is shipped to match the prototype's font request, but no rule in
+   `styles.css` uses it yet. Browsers only download a weight a page renders, so
+   it costs nothing until an app sets `font-weight: 600`.
 2. **`.input:disabled`** is added (45% opacity, `not-allowed` cursor), to match
    `.btn:disabled`. The prototype has no disabled field style.
 
@@ -88,7 +91,18 @@ them per page.
 Text tokens pass WCAG AA (4.5:1) on `--color-bg` and `--color-surface`:
 `--color-text`, `--color-neutral-300/400/500`, the accent, field labels, table
 headers and every `.tag-*` variant. Don't use `--color-neutral-600` or darker
-for text. Three design-system pairs fall short and are accepted as designed
-(decision D10 in `docs/ARCHITECTURE.md`): `.btn-primary` text while pressed,
-`.card-meta` on a surface, and the `.input` border. New colours and components
-must meet AA; `src/styles.test.ts` fails if any other pair drops below it.
+for text.
+
+A few design-system pairs fall short and are accepted as designed (decision
+D10 in `docs/ARCHITECTURE.md`):
+
+- the `.input` border, on both grounds
+- `.card-meta` on `--color-surface`
+- `.btn-primary` hover on surface, and active on both grounds
+- `.btn-ghost` hover on surface, and active on both grounds
+
+New colours and components must meet AA. `src/styles.test.ts` measures the
+text, tag and input pairs and every button variant's default, hover and active
+state on both grounds. It reads the hover and active tints from `styles.css`.
+It fails if the set of pairs below AA differs from D10's list in either
+direction: a new failure, or a fixed pair still on the list.
