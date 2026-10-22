@@ -64,11 +64,19 @@ describe('CurriculumVersion follows §5 (F3-F9)', () => {
       ...draft,
       status: 'published',
       issues: [],
-      derived: { ranked_links: [], layout: { evap: { x: 0, y: 0 } }, quizzes: [] },
+      derived: {
+        ranked_links: { max_links: 3, kept: [], hidden: [] },
+        layout: {
+          centre: 'evap',
+          rank: ['evap'],
+          positions: [{ idea_id: 'evap', ring: 0, angle: null, x: 0, y: 0 }],
+        },
+        quizzes: { seed: 1, quiz_length: 8, banks: [] },
+      },
       published_at: '2026-10-22T10:00:00+01:00',
     });
     expect(version.status).toBe('published');
-    expect(version.derived?.layout).toEqual({ evap: { x: 0, y: 0 } });
+    expect(version.derived?.layout.centre).toBe('evap');
   });
 
   it('parses an archived version and defaults optional parts', () => {
