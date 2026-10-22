@@ -16,7 +16,12 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "ajv": "8.20.0",
+    "read-excel-file": "9.3.11",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   }
 }
