@@ -157,9 +157,9 @@
       ],
       "done_when": "Link ranking, ring layout and 8-question quiz generation run on import and are stored on the draft version; tests check the rules (at most 3 links in and 3 out, centre and rings, 8 questions) rather than exact output",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c3",
+      "updated": "2026-10-22"
     },
     {
       "id": "C4",
