@@ -10,9 +10,9 @@ Counts: 18 ideas, 31 links, 3 units, 3 categories, 18 assessment questions (one 
 
 Lists (`standard_codes`, `requires`, `key_points`) are comma-separated in CSV and XLSX, and arrays in JSON.
 
-## Proposed column: `Ideas.explanation`
+## `Ideas.explanation`
 
-The pack design defines `notes` as teacher-only and has no column for the student-facing explanation shown on an idea page. This fixture adds an optional `explanation` column, the last one in Ideas, and leaves `notes` empty. The proposal is pending confirmation (see Open questions in `docs/ARCHITECTURE.md`).
+The student-facing text on each idea page, in the last column of Ideas (decision D9). `notes` stays teacher-only and is empty here. Every idea in this sample has an explanation. To test AI drafting, clear one in a copy of the fixture rather than editing this one.
 
 ## Deliberate data problems
 

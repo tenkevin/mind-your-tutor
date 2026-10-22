@@ -17,6 +17,7 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D6 | Determinism lives in the tracker | The interaction tracker is fully deterministic and replayable. Map generation and AI may vary, but everything they show students is stored and recorded as an event |
 | D7 | Independent QA before anything moves on | Every task has written criteria (functional, security, performance, usability) before it's claimed, and a separate agent tests against them before merge (`docs/qa/`) |
 | D8 | The Curriculum Pack is the import format | Eight tabs (Course, Units, Ideas, Links, Categories, Assessment, Personas, Library), defined field by field in `docs/spec/`. Each field is `sheet`, `app` or `both` (the sheet seeds it, and Teacher Settings can override it per class) |
+| D9 | Idea explanations: sheet first, AI fallback | `Ideas.explanation` is optional. If it's empty, Ms. Ivy drafts one from the idea's objective and links. A draft reaches students only after a teacher approves it (and can edit it) in Teacher Settings. Approved text is stored per curriculum, shared by all its classes, and reused on re-import until the sheet supplies its own |
 
 ## 2. The core split
 
@@ -311,5 +312,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 3. Which SSO and rostering providers does the first school use?
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
-6. **`Ideas.explanation`:** the Curriculum Pack has no column for the student-facing explanation, and `notes` is teacher-only. Add an optional `explanation` column? It's proposed in `docs/spec` and the fixtures, pending a decision.
-7. **Library and class settings:** the field spec marks every Library column (`title`, `file_url`, `use_for`) as `edit: both`, but §2 and §6 keep the library list as curriculum data with no class override. F3's `ClassConfig` follows §6 and leaves Library out. Should a class be able to override library entries (for example, hide a document from the tutor), or should the spec change those columns to `sheet`?
+6. **Library and class settings:** the field spec marks every Library column (`title`, `file_url`, `use_for`) as `edit: both`, but §2 and §6 keep the library list as curriculum data with no class override. F3's `ClassConfig` follows §6 and leaves Library out. Should a class be able to override library entries (for example, hide a document from the tutor), or should the spec change those columns to `sheet`?
