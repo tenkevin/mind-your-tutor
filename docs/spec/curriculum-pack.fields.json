@@ -163,6 +163,15 @@
         "note": ""
       },
       {
+        "name": "explanation",
+        "type": "text",
+        "req": false,
+        "edit": "both",
+        "missing": "Tutor drafts one from the objective and links; shown to students only after a teacher approves it",
+        "example": "When the Sun warms water in oceans, lakes and puddles, some of it turns into an invisible gas and rises into the air.",
+        "note": "Student-facing explanation on the idea page. Also given to Ms. Ivy and Milo as context"
+      },
+      {
         "name": "standard_codes",
         "type": "list",
         "req": false,
