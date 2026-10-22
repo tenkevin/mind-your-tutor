@@ -144,9 +144,9 @@
       ],
       "done_when": "The data checks from project/curriculum.js are ported to packages/domain, with a test for each check, including the deliberate errors in fixtures/water-cycle",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c2",
+      "updated": "2026-10-22"
     },
     {
       "id": "C3",
