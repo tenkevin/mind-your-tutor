@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VersionDerivedSchema, parsePack, type Pack } from '@ideamap/contracts';
 import { derive } from '../index.js';
+import { readsPlural } from './quiz.js';
 import { expectRules, makePack, randomPack, type LinkInput } from './testing.js';
 
 function samplePack(): Pack {
@@ -193,7 +194,7 @@ describe('categories come from the pack (C3-F7)', () => {
     for (const old of ['Process', 'Force', 'Thing']) expect(all).not.toContain(old);
     const ocean = derived.quizzes.banks.find((b) => b.idea_id === 'ocean')!;
     expect(ocean.questions.find((q) => q.kind === 'category')!.explanation).toBe(
-      'The map says: Oceans is an object.',
+      'The map says: the category for Oceans is Object.',
     );
   });
 
@@ -309,6 +310,132 @@ describe('security (C3-S1, S2, S3)', () => {
     expect(a.layout).toEqual(b.layout);
     expect(a.quizzes.banks).not.toEqual(b.quizzes.banks);
     expect(() => derive(sample, { seed: Number.NaN })).toThrow(RangeError);
+  });
+});
+
+describe('quiz quality (C8)', () => {
+  it('never offers a distractor that completes a true sentence, with shared titles (C8-F5)', () => {
+    const titles: Record<string, string> = { a: 'Water', b: 'Water', c: 'Water', d: 'Water' };
+    Object.assign(titles, { e: 'water', f: 'water' });
+    const ids = 'abcdefghijkl'.split('');
+    const pack = makePack(
+      ids.map((idea_id) => ({ idea_id, title: titles[idea_id] ?? `T${idea_id}` })),
+      [
+        { from_id: 'b', to_id: 'g' },
+        { from_id: 'c', to_id: 'j' },
+      ],
+    );
+    const truths = new Set(['water leads to tg.', 'water leads to tj.']);
+    for (let seed = 1; seed <= 30; seed++) {
+      const derived = derive(pack, { seed });
+      expectRules(pack, derived);
+      for (const bank of derived.quizzes.banks) {
+        for (const q of bank.questions.filter((q) => q.kind === 'complete_link')) {
+          for (const o of q.options.filter((o) => o !== q.answer)) {
+            expect(o.toLowerCase()).not.toBe('water');
+            expect(truths.has(`${q.text.replace('…', o)}.`.toLowerCase())).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('writes category explanations that read right for plural titles (C8-F6)', () => {
+    const pack = makePack(
+      [
+        { idea_id: 'glacier', title: 'Glaciers', category: 'Thing' },
+        { idea_id: 'ocean', title: 'Oceans', category: 'Thing' },
+        { idea_id: 'rain', title: 'Rain & snow', category: 'Thing' },
+        { idea_id: 'sun', title: 'The Sun', category: 'Force' },
+      ],
+      [{ from_id: 'sun', to_id: 'glacier', relation: 'melts' }],
+    );
+    const derived = derive(pack, { seed: 1 });
+    expectRules(pack, derived);
+    const explain = (id: string) =>
+      derived.quizzes.banks
+        .find((b) => b.idea_id === id)!
+        .questions.find((q) => q.kind === 'category')!.explanation;
+    expect(explain('glacier')).toBe('The map says: the category for Glaciers is Thing.');
+    expect(explain('rain')).toBe('The map says: the category for Rain & snow is Thing.');
+    expect(explain('sun')).toBe('The map says: the category for The Sun is Force.');
+    const all = JSON.stringify(derived.quizzes);
+    expect(all).not.toMatch(/(?<!category for )(Glaciers|Oceans|Rain & snow) is /);
+  });
+
+  it('keeps a swapped-in subject the same number as the one it replaces (C8-F6)', () => {
+    expect(['Glaciers', 'Oceans', 'Rain & snow', 'Rivers', 'Plants'].map(readsPlural)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(
+      ['The Sun', 'Freezing', 'Process', 'Photosynthesis', 'Water vapour', 'DNA'].map(readsPlural),
+    ).toEqual([false, false, false, false, false, false]);
+    const titleOf = new Map(sample.ideas.map((i) => [i.idea_id, i.title]));
+    for (let seed = 1; seed <= 10; seed++) {
+      for (const bank of derive(sample, { seed }).quizzes.banks) {
+        for (const q of bank.questions) {
+          // Only questions that put another idea in the subject's place.
+          if (!q.link || q.link.to_id !== bank.idea_id || q.link.from_id === bank.idea_id) continue;
+          const subject = readsPlural(titleOf.get(q.link.from_id)!);
+          if (q.kind === 'complete_link') {
+            for (const o of q.options) expect(readsPlural(o)).toBe(subject);
+          } else if (q.answer === 'False') {
+            const swap = titleOf.get(q.id.split('/').at(-1)!)!;
+            expect(readsPlural(swap)).toBe(subject);
+          }
+        }
+      }
+    }
+  });
+
+  it('never swaps in an idea linked to the end it replaces (C8-F8)', () => {
+    const linked = new Map<string, Set<string>>();
+    for (const l of sample.links) {
+      for (const [a, b] of [
+        [l.from_id, l.to_id],
+        [l.to_id, l.from_id],
+      ] as const) {
+        if (!linked.has(a)) linked.set(a, new Set());
+        linked.get(a)!.add(b);
+      }
+    }
+    for (let seed = 1; seed <= 10; seed++) {
+      const derived = derive(sample, { seed });
+      for (const bank of derived.quizzes.banks) {
+        for (const q of bank.questions.filter((q) => q.answer === 'False')) {
+          const swap = q.id.split('/').at(-1)!;
+          const replaced = q.link!.from_id === bank.idea_id ? q.link!.to_id : q.link!.from_id;
+          expect(linked.get(replaced)?.has(swap) ?? false).toBe(false);
+          expect(linked.get(bank.idea_id)?.has(swap) ?? false).toBe(false);
+        }
+      }
+    }
+    // The QA report's examples of "False" statements a teacher would mark true.
+    const known = [
+      'Oceans supplies Water cycle.',
+      'Rain & snow feeds Water cycle.',
+      'Clouds is a stage of Water cycle.',
+      'Rain & snow creates Water vapour.',
+    ];
+    for (let seed = 1; seed <= 20; seed++) {
+      const texts = derive(sample, { seed }).quizzes.banks.flatMap((b) =>
+        b.questions.filter((q) => q.answer === 'False').map((q) => q.text),
+      );
+      for (const text of known) expect(texts).not.toContain(text);
+    }
+  });
+
+  it('stores the seed it used (C8-F7)', () => {
+    const big = derive(sample, { seed: 2 ** 32 + 1 });
+    expect(big.quizzes.seed).toBe(1);
+    expect(big).toEqual(derive(sample, { seed: 1 }));
+    const high = derive(sample, { seed: 2 ** 31 });
+    expect(high).toEqual(derive(sample, { seed: high.quizzes.seed }));
+    expect(VersionDerivedSchema.parse(high)).toEqual(high);
   });
 });
 

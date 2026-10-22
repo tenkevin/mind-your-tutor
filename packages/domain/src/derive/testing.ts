@@ -108,7 +108,9 @@ export function expectRules(pack: Pack, derived: VersionDerived, maxLinks = 3, q
     if (!titleOf.has(l.from_id) || !titleOf.has(l.to_id)) continue;
     linkedTo.get(l.from_id)!.add(l.to_id);
     linkedTo.get(l.to_id)!.add(l.from_id);
-    allStatements.add(statement(titleOf.get(l.from_id)!, l.relation, titleOf.get(l.to_id)!));
+    allStatements.add(
+      statement(titleOf.get(l.from_id)!, l.relation, titleOf.get(l.to_id)!).toLowerCase(),
+    );
   }
   const keptStatements = new Set(
     kept.map((l) => statement(titleOf.get(l.from_id)!, l.relation, titleOf.get(l.to_id)!)),
@@ -147,8 +149,14 @@ export function expectRules(pack: Pack, derived: VersionDerived, maxLinks = 3, q
         const neighbour = link.from_id === id ? link.to_id : link.from_id;
         expect(q.answer).toBe(titleOf.get(neighbour));
         expect(q.text.match(/…/g)).toHaveLength(1);
+        const lower = q.options.map((o) => o.toLowerCase());
+        expect(new Set(lower).size).toBe(lower.length);
         for (const o of q.options) {
           if (o === q.answer) continue;
+          // C8-F5: no distractor completes a true sentence, whatever its case.
+          expect(allStatements.has(q.text.replace('…', o).toLowerCase() + '.')).toBe(false);
+          expect(allStatements.has(q.text.replace('…', o).toLowerCase())).toBe(false);
+          expect(o.toLowerCase()).not.toBe(idea.title.toLowerCase());
           const other = ids.find((i) => titleOf.get(i) === o)!;
           expect(other).toBeDefined();
           expect(other).not.toBe(id);
@@ -159,7 +167,7 @@ export function expectRules(pack: Pack, derived: VersionDerived, maxLinks = 3, q
         expect(q.options).toEqual(['True', 'False']);
         expect(q.text).not.toContain('…');
         if (q.answer === 'True') expect(keptStatements.has(q.text)).toBe(true);
-        else expect(allStatements.has(q.text)).toBe(false);
+        else expect(allStatements.has(q.text.toLowerCase())).toBe(false);
       }
     }
   }

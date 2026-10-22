@@ -26,7 +26,7 @@ function idea(spec: IdeaSpec): Pack['ideas'][number] {
     title: spec.idea_id.toUpperCase(),
     category: 'Thing',
     unit: 1,
-    objective: null,
+    objective: `Learn ${spec.idea_id}.`,
     explanation: null,
     standard_codes: ['CODE-1'],
     requires: [],
@@ -223,19 +223,52 @@ describe('loops of every shape (C2-F4)', () => {
     ]);
   });
 
-  it('shows a loop through the ideas, not a self-requirement, in a bigger loop', () => {
+  it('shows a self-requirement inside a bigger loop, with advice for its shape (C8-F2)', () => {
     const issues = checkPack(
       pack([
         { idea_id: 'a', requires: ['a', 'b'] },
         { idea_id: 'b', requires: ['a'] },
       ]),
     );
-    expect(issues[0]!.message).toContain('A requires B, which requires A');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toBe(
+      "Prerequisites form a loop, so 2 ideas can never unlock: A requires itself and B; B requires A. Removing one requirement won't break it: remove requirements in Ideas → requires until no idea here depends on itself.",
+    );
+  });
+
+  it('names every idea in a loop with more than one ring (C8-F2)', () => {
+    const issues = checkPack(
+      pack([
+        { idea_id: 'a', requires: ['b', 'c'] },
+        { idea_id: 'b', requires: ['a'] },
+        { idea_id: 'c', requires: ['a'] },
+      ]),
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.items).toEqual(['a', 'b', 'c']);
+    expect(issues[0]!.message).toContain(
+      '3 ideas can never unlock: A requires B and C; B requires A; C requires A.',
+    );
+    expect(issues[0]!.message).not.toContain('Remove one of these');
+    expect(issues[0]!.message).toContain("Removing one requirement won't break it");
+  });
+
+  it('keeps "remove one of these" for a single ring (C8-F2)', () => {
+    const [issue] = checkPack(
+      pack([
+        { idea_id: 'a', requires: ['b'] },
+        { idea_id: 'b', requires: ['c'] },
+        { idea_id: 'c', requires: ['a'] },
+      ]),
+    );
+    expect(issue!.message).toBe(
+      'Prerequisites form a loop, so 3 ideas can never unlock: A requires B, which requires C, which requires A. Remove one of these from Ideas → requires to break the loop.',
+    );
   });
 });
 
 describe('knock-on blocks (C2-F5)', () => {
-  it('warns an idea downstream of an unknown id, naming the cause', () => {
+  it('warns the ideas downstream of an unknown id once, naming the cause (C8-F3)', () => {
     const issues = checkPack(
       pack([
         { idea_id: 'a', title: 'Groundwater', requires: ['aquifer'] },
@@ -245,14 +278,22 @@ describe('knock-on blocks (C2-F5)', () => {
     );
     expect(issues.map((i) => [i.kind, i.level, i.items])).toEqual([
       ['prereq', 'error', ['a']],
-      ['blocked', 'warning', ['b', 'a']],
-      ['blocked', 'warning', ['c', 'a']],
+      ['blocked', 'warning', ['b', 'c']],
     ]);
     expect(issues[1]!.message).toBe(
-      'Wells may never unlock: it requires Groundwater, and Groundwater requires "aquifer", which isn\'t an idea. Fix Groundwater in Ideas → requires first.',
+      '2 ideas may never unlock, because they depend on Groundwater, which requires "aquifer", which isn\'t an idea: Wells and Springs. Fix Groundwater in Ideas → requires first.',
     );
-    expect(issues[2]!.message).toContain(
-      'Springs may never unlock: it requires Wells, which depends on Groundwater',
+  });
+
+  it('words a single blocked idea in the singular', () => {
+    const issues = checkPack(
+      pack([
+        { idea_id: 'a', title: 'Groundwater', requires: ['aquifer'] },
+        { idea_id: 'b', title: 'Wells', requires: ['a'] },
+      ]),
+    );
+    expect(issues[1]!.message).toBe(
+      'Wells may never unlock, because it depends on Groundwater, which requires "aquifer", which isn\'t an idea. Fix Groundwater in Ideas → requires first.',
     );
   });
 
@@ -262,14 +303,49 @@ describe('knock-on blocks (C2-F5)', () => {
         { idea_id: 'a', requires: ['b'] },
         { idea_id: 'b', requires: ['a'] },
         { idea_id: 'c', requires: ['b'] },
+        { idea_id: 'd', requires: ['a'] },
       ]),
     );
     expect(issues.map((i) => [i.kind, i.items])).toEqual([
       ['cycle', ['a', 'b']],
-      ['blocked', ['c', 'b']],
+      ['blocked', ['c', 'd']],
     ]);
-    expect(issues[1]!.message).toContain('C may never unlock');
-    expect(issues[1]!.message).toContain('B is in a prerequisite loop');
+    expect(issues[1]!.message).toBe(
+      '2 ideas may never unlock, because they depend on the loop between A and B: C and D. Break the loop in Ideas → requires first.',
+    );
+  });
+
+  it('gives one warning per root cause on a large pack (C8-F3, C8-U1)', () => {
+    // 2,000 ideas in ten chains of 200; two chains have an unknown root, two a loop at the top.
+    const specs: IdeaSpec[] = [];
+    for (let c = 0; c < 10; c++) {
+      for (let k = 0; k < 200; k++) {
+        const id = `c${c}k${k}`;
+        const requires =
+          k > 0 ? [`c${c}k${k - 1}`] : c < 2 ? [`missing${c}`] : c < 4 ? [`c${c}k1`] : [];
+        specs.push({ idea_id: id, requires });
+      }
+    }
+    const issues = checkPack(pack(specs));
+    expect(issues.map((i) => i.kind)).toEqual([
+      'prereq',
+      'prereq',
+      'cycle',
+      'cycle',
+      ...Array(4).fill('blocked'),
+    ]);
+    expect(ofKind(issues, 'blocked').map((i) => i.items.length)).toEqual([199, 199, 198, 198]);
+    expect(summarizeIssues(issues)).toBe('8 to review');
+  });
+
+  it('gives one warning for a 10,000-idea chain with a broken root (C8-F3, C8-S1)', () => {
+    const specs = chain(10_000, false);
+    specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
+    const issues = checkPack(pack(specs));
+    expect(issues.map((i) => i.kind)).toEqual(['prereq', 'blocked']);
+    expect(issues[1]!.items).toHaveLength(9_999);
+    expect(issues[1]!.message).toMatch(/^9999 ideas may never unlock, .* and 9987 more\. /);
+    expect(summarizeIssues(issues)).toBe('2 to review');
   });
 
   it("doesn't add a warning to an idea that carries the error", () => {
@@ -308,11 +384,18 @@ describe('cross-row checks from the spec (C2-F3)', () => {
       { from_id: 'x', to_id: 'y', relation: 'feeds', importance: 3, media_url: null },
     );
     const issues = checkPack(p);
-    expect(issues.map((i) => [i.kind, i.level, i.items, i.fix.column])).toEqual([
-      ['link_unknown_idea', 'warning', ['a'], 'to_id'],
-      ['link_unknown_idea', 'warning', ['b'], 'from_id'],
-      ['link_unknown_idea', 'warning', [], 'from_id'],
+    expect(issues.map((i) => [i.kind, i.level, i.items, i.fix])).toEqual([
+      ['link_unknown_idea', 'warning', ['a'], { tab: 'Links', column: 'to_id' }],
+      ['link_unknown_idea', 'warning', ['b'], { tab: 'Links', column: 'from_id' }],
+      // C8-F9: both ends unknown lists both columns.
+      [
+        'link_unknown_idea',
+        'warning',
+        [],
+        { tab: 'Links', column: 'from_id', columns: ['from_id', 'to_id'] },
+      ],
     ]);
+    for (const issue of issues) expect(DataCheckIssueSchema.parse(issue)).toEqual(issue);
     expect(issues[0]!.message).toBe(
       'The "feeds" link from A to "nope" is skipped, because "nope" isn\'t an idea_id in the Ideas tab. Fix it in Links → to_id.',
     );
@@ -408,6 +491,82 @@ describe('assessment coverage (C2-F6)', () => {
   });
 });
 
+describe('assessment coverage counts ideas, not rows (C8-F1)', () => {
+  it('reports an idea with no question when another idea has two', () => {
+    const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
+    p.assessment = [p.assessment[0]!, { ...p.assessment[0]!, question: 'And again?' }];
+    const issues = checkPack(p);
+    expect(issues.map((i) => [i.kind, i.items])).toEqual([['assessment_coverage', ['b']]]);
+    expect(issues[0]!.message).toMatch(
+      /^Unit 1: 1 of 2 questions; Atlas can draft the rest\. No question yet for B\./,
+    );
+  });
+
+  it("warns on a question in a different unit from its idea, and doesn't count it", () => {
+    const p = pack([{ idea_id: 'a' }, { idea_id: 'b', unit: 2 }]);
+    p.assessment = [
+      { unit: 1, idea_id: 'a', question: 'What is A?', key_points: [] },
+      { unit: 1, idea_id: 'b', question: 'What is B?', key_points: [] },
+    ];
+    const issues = checkPack(p);
+    expect(issues.map((i) => [i.kind, i.level, i.items, i.fix.column])).toEqual([
+      ['assessment_unit_mismatch', 'warning', ['b'], 'unit'],
+      ['assessment_coverage', 'info', ['b'], 'question'],
+    ]);
+    expect(issues[0]!.message).toBe(
+      "The Assessment question for B is in unit 1, but B is in unit 2, so it doesn't count as a question for either unit. Fix it in Assessment → unit, or in Ideas → unit.",
+    );
+    expect(issues[1]!.message).toMatch(/^Unit 2: 0 of 1 questions; /);
+  });
+
+  it('warns on a question for a unit that is not in Units, and skips it', () => {
+    const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
+    p.assessment.push({ unit: 9, idea_id: 'a', question: 'Again?', key_points: [] });
+    const issues = checkPack(p);
+    expect(issues.map((i) => [i.kind, i.level, i.items])).toEqual([
+      ['assessment_unknown_unit', 'warning', ['a']],
+    ]);
+    expect(issues[0]!.message).toContain(
+      "is skipped, because unit 9 isn't a unit in the Units tab",
+    );
+    expect(issues[0]!.fix).toEqual({ tab: 'Assessment', column: 'unit' });
+  });
+});
+
+describe('spec "missing" behaviours (C8-F4, C8-F9)', () => {
+  it('flags ideas with no objective in one warning', () => {
+    const p = pack([
+      { idea_id: 'a', objective: null },
+      { idea_id: 'b' },
+      { idea_id: 'c', objective: '  ' },
+    ]);
+    const issues = checkPack(p);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      kind: 'objective',
+      level: 'warning',
+      items: ['a', 'c'],
+      fix: { tab: 'Ideas', column: 'objective' },
+    });
+    expect(issues[0]!.message).toBe(
+      '2 ideas have no objective, so the tutor and quizzes have no stated goal for them: A and C. Add one in Ideas → objective.',
+    );
+    expect(canPublish(issues)).toBe(true);
+  });
+
+  it('warns when the Categories tab is empty', () => {
+    const issues = checkPack(pack([{ idea_id: 'a' }, { idea_id: 'b' }], { categories: [] }));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      kind: 'no_categories',
+      level: 'warning',
+      items: ['a', 'b'],
+      fix: { tab: 'Categories', column: 'category' },
+    });
+    expect(issues[0]!.message).toContain('every idea uses one category, "Idea"');
+  });
+});
+
 describe('every kind (C2-F9)', () => {
   it('has a test above', () => {
     const tested: DataCheckKind[] = [
@@ -423,6 +582,10 @@ describe('every kind (C2-F9)', () => {
       'codes',
       'media',
       'assessment_coverage',
+      'objective',
+      'no_categories',
+      'assessment_unknown_unit',
+      'assessment_unit_mismatch',
     ];
     expect([...tested].sort()).toEqual([...DATA_CHECK_KINDS].sort());
   });
@@ -507,6 +670,9 @@ describe('performance', () => {
       link_unknown_idea: 4,
       assessment_unknown_idea: 4,
     });
+    // C8-F3: knock-ons are one per root cause (5 unknown prerequisites and 2 loops at most).
+    expect(counts.blocked).toBeLessThanOrEqual(7);
+    expect(issues.length).toBeLessThan(40);
     expect(elapsed).toBeLessThan(200);
   });
 });
