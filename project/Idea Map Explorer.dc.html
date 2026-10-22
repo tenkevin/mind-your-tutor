@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div style="position:relative;width:960px;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading)">Idea Map</span>
+    <span class="tag tag-neutral">Science · The water cycle</span>
+    <span style="font-size:11px;color:var(--color-neutral-400)">{{ ruleText }}</span>
+    <div style="flex:1"></div>
+    <span style="font-size:12px;color:var(--color-neutral-400)">Explored {{ visitedCount }} of {{ totalCount }}</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--color-accent-300)"><i class="ph ph-seal-check"></i>Mastered {{ masteredCount }}</span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px;font-size:12px;color:var(--color-neutral-400)">
+    <span>Your path:</span>
+    <sc-for list="{{ trail }}" as="s" hint-placeholder-count="1">
+      <div style="display:flex;align-items:center;gap:6px">
+        <sc-if value="{{ s.sep }}"><span style="color:var(--color-neutral-600)">→</span></sc-if>
+        <button onClick="{{ s.go }}" style="background:none;border:0;padding:2px 4px;font:inherit;cursor:pointer;color:var(--color-neutral-200);border-radius:4px" style-hover="color:var(--color-accent-300)">{{ s.title }}</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+  <div ref="{{ canvasRef }}" onPointerDown="{{ down }}" style="position:relative;width:960px;height:560px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background:radial-gradient(circle at 50% 50%, var(--color-accent-900), var(--color-bg) 55%)">
+    <div style="position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;transform:translate({{ tx }}px,{{ ty }}px) scale({{ z }});transition:{{ trans }}">
+      <div style="position:absolute;left:-162px;top:-120px;width:324px;height:240px;border-radius:50%;border:{{ lw }}px dashed var(--color-neutral-600);opacity:{{ ringOp }};pointer-events:none"></div>
+      <div style="position:absolute;left:-432px;top:-320px;width:864px;height:640px;border-radius:50%;border:{{ lw }}px dashed var(--color-neutral-600);opacity:{{ ringOp }};pointer-events:none"></div>
+      <sc-for list="{{ hiddenEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:0;border-top:{{ lw }}px dotted var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:.35"></div>
+      </sc-for>
+      <sc-for list="{{ ghostEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ lw }}px;background:var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:{{ ghostOp }}"></div>
+      </sc-for>
+      <sc-for list="{{ farEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:0;border-top:{{ lw }}px dashed var(--color-neutral-600);transform-origin:0 0;transform:rotate({{ e.deg }}deg);filter:blur(1.5px);opacity:.6"></div>
+      </sc-for>
+      <sc-for list="{{ pathEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ lw }}px;background:var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:.7"></div>
+      </sc-for>
+      <sc-for list="{{ lockEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:0;border-top:{{ lw }}px dashed var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:{{ e.op }}"></div>
+      </sc-for>
+      <sc-for list="{{ nearEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ e.w }}px;background:var(--color-accent-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg) translateY(-50%);opacity:{{ e.op }}"></div>
+        <div style="position:absolute;left:{{ e.ax }}px;top:{{ e.ay }}px;width:0;height:0;border-left:9px solid var(--color-accent-500);border-top:5px solid transparent;border-bottom:5px solid transparent;transform:translate(-50%,-50%) rotate({{ e.deg }}deg) scale({{ ls }});opacity:{{ e.op }}"></div>
+        <div onClick="{{ e.open }}" onMouseEnter="{{ e.enter }}" onMouseLeave="{{ e.leave }}" style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ e.hit }}px;transform-origin:0 0;transform:rotate({{ e.deg }}deg) translateY(-50%);cursor:pointer"></div>
+      </sc-for>
+
+      <sc-for list="{{ unconn }}" as="n">
+        <div onClick="{{ n.lock }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-neutral-900);border:1px solid var(--color-neutral-700);color:var(--color-neutral-500);font-size:11px;cursor:pointer"><i class="ph ph-lock-simple"></i></div>
+      </sc-for>
+      <sc-for list="{{ fog }}" as="n">
+        <div onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});padding:5px 10px;border-radius:var(--radius-md);background:var(--color-surface);font-size:12px;color:var(--color-neutral-400);filter:blur(4px);opacity:.4;white-space:nowrap">{{ n.title }}</div>
+      </sc-for>
+      <sc-for list="{{ preview }}" as="n">
+        <div style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--radius-md);background:var(--color-surface);font-size:12px;color:var(--color-neutral-300);filter:blur(3px);opacity:.55;white-space:nowrap">
+          <sc-if value="{{ n.locked }}"><i class="ph ph-lock-simple"></i></sc-if>{{ n.title }}
+        </div>
+      </sc-for>
+      <sc-for list="{{ visited }}" as="n">
+        <button onClick="{{ n.go }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px 11px;border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-neutral-700);color:var(--color-neutral-300);font:500 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-600)">
+          <span style="display:flex;align-items:center;gap:5px">{{ n.title }}<sc-if value="{{ n.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if></span>
+          <span style="font-size:10px;color:var(--color-neutral-500);font-weight:400">{{ n.cat }}</span>
+        </button>
+      </sc-for>
+      <sc-for list="{{ locked }}" as="n">
+        <button onClick="{{ n.lock }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border-radius:var(--radius-md);background:var(--color-bg);border:1px dashed var(--color-neutral-500);color:var(--color-neutral-300);font:500 13px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)">
+          <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-lock-simple"></i>{{ n.title }}</span>
+          <span style="font-size:10px;color:var(--color-neutral-400);font-weight:400">{{ n.req }}</span>
+        </button>
+      </sc-for>
+      <sc-for list="{{ nbrs }}" as="n">
+        <button onClick="{{ n.go }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);color:var(--color-text);font:500 13px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)">
+          <span style="display:flex;align-items:center;gap:5px">{{ n.title }}<sc-if value="{{ n.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if></span>
+          <span style="font-size:10px;color:var(--color-neutral-400);font-weight:400">{{ n.cat }}</span>
+        </button>
+      </sc-for>
+      <button onClick="{{ openPage }}" style="position:absolute;left:{{ cur.x }}px;top:{{ cur.y }}px;transform:translate(-50%,-50%) scale({{ ls }});display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 22px;border-radius:var(--radius-lg);background:var(--color-accent-900);border:1px solid var(--color-accent);box-shadow:0 0 32px var(--color-accent-800);color:var(--color-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--color-accent-800)">
+        <span style="display:flex;align-items:center;gap:6px;font:500 18px var(--font-heading)">{{ cur.title }}<sc-if value="{{ cur.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if></span>
+        <span style="font-size:11px;color:var(--color-accent-300)">{{ cur.cat }} · click again to open</span>
+      </button>
+      <sc-for list="{{ nearEdges }}" as="e">
+        <button onClick="{{ e.open }}" onMouseEnter="{{ e.enter }}" onMouseLeave="{{ e.leave }}" aria-label="{{ e.text }}" style="position:absolute;left:{{ e.bx }}px;top:{{ e.by }}px;transform:translate(-50%,-50%) scale({{ ls }});width:24px;height:24px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-bg);border:1px solid var(--color-accent-600);color:var(--color-accent-300);font-size:12px;cursor:pointer" style-hover="background:var(--color-accent-800);color:var(--color-accent-100)"><i class="{{ e.icon }}"></i></button>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ labels }}" as="l">
+      <div style="position:absolute;left:{{ l.x }}px;top:{{ l.y }}px;transform:translate(-50%,-50%);z-index:2;padding:4px 9px;border-radius:999px;background:var(--color-accent-900);border:1px solid var(--color-accent-600);box-shadow:var(--shadow-md);color:var(--color-accent-200);font-size:11px;white-space:nowrap;pointer-events:none">{{ l.text }}</div>
+    </sc-for>
+
+    <div style="position:absolute;left:16px;top:12px;font-size:11px;color:var(--color-neutral-400);pointer-events:none">Scroll to zoom · drag to move · click a link to learn how two ideas connect</div>
+
+    <sc-if value="{{ hasLock }}">
+      <div data-nodrag="1" style="position:absolute;left:16px;bottom:62px;z-index:3;width:280px;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-lg);cursor:default">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ph ph-lock-simple" style="color:var(--color-accent-300)"></i>
+          <span style="font:500 15px var(--font-heading);flex:1">{{ lockCard.title }}</span>
+          <button onClick="{{ closeLock }}" class="btn btn-ghost btn-icon" aria-label="Close"><i class="ph ph-x"></i></button>
+        </div>
+        <span style="font-size:12px;color:var(--color-neutral-400)">{{ lockCard.rel }}</span>
+        <span style="font-size:13px;line-height:1.45;color:var(--color-neutral-200)">{{ lockCard.text }}</span>
+        <sc-if value="{{ lockCard.hasBar }}">
+          <div style="height:5px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ lockCard.pct }}%;background:var(--color-accent)"></div></div>
+        </sc-if>
+        <sc-if value="{{ lockCard.hasBtn }}">
+          <button class="btn btn-primary" onClick="{{ lockCard.go }}" style="align-self:flex-start">{{ lockCard.btn }}</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <div data-nodrag="1" style="position:absolute;left:16px;bottom:14px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:11px;color:var(--color-neutral-400);cursor:default">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px solid var(--color-accent);background:var(--color-accent-900)"></span>Current</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px solid var(--color-neutral-700);background:var(--color-surface)"></span>Can explore</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px dashed var(--color-neutral-500)"></span>Needs mastery</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-lock-simple"></i>Not connected yet</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-play" style="color:var(--color-accent-300)"></i>Video</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-sparkle" style="color:var(--color-accent-300)"></i>AI instructor</span>
+    </div>
+
+    <div data-nodrag="1" style="position:absolute;right:14px;bottom:12px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-md);cursor:default">
+      <button class="btn btn-ghost btn-icon" onClick="{{ zoomOut }}" aria-label="Zoom out"><i class="ph ph-minus"></i></button>
+      <span style="width:38px;text-align:center;font-size:11px;color:var(--color-neutral-300);font-variant-numeric:tabular-nums">{{ pct }}%</span>
+      <button class="btn btn-ghost btn-icon" onClick="{{ zoomIn }}" aria-label="Zoom in"><i class="ph ph-plus"></i></button>
+      <span style="width:1px;height:18px;background:var(--color-neutral-700);margin:0 4px"></span>
+      <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+        <button onClick="{{ m.pick }}" style="padding:5px 10px;border-radius:6px;border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.color }};font:500 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="color:var(--color-accent-200)">{{ m.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isLink }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:28px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <button class="btn btn-ghost" onClick="{{ backToMap }}" style="align-self:flex-start">← Back to map</button>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+        <span style="padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);font:500 15px var(--font-heading)">{{ link.a }}</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-accent-300)"><span style="width:28px;height:1px;background:var(--color-accent-500)"></span>{{ link.rel }}<i class="ph ph-arrow-right"></i></span>
+        <span style="padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);font:500 15px var(--font-heading)">{{ link.b }}</span>
+      </div>
+
+      <sc-if value="{{ showVideo }}">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="position:relative;aspect-ratio:16/9;max-height:320px;border-radius:var(--radius-md);border:1px dashed var(--color-neutral-600);background:var(--color-neutral-900);display:flex;align-items:center;justify-content:center">
+            <span style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-accent);color:var(--color-accent-200);font-size:22px;box-shadow:0 0 24px var(--color-accent-800)"><i class="ph ph-play"></i></span>
+            <span style="position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--color-neutral-300)">{{ link.mediaTitle }} · {{ link.mediaDur }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:13px;color:var(--color-neutral-400)">Still unsure after the video?</span>
+            <button class="btn btn-secondary" onClick="{{ toAI }}"><i class="ph ph-sparkle"></i> Ask the AI instructor</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showAI }}">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--radius-md);background:var(--color-surface)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent-600);color:var(--color-accent-200);font-size:13px"><i class="ph ph-sparkle"></i></span>
+            <span style="font:500 14px var(--font-heading)">AI instructor</span>
+            <sc-if value="{{ noMedia }}"><span class="tag tag-neutral">No video for this link yet</span></sc-if>
+            <div style="flex:1"></div>
+            <sc-if value="{{ link.hasMedia }}"><button class="btn btn-ghost" onClick="{{ toVideo }}"><i class="ph ph-play"></i> Back to video</button></sc-if>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;max-height:260px;overflow:auto">
+            <sc-for list="{{ msgs }}" as="m">
+              <div style="display:flex;justify-content:{{ m.align }}">
+                <div style="max-width:85%;padding:10px 13px;border-radius:var(--radius-md);background:{{ m.bg }};border:1px solid {{ m.border }};font-size:14px;line-height:1.55;color:var(--color-neutral-100);white-space:pre-wrap;text-wrap:pretty">{{ m.text }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ loading }}"><span style="font-size:13px;color:var(--color-neutral-400)">The instructor is thinking…</span></sc-if>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ suggestions }}" as="q">
+              <button onClick="{{ q.ask }}" style="padding:5px 10px;border-radius:999px;background:transparent;border:1px solid var(--color-neutral-700);color:var(--color-neutral-200);font:12px var(--font-body);cursor:pointer" style-hover="border-color:var(--color-accent-500);color:var(--color-accent-200)">{{ q.text }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input class="input" value="{{ chatInput }}" onChange="{{ onInput }}" onKeyDown="{{ onKey }}" placeholder="Ask your own question…" style="flex:1;min-width:0">
+            <button class="btn btn-primary" onClick="{{ send }}">Ask</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">
+      <sc-for list="{{ linkIdeas }}" as="c" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <span style="font-size:10px;color:var(--color-neutral-400);text-transform:uppercase;letter-spacing:.06em">{{ c.cat }}</span>
+          <span style="font:500 15px var(--font-heading)">{{ c.title }}</span>
+          <span style="font-size:12px;line-height:1.5;color:var(--color-neutral-300)">{{ c.blurb }}</span>
+          <button class="btn btn-ghost" onClick="{{ c.go }}" style="align-self:flex-start">Go to idea →</button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isPage }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:28px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <button class="btn btn-ghost" onClick="{{ backToMap }}" style="align-self:flex-start">← Back to map</button>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px">
+          <span class="tag tag-accent">{{ cur.cat }}</span>
+          <sc-if value="{{ cur.mastered }}"><span class="tag tag-outline">Mastered</span></sc-if>
+        </div>
+        <h1 style="margin:0;font:500 28px var(--font-heading)">{{ cur.title }}</h1>
+        <p style="margin:0;font-size:14px;line-height:1.55;color:var(--color-neutral-200);max-width:56ch;text-wrap:pretty">{{ cur.blurb }}</p>
+      </div>
+      <div style="height:160px;border-radius:var(--radius-md);border:1px dashed var(--color-neutral-600);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--color-neutral-400)">Image / video for this idea</div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface)">
+        <span style="font-size:11px;color:var(--color-neutral-400);text-transform:uppercase;letter-spacing:.06em">Check your understanding · pass to master this idea</span>
+        <span style="font-size:14px">Which idea is directly connected to {{ cur.title }}?</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ quiz }}" as="q" hint-placeholder-count="3">
+            <button onClick="{{ q.pick }}" style="padding:7px 12px;border-radius:var(--radius-md);background:{{ q.bg }};border:1px solid {{ q.border }};color:var(--color-text);font:13px var(--font-body);cursor:pointer">{{ q.title }}</button>
+          </sc-for>
+        </div>
+        <span style="font-size:12px;color:var(--color-accent-300)">{{ quizMsg }}</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;padding-top:44px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:12px;color:var(--color-neutral-400)">Explored</span>
+        <div style="height:6px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ progressPct }}%;background:var(--color-neutral-400)"></div></div>
+        <span style="font-size:12px;color:var(--color-neutral-300)">{{ visitedCount }} of {{ totalCount }} ideas</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:12px;color:var(--color-neutral-400)">Mastered</span>
+        <div style="height:6px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ masteryPct }}%;background:var(--color-accent)"></div></div>
+        <span style="font-size:12px;color:var(--color-neutral-300)">{{ masteredCount }} of {{ totalCount }} ideas</span>
+      </div>
+      <sc-if value="{{ hasNext }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <span style="font-size:12px;color:var(--color-neutral-400)">Suggested next</span>
+          <span style="font:500 15px var(--font-heading)">{{ next.title }}</span>
+          <span style="font-size:12px;color:var(--color-neutral-300)">{{ next.rel }}</span>
+          <button class="btn btn-primary" onClick="{{ goNext }}">Go to idea →</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}">
+    <div style="position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:var(--radius-md);background:var(--color-accent-900);border:1px solid var(--color-accent-600);box-shadow:var(--shadow-lg);font-size:13px;color:var(--color-accent-100);white-space:nowrap"><i class="ph ph-seal-check"></i>{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:960,&quot;height&quot;:700},&quot;maxLinks&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Map rules&quot;},&quot;showHidden&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Map rules&quot;}}">
+const IDEAS = {
+  cycle: { t: 'Water cycle', c: 'Process', b: 'The journey water takes as it moves between the sky, the land and the sea, over and over again.' },
+  evap: { t: 'Evaporation', c: 'Process', b: 'When the Sun warms water in oceans, lakes and puddles, some of it turns into an invisible gas and rises into the air.' },
+  cond: { t: 'Condensation', c: 'Process', b: 'As water vapour rises it cools down and turns back into tiny drops of liquid water.' },
+  prec: { t: 'Precipitation', c: 'Process', b: 'When cloud drops grow too heavy, they fall back to the ground.' },
+  coll: { t: 'Collection', c: 'Process', b: 'Water that falls gathers in oceans, rivers, lakes and underground, ready to start the cycle again.' },
+  trans: { t: 'Transpiration', c: 'Process', b: 'Plants pull water up from their roots and let some of it escape from their leaves as vapour.' },
+  ice: { t: 'Freezing', c: 'Process', b: 'When water gets cold enough it turns into solid ice.' },
+  sun: { t: 'The Sun', c: 'Force', b: 'The Sun gives off heat and light. Its energy is what keeps the water cycle moving.' },
+  temp: { t: 'Temperature', c: 'Force', b: 'How hot or cold something is. Warm air can hold more water vapour than cold air.' },
+  climate: { t: 'Climate', c: 'Force', b: 'The usual weather of a place over many years. It changes how much rain and snow falls.' },
+  vap: { t: 'Water vapour', c: 'Thing', b: 'Water in the form of a gas. You cannot see it, but it is all around you in the air.' },
+  clouds: { t: 'Clouds', c: 'Thing', b: 'Millions of tiny water drops or ice crystals floating together in the sky.' },
+  rain: { t: 'Rain & snow', c: 'Thing', b: 'The forms precipitation takes. Snow forms when the air is cold enough to freeze the drops.' },
+  ocean: { t: 'Oceans', c: 'Thing', b: 'Huge bodies of salt water that cover most of the Earth and hold most of its water.' },
+  rivers: { t: 'Rivers', c: 'Thing', b: 'Flowing fresh water that carries rain and melted snow from the land back to the sea.' },
+  plants: { t: 'Plants', c: 'Thing', b: 'Living things that drink water through their roots and return some of it to the air.' },
+  glacier: { t: 'Glaciers', c: 'Thing', b: 'Giant, slow rivers of ice that store fresh water for hundreds of years.' },
+  ground: { t: 'Groundwater', c: 'Thing', b: 'Water that soaks into the soil and is stored between rocks underground.' }
+};
+// [from, to, relation, importance 1-5, media?] as if ingested from a CSV
+const CANDIDATES = [
+  ['sun','evap','powers',5,{ t: 'How the Sun powers evaporation', d: '2:14' }],
+  ['evap','vap','creates',5,{ t: 'From puddle to vapour', d: '1:48' }],
+  ['vap','cond','turns into',5,{ t: 'Why vapour turns back into drops', d: '2:30' }],
+  ['cond','clouds','forms',5],
+  ['clouds','prec','release',5,{ t: 'When clouds get too heavy', d: '1:55' }],
+  ['evap','cycle','is a stage of',5],
+  ['cond','cycle','is a stage of',5],
+  ['prec','cycle','is a stage of',4],
+  ['coll','cycle','is a stage of',4],
+  ['trans','cycle','is a stage of',2],
+  ['sun','temp','raises',4],
+  ['temp','evap','speeds up',4],
+  ['temp','cond','controls',4],
+  ['temp','ice','causes',3],
+  ['temp','climate','shapes',2],
+  ['ocean','evap','supplies',4],
+  ['prec','rain','falls as',4],
+  ['rain','rivers','feeds',4],
+  ['rain','ground','soaks in as',3],
+  ['rivers','ocean','flow into',4],
+  ['coll','ocean','gathers in',3],
+  ['coll','ground','stores water as',3],
+  ['plants','trans','perform',4],
+  ['trans','vap','releases',4],
+  ['ice','glacier','builds',3],
+  ['glacier','rivers','melt into',3],
+  ['climate','prec','shapes',3],
+  ['ocean','climate','moderates',3],
+  ['clouds','climate','affect',2],
+  ['sun','plants','gives energy to',2],
+  ['sun','ocean','warms',2]
+];
+const LOCKS = { clouds: { req: 'cond' }, ice: { req: 'temp' }, glacier: { req: 'ice' }, climate: { count: 3 } };
+const W = 960, H = 560, R1 = 210, R2 = 410, EX = 1.35;
+
+function line(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  return { x: x1, y: y1, len: Math.hypot(dx, dy), deg: Math.atan2(dy, dx) * 180 / Math.PI };
+}
+function buildGraph(max) {
+  const sorted = CANDIDATES.map((e, i) => ({ a: e[0], b: e[1], rel: e[2], w: e[3], media: e[4] || null, i, key: e[0] + '>' + e[1] }))
+    .sort((x, y) => y.w - x.w || x.i - y.i);
+  const out = {}, inn = {}, kept = [], hidden = [];
+  sorted.forEach(e => {
+    if ((out[e.a] || 0) < max && (inn[e.b] || 0) < max) { kept.push(e); out[e.a] = (out[e.a] || 0) + 1; inn[e.b] = (inn[e.b] || 0) + 1; }
+    else hidden.push(e);
+  });
+  const adj = {}, deg = {}, wsum = {};
+  Object.keys(IDEAS).forEach(k => { adj[k] = new Set(); deg[k] = 0; wsum[k] = 0; });
+  kept.forEach(e => { adj[e.a].add(e.b); adj[e.b].add(e.a); deg[e.a]++; deg[e.b]++; wsum[e.a] += e.w; wsum[e.b] += e.w; });
+  const rank = Object.keys(IDEAS).sort((x, y) => deg[y] - deg[x] || wsum[y] - wsum[x]);
+  const pos = {};
+  pos[rank[0]] = { x: 0, y: 0, a: null, ring: 0 };
+  const ring1 = rank.slice(1, 7), ring2 = rank.slice(7);
+  const order = [ring1[0]], left = ring1.slice(1);
+  while (left.length) {
+    const last = order[order.length - 1];
+    left.sort((x, y) => (adj[last].has(y) ? 1 : 0) - (adj[last].has(x) ? 1 : 0));
+    order.push(left.shift());
+  }
+  order.forEach((id, i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / order.length;
+    pos[id] = { a, ring: 1, x: Math.cos(a) * R1 * EX, y: Math.sin(a) * R1 };
+  });
+  const pref = id => {
+    const as = [...adj[id]].filter(n => pos[n] && pos[n].a !== null).map(n => pos[n].a);
+    if (!as.length) return null;
+    return Math.atan2(as.reduce((s, a) => s + Math.sin(a), 0), as.reduce((s, a) => s + Math.cos(a), 0));
+  };
+  const withPref = ring2.map(id => ({ id, p: pref(id) }));
+  const known = withPref.filter(o => o.p !== null).sort((x, y) => x.p - y.p);
+  const all2 = known.concat(withPref.filter(o => o.p === null));
+  const start = known.length ? known[0].p : -Math.PI / 2;
+  all2.forEach((o, i) => {
+    const a = start + i * 2 * Math.PI / all2.length;
+    pos[o.id] = { a, ring: 2, x: Math.cos(a) * R2 * EX, y: Math.sin(a) * R2 };
+  });
+  return { kept, hidden, pos, rank };
+}
+function exitT(hw, hh, dx, dy) {
+  return Math.min(Math.abs(dx) > 0.01 ? hw / Math.abs(dx) : 9, Math.abs(dy) > 0.01 ? hh / Math.abs(dy) : 9);
+}
+const SYSTEM = 'You are a warm, encouraging science instructor for K-12 students (ages 8 to 14). You explain how two ideas from a concept map are related. Use short sentences, plain words and one everyday example. Answer in 3 to 5 sentences. No markdown, no lists, no headings.';
+
+class Component extends DCLogic {
+  state = { hist: null, visited: null, mastered: [], view: 'map', hover: null, hoverEdge: null, answer: null,
+    zoom: 1, pan: { x: 0, y: 0 }, mode: 'idea', instant: false, lock: null, toast: null,
+    link: null, linkMode: 'video', chats: {}, chatInput: '' };
+  graph() {
+    const max = Math.max(1, Math.min(5, this.props.maxLinks ?? 3));
+    if (!this._g || this._gMax !== max) { this._g = buildGraph(max); this._gMax = max; }
+    return this._g;
+  }
+  links(id) {
+    return this.graph().kept.filter(e => e.a === id || e.b === id).map(e => ({
+      id: e.a === id ? e.b : e.a, e, text: IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[e.b].t
+    }));
+  }
+  met(id, M) {
+    const l = LOCKS[id];
+    if (!l) return true;
+    return l.req ? M.includes(l.req) : M.length >= l.count;
+  }
+  reqText(id) {
+    const l = LOCKS[id];
+    return l.req ? 'Master ' + IDEAS[l.req].t : 'Master any ' + l.count + ' ideas';
+  }
+  componentWillUnmount() {
+    clearTimeout(this._tt); clearTimeout(this._wt);
+    window.removeEventListener('pointermove', this.onMove);
+  }
+  go(id) {
+    if (this._suppress) return;
+    this.setState(s => {
+      const hist = s.hist || [this.graph().rank[0]], visited = s.visited || hist;
+      const i = hist.indexOf(id);
+      return {
+        hist: i >= 0 ? hist.slice(0, i + 1) : [...hist, id],
+        visited: visited.includes(id) ? visited : [...visited, id],
+        view: 'map', hover: null, hoverEdge: null, answer: null, lock: null, pan: { x: 0, y: 0 },
+        mode: s.mode === 'all' ? null : s.mode, instant: false
+      };
+    });
+  }
+  toastMsg(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toast: null }), 3600);
+  }
+  setMode(m, cur) {
+    if (m === 'all') {
+      const P = Object.values(this.graph().pos), xs = P.map(p => p.x), ys = P.map(p => p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const z = Math.min(W / (maxX - minX + 220), H / (maxY - minY + 170));
+      this.setState({ zoom: z, pan: { x: (minX + maxX) / 2 - cur.x, y: (minY + maxY) / 2 - cur.y + 10 }, mode: m, instant: false });
+    } else {
+      this.setState({ zoom: m === 'idea' ? 1 : 0.75, pan: { x: 0, y: 0 }, mode: m, instant: false });
+    }
+  }
+  zoomBy(f) {
+    this.setState(s => ({ zoom: Math.min(1.6, Math.max(0.35, s.zoom * f)), mode: null, instant: false }));
+  }
+  onWheel = e => {
+    e.preventDefault(); e.stopPropagation();
+    const r = this._cv.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * W / r.width - W / 2, my = (e.clientY - r.top) * H / r.height - H / 2;
+    const s = this.state, z = s.zoom, cur = this._curPos;
+    const z2 = Math.min(1.6, Math.max(0.35, z * Math.exp(-e.deltaY * 0.0015)));
+    const wx = cur.x + s.pan.x + mx / z, wy = cur.y + s.pan.y + my / z;
+    this.setState({ zoom: z2, pan: { x: wx - mx / z2 - cur.x, y: wy - my / z2 - cur.y }, mode: null, instant: true });
+    clearTimeout(this._wt);
+    this._wt = setTimeout(() => this.setState({ instant: false }), 160);
+  };
+  canvasRef = el => {
+    if (this._cv) this._cv.removeEventListener('wheel', this.onWheel);
+    this._cv = el;
+    if (el) el.addEventListener('wheel', this.onWheel, { passive: false });
+  };
+  onDown = e => {
+    if (e.button !== 0 || e.target.closest('[data-nodrag]')) return;
+    this._drag = { x: e.clientX, y: e.clientY, px: this.state.pan.x, py: this.state.pan.y, moved: false };
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onUp, { once: true });
+  };
+  onMove = e => {
+    const d = this._drag; if (!d) return;
+    const r = this._cv ? this._cv.getBoundingClientRect() : { width: W };
+    const k = W / r.width / this.state.zoom;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 4) return;
+    d.moved = true;
+    this.setState({ pan: { x: d.px - dx * k, y: d.py - dy * k }, instant: true, mode: null, hover: null, hoverEdge: null });
+  };
+  onUp = () => {
+    window.removeEventListener('pointermove', this.onMove);
+    if (this._drag && this._drag.moved) { this._suppress = true; setTimeout(() => { this._suppress = false; }, 0); }
+    this._drag = null;
+    this.setState({ instant: false });
+  };
+  pick(id, correctId, curId) {
+    const s = this.state;
+    this.setState({ answer: id });
+    if (id !== correctId || s.mastered.includes(curId)) return;
+    const M2 = [...s.mastered, curId];
+    const opened = Object.keys(LOCKS).filter(k => !this.met(k, s.mastered) && this.met(k, M2)).map(k => IDEAS[k].t);
+    this.setState({ mastered: M2 });
+    this.toastMsg('Mastered ' + IDEAS[curId].t + (opened.length ? '. Unlocked: ' + opened.join(', ') : ''));
+  }
+  openLink(e) {
+    if (this._suppress) return;
+    this.setState({ view: 'link', link: e.key, linkMode: e.media ? 'video' : 'ai', hover: null, hoverEdge: null, lock: null, chatInput: '' });
+    if (!e.media) this.ask(e, null);
+  }
+  async ask(e, question) {
+    const key = e.key, prev = this.state.chats[key];
+    if (!question && prev) return;
+    const A = IDEAS[e.a], B = IDEAS[e.b];
+    const intro = 'Idea A: ' + A.t + '. ' + A.b + '\nIdea B: ' + B.t + '. ' + B.b + '\nRelationship on the map: ' + A.t + ' ' + e.rel + ' ' + B.t + '.\nExplain this relationship to me.';
+    const api = prev ? [...prev.api] : [{ role: 'user', content: intro }];
+    const msgs = prev ? [...prev.msgs] : [];
+    if (question) { api.push({ role: 'user', content: question }); msgs.push({ me: true, text: question }); }
+    this.setState(s => ({ chatInput: '', chats: { ...s.chats, [key]: { api, msgs, loading: true } } }));
+    let reply;
+    try {
+      reply = await window.claude.complete({ system: SYSTEM, messages: api, max_tokens: 400 });
+    } catch (err) {
+      reply = null;
+    }
+    this.setState(s => {
+      const c = s.chats[key];
+      const ok = typeof reply === 'string' && reply.trim();
+      return { chats: { ...s.chats, [key]: {
+        api: ok ? [...c.api, { role: 'assistant', content: reply }] : (question ? c.api.slice(0, -1) : c.api),
+        msgs: [...c.msgs, { me: false, text: ok ? reply.trim() : 'The instructor could not answer just now. Try asking again.' }],
+        loading: false
+      } } };
+    });
+  }
+  renderVals() {
+    const G = this.graph(), P = G.pos;
+    const s = this.state, M = s.mastered, z = s.zoom;
+    const hist = s.hist || [G.rank[0]], V = s.visited || hist;
+    const curId = hist[hist.length - 1], cp = P[curId];
+    this._curPos = cp;
+    const camX = cp.x + s.pan.x, camY = cp.y + s.pan.y;
+    const near = this.links(curId), nearIds = near.map(n => n.id);
+    const st = { [curId]: 'current' };
+    near.forEach(n => { st[n.id] = this.met(n.id, M) ? 'nbr' : 'locked'; });
+    V.forEach(id => { if (!st[id]) st[id] = 'visited'; });
+    near.filter(n => st[n.id] === 'nbr').forEach(n => this.links(n.id).forEach(k => { if (!st[k.id]) st[k.id] = 'preview'; }));
+    Object.keys(IDEAS).forEach(id => { if (!st[id]) st[id] = this.links(id).some(k => V.includes(k.id)) ? 'fog' : 'unconn'; });
+    const ls = z < 1 ? Math.min(1 / z, 1.7) : 1;
+    const compact = z < 0.7;
+    const relTo = id => (near.find(n => n.id === id) || {}).text || '';
+    const mk = id => ({
+      title: IDEAS[id].t, x: P[id].x, y: P[id].y, s: ls, mastered: M.includes(id),
+      cat: IDEAS[id].c + (M.includes(id) ? ' · mastered' : V.includes(id) ? ' · visited' : ''),
+      req: LOCKS[id] ? this.reqText(id) : '', locked: !!LOCKS[id] && !this.met(id, M),
+      go: () => this.go(id),
+      lock: () => { if (!this._suppress) this.setState({ lock: id }); },
+      enter: () => this.setState({ hover: id, hoverEdge: null }),
+      leave: () => this.setState(p => p.hover === id ? { hover: null } : null)
+    });
+    const of = t => Object.keys(IDEAS).filter(id => st[id] === t).map(mk);
+    const nearE = [], lockE = [], path = [], far = [], ghost = [];
+    const vis = x => x === 'current' || x === 'visited' || x === 'nbr' || x === 'locked';
+    G.kept.forEach(e => {
+      const sa = st[e.a], sb = st[e.b], pa = P[e.a], pb = P[e.b], L = line(pa.x, pa.y, pb.x, pb.y);
+      const other = sa === 'current' ? sb : sb === 'current' ? sa : null;
+      const oid = sa === 'current' ? e.b : e.a;
+      if (other === 'nbr') {
+        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const hwA = (e.a === curId ? 95 : 65) * ls, hhA = (e.a === curId ? 34 : 22) * ls;
+        const hwB = (e.b === curId ? 95 : 65) * ls, hhB = (e.b === curId ? 34 : 22) * ls;
+        const t0 = exitT(hwA, hhA, dx, dy), t1 = 1 - exitT(hwB, hhB, dx, dy);
+        const tm = t1 > t0 ? (t0 + t1) / 2 : 0.5, ta = t1 > t0 ? Math.max(t0, t1 - 8 * ls / L.len) : 0.8;
+        const hot = s.hoverEdge === e.key || s.hover === oid;
+        nearE.push({ ...L, op: hot ? 1 : 0.6, w: (hot ? 2 : 1) * Math.max(1, 1 / z), hit: 14 * ls,
+          bx: pa.x + dx * tm, by: pa.y + dy * tm, ax: pa.x + dx * ta, ay: pa.y + dy * ta,
+          icon: e.media ? 'ph ph-play' : 'ph ph-sparkle',
+          text: IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[e.b].t,
+          open: () => this.openLink(e),
+          enter: () => this.setState({ hoverEdge: e.key, hover: null }),
+          leave: () => this.setState(p => p.hoverEdge === e.key ? { hoverEdge: null } : null) });
+      } else if (other === 'locked') lockE.push({ ...L, op: s.hover === oid ? 0.9 : 0.5 });
+      else if (vis(sa) && vis(sb)) path.push(L);
+      else if ((sa === 'nbr' && sb === 'preview') || (sb === 'nbr' && sa === 'preview')) far.push(L);
+      else ghost.push(L);
+    });
+    const hoverText = id => {
+      const t = st[id];
+      if (t === 'nbr') return relTo(id);
+      if (t === 'locked') return relTo(id) + ' · locked';
+      if (t === 'visited') return 'Visited · click to jump back';
+      if (t === 'fog') return 'Explore nearby to reveal';
+      if (t === 'unconn') return 'Locked: explore a connected idea first';
+      return '';
+    };
+    const toScreen = (x, y) => ({ x: (x - camX) * z + W / 2, y: (y - camY) * z + H / 2 });
+    let labels = [];
+    if (s.hoverEdge) {
+      const ne = nearE.find(n => n.open && G.kept.find(k => k.key === s.hoverEdge && n.text === IDEAS[k.a].t + ' ' + k.rel + ' ' + IDEAS[k.b].t));
+      const ke = G.kept.find(k => k.key === s.hoverEdge);
+      if (ne && ke) {
+        const p = toScreen(ne.bx, ne.by);
+        labels = [{ text: ne.text + (ke.media ? ' · watch the video' : ' · ask the AI instructor'), x: Math.min(Math.max(p.x, 170), W - 170), y: p.y > 70 ? p.y - 26 : p.y + 26 }];
+      }
+    } else if (s.hover && st[s.hover]) {
+      const p = toScreen(P[s.hover].x, P[s.hover].y), off = 26 * ls * z + 14, text = hoverText(s.hover);
+      if (text) labels = [{ text, x: Math.min(Math.max(p.x, 150), W - 150), y: p.y > 90 ? p.y - off : p.y + off }];
+    }
+    let lockCard = {};
+    if (s.lock) {
+      const id = s.lock, l = LOCKS[id];
+      if (st[id] === 'unconn' || st[id] === 'fog') {
+        lockCard = { title: 'Hidden idea', rel: 'Not connected to anything you have explored', text: 'Explore an idea linked to this one and it will open up.' };
+      } else if (l) {
+        const reqOpen = l.req && (V.includes(l.req) || st[l.req] === 'nbr' || l.req === curId);
+        lockCard = {
+          title: IDEAS[id].t, rel: relTo(id),
+          text: l.req ? 'Master ' + IDEAS[l.req].t + ' by passing its quiz to open this idea.' : 'Master any ' + l.count + ' ideas to open this one. You have mastered ' + M.length + '.',
+          hasBar: !!l.count, pct: l.count ? Math.min(100, Math.round(M.length / l.count * 100)) : 0,
+          hasBtn: !!reqOpen, btn: l.req === curId ? 'Open ' + IDEAS[l.req].t + ' page' : 'Go to ' + (l.req ? IDEAS[l.req].t : ''),
+          go: () => l.req === curId ? this.setState({ view: 'page', lock: null, answer: null }) : this.go(l.req)
+        };
+      }
+    }
+    const modeBtn = (m, label) => {
+      const on = s.mode === m;
+      return { label, pick: () => this.setMode(m, cp), bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent-600)' : 'transparent', color: on ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' };
+    };
+    const openNear = near.filter(n => st[n.id] === 'nbr');
+    const nextL = openNear.find(n => !V.includes(n.id)) || openNear[0];
+    const wrong = Object.keys(IDEAS).filter(k => k !== curId && !nearIds.includes(k));
+    const correct = nearIds[0];
+    const qIds = correct ? [correct, wrong[curId.length % wrong.length], wrong[(curId.length + 5) % wrong.length]].sort((a, b) => IDEAS[a].t.localeCompare(IDEAS[b].t)) : [];
+    const total = Object.keys(IDEAS).length;
+    const le = s.link ? G.kept.find(k => k.key === s.link) : null;
+    const chat = le ? s.chats[le.key] : null;
+    const ghostOp = Math.max(0, Math.min(0.25, (1 - z) * 0.6));
+    return {
+      ruleText: 'Top ' + this._gMax + ' links in and ' + this._gMax + ' out per idea · ' + G.hidden.length + ' weaker links hidden',
+      cur: { title: IDEAS[curId].t, cat: IDEAS[curId].c, blurb: IDEAS[curId].b, x: cp.x, y: cp.y, mastered: M.includes(curId) },
+      tx: W / 2 - camX * z, ty: H / 2 - camY * z, z, ls,
+      trans: s.instant ? 'none' : 'transform 450ms cubic-bezier(.2,.7,.2,1)',
+      lw: Math.max(1, 1 / z), ghostOp, ringOp: Math.min(0.6, ghostOp * 2.4),
+      nbrs: of('nbr'), locked: of('locked'), visited: of('visited'), preview: of('preview'),
+      fog: compact ? [] : of('fog'), unconn: of('unconn'),
+      nearEdges: nearE, lockEdges: lockE, pathEdges: path, farEdges: far, ghostEdges: ghost,
+      hiddenEdges: this.props.showHidden ? G.hidden.map(e => line(P[e.a].x, P[e.a].y, P[e.b].x, P[e.b].y)) : [],
+      labels, canvasRef: this.canvasRef, down: this.onDown,
+      hasLock: !!s.lock && !!lockCard.title, lockCard, closeLock: () => this.setState({ lock: null }),
+      pct: Math.round(z * 100),
+      zoomIn: () => this.zoomBy(1.2), zoomOut: () => this.zoomBy(1 / 1.2),
+      modes: [modeBtn('idea', 'Idea'), modeBtn('area', 'Area'), modeBtn('all', 'Whole map')],
+      trail: hist.map((id, i) => ({ title: IDEAS[id].t, sep: i > 0, go: () => this.go(id) })),
+      isMap: s.view === 'map', isPage: s.view === 'page', isLink: s.view === 'link' && !!le,
+      openPage: () => { if (!this._suppress) this.setState({ view: 'page', answer: null, lock: null }); },
+      backToMap: () => this.setState({ view: 'map' }),
+      visitedCount: V.length, masteredCount: M.length, totalCount: total,
+      progressPct: Math.round(V.length / total * 100), masteryPct: Math.round(M.length / total * 100),
+      hasNext: !!nextL, next: nextL ? { title: IDEAS[nextL.id].t, rel: nextL.text } : {},
+      goNext: () => nextL && this.go(nextL.id),
+      quiz: qIds.map(id => {
+        const picked = s.answer === id, right = id === correct;
+        return {
+          title: IDEAS[id].t, pick: () => this.pick(id, correct, curId),
+          bg: picked ? (right ? 'var(--color-accent-800)' : 'var(--color-neutral-800)') : 'transparent',
+          border: picked ? (right ? 'var(--color-accent)' : 'var(--color-neutral-500)') : 'var(--color-neutral-700)'
+        };
+      }),
+      quizMsg: s.answer ? (s.answer === correct ? 'Correct. ' + near[0].text + '.' : 'Not quite. Look at the map again and try another.') : '',
+      link: le ? { a: IDEAS[le.a].t, b: IDEAS[le.b].t, rel: le.rel, hasMedia: !!le.media, mediaTitle: le.media ? le.media.t : '', mediaDur: le.media ? le.media.d : '' } : {},
+      showVideo: !!le && !!le.media && s.linkMode === 'video',
+      showAI: !!le && (!le.media || s.linkMode === 'ai'),
+      noMedia: !!le && !le.media,
+      toAI: () => { this.setState({ linkMode: 'ai' }); if (le) this.ask(le, null); },
+      toVideo: () => this.setState({ linkMode: 'video' }),
+      msgs: (chat ? chat.msgs : []).map(m => ({ text: m.text, align: m.me ? 'flex-end' : 'flex-start', bg: m.me ? 'var(--color-accent-900)' : 'var(--color-bg)', border: m.me ? 'var(--color-accent-700)' : 'var(--color-neutral-700)' })),
+      loading: !!(chat && chat.loading),
+      suggestions: ['Give me an everyday example', 'Say it more simply', 'What would happen without this?'].map(q => ({ text: q, ask: () => le && !(chat && chat.loading) && this.ask(le, q) })),
+      chatInput: s.chatInput,
+      onInput: ev => this.setState({ chatInput: ev.target.value }),
+      onKey: ev => { if (ev.key === 'Enter' && s.chatInput.trim() && le && !(chat && chat.loading)) this.ask(le, s.chatInput.trim()); },
+      send: () => { if (s.chatInput.trim() && le && !(chat && chat.loading)) this.ask(le, s.chatInput.trim()); },
+      linkIdeas: le ? [le.a, le.b].map(id => ({ title: IDEAS[id].t, cat: IDEAS[id].c, blurb: IDEAS[id].b, go: () => this.go(id) })) : [],
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
