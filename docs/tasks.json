@@ -79,7 +79,7 @@
       ],
       "done_when": "packages/ui exports Nocturne tokens and the btn, input, tag, table and field classes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f2",
       "updated": "2026-10-22"
     },
@@ -157,7 +157,7 @@
       ],
       "done_when": "The data checks from project/curriculum.js are ported to packages/domain, with a test for each check, including the deliberate errors in fixtures/water-cycle",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c2",
       "updated": "2026-10-22"
     },
@@ -226,6 +226,20 @@
         "S1"
       ],
       "done_when": "Publishing carries mastery over by idea_id and archives removed ideas, covered by tests",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C8",
+      "title": "Data-check and quiz quality fixes (from C2 and C3 QA)",
+      "size": 1,
+      "deps": [
+        "C2",
+        "C3"
+      ],
+      "done_when": "Findings 1-4 in docs/qa/reports/C2.md and C3.md are fixed with regression tests (coverage by idea, loop messages, grouped knock-on warnings, missing objective, true-sentence distractors, plural grammar, seed storage)",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -572,7 +586,8 @@
         "C6",
         "C7",
         "M5",
-        "A6"
+        "A6",
+        "C8"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
