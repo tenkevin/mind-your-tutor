@@ -18,7 +18,8 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D7 | Independent QA before anything moves on | Every task has written criteria (functional, security, performance, usability) before it's claimed, and a separate agent tests against them before merge (`docs/qa/`) |
 | D8 | The Curriculum Pack is the import format | Eight tabs (Course, Units, Ideas, Links, Categories, Assessment, Personas, Library), defined field by field in `docs/spec/`. Each field is `sheet`, `app` or `both` (the sheet seeds it, and Teacher Settings can override it per class) |
 | D9 | Idea explanations: sheet first, AI fallback | `Ideas.explanation` is optional. If it's empty, Ms. Ivy drafts one from the idea's objective and links. A draft reaches students only after a teacher approves it (and can edit it) in Teacher Settings. Approved text is stored per curriculum, shared by all its classes, and reused on re-import until the sheet supplies its own |
-| D10 | Keep the Nocturne design's colours as they are | Three known pairs fall short of WCAG AA and are accepted: `.input` border (1.58:1, needs 3:1), `.btn-primary:active` text (3.92:1, needs 4.5:1) and `.card-meta` on surface (4.25:1, needs 4.5:1). No other exceptions; new colours and components must meet AA. `packages/ui` tests keep the list so a new failure can't slip in |
+| D10 | Keep the Nocturne design's colours as they are | The design system ships unchanged, and these pairs below WCAG AA are accepted: `.input` border on bg and surface (1.55–1.58:1, needs 3:1); `.card-meta` on surface (4.25:1); `.btn-primary` hover on surface (3.96:1) and active on bg and surface (3.92 and 3.38:1); `.btn-ghost` hover on surface (4.08:1) and active on bg and surface (4.20 and 3.60:1). Text pairs need 4.5:1. No other exceptions: new colours and components must meet AA, and `packages/ui` tests check every button state on both grounds, failing if the set of failing pairs changes |
+| D11 | Each class shapes its own library | The curriculum's Library tab sets the shared documents and their default `use_for`. In Teacher Settings, a teacher can, for their class only: change how the AI uses each shared document (`agent`, `tutor`, `both`, or `off` to hide it), and upload their own documents (lab sheets, notes) with their own `use_for`. Atlas and Ms. Ivy search the shared library plus the class's uploads, after the class's settings are applied. Changes never affect other classes on the same curriculum |
 
 ## 2. The core split
 
@@ -95,9 +96,11 @@ Organization ─┬─< User (role: admin | author | teacher | student)
               │               │      ├─ derived: ranked links, layout, quizzes, issues
               │               │      └─ source: file ref, column mapping, checksum
               │               ├─ CurriculumDefaults (personas, framework, grade, objective)
-              │               └─< LibraryDoc ─< Chunk (embedding)
+              │               └─< LibraryDoc ─< Chunk (embedding)   (shared library)
               └─< Class ──────┬─ curriculum_id, pinned_version_id
                               ├─ ClassConfig (overrides; see §6)
+                              ├─< ClassLibraryDoc ─< Chunk   (class uploads, D11)
+                              ├─< ClassLibrarySetting (per shared doc: use_for or off, D11)
                               ├─< Enrollment (student)
                               ├─< InteractionEvent (append-only, per-student seq; source of truth for progress, §8)
                               ├─< GeneratedMapView, AiOutput (stored outputs, referenced by events)

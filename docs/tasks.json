@@ -47,6 +47,17 @@
       "updated": "2026-10-22"
     },
     {
+      "id": "F1b",
+      "title": "Fix F1 QA failures: tracker determinism lint, CI permissions",
+      "size": 1,
+      "deps": [],
+      "done_when": "Every must failure in docs/qa/reports/F1.md passes on re-test (F1-F4, F1-S3, F1-U2, plus the tracker-lint gaps found during testing)",
+      "placeholder": false,
+      "status": "review",
+      "owner": "agent-f1b",
+      "updated": "2026-10-22"
+    },
+    {
       "id": "F2",
       "title": "Port Nocturne tokens and components to packages/ui",
       "size": 1,
@@ -68,7 +79,7 @@
       ],
       "done_when": "zod schemas in packages/contracts for all eight Curriculum Pack tabs (docs/spec), ClassConfig and CurriculumVersion, with tests; fixtures/water-cycle parses from JSON, CSV and XLSX rows",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f3",
       "updated": "2026-10-22"
     },
@@ -81,9 +92,9 @@
       ],
       "done_when": "Migrations create every entity in ARCHITECTURE.md section 5 and run in CI",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-f4",
+      "updated": "2026-10-22"
     },
     {
       "id": "F5",
@@ -120,9 +131,9 @@
       ],
       "done_when": "fixtures/water-cycle imports from the eight CSVs, water-cycle.xlsx and pack.json into identical parsed packs using the column mapping",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c1",
+      "updated": "2026-10-22"
     },
     {
       "id": "C2",
@@ -133,9 +144,9 @@
       ],
       "done_when": "The data checks from project/curriculum.js are ported to packages/domain, with a test for each check, including the deliberate errors in fixtures/water-cycle",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-c2",
+      "updated": "2026-10-22"
     },
     {
       "id": "C3",
@@ -146,9 +157,9 @@
       ],
       "done_when": "Link ranking, ring layout and 8-question quiz generation run on import and are stored on the draft version; tests check the rules (at most 3 links in and 3 out, centre and rings, 8 questions) rather than exact output",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-c3",
+      "updated": "2026-10-22"
     },
     {
       "id": "C4",
@@ -418,13 +429,13 @@
     },
     {
       "id": "A3",
-      "title": "Resource library and RAG indexing",
+      "title": "Resource library and RAG indexing, with per-class library settings and uploads",
       "size": 2,
       "deps": [
         "A1",
         "C4"
       ],
-      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages",
+      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings",
       "placeholder": false,
       "status": "todo",
       "owner": null,
