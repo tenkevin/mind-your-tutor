@@ -246,6 +246,20 @@
       "updated": "2026-10-22"
     },
     {
+      "id": "C9",
+      "title": "Apply D12 and D13: optional objectives and questions, one built-in persona list",
+      "size": 1,
+      "deps": [
+        "C1",
+        "C2"
+      ],
+      "done_when": "Contracts accept empty Units.objective and Assessment.question; C1 imports them without skipping or blocking; C2 flags them as warnings; built-in personas live only in packages/ai's registry and a pack with no Personas tab stores none; open questions 6 and 7 from C1 are removed from ARCHITECTURE.md",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
       "id": "M1",
       "title": "Tracker event catalogue and schemas",
       "size": 1,
@@ -499,14 +513,14 @@
     },
     {
       "id": "A6",
-      "title": "Draft missing idea explanations and teacher approval",
+      "title": "Draft missing explanations, unit objectives and assessment questions, with teacher approval",
       "size": 2,
       "deps": [
         "A1",
         "C4",
         "T2"
       ],
-      "done_when": "For each idea with no explanation after import, Ms. Ivy drafts one from its objective and links. Teachers review, edit and approve drafts in Teacher Settings, and only approved text reaches students. Approvals are stored per curriculum and survive re-import (D9)",
+      "done_when": "For each idea with no explanation, each unit with no objective, and each assessment row with no question after import, Atlas or Ms. Ivy drafts one (D9, D12). Teachers review, edit and approve drafts in Teacher Settings; only approved text reaches students; approvals are stored per curriculum and survive re-import",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -587,7 +601,8 @@
         "C7",
         "M5",
         "A6",
-        "C8"
+        "C8",
+        "C9"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
