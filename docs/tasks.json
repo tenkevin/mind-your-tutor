@@ -47,6 +47,17 @@
       "updated": "2026-10-22"
     },
     {
+      "id": "F1b",
+      "title": "Fix F1 QA failures: tracker determinism lint, CI permissions",
+      "size": 1,
+      "deps": [],
+      "done_when": "Every must failure in docs/qa/reports/F1.md passes on re-test (F1-F4, F1-S3, F1-U2, plus the tracker-lint gaps found during testing)",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
       "id": "F2",
       "title": "Port Nocturne tokens and components to packages/ui",
       "size": 1,
