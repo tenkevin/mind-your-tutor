@@ -1,0 +1,20 @@
+# Local Postgres 16 with pgvector for development: `pnpm db:up`.
+# The password is a local-only placeholder; never use it anywhere else.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ideamap
+    ports:
+      - '5433:5432'
+    volumes:
+      - ideamap-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ideamap']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  ideamap-pg:

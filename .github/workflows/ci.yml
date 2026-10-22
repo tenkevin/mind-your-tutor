@@ -7,6 +7,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      # Postgres 16 with pgvector, as in packages/db/compose.yaml. The password is a
+      # throwaway for this job's container only.
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ideamap
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ideamap"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      # The database tests (packages/db) need this, and fail rather than skip in CI.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ideamap
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,3 +39,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # Migrate the job's database from empty, then again to show it's a no-op.
+      - name: Migrations
+        run: |
+          pnpm --filter @ideamap/db migrate
+          pnpm --filter @ideamap/db migrate | tee second-run.txt
+          grep -q 'nothing to do' second-run.txt
+          pnpm --filter @ideamap/db migrate:status

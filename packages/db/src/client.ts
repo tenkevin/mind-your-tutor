@@ -1,0 +1,59 @@
+import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
+import pg from 'pg';
+import { ORG_SETTING } from './migrations/helpers.js';
+import type { Database, JsonText } from './schema.js';
+
+export type Db = Kysely<Database>;
+
+const INT8 = 20;
+
+/** bigint columns (seq, last_seq) are read as numbers; anything unsafe throws. */
+function parseInt8(value: string): number {
+  const n = Number(value);
+  if (!Number.isSafeInteger(n)) throw new RangeError(`bigint ${value} is not a safe integer`);
+  return n;
+}
+
+const types = {
+  getTypeParser: ((oid: number, format?: 'text' | 'binary') =>
+    oid === INT8 && format !== 'binary'
+      ? parseInt8
+      : pg.types.getTypeParser(oid, format)) as typeof pg.types.getTypeParser,
+};
+
+export function createPool(connectionString: string, config: pg.PoolConfig = {}): pg.Pool {
+  return new pg.Pool({ connectionString, types, ...config });
+}
+
+export function createDb(connectionString: string, config: pg.PoolConfig = {}): Db {
+  return new Kysely<Database>({
+    dialect: new PostgresDialect({ pool: createPool(connectionString, config) }),
+  });
+}
+
+/**
+ * Run `fn` in a transaction that acts for one organization. Row-level security
+ * (ARCHITECTURE.md §10) shows and accepts only that organization's rows; outside
+ * `withOrg` the app role sees none.
+ */
+export function withOrg<T>(db: Db, orgId: string, fn: (trx: Transaction<Database>) => Promise<T>) {
+  return db.transaction().execute(async (trx) => {
+    await sql`SELECT set_config(${ORG_SETTING}, ${orgId}, true)`.execute(trx);
+    return fn(trx);
+  });
+}
+
+/** JSON text for a jsonb column. Arrays need this: pg would send them as Postgres arrays. */
+export function json<T>(value: T): JsonText<T> {
+  return JSON.stringify(value) as JsonText<T>;
+}
+
+/** pgvector text for an embedding. */
+export function toVector(values: readonly number[]): string {
+  if (!values.every(Number.isFinite)) throw new RangeError('An embedding must be finite numbers.');
+  return `[${values.join(',')}]`;
+}
+
+export function fromVector(text: string): number[] {
+  return JSON.parse(text) as number[];
+}

@@ -32,4 +32,16 @@ pnpm typecheck        # tsc --noEmit in every workspace
 pnpm build            # build every workspace
 ```
 
-Run one workspace with `pnpm --filter @ideamap/<name> <script>`, for example `pnpm --filter @ideamap/teacher dev`. Workspaces live under `apps/` and `packages/`, as laid out in `docs/ARCHITECTURE.md` §4. Shared dependency versions are in the `catalog` in `pnpm-workspace.yaml`. CI (`.github/workflows/ci.yml`) runs install, lint, format check, typecheck, test and build on every push and pull request to `idea-map`.
+### Database
+
+Needs Docker. `packages/db/README.md` has the details.
+
+```
+pnpm db:up            # Postgres 16 with pgvector on localhost:5433
+pnpm db:migrate       # apply every migration
+pnpm db:reset         # drop everything and migrate again
+```
+
+The database tests in `pnpm test` run when `DATABASE_URL` is set (for example `postgres://postgres:postgres@localhost:5433/postgres`) and are skipped otherwise; CI always runs them.
+
+Run one workspace with `pnpm --filter @ideamap/<name> <script>`, for example `pnpm --filter @ideamap/teacher dev`. Workspaces live under `apps/` and `packages/`, as laid out in `docs/ARCHITECTURE.md` §4. Shared dependency versions are in the `catalog` in `pnpm-workspace.yaml`. CI (`.github/workflows/ci.yml`) runs install, lint, format check, typecheck, test and build, then the migrations, against a Postgres 16 service with pgvector, on every push and pull request to `idea-map`.
