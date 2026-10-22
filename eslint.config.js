@@ -4,6 +4,42 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+// Tracker determinism lint (ARCHITECTURE.md §8).
+const TIMERS = [
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'clearTimeout',
+  'clearInterval',
+  'clearImmediate',
+  'queueMicrotask',
+  'requestAnimationFrame',
+];
+const IO_MODULES = [
+  'crypto',
+  'http',
+  'https',
+  'http2',
+  'net',
+  'tls',
+  'dgram',
+  'dns',
+  'fs',
+  'timers',
+  'child_process',
+  'worker_threads',
+  'cluster',
+  'perf_hooks',
+  'process',
+  'os',
+  'module',
+  'vm',
+];
+const banned = (what, source) =>
+  `${what} is banned in tracker code, which must be deterministic. ` +
+  `Take ${source} from event data instead (event time, ids and seeds carried in events). ` +
+  'See ARCHITECTURE.md §8.';
+
 export default tseslint.config(
   {
     ignores: [
@@ -31,31 +67,75 @@ export default tseslint.config(
     ...reactHooks.configs.flat.recommended,
   },
   {
-    // The tracker must be deterministic: no clock, no randomness, no network
-    // (ARCHITECTURE.md §8). Time comes from the events themselves.
-    files: ['packages/tracker/src/**/*.ts'],
+    // The tracker must be deterministic: no clock, no randomness, no I/O
+    // (ARCHITECTURE.md §8). Covers every source file in the package. Test files
+    // are exempt so they can stub globals; their names (*.test.*) say so.
+    files: ['packages/tracker/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
+    ignores: ['packages/tracker/**/*.test.*'],
     rules: {
       'no-restricted-properties': [
         'error',
-        {
-          object: 'Date',
-          property: 'now',
-          message: 'Tracker rules are deterministic; take time from the event.',
-        },
-        {
-          object: 'Math',
-          property: 'random',
-          message: 'Tracker rules are deterministic; no randomness.',
-        },
-        { object: 'globalThis', property: 'fetch', message: 'Tracker rules do no I/O.' },
-        { object: 'window', property: 'fetch', message: 'Tracker rules do no I/O.' },
+        { object: 'Date', property: 'now', message: banned('Date.now()', 'time') },
+        { object: 'Math', property: 'random', message: banned('Math.random()', 'random values') },
       ],
-      'no-restricted-globals': ['error', { name: 'fetch', message: 'Tracker rules do no I/O.' }],
+      'no-restricted-globals': [
+        'error',
+        ...['globalThis', 'global', 'window', 'self'].map((name) => ({
+          name,
+          message: banned(`${name} (it reaches the clock, randomness and I/O)`, 'values'),
+        })),
+        ...['performance', 'process'].map((name) => ({
+          name,
+          message: banned(`${name} (a clock)`, 'time'),
+        })),
+        { name: 'crypto', message: banned('crypto (randomness)', 'ids and seeds') },
+        ...['fetch', 'XMLHttpRequest', 'WebSocket', 'require'].map((name) => ({
+          name,
+          message: banned(`${name} (I/O)`, 'inputs'),
+        })),
+        ...TIMERS.map((name) => ({ name, message: banned(`${name} (a timer)`, 'time') })),
+        // These run code the other rules can't see.
+        ...['eval', 'Function'].map((name) => ({
+          name,
+          message: banned(`${name} (it runs code lint can't check)`, 'values'),
+        })),
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: `^(node:)?(${IO_MODULES.join('|')})(/.*)?$`,
+              message: banned(
+                "Importing Node's crypto, timer and I/O modules",
+                'inputs, ids and time',
+              ),
+            },
+          ],
+        },
+      ],
       'no-restricted-syntax': [
         'error',
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
-          message: 'Tracker rules are deterministic; take time from the event.',
+          message: banned('new Date() with no argument (the current time)', 'time'),
+        },
+        {
+          // Date and Math may only be used directly, as Date.parse(...) or
+          // new Date(eventTime), so an alias can't hide Date.now or Math.random.
+          selector: `Identifier[name=/^(Date|Math)$/]${[
+            ':not(NewExpression > Identifier.callee)',
+            ':not(MemberExpression > Identifier.object)',
+            ':not(MemberExpression[computed=false] > Identifier.property)',
+            ':not(Property[computed=false] > Identifier.key)',
+            ':not(BinaryExpression[operator="instanceof"] > Identifier.right)',
+            ':not(TSTypeReference > Identifier.typeName)',
+          ].join('')}`,
+          message: banned('Aliasing Date or Math', 'time and random values'),
+        },
+        {
+          selector: 'ImportExpression',
+          message: banned('Dynamic import() (I/O)', 'inputs'),
         },
       ],
     },
