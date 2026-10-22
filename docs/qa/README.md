@@ -25,7 +25,7 @@ Each check has:
 
 ## Report format
 
-The QA agent posts this as a PR comment, and the coordinator saves it to `docs/qa/reports/<ID>.md`:
+The QA agent posts this as a PR comment (`gh api repos/<owner>/<repo>/issues/<n>/comments -F body=@report.md`; capital `-F` reads the file), and the coordinator saves it to `docs/qa/reports/<ID>.md`:
 
 ```
 # QA report: <ID> · PR #<n> · commit <sha>

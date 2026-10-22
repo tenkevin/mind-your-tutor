@@ -15,3 +15,4 @@ export {
 export * from './class-config.js';
 export * from './curriculum-version.js';
 export * from './explanation.js';
+export * from './data-checks.js';

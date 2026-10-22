@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { constants, crc32, createDeflateRaw } from 'node:zlib';
+import { constants, crc32, deflateRawSync, inflateRawSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { importPack, type ImportResult } from './index.js';
 import { TABS, file, fixtureBytes, fixtureText, xlsx, zip, type XCell } from './testing/build.js';
@@ -19,22 +19,30 @@ const refusal = (r: ImportResult) => {
   return errors[0]!.message;
 };
 
-/** Raw deflate of `size` zero bytes, made in chunks so the test never holds it all. */
-async function deflatedZeros(size: number): Promise<{ data: Uint8Array; crc: number }> {
+/**
+ * Raw deflate of `mb` megabytes of zeros, made without compressing them all: a
+ * full-flushed block is byte-aligned and needs no earlier data, so copies of one
+ * block followed by an empty final block are a valid stream.
+ */
+function deflatedZeros(mb: number): { data: Uint8Array; crc: number } {
   const chunk = Buffer.alloc(1024 * 1024);
-  const deflate = createDeflateRaw({ level: constants.Z_BEST_COMPRESSION });
-  const parts: Buffer[] = [];
-  deflate.on('data', (d: Buffer) => parts.push(d));
-  const done = new Promise((resolve) => deflate.on('end', resolve));
+  const block = deflateRawSync(chunk, {
+    level: constants.Z_BEST_COMPRESSION,
+    finishFlush: constants.Z_FULL_FLUSH,
+  });
   let crc = 0;
-  for (let written = 0; written < size; written += chunk.length) {
-    crc = crc32(chunk, crc);
-    if (!deflate.write(chunk)) await new Promise((resolve) => deflate.once('drain', resolve));
-  }
-  deflate.end();
-  await done;
-  return { data: Buffer.concat(parts), crc };
+  for (let i = 0; i < mb; i++) crc = crc32(chunk, crc);
+  const data = Buffer.concat([
+    ...Array.from({ length: mb }, () => block),
+    deflateRawSync(Buffer.alloc(0)),
+  ]);
+  return { data, crc };
 }
+
+it('the test zip bomb is a valid deflate stream of the size it claims', () => {
+  const { data } = deflatedZeros(3);
+  expect(inflateRawSync(data).length).toBe(3 * 1024 * 1024);
+});
 
 describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', () => {
   it('a 60 MB CSV', async () => {
@@ -47,7 +55,7 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
   });
 
   it('a zip bomb (about 1 MB that unpacks to 1 GB), whatever its headers claim', async () => {
-    const bomb = await deflatedZeros(1024 * 1024 * 1024);
+    const bomb = deflatedZeros(1024);
     expect(bomb.data.length).toBeLessThan(1.1 * 1024 * 1024);
     for (const claimedSize of [1024 * 1024 * 1024, 1000]) {
       const archive = zip([{ name: 'Ideas.csv', data: '', deflated: bomb, claimedSize }]);
@@ -58,7 +66,7 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
   }, 30_000);
 
   it('a workbook whose parts add up past the unpack budget', async () => {
-    const part = await deflatedZeros(60 * 1024 * 1024);
+    const part = deflatedZeros(60);
     // Two 60 MB parts: each fits, together they don't.
     const bombed = zip([
       { name: '[Content_Types].xml', data: '<Types/>' },

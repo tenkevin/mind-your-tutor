@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     // Type-check against workspace packages' source, so typecheck needs no build first.
-    "customConditions": ["source"]
+    "customConditions": ["@ideamap/source"]
   },
   "include": ["src"]
 }
