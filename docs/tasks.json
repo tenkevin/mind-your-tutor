@@ -92,9 +92,9 @@
       ],
       "done_when": "Migrations create every entity in ARCHITECTURE.md section 5 and run in CI",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-f4",
+      "updated": "2026-10-22"
     },
     {
       "id": "F5",
