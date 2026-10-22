@@ -11,6 +11,8 @@ import type {
   CourseSchema,
   CurriculumVersion,
   CurriculumVersionSchema,
+  ExplanationOverride,
+  ExplanationOverrideSchema,
   Idea,
   IdeaRowSchema,
   IdeaSchema,
@@ -40,6 +42,8 @@ describe('types are inferred from the schemas (F3-F10)', () => {
     expectTypeOf<Pack>().toEqualTypeOf<z.infer<typeof PackSchema>>();
     expectTypeOf<ClassConfig>().toEqualTypeOf<z.infer<typeof ClassConfigSchema>>();
     expectTypeOf<CurriculumVersion>().toEqualTypeOf<z.infer<typeof CurriculumVersionSchema>>();
+    expectTypeOf<ExplanationOverride>().toEqualTypeOf<z.infer<typeof ExplanationOverrideSchema>>();
+    expectTypeOf<ExplanationOverride['source']>().toEqualTypeOf<'sheet' | 'ai'>();
   });
 
   it('gives the spec types', () => {

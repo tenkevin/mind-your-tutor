@@ -55,6 +55,7 @@ describe('text length limits (F3-S2)', () => {
   const huge = 'x'.repeat(1024 * 1024);
   it.each([
     ['Ideas', 'title', 200],
+    ['Ideas', 'explanation', 2000],
     ['Assessment', 'question', 1000],
     ['Personas', 'prompt_template', 8000],
     ['Units', 'objective', 1000],

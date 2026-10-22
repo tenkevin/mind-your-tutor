@@ -37,8 +37,6 @@ export interface ColumnSpec {
   /** What happens when the value is missing, in the spec's words. */
   readonly missing: string;
   readonly note: string;
-  /** Not yet in the Curriculum Pack design; accepted as optional (ARCHITECTURE.md §12). */
-  readonly proposed?: boolean;
 }
 
 export interface TabSpec {
@@ -100,6 +98,15 @@ export const PACK_SPEC: readonly TabSpec[] = [
       col('category', 'Categories.category', true, 'sheet', 'Uses first category'),
       col('unit', 'Units.unit', true, 'sheet', 'Blocks import'),
       col('objective', 'text', false, 'sheet', 'Tutor writes one from links'),
+      // Decision D9 (ARCHITECTURE.md).
+      col(
+        'explanation',
+        'text',
+        false,
+        'both',
+        'Tutor drafts one from the objective and links; shown to students only after a teacher approves it',
+        'Student-facing explanation on the idea page. Also given to Ms. Ivy and Milo as context',
+      ),
       col('standard_codes', 'list', false, 'sheet', 'Flagged in data checks'),
       col('requires', 'list of idea_id', false, 'sheet', 'Unlocks from a mastered neighbour'),
       col('media_url', 'url or file', false, 'sheet', 'Placeholder card', 'Video or image'),
@@ -112,17 +119,6 @@ export const PACK_SPEC: readonly TabSpec[] = [
         'Auto: most connected = Legendary, inner ring = Rare',
       ),
       col('notes', 'text', false, 'sheet', '—', 'Teacher-only; Atlas can read it'),
-      {
-        ...col(
-          'explanation',
-          'text',
-          false,
-          'sheet',
-          'Tutor writes one from links',
-          'Student-facing explanation shown on the idea page',
-        ),
-        proposed: true,
-      },
     ],
   },
   {

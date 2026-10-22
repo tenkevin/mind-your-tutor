@@ -74,13 +74,12 @@ const ideas = tab('Ideas', (c) => ({
   category: c.text('category', LIMITS.shortText),
   unit: c.integer('unit'),
   objective: c.text('objective', LIMITS.objective).nullable().default(null),
+  explanation: c.text('explanation', LIMITS.explanation).nullable().default(null),
   standard_codes: c.list('standard_codes', LIMITS.code).default([]),
   requires: c.slugList('requires').default([]),
   media_url: c.url('media_url').nullable().default(null),
   rarity: c.oneOf('rarity', RARITIES).default('auto'),
   notes: c.text('notes', LIMITS.longText).nullable().default(null),
-  /** Proposed column, pending a decision (ARCHITECTURE.md §12). */
-  explanation: c.text('explanation', LIMITS.longText).nullable().default(null),
 }));
 export const IdeaSchema = ideas.schema;
 export const IdeaRowSchema = ideas.row;

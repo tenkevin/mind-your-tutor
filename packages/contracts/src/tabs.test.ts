@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   AUDIENCES,
+  EXPLANATION_SOURCES,
+  ExplanationOverrideSchema,
   GRADES,
   PERSONA_IDS,
   RARITIES,
@@ -236,12 +238,6 @@ describe('spec defaults (F3-F4)', () => {
     });
     expect(parseWith('Library', { use_for: '' }).value?.use_for).toBe('agent');
   });
-
-  it('accepts the proposed Ideas.explanation column as optional text', () => {
-    expect(parseWith('Ideas', { explanation: 'Water rises as vapour.' }).value?.explanation).toBe(
-      'Water rises as vapour.',
-    );
-  });
 });
 
 describe('missing values are classed by the spec (F3-F5)', () => {
@@ -367,5 +363,69 @@ describe('cross-row checks are left to C2 (F3-F7)', () => {
   it('accepts an unknown category, a unit with no row and a self link', () => {
     expect(parseWith('Ideas', { category: 'Nonexistent', unit: 99 }).ok).toBe(true);
     expect(parseWith('Links', { from_id: 'evap', to_id: 'evap' }).ok).toBe(true);
+  });
+});
+
+describe('Ideas.explanation follows D9 (F3-F13)', () => {
+  const text =
+    'When the Sun warms water in oceans, lakes and puddles, some of it turns into an invisible gas and rises into the air.';
+
+  it('keeps the text as written', () => {
+    expect(parseWith('Ideas', { explanation: text }).value?.explanation).toBe(text);
+    expect(parseWith('Ideas', { explanation: `  ${text}\n` }).value?.explanation).toBe(text);
+  });
+
+  it('turns an empty cell or a missing column into null', () => {
+    for (const cell of ['', '   ', null]) {
+      expect(parseWith('Ideas', { explanation: cell }).value?.explanation).toBeNull();
+    }
+    expect(without('Ideas', 'explanation').value?.explanation).toBeNull();
+  });
+
+  it('is optional and limited to 2,000 characters', () => {
+    expect(parseWith('Ideas', { explanation: 'x'.repeat(2000) }).ok).toBe(true);
+    const result = parseWith('Ideas', { explanation: 'x'.repeat(2001) });
+    expect(result.ok).toBe(false);
+    expect(result.issues[0]).toMatchObject({ column: 'explanation', effect: 'uses_fallback' });
+    expect(result.issues[0]!.message).toBe(
+      'explanation is too long: it can have at most 2,000 characters (got 2,001).',
+    );
+  });
+});
+
+describe('approved explanation override (F3-F13)', () => {
+  const approved = {
+    text: 'Water vapour cools and turns back into tiny drops.',
+    source: 'ai',
+    approvedBy: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    approvedAt: '2026-10-22T09:00:00Z',
+  };
+
+  it('has text, source, approvedBy and approvedAt', () => {
+    expect(Object.keys(ExplanationOverrideSchema.shape)).toEqual([
+      'text',
+      'source',
+      'approvedBy',
+      'approvedAt',
+    ]);
+    expect([...EXPLANATION_SOURCES]).toEqual(['sheet', 'ai']);
+    expect(ExplanationOverrideSchema.parse(approved)).toEqual(approved);
+    expect(ExplanationOverrideSchema.parse({ ...approved, source: 'sheet' }).source).toBe('sheet');
+  });
+
+  it('rejects incomplete or invalid overrides', () => {
+    const bad = [
+      { ...approved, text: '' },
+      { ...approved, text: 'x'.repeat(2001) },
+      { ...approved, source: 'teacher' },
+      { ...approved, approvedBy: '' },
+      { ...approved, approvedAt: 'yesterday' },
+      { text: approved.text, source: 'ai' },
+    ];
+    for (const override of bad) {
+      expect(ExplanationOverrideSchema.safeParse(override).success, JSON.stringify(override)).toBe(
+        false,
+      );
+    }
   });
 });

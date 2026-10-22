@@ -26,16 +26,14 @@ describe('PACK_SPEC mirrors docs/spec/curriculum-pack.fields.json', () => {
     const spec = PACK_SPEC.find((t) => t.tab === tab.tab)!;
     expect(spec.kind).toBe(tab.kind);
     expect(spec.desc).toBe(tab.desc);
-    const ours = spec.cols
-      .filter((c) => !c.proposed)
-      .map(({ name, type, req, edit, missing, note }) => ({
-        name,
-        type,
-        req,
-        edit,
-        missing,
-        note,
-      }));
+    const ours = spec.cols.map(({ name, type, req, edit, missing, note }) => ({
+      name,
+      type,
+      req,
+      edit,
+      missing,
+      note,
+    }));
     const theirs = tab.cols.map(({ name, type, req, edit, missing, note }) => ({
       name,
       type,
@@ -45,13 +43,6 @@ describe('PACK_SPEC mirrors docs/spec/curriculum-pack.fields.json', () => {
       note,
     }));
     expect(ours).toEqual(theirs);
-  });
-
-  it('marks only Ideas.explanation as proposed', () => {
-    const proposed = PACK_SPEC.flatMap((t) =>
-      t.cols.filter((c) => c.proposed).map((c) => `${t.tab}.${c.name}`),
-    );
-    expect(proposed).toEqual(['Ideas.explanation']);
   });
 });
 

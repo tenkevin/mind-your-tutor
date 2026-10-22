@@ -18,10 +18,14 @@ describe('ClassConfig follows §6 and the spec edit column (F3-F8)', () => {
     expect(Object.keys(ClassConfigSchema.shape)).toEqual(['course', 'units', 'ideas', 'personas']);
     expect(Object.keys(CourseOverridesSchema.shape)).toEqual(editable('Course'));
     expect(Object.keys(UnitOverrideSchema.shape)).toEqual(['unit', ...editable('Units')]);
-    expect(Object.keys(IdeaOverrideSchema.shape)).toEqual(['idea_id', ...editable('Ideas')]);
+    expect(Object.keys(IdeaOverrideSchema.shape)).toEqual(['idea_id', 'rarity']);
     expect(Object.keys(PersonaOverrideSchema.shape)).toEqual(editable('Personas'));
     expect(editable('Units')).toEqual(['due_date']);
-    expect(editable('Ideas')).toEqual(['rarity']);
+    expect(editable('Ideas')).toEqual(['explanation', 'rarity']);
+  });
+
+  it('leaves out Ideas.explanation, which D9 stores per curriculum, not per class', () => {
+    expect(Object.keys(IdeaOverrideSchema.shape)).not.toContain('explanation');
   });
 
   it('leaves out Library, which §6 keeps as curriculum data', () => {

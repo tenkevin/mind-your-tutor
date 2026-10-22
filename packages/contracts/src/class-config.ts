@@ -4,7 +4,8 @@ import { AUDIENCES, PERSONA_IDS, RARITIES, TONES, columnSpec, type TabName } fro
 
 // A class's overrides of its curriculum's defaults (ARCHITECTURE.md §2 and §6).
 // It holds exactly the pack columns whose spec `edit` is `app` or `both`, except
-// the Library tab, which §6 keeps as curriculum data. Every field is optional:
+// the Library tab, which §6 keeps as curriculum data, and Ideas.explanation, whose
+// approved text D9 stores per curriculum (ExplanationOverride). Every field is optional:
 // absent means "use the curriculum's value". For nullable columns, `null` means
 // "this class clears it" (for example, no due date).
 

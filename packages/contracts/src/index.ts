@@ -13,3 +13,4 @@ export {
 } from './fields.js';
 export * from './class-config.js';
 export * from './curriculum-version.js';
+export * from './explanation.js';

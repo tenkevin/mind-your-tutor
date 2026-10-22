@@ -13,6 +13,7 @@ export const LIMITS = {
   question: 1000,
   description: 1000,
   longText: 4000,
+  explanation: 2000,
   promptTemplate: 8000,
   url: 2048,
   code: 64,
