@@ -32,8 +32,20 @@ export const DATA_CHECK_KINDS = [
   'codes',
   /** Ideas have no media_url, so they show a placeholder card. */
   'media',
-  /** A unit has fewer Assessment questions than ideas. */
+  /** A unit has ideas with no Assessment question. */
   'assessment_coverage',
+  /** Ideas have no objective (optional; the tutor writes one from links). */
+  'objective',
+  /** A unit has no objective; Atlas can draft one for approval. */
+  'unit_objective',
+  /** An Assessment row has no question; Atlas can draft one for approval. */
+  'assessment_question',
+  /** The Categories tab has no rows, so every idea uses one category, "Idea". */
+  'no_categories',
+  /** An Assessment row names a unit that isn't in Units; the row is skipped. */
+  'assessment_unknown_unit',
+  /** An Assessment row's unit isn't its idea's unit, so it covers neither. */
+  'assessment_unit_mismatch',
 ] as const;
 export type DataCheckKind = (typeof DATA_CHECK_KINDS)[number];
 
@@ -45,9 +57,17 @@ export const DataCheckIssueSchema = z.object({
   level: z.enum(DATA_CHECK_LEVELS),
   /** Plain text for teachers, naming idea titles. Not markup: the UI escapes it. */
   message: z.string(),
-  /** The idea_ids the issue is about, known ideas only, in Ideas order where it applies. */
+  /** The idea_ids or unit numbers the issue is about, in pack order where it applies. */
   items: z.array(z.string()),
+  /** Atlas can offer a draft for this issue. */
+  draftable: z.boolean().optional(),
   /** Where the teacher fixes it in the source sheet. */
-  fix: z.object({ tab: z.enum(TAB_NAMES), column: z.string() }),
+  fix: z.object({
+    tab: z.enum(TAB_NAMES),
+    /** The column to fix, or the first of `columns`. */
+    column: z.string(),
+    /** Every column to fix, when there is more than one. */
+    columns: z.array(z.string()).optional(),
+  }),
 });
 export type DataCheckIssue = z.infer<typeof DataCheckIssueSchema>;

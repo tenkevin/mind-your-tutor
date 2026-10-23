@@ -9,6 +9,7 @@ import * as m0007 from './0007_classes.js';
 import * as m0008 from './0008_tracker.js';
 import * as m0009 from './0009_jobs_and_audit.js';
 import * as m0010 from './0010_class_library.js';
+import * as m0011 from './0011_isolation.js';
 import * as m0012 from './0012_privacy.js';
 
 // Every migration, in order. Listed by hand rather than read from disk, so the same
@@ -25,5 +26,6 @@ export const migrations: Record<string, Migration> = {
   '0008_tracker': m0008,
   '0009_jobs_and_audit': m0009,
   '0010_class_library': m0010,
+  '0011_isolation': m0011,
   '0012_privacy': m0012,
 };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PackIssueSchema,
+  MAX_ROWS,
   PROMPT_VARIABLES,
   isSafeMediaRef,
   parsePack,
@@ -96,6 +97,8 @@ describe('URL fields refuse dangerous schemes (F3-S3)', () => {
     'media/../../x.mp4',
     'C:\\media\\x.mp4',
     'https://',
+    'https://user@example.test/video.mp4',
+    'https://user:pass@example.test/video.mp4',
   ];
   const safe = [
     'https://ok.example/v.mp4',
@@ -184,5 +187,24 @@ describe('parsing is synchronous (F3-P3)', () => {
     const result = parsePack(readPackJson());
     expect(result).not.toBeInstanceOf(Promise);
     expect(result.ok).toBe(true);
+  });
+});
+
+describe('pack row caps run before row validation (C9-F12)', () => {
+  it('returns one diagnostic without inspecting rows in an oversized tab', () => {
+    const pack = readPackJson() as Record<string, unknown>;
+    const rows = new Proxy(new Array(MAX_ROWS.Links + 1), {
+      get(target, property, receiver) {
+        if (typeof property === 'string' && /^\d+$/.test(property)) {
+          throw new Error('row inspected before cap');
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    pack.links = rows;
+    const result = parsePack(pack);
+    expect(result.ok).toBe(false);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0]).toMatchObject({ tab: 'Links', severity: 'error' });
   });
 });

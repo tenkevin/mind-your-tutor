@@ -15,25 +15,63 @@ const TIMERS = [
   'queueMicrotask',
   'requestAnimationFrame',
 ];
-const IO_MODULES = [
-  'crypto',
-  'http',
-  'https',
-  'http2',
-  'net',
-  'tls',
-  'dgram',
-  'dns',
-  'fs',
-  'timers',
-  'child_process',
-  'worker_threads',
-  'cluster',
-  'perf_hooks',
+// Tracker code may import only these (plus relative paths). Everything else,
+// Node built-ins and third-party packages alike, can reach a clock, randomness
+// or I/O.
+const ALLOWED_IMPORTS = ['@ideamap/contracts', '@ideamap/domain'];
+// Globals that read a clock, randomness, the host or the garbage collector.
+const HOST_GLOBALS = [
+  ['Intl', 'it reads the locale, time zone and clock'],
+  ['Temporal', 'Temporal.Now reads the clock'],
+  ['AbortSignal', 'AbortSignal.timeout is a timer'],
+  ['MessageChannel', 'message delivery is scheduled like a timer'],
+  ['MessagePort', 'message delivery is scheduled like a timer'],
+  ['BroadcastChannel', 'it is I/O between threads'],
+  ['Atomics', 'Atomics.wait and waitAsync are timers'],
+  ['SharedArrayBuffer', 'other threads can change it'],
+  ['WeakRef', 'its result depends on garbage collection'],
+  ['FinalizationRegistry', 'its result depends on garbage collection'],
+  ['navigator', 'it reads the host machine'],
+  ['Reflect', 'Reflect.construct(Date, []) and Reflect.apply can reach the clock'],
+];
+const BANNED_GLOBAL_NAMES = [
+  'Date',
+  'Math',
+  'globalThis',
+  'global',
+  'window',
+  'self',
+  'performance',
   'process',
-  'os',
-  'module',
-  'vm',
+  'crypto',
+  'fetch',
+  'XMLHttpRequest',
+  'WebSocket',
+  'require',
+  ...TIMERS,
+  ...HOST_GLOBALS.map(([name]) => name),
+  'eval',
+  'Function',
+];
+// Methods whose result depends on the machine's locale or time zone.
+const LOCAL_TIME_METHODS = [
+  'localeCompare',
+  'toLocaleString',
+  'toLocaleDateString',
+  'toLocaleTimeString',
+  'toLocaleUpperCase',
+  'toLocaleLowerCase',
+  'getTimezoneOffset',
+  'getFullYear',
+  'getMonth',
+  'getDate',
+  'getDay',
+  'getHours',
+  'getMinutes',
+  'getSeconds',
+  'getMilliseconds',
+  'toDateString',
+  'toTimeString',
 ];
 const banned = (what, source) =>
   `${what} is banned in tracker code, which must be deterministic. ` +
@@ -69,7 +107,9 @@ export default tseslint.config(
   {
     // The tracker must be deterministic: no clock, no randomness, no I/O
     // (ARCHITECTURE.md §8). Covers every source file in the package. Test files
-    // are exempt so they can stub globals; their names (*.test.*) say so.
+    // are exempt so they can stub globals; their names (*.test.*) say so, and
+    // non-test code may not import them. src/runtime-guard.test.ts backs these
+    // rules up at runtime, for whatever lint can't see.
     files: ['packages/tracker/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     ignores: ['packages/tracker/**/*.test.*'],
     rules: {
@@ -77,6 +117,19 @@ export default tseslint.config(
         'error',
         { object: 'Date', property: 'now', message: banned('Date.now()', 'time') },
         { object: 'Math', property: 'random', message: banned('Math.random()', 'random values') },
+        {
+          // new Date(0).constructor.now() and (() => {}).constructor('...') reach
+          // Date and Function without naming them.
+          property: 'constructor',
+          message: banned('.constructor (it reaches Date and Function)', 'values'),
+        },
+        ...LOCAL_TIME_METHODS.map((property) => ({
+          property,
+          message: banned(
+            `.${property}() (it depends on the machine's locale or time zone; use the UTC methods)`,
+            'time',
+          ),
+        })),
       ],
       'no-restricted-globals': [
         'error',
@@ -94,6 +147,10 @@ export default tseslint.config(
           message: banned(`${name} (I/O)`, 'inputs'),
         })),
         ...TIMERS.map((name) => ({ name, message: banned(`${name} (a timer)`, 'time') })),
+        ...HOST_GLOBALS.map(([name, why]) => ({
+          name,
+          message: banned(`${name} (${why})`, 'time'),
+        })),
         // These run code the other rules can't see.
         ...['eval', 'Function'].map((name) => ({
           name,
@@ -105,9 +162,16 @@ export default tseslint.config(
         {
           patterns: [
             {
-              regex: `^(node:)?(${IO_MODULES.join('|')})(/.*)?$`,
+              // A test file is exempt from these rules, so it can't be used as
+              // production code.
+              regex: '\\.test(\\.|$)',
+              message: banned('Importing a *.test.* file from non-test code', 'inputs'),
+            },
+            {
+              // An allow list: relative paths and the listed packages only.
+              regex: `^(?!\\.\\.?(/|$)|(${ALLOWED_IMPORTS.join('|')})$)`,
               message: banned(
-                "Importing Node's crypto, timer and I/O modules",
+                `Importing anything other than a relative path, ${ALLOWED_IMPORTS.join(' or ')}`,
                 'inputs, ids and time',
               ),
             },
@@ -117,14 +181,67 @@ export default tseslint.config(
       'no-restricted-syntax': [
         'error',
         {
+          selector: `VariableDeclaration[declare=true] > VariableDeclarator[id.name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `TSDeclareFunction > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `ClassDeclaration[declare=true] > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `TSEnumDeclaration > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `TSModuleDeclaration[declare=true] > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: banned('new Date() with no argument (the current time)', 'time'),
+        },
+        {
+          // new Date(...[]) has one argument node but none at runtime.
+          selector: "NewExpression[callee.name='Date'] > SpreadElement",
+          message: banned('new Date(...args) (with no args it is the current time)', 'time'),
+        },
+        {
+          selector: "CallExpression[callee.name='Date']",
+          message: banned('Date() (it returns the current time)', 'time'),
+        },
+        {
+          // Date[k]() and Math['ran' + 'dom']() hide the property name.
+          selector:
+            "MemberExpression[computed=true][object.name=/^(Date|Math)$/]:not([property.type='Literal'])",
+          message: banned('Computed access on Date or Math', 'time and random values'),
         },
         {
           // Date and Math may only be used directly, as Date.parse(...) or
           // new Date(eventTime), so an alias can't hide Date.now or Math.random.
           selector: `Identifier[name=/^(Date|Math)$/]${[
             ':not(NewExpression > Identifier.callee)',
+            // Reported above with their own messages.
+            ":not(CallExpression[callee.name='Date'] > Identifier.callee)",
+            ":not(CallExpression[callee.object.name='Reflect'] > Identifier)",
             ':not(MemberExpression > Identifier.object)',
             ':not(MemberExpression[computed=false] > Identifier.property)',
             ':not(Property[computed=false] > Identifier.key)',

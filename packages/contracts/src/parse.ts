@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import { displayValue } from './fields.js';
 import type { PackIssue } from './issues.js';
-import { PackSchema, TAB_ROW_SCHEMAS, type Pack } from './pack.js';
+import { MAX_ROWS, PackSchema, TAB_ROW_SCHEMAS, type Pack } from './pack.js';
 import {
   PROMPT_VARIABLES,
   TAB_KEYS,
@@ -131,6 +131,30 @@ function locate(path: readonly PropertyKey[], where: PackLocations) {
 
 /** Parses a whole pack (as JSON). Every problem in every tab is reported at once. */
 export function parsePack(input: unknown, where: PackLocations = {}): ParseResult<Pack> {
+  // Reject over-cap tabs before Zod visits every row and allocates a problem for
+  // each one. There can be at most one bounded diagnostic per tab.
+  if (typeof input === 'object' && input !== null) {
+    const record = input as Record<string, unknown>;
+    const oversized = (Object.keys(MAX_ROWS) as (keyof typeof MAX_ROWS)[]).flatMap((tab) => {
+      const rows = record[TAB_KEYS[tab]];
+      const max = MAX_ROWS[tab];
+      if (!Array.isArray(rows) || rows.length <= max) return [];
+      return [
+        {
+          severity: 'error' as const,
+          effect: 'blocks_import' as const,
+          tab,
+          row: null,
+          column: null,
+          value: rows.length,
+          fallback: null,
+          message: `The ${tab} tab can have at most ${max.toLocaleString('en')} rows (got ${rows.length.toLocaleString('en')}).`,
+        },
+      ];
+    });
+    if (oversized.length > 0) return { ok: false, value: null, issues: oversized };
+  }
+
   const result = PackSchema.safeParse(input, { reportInput: true });
   const warnings: PackIssue[] = [];
   const personas =

@@ -164,13 +164,15 @@ describe.skipIf(!hasDatabase)('audit log (F6-F5, F6-F6, F6-S2, F6-U2)', () => {
       .select('id')
       .where('curriculum_id', '=', a.curriculumId)
       .executeTakeFirstOrThrow();
-    await asTeacher((trx) =>
-      trx
+    // Settings are class-scoped (F4b): act inside the class.
+    await asTeacher(async (trx) => {
+      await sql`SELECT set_config('app.class_id', ${a.classId}, true)`.execute(trx);
+      return trx
         .updateTable('class_library_setting')
         .set({ use_for: 'tutor', updated_by: a.teacherId })
         .where('class_id', '=', a.classId)
-        .execute(),
-    );
+        .execute();
+    });
     const row = await latestAudit(t.db, a.orgId, 'library_setting.changed');
     expect(row).toMatchObject({
       actor_id: a.teacherId,

@@ -68,8 +68,9 @@ export function fromVector(text: string): number[] {
 }
 
 /**
- * As `withOrg`, also acting for one class. Class uploads (class_library_doc,
- * class_chunk; D11) are visible only inside `withClass` for their own class.
+ * As `withOrg`, also acting for one class. Class library settings and uploads
+ * (class_library_setting, class_library_doc, class_chunk; D11) are visible only inside
+ * `withClass` for their own class.
  */
 export function withClass<T>(
   db: Db,

@@ -10,7 +10,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
 import { COLUMNS, type Database } from './schema.js';
 import { freshDatabase, hasDatabase, type TestDatabase } from './test/harness.js';
-import { DERIVED, SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
+import { validDerived } from './test/derived.js';
+import { SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
 import type { Selectable } from 'kysely';
 
 // F4-F9: the typed layer in schema.ts matches the live schema, and rows round-trip
@@ -85,6 +86,7 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
   it('round-trips a CurriculumVersion through the contract', async () => {
     const seeded = await seedOrg(t.db, 'typed');
     const pack = waterCyclePack();
+    const derived = validDerived();
     const inserted = await t.db
       .insertInto('curriculum_version')
       .values({
@@ -92,9 +94,11 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
         curriculum_id: seeded.curriculumId,
         number: 3,
         pack: json(pack),
-        derived: json(DERIVED),
+        derived: json(derived),
         issues: json([
           {
+            origin: 'import',
+            level: 'warning',
             severity: 'warning',
             effect: 'none',
             tab: 'Ideas',
@@ -104,6 +108,14 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
             fallback: null,
             message: 'No media.',
           },
+          {
+            origin: 'data_check',
+            kind: 'prereq',
+            level: 'error',
+            message: 'Groundwater requires "aquifer".',
+            items: ['ground'],
+            fix: { tab: 'Ideas', column: 'requires' },
+          },
         ]),
         source: json(SOURCE),
       })
@@ -112,8 +124,30 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
 
     const version = toContract(inserted);
     expect(version.pack).toEqual(pack);
+    expect(version.derived).toEqual(derived);
     expect(version.status).toBe('draft');
-    expect(version.issues).toHaveLength(1);
+    expect(version.issues).toEqual([
+      {
+        origin: 'import',
+        level: 'warning',
+        severity: 'warning',
+        effect: 'none',
+        tab: 'Ideas',
+        row: 4,
+        column: 'media_url',
+        value: null,
+        fallback: null,
+        message: 'No media.',
+      },
+      {
+        origin: 'data_check',
+        kind: 'prereq',
+        level: 'error',
+        message: 'Groundwater requires "aquifer".',
+        items: ['ground'],
+        fix: { tab: 'Ideas', column: 'requires' },
+      },
+    ]);
     expect(typeof inserted.number).toBe('number');
   });
 

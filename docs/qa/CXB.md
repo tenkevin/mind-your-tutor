@@ -1,0 +1,19 @@
+# Codex suggestions waiting for a task's criteria
+
+Not a task to claim (placeholder). The coordinator moves each item into `docs/qa/<ID>.md` as a **should** check when it writes that task's criteria, then strikes it here.
+
+| From | Suggestion | Goes to |
+|---|---|---|
+| Codex-F1c-tracker.md F1c-S1 | Detect forbidden I/O transitively, in helpers the tracker imports (resolved-import policy plus a guard test where a permitted helper reads a file and the guard must fail) | M1/M3 criteria when their spec exists |
+| Codex-F2-ui.md | ~~Cross-browser (Firefox, WebKit), 200% zoom and screen-reader checks on real screens~~ | Routed to T1-U1/U2/U3 |
+| Codex-F3-contracts.md F3-S2 | Friendly, located error messages for ClassConfig and CurriculumVersion edits (not raw zod text) | T3 criteria |
+| Codex-F4-database.md | Independent tenant and class CRUD probes beyond the existing suite | F5 QA run (added to the QA prompt), then T-task criteria |
+| Codex-F2-ui.md | ~~Shared JS chunk named `jsx-runtime-*`: rename if useful, with a build-artifact check~~ | Routed to T1-U4 |
+| F1c independent PR QA, findings 2–7 ([comment](https://github.com/tenkevin/mind-your-tutor/pull/10#issuecomment-6354124154)) | Computed-constructor access, runtime guard scope/async handling, local-time-zone APIs, relative imports, object-URL randomness and future allowed-package dependency coverage; distinguish existing build rejection from actual runtime guarantees | M1/M3 criteria when specified; mandatory finding 1 routed separately to F1d |
+| C8 independent review at 4098239 ([saved report](reports/C8.md)) | Keep semantic answer oracles over all original links, including hidden links, and explicit map-link truth wording in future consumers/exports; retain failed and successful timings and isolate performance benchmarks without silently raising limits | C6/C9 and future tooling criteria, before claim |
+| Codex-F4cx1-review-3e97696.md | Align guard comment with its actual predicates; retain exhaustive owned-function inventory when auth adds a definer; document forward-only 0012 rollback. No new runtime requirement or permission to rerun blocked probes | Future permitted F4cx1 follow-up before review resumes |
+| Codex-C9-review-2ae52d4.md C9-SUG1 | Recheck completed whitespace-only cells when a CSV row becomes the logical header, or document their treatment; preserve headerless Course values and bounded data cells | Future importer criteria; deferred at C9 stop boundary |
+| Codex-C9-review-2ae52d4.md | Retain exact benchmark scripts/data hashes, baseline commits, raw samples and environment; distinguish cold/first runs from warmed alternating comparisons | Future tooling/performance criteria |
+| Codex-C9-review-2ae52d4.md | Polish the missing-Personas info into two sentences; existing meaning is correct | Future importer usability criteria |
+| Codex-C2cx5-review-7dd6511.md | Checker issues name affected ids and fix columns but not source rows; a UI may resolve ids to imported rows | T2 criteria |
+| Codex-F5-review-dc3c902.md S2 | Auth callback used-state and failed-callback limiter are per process (`apps/api/src/routes/auth.ts:57`, `:118`, `limiter.ts`); share or document before multi-process deployment | Deployment / L1 criteria |

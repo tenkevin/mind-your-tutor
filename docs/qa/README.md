@@ -2,6 +2,10 @@
 
 Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task is claimed**. A task can't move on without one: `scripts/plan.mjs claim` refuses it, and `check` fails if a claimed task is missing one.
 
+## Authorization and handoff
+
+Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Stopped after C9:** do not start another review until the user resumes work. Routine state and reports belong in these living documents; direct messages are reserved for urgent findings, actionable blockers or authorized startup assignments. QA owns evidence and verdicts; the coordinator owns task states and merges. An unavailable required check remains unverified; do not retry or reroute previously blocked review actions through another tool, session or CI.
+
 ## Who does what
 
 | Step | Who | When |
@@ -10,9 +14,17 @@ Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task 
 | Build to the criteria | The task's agent. It reads the criteria as the bar but does not mark them | During the task |
 | Run the criteria | A **separate QA agent** that did not write the code, in a fresh session, against the PR branch | After the PR is opened and CI is green |
 | Decide | Coordinator merges only on a QA **PASS**. A FAIL goes back to the task's agent with the report | After QA |
-| Keep the record | Coordinator saves the report as `docs/qa/reports/<ID>.md` when merging | On merge |
+| Keep the record | Coordinator saves the report as `docs/qa/reports/<ID>.md`, confirms actual merge CI, then marks done | After verified merge |
 
 The QA agent may read the code to find weaknesses, but it judges against the criteria and the spec, never against what the code happens to do.
+
+QA also tests the PR **as it would land**. In a scratch checkout, merge the current `origin/idea-map` into the PR head, then run the root `pnpm typecheck` and the full test suite with a database (`DATABASE_URL` set) as well as the task's own checks. A failure that only appears after that merge is a FAIL. Green tests on the task branch alone don't prove the combined branch works.
+
+## Evidence and merge completion
+
+Record exact PR head, pinned base, tested integrated tree, commands, environment, outputs and first failures. Preserve benchmark scripts or reproducible data hashes and raw samples; distinguish cold runs from warmed medians and use the same input for paired comparisons. An unavailable historical harness is a disclosed limitation. Any measurement-method clarification must be documented by the coordinator before the verdict, with its reason and unchanged acceptance budget; never silently substitute easier inputs or claim an unreproduced measurement passed.
+
+Before merging, the coordinator verifies zero commits behind current `idea-map`, exact-head CI and independent all-must PASS. A later base synchronization carries that PASS only when the task code/spec is unchanged and exact-head CI passes. Record the diff check, merge SHA and actual merge CI in the completion report. Keep nonblocking suggestions in CXB or future criteria; they do not authorize work past a user stop boundary. Published `Codex-*` reports remain immutable; corrections use a new report or a clearly identified coordinator addendum outside the immutable original.
 
 ## Criteria file format
 

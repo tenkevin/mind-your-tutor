@@ -88,14 +88,14 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
   });
 });
 
-describe.skipIf(!hasDatabase)('class uploads are scoped to their class (D11)', () => {
+describe.skipIf(!hasDatabase)('class uploads and settings are scoped to their class (D11)', () => {
   let t: TestDatabase;
   let a: SeededOrg;
   let otherClassId: string;
   beforeAll(async () => {
     t = await freshDatabase();
     a = await seedOrg(t.db, 'a');
-    // A second class in the same organization, with an upload of its own.
+    // A second class in the same organization, with a setting and an upload of its own.
     const other = await t.db
       .insertInto('class')
       .values({
@@ -108,6 +108,16 @@ describe.skipIf(!hasDatabase)('class uploads are scoped to their class (D11)', (
       .returning('id')
       .executeTakeFirstOrThrow();
     otherClassId = other.id;
+    await t.db
+      .insertInto('class_library_setting')
+      .values({
+        org_id: a.orgId,
+        class_id: otherClassId,
+        curriculum_id: a.curriculumId,
+        library_doc_id: a.libraryDocId,
+        use_for: 'both',
+      })
+      .execute();
     const upload = await t.db
       .insertInto('class_library_doc')
       .values({

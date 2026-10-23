@@ -11,6 +11,12 @@ Read this before starting any task.
 - **Sample curriculum for tests:** `fixtures/water-cycle/` (CSV, XLSX and pack JSON; read its README for the deliberate data errors).
 - **Design reference:** `project/` (Claude Design export, HTML prototypes) and `chats/chat1.md` for intent. The prototypes show what to build, not how. Match the visuals; don't copy their structure.
 
+## Stop and resume protocol
+
+Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary: stopped after C9.** C9 is done; no follow-on task or review may start until the user explicitly resumes work. A documentation-only update does not resume implementation. A ready task or an old claim is not authorization to cross the stop boundary.
+
+On an authorized resume, fetch current state, verify PR heads/CI and outstanding claims, and reconcile the handoff before assigning work. Preserve independent QA and all existing merge gates. If a task is stopped mid-review, retain its truthful task status and record owner, exact head, evidence, unresolved checks and next action; do not mark it done merely to close a session.
+
 ## Picking up work
 
 1. `git fetch origin idea-map && git checkout idea-map && git pull`, then `node scripts/plan.mjs ready`.
@@ -25,7 +31,7 @@ Read this before starting any task.
    If the push is rejected, run `git pull --rebase origin idea-map`, then `node scripts/plan.mjs show <ID>`. If someone else now owns the task, reset your claim (`git reset --hard origin/idea-map`) and pick another task.
 4. Do the work on a branch named `task/<ID>-<short-name>`, cut from `idea-map`. The bar for finishing is the task's `done_when` **and** every check in `docs/qa/<ID>.md`. Build to the criteria, but don't mark them yourself; an independent QA agent does that.
 5. Open a pull request into `idea-map`. Then, on `idea-map`, run `node scripts/plan.mjs review <ID>` and commit and push the plan change. Agents don't merge their own PRs.
-6. An independent QA agent runs `docs/qa/<ID>.md` against your PR and posts a report. The coordinator merges only on a QA PASS with CI green, then marks the task done. If QA or the coordinator asks for changes, fix them on the same branch; QA then runs again.
+6. An independent QA agent runs `docs/qa/<ID>.md` against your PR and posts a report. The coordinator merges only on a QA PASS with CI green, confirms CI on the actual merge commit, then marks the task done. If QA or the coordinator asks for changes, fix them on the same branch; QA then runs again.
 7. If you can't finish, run `node scripts/plan.mjs release <ID>` and leave a note in the PR or commit saying why.
 
 ## Coordinator
@@ -33,11 +39,22 @@ Read this before starting any task.
 One coordinator session runs the swarm:
 
 - **Criteria first:** before a task becomes claimable, it writes `docs/qa/<ID>.md` from the spec, never from an implementation, and pushes it to `idea-map`.
-- **Launching:** it starts a build agent for each ready task that has criteria, with at most 4 build agents working at once. Each agent gets one task.
+- **Launching:** within the user-authorized scope, it starts a build agent for each ready task that has criteria, with at most 4 build agents and the stricter runtime limit respected. Use a lower-cost capable model for bounded components (Luna used in this run), escalating only when needed. Each agent gets one task.
 - **QA:** when a PR is open and CI is green, it starts a separate QA agent session for that PR. The QA agent never wrote the code, and QA agents don't count towards the limit of 4.
-- **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
+- **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, confirms actual merge CI, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
 - **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
+- **Integration gate:** a PR merges only when its head already contains the current `idea-map` head (GitHub compare shows it 0 commits behind) and CI is green on that exact head. Otherwise the agent merges `origin/idea-map` and pushes first. Merges happen one at a time, and after each one the coordinator checks `idea-map`'s CI. If it's red, all merging stops until an immediate fix task lands. (Added after F4 and C3, each green on its own, broke `idea-map` together: Codex F4-E3.)
 - **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
+
+## Decisions and architecture updates
+
+Resolve routine implementation and integration choices using the settled architecture and task criteria. Do not reopen D1–D13. For a genuinely new product/design decision, record the question in architecture §12, ask the user and continue only independent work within the authorized scope. When a decision is settled, update the relevant architecture section and decision record before dependent implementation; remove only the resolved question by subject and preserve unrelated questions. Status, CI outcomes and parked work belong in the handoff/QA documents, not new architecture decisions. C9 implemented existing D12/D13; the C5 count question remains unresolved.
+
+On completion or handoff, publish task status, immutable-report references, exact reviewed/base/merged heads, actual CI evidence, pending checks, deferred suggestions, parked branches and worker state. Record whether schedules were actually stopped; do not claim control of inaccessible sessions or schedules.
+
+## Coordinator and QA communication
+
+Check `origin/idea-map` before contacting another coordinator: read `docs/PLAN.md`, `docs/HANDOFF.md`, `docs/qa/STATUS.md`, the relevant immutable Codex reports, and `docs/qa/codex-ledger.json`. These documents carry routine status, assignments, evidence paths and next actions. Reserve direct cross-session messages for urgent findings, actionable blockers or a concrete startup assignment for an idle reviewer within authorized scope; do not send acknowledgment/status loops. Publish routine reports in batches and re-check branch state before writing. The coordinator alone changes task state via `scripts/plan.mjs`; independent QA preserves its separate role and never edits published `Codex-*` files.
 
 ## Conventions
 
