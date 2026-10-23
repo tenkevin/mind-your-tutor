@@ -11,7 +11,6 @@ import { APP_ROLE, dropTables, grantApp, tenantTable } from './helpers.js';
 // Everything else stays under row-level security: sessions are looked up inside the
 // organization the session cookie names.
 //
-// Numbered 0012 because 0011 is F4b's isolation migration (PR #12), which lands first.
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   // Providers are configuration (F5), so a provider id is a slug, not a fixed list.

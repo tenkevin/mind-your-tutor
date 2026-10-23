@@ -191,7 +191,7 @@ export interface ClassTable {
   time_zone: Generated<string>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
-  /** OneRoster sourcedId, set by a roster import (0012). */
+  /** OneRoster sourcedId, set by a roster import (0013). */
   roster_source_id: string | null;
 }
 
@@ -339,7 +339,7 @@ export interface AiInteractionTable {
   created_at: CreatedAt;
 }
 
-/** Maps a provider's tenant (domain, district) to an organization (0012, F5). */
+/** Maps a provider's tenant (domain, district) to an organization (0013, F5). */
 export interface SsoTenantTable {
   provider: SsoProvider;
   tenant: string;
@@ -347,7 +347,7 @@ export interface SsoTenantTable {
   created_at: CreatedAt;
 }
 
-/** A signed-in session (0012, F5). Only the SHA-256 of the cookie token is kept. */
+/** A signed-in session (0013, F5). Only the SHA-256 of the cookie token is kept. */
 export interface AuthSessionTable {
   id: Generated<string>;
   org_id: string;
@@ -634,7 +634,7 @@ export const CLASS_SCOPED_TABLES = [
   'class_chunk',
 ] as const satisfies readonly TableName[];
 
-/** Tables with one extra policy beyond tenant isolation: the owner's lookup (0012). */
+/** Tables with one extra policy beyond tenant isolation: the owner's lookup (0013). */
 export const OWNER_LOOKUP_TABLES = ['sso_tenant'] as const satisfies readonly TableName[];
 
 // Fails to compile if a `Database` column is missing from COLUMNS.
