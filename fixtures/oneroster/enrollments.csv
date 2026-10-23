@@ -1,0 +1,8 @@
+sourcedId,status,dateLastModified,classSourcedId,schoolSourcedId,userSourcedId,role,primary,beginDate,endDate
+e-1,active,2026-09-01T00:00:00Z,c-1,sch-1,t-100,teacher,true,2026-09-01,2027-06-30
+e-2,active,2026-09-01T00:00:00Z,c-1,sch-1,s-200,student,false,2026-09-01,2027-06-30
+e-3,active,2026-09-01T00:00:00Z,c-1,sch-1,s-201,student,false,2026-09-01,2027-06-30
+e-4,active,2026-09-01T00:00:00Z,c-2,sch-1,t-101,teacher,true,2026-09-01,2027-06-30
+e-5,active,2026-09-01T00:00:00Z,c-2,sch-1,s-202,student,false,2026-09-01,2027-06-30
+e-6,active,2026-09-01T00:00:00Z,c-2,sch-1,p-1,guardian,false,2026-09-01,2027-06-30
+e-7,active,2026-09-01T00:00:00Z,c-9,sch-1,s-200,student,false,2026-09-01,2027-06-30

@@ -314,7 +314,11 @@ describe.skipIf(!hasDatabase)("the app role's privileges (F4b-S1)", () => {
         AND has_function_privilege(${APP_ROLE}, p.oid, 'EXECUTE')
       ORDER BY 1
     `.execute(t.db);
-    expect(rows.map((r) => r.fn)).toEqual(['app.current_class_id()', 'app.current_org_id()']);
+    expect(rows.map((r) => r.fn)).toEqual([
+      'app.current_class_id()',
+      'app.current_org_id()',
+      'app.sso_tenant_org(text,text)',
+    ]);
   });
 
   it('has no UPDATE or DELETE on an append-only table, and no table-owner rights anywhere', async () => {

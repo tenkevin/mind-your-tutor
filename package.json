@@ -18,7 +18,8 @@
     "db:stop": "docker compose -f packages/db/compose.yaml down",
     "db:migrate": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db migrate",
     "db:status": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db migrate:status",
-    "db:reset": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db reset"
+    "db:reset": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db reset",
+    "dev:auth": "pnpm --filter @ideamap/api... build && node apps/api/dist/dev/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

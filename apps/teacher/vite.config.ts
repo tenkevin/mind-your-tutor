@@ -6,6 +6,19 @@ const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: { '@ideamap/contracts': page('../../packages/contracts/src/index.ts') },
+  },
+  // Sign-in and the API are served from this origin through the dev proxy, so the
+  // session cookie stays host-only and same-site (F5). `pnpm dev:auth` runs the API.
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/auth': { target: 'http://localhost:3000', changeOrigin: false },
+      '/api': { target: 'http://localhost:3000', changeOrigin: false },
+    },
+  },
   build: {
     rolldownOptions: {
       // reference.html renders every @ideamap/ui class, for QA and visual checks.
