@@ -34,6 +34,25 @@ const HOST_GLOBALS = [
   ['navigator', 'it reads the host machine'],
   ['Reflect', 'Reflect.construct(Date, []) and Reflect.apply can reach the clock'],
 ];
+const BANNED_GLOBAL_NAMES = [
+  'Date',
+  'Math',
+  'globalThis',
+  'global',
+  'window',
+  'self',
+  'performance',
+  'process',
+  'crypto',
+  'fetch',
+  'XMLHttpRequest',
+  'WebSocket',
+  'require',
+  ...TIMERS,
+  ...HOST_GLOBALS.map(([name]) => name),
+  'eval',
+  'Function',
+];
 // Methods whose result depends on the machine's locale or time zone.
 const LOCAL_TIME_METHODS = [
   'localeCompare',
@@ -161,6 +180,27 @@ export default tseslint.config(
       ],
       'no-restricted-syntax': [
         'error',
+        {
+          selector: `VariableDeclaration[declare=true] > VariableDeclarator[id.name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `TSDeclareFunction > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `ClassDeclaration[declare=true] > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: banned('new Date() with no argument (the current time)', 'time'),

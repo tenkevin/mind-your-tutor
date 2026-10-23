@@ -204,6 +204,21 @@ describe('tracker determinism lint rules', () => {
     expect(await lint('export type T = { at: Date };\n')).toEqual([]);
   });
 
+  it.each(['Date', 'Math', 'process', 'fetch'])(
+    'rejects ambient declaration of %s',
+    async (name) => {
+      expectBanned(await lint(`declare const ${name}: unknown;\n`), 'no-restricted-syntax');
+    },
+  );
+
+  it.each([
+    'declare var process: unknown;',
+    'declare function fetch(input: string): unknown;',
+    'declare class Date {}',
+  ])('rejects ambient declaration form %s', async (declaration) => {
+    expectBanned(await lint(`${declaration}\n`), 'no-restricted-syntax');
+  });
+
   it('leaves other packages alone', async () => {
     const code = 'export const x = Date.now();\n';
     expect(await lint(code, 'packages/domain/src/x.ts')).toEqual([]);
