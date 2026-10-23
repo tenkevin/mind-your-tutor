@@ -799,7 +799,9 @@
       "size": 2,
       "deps": [
         "A2",
-        "M2"
+        "M2",
+        "A7",
+        "S5"
       ],
       "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded",
       "placeholder": false,
@@ -813,7 +815,8 @@
       "size": 2,
       "deps": [
         "A9",
-        "A5"
+        "A5",
+        "M6"
       ],
       "done_when": "Per D16: before any feedback reaches a student, rubric grounding, a separate verifier, and a tone and reading-level check run; low confidence or verifier disagreement routes it to the teacher; a question whose audit drifts past threshold switches to teacher review automatically",
       "placeholder": false,

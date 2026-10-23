@@ -4,7 +4,7 @@
 
 **21 of 59 done** · 0 ready · 0 in progress · 6 in review · 31 blocked · 1 need a spec
 
-Critical path: F1 → F3 → F4 → F5 → M2 → S1 → S2 → S4 → L1 (up to 19 weeks)
+Critical path: F1 → F3 → F4 → F5 → A1 → A2 → A9 → M6 → A10 → L1 (up to 20 weeks)
 
 ## Ready to start
 
@@ -54,8 +54,8 @@ _Nothing is ready. Everything left is claimed or waiting._
 | X2 | Cloudinary media provider | L1 |
 | A7 | Anonymous layer: on-device entity blur and server backstop | A1 |
 | A8 | Dual memory: conversation history and long-term learning summary | A7, F6 |
-| A9 | Explained feedback, Challenge this and teacher review queue | A2, M2 |
-| A10 | Pre-send feedback safeguards | A9, A5 |
+| A9 | Explained feedback, Challenge this and teacher review queue | A2, M2, A7, S5 |
+| A10 | Pre-send feedback safeguards | A9, A5, M6 |
 | M6 | Fairness audits: school and district monitoring, district-run sampled audit | M3, A9, F6 |
 | M7 | De-identified research export | M3, F6 |
 
@@ -93,205 +93,150 @@ Not claimable yet. A person writes the spec, then sets `placeholder` to false in
 
 ## Dependency map
 
-Arrows point from a task to the tasks it unblocks. Thick arrows are the critical path. The letter in each ID is its phase: F Foundations, C Curriculum pipeline, M Tracker & map generation, T Teacher console, A AI layer, S Student app hooks, L Launch, X Later.
+Open work only, grouped by what it delivers and ordered by priority. Critical path: A1 → A2 → A9 → M6 → A10 → L1 (about 20 weeks end to end). A rendered snapshot is in `docs/plan-map.png`.
 
 ```mermaid
 flowchart LR
-  F1["F1 · Monorepo, CI, lint and test setup"]
-  F1b["F1b · Fix F1 QA failures: tracker determinism lint, CI permissions"]
-  F1c["F1c · Close remaining tracker determinism gaps (from F1b QA)"]
-  F2["F2 · Port Nocturne tokens and components to packages/ui"]
-  F2cx1["F2cx1 · Fix Codex error F2-E1: placeholder text contrast"]
-  F3["F3 · Domain types and zod contracts for import tabs and config"]
-  F4["F4 · Postgres schema and migrations"]
-  F4b["F4b · Close F4 QA findings: event-key ledger isolation, class-scoped library settings"]
-  F4cx3["F4cx3 · Fix Codex error: idea-map typecheck and DB test broken by partial derived fixtures (F4-E3)"]
-  F4cx1["F4cx1 · Fix Codex errors F4-E1/F4-E2: temporary-table shadowing of event uniqueness and draft-pin guard"]
-  F5["F5 · SSO sign-in, roles and org tenancy"]
-  F6["F6 · Privacy baseline: data inventory, retention, audit log"]
-  C1["C1 · CSV and XLSX import with column mapping"]
-  C2["C2 · Data checks engine"]
-  C2cx5["C2cx5 · Fix Codex error C2-E5: store data-check issues in versions; gate publishing on data-check errors"]
-  C3["C3 · Derivation: link ranking, layout, quiz generation"]
-  C4["C4 · Job queue and import job producing a draft version"]
-  C5["C5 · Draft vs published diff and Publish flow"]
-  C6["C6 · Exports: template, data-check and alignment reports"]
-  C7["C7 · Progress migration rules on publish"]
-  C8["C8 · Data-check and quiz quality fixes (from C2 and C3 QA)"]
-  C9["C9 · Apply D12 and D13: optional objectives and questions, one built-in persona list"]
-  CXB["CXB · Codex suggestions waiting for task criteria (holding list, not claimable)"]
-  MD["MD · Decision gate: education data mining and interaction tracing (user)"]
-  M1["M1 · Tracker event catalogue and schemas"]
-  M2["M2 · Event ingest API and append-only event store"]
-  M3["M3 · Deterministic tracker rules: progress, behaviour metrics, signals"]
-  M4["M4 · Map generation from tracker state"]
-  M5["M5 · Teacher trace views: student timeline and class heatmap"]
-  T1["T1 · Teacher console shell, nav and save state"]
-  T2["T2 · Curriculum data section: import, pipeline, data checks"]
-  T3["T3 · Course details with layered config"]
-  T4["T4 · Schedule: due dates per unit"]
-  T5["T5 · Card classification overrides"]
-  T6["T6 · Read-only data tabs and column mapping UI"]
-  T7["T7 · Persona editor: templates, variables, preview, test"]
-  T8["T8 · Publish screen: diff review and class picker"]
-  A1["A1 · AI gateway: server-side calls, prompt fill, rate limits"]
-  A2["A2 · Student safety: moderation, guardrails, teacher flags"]
-  A3["A3 · Resource library and RAG indexing, with per-class library settings and uploads"]
-  A4["A4 · Atlas agent with tools"]
-  A5["A5 · Persona eval harness per grade band"]
-  A6["A6 · Draft missing explanations, unit objectives and assessment questions, with teacher approval"]
-  S1["S1 · Progress snapshots: cached state rebuilt from events"]
-  S2["S2 · Student explorer reads published version and class config"]
-  S3["S3 · Missions driven by due dates"]
-  S4["S4 · Tutor and peer chat through the gateway"]
-  L1["L1 · Pilot: one curriculum shared by two classes"]
-  X1["X1 · Google Drive import picker"]
-  X2["X2 · Cloudinary media provider"]
-  C1cx1["C1cx1 · Fix C1-E1: bound CSV parser memory and reject duplicate ZIP tabs early"]
-  F1d["F1d · Close independent QA ambient-global tracker determinism gap"]
-  A7["A7 · Anonymous layer: on-device entity blur and server backstop"]
-  A8["A8 · Dual memory: conversation history and long-term learning summary"]
-  A9["A9 · Explained feedback, Challenge this and teacher review queue"]
-  A10["A10 · Pre-send feedback safeguards"]
-  M6["M6 · Fairness audits: school and district monitoring, district-run sampled audit"]
-  M7["M7 · De-identified research export"]
-  S5["S5 · UDL 3.0 baseline for the student app"]
-  F1b --> F1c
-  F1 --> F2
-  F1 ==> F3
-  F3 ==> F4
-  F4 --> F4b
-  F4b --> F4cx1
-  F4 ==> F5
-  F4 --> F6
-  F3 --> C1
-  C1cx1 --> C1
-  F3 --> C2
-  C8 --> C2cx5
-  F3 --> C3
-  C1 --> C4
-  C2 --> C4
-  C3 --> C4
-  F4 --> C4
-  C2cx5 --> C4
-  C4 --> C5
-  C2 --> C6
-  F4 --> C6
+  DONE(["Done: 21 tasks<br/><small>F1 F1b F1c F2 F2cx1 F3 F4 F4b F4cx3 F4cx1 F5 C1 C2 C2cx5 C3 C4 C8 C9 MD C1cx1 F1d</small>"])
+  subgraph trust["Trust: privacy, feedback, fairness"]
+    direction LR
+    A1["A1 · AI gateway: server-side calls, prompt fill, rate limits<br/><small>critical</small>"]
+    A2["A2 · Student safety: moderation, guardrails, teacher flags<br/><small>critical</small>"]
+    A5["A5 · Persona eval harness per grade band<br/><small>+5 wk slack</small>"]
+    A7["A7 · Anonymous layer: on-device entity blur and server backstop<br/><small>critical</small>"]
+    A8["A8 · Dual memory: conversation history and long-term learning summary<br/><small>+2 wk slack</small>"]
+    A9["A9 · Explained feedback, Challenge this and teacher review queue<br/><small>critical</small>"]
+    A10["A10 · Pre-send feedback safeguards<br/><small>critical</small>"]
+    M6["M6 · Fairness audits: school and district monitoring, district-run sampled audit<br/><small>critical</small>"]
+    M7["M7 · De-identified research export<br/><small>after the pilot</small>"]
+  end
+  subgraph tracker["Tracker and insight"]
+    direction LR
+    M1["M1 · Tracker event catalogue and schemas<br/><small>+5 wk slack</small>"]
+    M2["M2 · Event ingest API and append-only event store<br/><small>+1 wk slack</small>"]
+    M3["M3 · Deterministic tracker rules: progress, behaviour metrics, signals<br/><small>+4 wk slack</small>"]
+    M4["M4 · Map generation from tracker state<br/><small>+4 wk slack</small>"]
+    M5["M5 · Teacher trace views: student timeline and class heatmap<br/><small>+6 wk slack</small>"]
+  end
+  subgraph curriculum["Curriculum and publishing"]
+    direction LR
+    F6["F6 · Privacy baseline: data inventory, retention, audit log<br/><small>+1 wk slack</small>"]
+    C5["C5 · Draft vs published diff and Publish flow<br/><small>+2 wk slack</small>"]
+    C6["C6 · Exports: template, data-check and alignment reports<br/><small>+12 wk slack</small>"]
+    C7["C7 · Progress migration rules on publish<br/><small>+4 wk slack</small>"]
+  end
+  subgraph teacher["Teacher console"]
+    direction LR
+    T1["T1 · Teacher console shell, nav and save state<br/><small>+5 wk slack</small>"]
+    T2["T2 · Curriculum data section: import, pipeline, data checks<br/><small>+5 wk slack</small>"]
+    T3["T3 · Course details with layered config<br/><small>+5 wk slack</small>"]
+    T4["T4 · Schedule: due dates per unit<br/><small>+5 wk slack</small>"]
+    T5["T5 · Card classification overrides<br/><small>+6 wk slack</small>"]
+    T6["T6 · Read-only data tabs and column mapping UI<br/><small>+6 wk slack</small>"]
+    T7["T7 · Persona editor: templates, variables, preview, test<br/><small>+5 wk slack</small>"]
+    T8["T8 · Publish screen: diff review and class picker<br/><small>+6 wk slack</small>"]
+    A3["A3 · Resource library and RAG indexing, with per-class library settings and uploads<br/><small>+4 wk slack</small>"]
+    A4["A4 · Atlas agent with tools<br/><small>+4 wk slack</small>"]
+    A6["A6 · Draft missing explanations, unit objectives and assessment questions, with teacher approval<br/><small>+5 wk slack</small>"]
+  end
+  subgraph student["Student app"]
+    direction LR
+    S5["S5 · UDL 3.0 baseline for the student app<br/><small>+8 wk slack</small>"]
+    S1["S1 · Progress snapshots: cached state rebuilt from events<br/><small>+1 wk slack</small>"]
+    S2["S2 · Student explorer reads published version and class config<br/><small>+1 wk slack</small>"]
+    S3["S3 · Missions driven by due dates<br/><small>+2 wk slack</small>"]
+    S4["S4 · Tutor and peer chat through the gateway<br/><small>+1 wk slack</small>"]
+  end
+  subgraph launch["Pilot"]
+    direction LR
+    L1["L1 · Pilot: one curriculum shared by two classes<br/><small>critical</small>"]
+  end
+  subgraph later["After the pilot"]
+    direction LR
+    X1["X1 · Google Drive import picker<br/><small>after the pilot</small>"]
+    X2["X2 · Cloudinary media provider<br/><small>after the pilot</small>"]
+  end
+  DONE -.-> F6
+  DONE -.-> C5
+  DONE -.-> C6
+  DONE -.-> M1
+  DONE -.-> T1
+  DONE -.-> S5
   C5 --> C7
   S1 --> C7
-  C2 --> C8
-  C3 --> C8
-  C1 --> C9
-  C2 --> C9
-  MD --> M1
-  F3 --> M1
   M1 --> M2
-  F4 --> M2
-  F5 ==> M2
-  F4b --> M2
   M1 --> M3
-  C3 --> M3
-  F1c --> M3
-  F1d --> M3
-  C3 --> M4
   M3 --> M4
   M2 --> M5
   M3 --> M5
   T1 --> M5
-  F2 --> T1
-  F5 --> T1
   T1 --> T2
-  C4 --> T2
   T1 --> T3
-  F4 --> T3
   T3 --> T4
   T3 --> T5
-  C3 --> T5
   T2 --> T6
-  C1 --> T6
   T3 --> T7
   A1 --> T7
   T2 --> T8
   C5 --> T8
-  F5 --> A1
   F6 --> A1
-  A1 --> A2
+  A1 ==> A2
   A1 --> A3
-  C4 --> A3
-  F4b --> A3
   A3 --> A4
-  C2 --> A4
   T2 --> A4
   A1 --> A5
   A1 --> A6
-  C4 --> A6
   T2 --> A6
-  M2 ==> S1
+  M2 --> S1
   M3 --> S1
-  S1 ==> S2
+  S1 --> S2
   C5 --> S2
-  F2 --> S2
   M4 --> S2
   S5 --> S2
   S2 --> S3
   T4 --> S3
-  S2 ==> S4
+  S2 --> S4
   A2 --> S4
-  A7 --> S4
   A8 --> S4
-  T5 --> L1
-  T6 --> L1
-  T7 --> L1
-  T8 --> L1
-  A4 --> L1
-  A5 --> L1
-  S3 --> L1
-  S4 ==> L1
-  C6 --> L1
-  C7 --> L1
-  M5 --> L1
-  A6 --> L1
-  C8 --> L1
-  C9 --> L1
-  F4cx1 --> L1
-  F4cx3 --> L1
-  F2cx1 --> L1
-  C2cx5 --> L1
-  A7 --> L1
-  A9 --> L1
-  A10 --> L1
-  M6 --> L1
-  S5 --> L1
-  C1 --> X1
+  A10 ==> L1
   L1 --> X1
-  C4 --> X2
   L1 --> X2
-  F3 --> C1cx1
-  F1c --> F1d
-  A1 --> A7
-  F5 --> A7
+  A1 ==> A7
   A7 --> A8
-  F6 --> A8
-  A2 --> A9
+  A2 ==> A9
   M2 --> A9
-  A9 --> A10
+  A7 ==> A9
+  S5 --> A9
   A5 --> A10
+  M6 ==> A10
   M3 --> M6
-  A9 --> M6
-  F6 --> M6
+  A9 ==> M6
   M3 --> M7
   F6 --> M7
-  F2 --> S5
+  teacher --> L1
+  student --> L1
+  curriculum --> L1
+  tracker --> L1
+  linkStyle default stroke:#8b8fa3,stroke-width:1.3px
+  linkStyle 24,42,45,47,49,52,54 stroke:#e5484d,stroke-width:3px
+  style trust fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style tracker fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style curriculum fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style teacher fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style student fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style launch fill:#161826,stroke:#3a3d52,color:#b2b6ca
+  style later fill:#161826,stroke:#3a3d52,color:#b2b6ca
   classDef todo fill:#232532,stroke:#75798c,color:#e9e9ed
   classDef ready fill:#1d3329,stroke:#6fcf97,color:#e9e9ed
   classDef doing fill:#2b2741,stroke:#9184d9,color:#e9e9ed,stroke-width:2px
   classDef review fill:#3a2f1b,stroke:#e6b45c,color:#e9e9ed,stroke-width:2px
-  classDef done fill:#1d3329,stroke:#6fcf97,color:#9397ab,stroke-dasharray:3 3
   classDef spec fill:#161826,stroke:#968ae0,color:#b2b6ca,stroke-dasharray:6 4
+  classDef done fill:#1d3329,stroke:#6fcf97,color:#9397ab,stroke-dasharray:3 3
+  classDef crit stroke:#e5484d,stroke-width:3px
   class C7,M2,M3,M4,M5,T2,T3,T4,T5,T6,T7,T8,A1,A2,A3,A4,A5,A6,S1,S2,S3,S4,L1,X1,X2,A7,A8,A9,A10,M6,M7 todo
   class F6,C5,C6,M1,T1,S5 review
-  class F1,F1b,F1c,F2,F2cx1,F3,F4,F4b,F4cx3,F4cx1,F5,C1,C2,C2cx5,C3,C4,C8,C9,MD,C1cx1,F1d done
-  class CXB spec
+  class DONE done
+  class A1,A2,L1,A7,A9,A10,M6 crit
 ```
 
-Key: green = ready, purple = in progress, amber = review, green dashed = done, grey = blocked, purple dashed = needs a spec.
+Key: red border = critical path (no slack); green = ready; purple = in progress; amber = in review; grey = waiting. The number under each task is its slack: weeks it can slip before the pilot does. Done work is collapsed into one box, and arrows already implied by another path are left out of the drawing (tasks.json keeps every dependency).
