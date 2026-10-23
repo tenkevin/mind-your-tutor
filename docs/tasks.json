@@ -123,6 +123,17 @@
       "updated": "2026-10-23"
     },
     {
+      "id": "F4cx3",
+      "title": "Fix Codex error: idea-map typecheck and DB test broken by partial derived fixtures (F4-E3)",
+      "size": 1,
+      "deps": [],
+      "done_when": "Codex F4-E3 (docs/qa/codex/Codex-F4-integration-1523878.md): DB fixtures conform to the strict VersionDerived contract; root typecheck and DB-backed tests pass; CI green on idea-map",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
       "id": "F5",
       "title": "SSO sign-in, roles and org tenancy",
       "size": 3,
