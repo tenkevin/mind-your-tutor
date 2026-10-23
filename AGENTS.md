@@ -13,7 +13,7 @@ Read this before starting any task.
 
 ## Stop and resume protocol
 
-Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary: stopped after C9.** C9 is done; no follow-on task or review may start until the user explicitly resumes work. A documentation-only update does not resume implementation. A ready task or an old claim is not authorization to cross the stop boundary.
+Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary:** **Resumed 2026-10-23 03:00 UTC by the user** ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent QA and the integration gate. A stop is in effect only when this line says so.
 
 On an authorized resume, fetch current state, verify PR heads/CI and outstanding claims, and reconcile the handoff before assigning work. Preserve independent QA and all existing merge gates. If a task is stopped mid-review, retain its truthful task status and record owner, exact head, evidence, unresolved checks and next action; do not mark it done merely to close a session.
 
