@@ -115,7 +115,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <header>
   <div class="wrap bar">
-    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.1 · 22 Oct 2026</span></div>
+    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.2 · 23 Oct 2026</span></div>
     <nav role="tablist" aria-label="Views">
       <button role="tab" id="tab-architecture" data-view="architecture">Architecture</button>
       <button role="tab" id="tab-graph" data-view="graph">Dependencies</button>
@@ -143,6 +143,13 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Import and export only</td><td>Connectors are file parsers (CSV, XLSX, database dumps). Google Drive and Cloudinary plug in later behind the same interfaces.</td></tr>
           <tr><td>K-12</td><td>COPPA, FERPA and state law decide sign-in, AI logging, retention and which vendors can be used.</td></tr>
           <tr><td>Determinism lives in the tracker</td><td>The interaction tracker is fully deterministic and replayable. Map generation and AI may vary, but whatever they show a student is stored and logged.</td></tr>
+          <tr><td>Independent QA first (D7)</td><td>Every task has written functional, security, performance and usability criteria before anyone claims it. A separate QA agent tests each PR, and Codex reviews merged work. Errors become fix tasks.</td></tr>
+          <tr><td>Curriculum Pack (D8)</td><td>Eight tabs: Course, Units, Ideas, Links, Categories, Assessment, Personas, Library. Each field is sheet-only, app-only, or seeded by the sheet and overridable per class.</td></tr>
+          <tr><td>Explanations (D9)</td><td>From the sheet; if empty, Ms. Ivy drafts one, which students see only after a teacher approves it.</td></tr>
+          <tr><td>Design colours kept (D10)</td><td>Nocturne ships unchanged. Nine named contrast pairs are accepted exceptions to AA, and everything new must pass.</td></tr>
+          <tr><td>Per-class library (D11)</td><td>Each class sets how the AI uses each shared document (Atlas, tutor, both or off) and can upload its own lab sheets.</td></tr>
+          <tr><td>Gaps don't block import (D12)</td><td>Empty unit objectives and assessment questions are flagged, and Atlas drafts them for approval.</td></tr>
+          <tr><td>One persona list (D13)</td><td>Ms. Ivy, Milo and Atlas live in one registry. A pack without a Personas tab uses them, and pack and class overrides sit on top.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -224,6 +231,20 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
     </div>
 
     <div class="block">
+      <h2>How work moves</h2>
+      <div class="flow">
+        <span class="step">QA criteria written</span><span class="arrow">→</span>
+        <span class="step">Agent claims and builds</span><span class="arrow">→</span>
+        <span class="step">PR, CI green</span><span class="arrow">→</span>
+        <span class="step gate">Independent QA PASS</span><span class="arrow">→</span>
+        <span class="step gate">Up to date with idea-map</span><span class="arrow">→</span>
+        <span class="step">Merged, one at a time</span><span class="arrow">→</span>
+        <span class="step">Codex review</span>
+      </div>
+      <p class="note">A failed QA check goes back to the agent. A Codex error on merged work becomes a fix task (<span class="mono">&lt;ID&gt;cx&lt;n&gt;</span>) that jumps the queue. If idea-map's CI turns red, nothing else merges until the fix lands.</p>
+    </div>
+
+    <div class="block">
       <h2>AI personas</h2>
       <div class="scroll"><table>
         <thead><tr><th>Persona</th><th>Who talks to it</th><th>What it can see or do</th></tr></thead>
@@ -288,7 +309,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
   <section class="view" id="view-board" role="tabpanel" aria-labelledby="tab-board" hidden>
     <div class="block">
       <h1>Project board</h1>
-      <p class="lede">Drag a card between columns, or pick its status from the menu. Cards in To do say whether they're ready to start or which tasks they're waiting on.</p>
+      <p class="lede">Where every task stands, from the repo. Cards in To do say whether they're ready, waiting on other tasks, or need a spec first.</p>
     </div>
     <div class="banner" id="saveBanner">Connecting to the shared board…</div>
     <div class="toolbar">
@@ -301,6 +322,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <script>
 const PLAN = {
+  snapshot: "2026-10-23 00:40 UTC",
   phases: [
     {"id": "F", "name": "Foundations"},
     {"id": "C", "name": "Curriculum pipeline"},
@@ -312,44 +334,55 @@ const PLAN = {
     {"id": "X", "name": "Later"}
   ],
   tasks: [
-    {"id": "F1", "title": "Monorepo, CI, lint and test setup", "size": 1, "deps": []},
-    {"id": "F2", "title": "Port Nocturne tokens and components to packages/ui", "size": 1, "deps": ["F1"]},
-    {"id": "F3", "title": "Domain types and zod contracts for import tabs and config", "size": 2, "deps": ["F1"]},
-    {"id": "F4", "title": "Postgres schema and migrations", "size": 2, "deps": ["F3"]},
-    {"id": "F5", "title": "SSO sign-in, roles and org tenancy", "size": 3, "deps": ["F4"]},
-    {"id": "F6", "title": "Privacy baseline: data inventory, retention, audit log", "size": 2, "deps": ["F4"]},
-    {"id": "C1", "title": "CSV and XLSX import with column mapping", "size": 2, "deps": ["F3"]},
-    {"id": "C2", "title": "Data checks engine", "size": 1, "deps": ["F3"]},
-    {"id": "C3", "title": "Derivation: link ranking, layout, quiz generation", "size": 2, "deps": ["F3"]},
-    {"id": "C4", "title": "Job queue and import job producing a draft version", "size": 2, "deps": ["C1", "C2", "C3", "F4"]},
-    {"id": "C5", "title": "Draft vs published diff and Publish flow", "size": 2, "deps": ["C4"]},
-    {"id": "C6", "title": "Exports: template, data-check and alignment reports", "size": 1, "deps": ["C2", "F4"]},
-    {"id": "C7", "title": "Progress migration rules on publish", "size": 2, "deps": ["C5", "S1"]},
-    {"id": "M1", "title": "Tracker event catalogue and schemas", "size": 1, "deps": ["F3"], "placeholder": true},
-    {"id": "M2", "title": "Event ingest API and append-only event store", "size": 2, "deps": ["M1", "F4", "F5"], "placeholder": true},
-    {"id": "M3", "title": "Deterministic tracker rules: progress, behaviour metrics, signals", "size": 2, "deps": ["M1", "C3"], "placeholder": true},
-    {"id": "M4", "title": "Map generation from tracker state", "size": 2, "deps": ["C3", "M3"], "placeholder": true},
-    {"id": "M5", "title": "Teacher trace views: student timeline and class heatmap", "size": 2, "deps": ["M2", "M3", "T1"], "placeholder": true},
-    {"id": "T1", "title": "Teacher console shell, nav and save state", "size": 1, "deps": ["F2", "F5"]},
-    {"id": "T2", "title": "Curriculum data section: import, pipeline, data checks", "size": 2, "deps": ["T1", "C4"]},
-    {"id": "T3", "title": "Course details with layered config", "size": 2, "deps": ["T1", "F4"]},
-    {"id": "T4", "title": "Schedule: due dates per unit", "size": 1, "deps": ["T3"]},
-    {"id": "T5", "title": "Card classification overrides", "size": 1, "deps": ["T3", "C3"]},
-    {"id": "T6", "title": "Read-only data tabs and column mapping UI", "size": 1, "deps": ["T2", "C1"]},
-    {"id": "T7", "title": "Persona editor: templates, variables, preview, test", "size": 2, "deps": ["T3", "A1"]},
-    {"id": "T8", "title": "Publish screen: diff review and class picker", "size": 1, "deps": ["T2", "C5"]},
-    {"id": "A1", "title": "AI gateway: server-side calls, prompt fill, rate limits", "size": 2, "deps": ["F5", "F6"]},
-    {"id": "A2", "title": "Student safety: moderation, guardrails, teacher flags", "size": 2, "deps": ["A1"]},
-    {"id": "A3", "title": "Resource library and RAG indexing", "size": 2, "deps": ["A1", "C4"]},
-    {"id": "A4", "title": "Atlas agent with tools", "size": 2, "deps": ["A3", "C2", "T2"]},
-    {"id": "A5", "title": "Persona eval harness per grade band", "size": 1, "deps": ["A1"]},
-    {"id": "S1", "title": "Progress snapshots: cached state rebuilt from events", "size": 2, "deps": ["M2", "M3"]},
-    {"id": "S2", "title": "Student explorer reads published version and class config", "size": 3, "deps": ["S1", "C5", "F2", "M4"]},
-    {"id": "S3", "title": "Missions driven by due dates", "size": 1, "deps": ["S2", "T4"]},
-    {"id": "S4", "title": "Tutor and peer chat through the gateway", "size": 2, "deps": ["S2", "A2"]},
-    {"id": "L1", "title": "Pilot: one curriculum shared by two classes", "size": 2, "deps": ["T5", "T6", "T7", "T8", "A4", "A5", "S3", "S4", "C6", "C7", "M5"]},
-    {"id": "X1", "title": "Google Drive import picker", "size": 1, "deps": ["C1", "L1"]},
-    {"id": "X2", "title": "Cloudinary media provider", "size": 1, "deps": ["C4", "L1"]}
+    {"id": "F1", "title": "Monorepo, CI, lint and test setup", "size": 1, "deps": [], "status": "done", "owner": "agent-f1"},
+    {"id": "F1b", "title": "Fix F1 QA failures: tracker determinism lint, CI permissions", "size": 1, "deps": [], "status": "done", "owner": "agent-f1b"},
+    {"id": "F1c", "title": "Close remaining tracker determinism gaps (from F1b QA)", "size": 1, "deps": ["F1b"], "status": "review", "owner": "agent-f1c"},
+    {"id": "F2", "title": "Port Nocturne tokens and components to packages/ui", "size": 1, "deps": ["F1"], "status": "done", "owner": "agent-f2"},
+    {"id": "F2cx1", "title": "Fix Codex error F2-E1: placeholder text contrast", "size": 1, "deps": [], "status": "review", "owner": "agent-f2cx1"},
+    {"id": "F3", "title": "Domain types and zod contracts for import tabs and config", "size": 2, "deps": ["F1"], "status": "done", "owner": "agent-f3"},
+    {"id": "F4", "title": "Postgres schema and migrations", "size": 2, "deps": ["F3"], "status": "done", "owner": "agent-f4"},
+    {"id": "F4b", "title": "Close F4 QA findings: event-key ledger isolation, class-scoped library settings", "size": 1, "deps": ["F4"], "status": "review", "owner": "agent-f4b"},
+    {"id": "F4cx3", "title": "Fix Codex error: idea-map typecheck and DB test broken by partial derived fixtures (F4-E3)", "size": 1, "deps": [], "status": "review", "owner": "agent-f4cx3"},
+    {"id": "F4cx1", "title": "Fix Codex errors F4-E1/F4-E2: temporary-table shadowing of event uniqueness and draft-pin guard", "size": 1, "deps": ["F4b"], "status": "todo"},
+    {"id": "F5", "title": "SSO sign-in, roles and org tenancy", "size": 3, "deps": ["F4"], "status": "doing", "owner": "agent-f5"},
+    {"id": "F6", "title": "Privacy baseline: data inventory, retention, audit log", "size": 2, "deps": ["F4"], "status": "doing", "owner": "agent-f6"},
+    {"id": "C1", "title": "CSV and XLSX import with column mapping", "size": 2, "deps": ["F3"], "status": "review", "owner": "agent-c1"},
+    {"id": "C2", "title": "Data checks engine", "size": 1, "deps": ["F3"], "status": "done", "owner": "agent-c2"},
+    {"id": "C2cx5", "title": "Fix Codex error C2-E5: store data-check issues in versions; gate publishing on data-check errors", "size": 1, "deps": ["C8"], "status": "todo"},
+    {"id": "C3", "title": "Derivation: link ranking, layout, quiz generation", "size": 2, "deps": ["F3"], "status": "done", "owner": "agent-c3"},
+    {"id": "C4", "title": "Job queue and import job producing a draft version", "size": 2, "deps": ["C1", "C2", "C3", "F4", "C2cx5"], "status": "todo"},
+    {"id": "C5", "title": "Draft vs published diff and Publish flow", "size": 2, "deps": ["C4"], "status": "todo"},
+    {"id": "C6", "title": "Exports: template, data-check and alignment reports", "size": 1, "deps": ["C2", "F4"], "status": "todo"},
+    {"id": "C7", "title": "Progress migration rules on publish", "size": 2, "deps": ["C5", "S1"], "status": "todo"},
+    {"id": "C8", "title": "Data-check and quiz quality fixes (from C2 and C3 QA)", "size": 1, "deps": ["C2", "C3"], "status": "review", "owner": "agent-c8"},
+    {"id": "C9", "title": "Apply D12 and D13: optional objectives and questions, one built-in persona list", "size": 1, "deps": ["C1", "C2"], "status": "todo"},
+    {"id": "CXB", "title": "Codex suggestions waiting for task criteria (holding list, not claimable)", "size": 1, "deps": [], "placeholder": true, "status": "todo"},
+    {"id": "M1", "title": "Tracker event catalogue and schemas", "size": 1, "deps": ["F3"], "placeholder": true, "status": "todo"},
+    {"id": "M2", "title": "Event ingest API and append-only event store", "size": 2, "deps": ["M1", "F4", "F5", "F4b"], "placeholder": true, "status": "todo"},
+    {"id": "M3", "title": "Deterministic tracker rules: progress, behaviour metrics, signals", "size": 2, "deps": ["M1", "C3", "F1c"], "placeholder": true, "status": "todo"},
+    {"id": "M4", "title": "Map generation from tracker state", "size": 2, "deps": ["C3", "M3"], "placeholder": true, "status": "todo"},
+    {"id": "M5", "title": "Teacher trace views: student timeline and class heatmap", "size": 2, "deps": ["M2", "M3", "T1"], "placeholder": true, "status": "todo"},
+    {"id": "T1", "title": "Teacher console shell, nav and save state", "size": 1, "deps": ["F2", "F5"], "status": "todo"},
+    {"id": "T2", "title": "Curriculum data section: import, pipeline, data checks", "size": 2, "deps": ["T1", "C4"], "status": "todo"},
+    {"id": "T3", "title": "Course details with layered config", "size": 2, "deps": ["T1", "F4"], "status": "todo"},
+    {"id": "T4", "title": "Schedule: due dates per unit", "size": 1, "deps": ["T3"], "status": "todo"},
+    {"id": "T5", "title": "Card classification overrides", "size": 1, "deps": ["T3", "C3"], "status": "todo"},
+    {"id": "T6", "title": "Read-only data tabs and column mapping UI", "size": 1, "deps": ["T2", "C1"], "status": "todo"},
+    {"id": "T7", "title": "Persona editor: templates, variables, preview, test", "size": 2, "deps": ["T3", "A1"], "status": "todo"},
+    {"id": "T8", "title": "Publish screen: diff review and class picker", "size": 1, "deps": ["T2", "C5"], "status": "todo"},
+    {"id": "A1", "title": "AI gateway: server-side calls, prompt fill, rate limits", "size": 2, "deps": ["F5", "F6"], "status": "todo"},
+    {"id": "A2", "title": "Student safety: moderation, guardrails, teacher flags", "size": 2, "deps": ["A1"], "status": "todo"},
+    {"id": "A3", "title": "Resource library and RAG indexing, with per-class library settings and uploads", "size": 2, "deps": ["A1", "C4", "F4b"], "status": "todo"},
+    {"id": "A4", "title": "Atlas agent with tools", "size": 2, "deps": ["A3", "C2", "T2"], "status": "todo"},
+    {"id": "A5", "title": "Persona eval harness per grade band", "size": 1, "deps": ["A1"], "status": "todo"},
+    {"id": "A6", "title": "Draft missing explanations, unit objectives and assessment questions, with teacher approval", "size": 2, "deps": ["A1", "C4", "T2"], "status": "todo"},
+    {"id": "S1", "title": "Progress snapshots: cached state rebuilt from events", "size": 2, "deps": ["M2", "M3"], "status": "todo"},
+    {"id": "S2", "title": "Student explorer reads published version and class config", "size": 3, "deps": ["S1", "C5", "F2", "M4"], "status": "todo"},
+    {"id": "S3", "title": "Missions driven by due dates", "size": 1, "deps": ["S2", "T4"], "status": "todo"},
+    {"id": "S4", "title": "Tutor and peer chat through the gateway", "size": 2, "deps": ["S2", "A2"], "status": "todo"},
+    {"id": "L1", "title": "Pilot: one curriculum shared by two classes", "size": 2, "deps": ["T5", "T6", "T7", "T8", "A4", "A5", "S3", "S4", "C6", "C7", "M5", "A6", "C8", "C9", "F4cx1", "F4cx3", "F2cx1", "C2cx5"], "status": "todo"},
+    {"id": "X1", "title": "Google Drive import picker", "size": 1, "deps": ["C1", "L1"], "status": "todo"},
+    {"id": "X2", "title": "Cloudinary media provider", "size": 1, "deps": ["C4", "L1"], "status": "todo"}
   ]
 };
 const STATUSES = [["todo", "To do"], ["doing", "In progress"], ["review", "Review"], ["done", "Done"]];
@@ -369,7 +402,7 @@ const crit = new Set(), critEdges = new Set();
 // ---- state ----
 let status = {};           // id -> status, from the shared store
 let canWrite = false, db = null, selected = "C4", phaseFilter = null;
-const st = id => status[id] || "todo";
+const st = id => byId[id].status || "todo";
 const waitingOn = id => byId[id].deps.filter(d => st(d) !== "done");
 const needsSpec = id => !!byId[id].placeholder && st(id) === "todo";
 
@@ -515,20 +548,7 @@ function banner(text) { const b = document.getElementById("saveBanner"); b.textC
 
 drawChips(); renderAll();
 
-// ---- shared store ----
-(async () => {
-  const claude = window.claude;
-  if (!claude || !claude.use) { banner("Statuses are stored on the shared board, which isn't available here, so everything shows as To do."); return; }
-  const [dbNs, user] = await Promise.all([claude.use("db"), claude.use("user")]);
-  if (!dbNs) { banner("Sign in to see and change task statuses. Until then everything shows as To do."); return; }
-  db = dbNs;
-  const w = user ? await user.can("data.write") : null;
-  canWrite = w !== false;
-  banner(canWrite ? "" : "You can view this board but not change it. Ask the owner for Contributor access.");
-  db.collection("board").onSnapshot(snap => {
-    const next = {}; snap.docs.forEach(d => { const v = d.data(); if (v && STATUSES.some(s => s[0] === v.status)) next[d.id] = v.status; });
-    status = next; renderAll();
-  }, () => banner("Lost the connection to the shared board. Reload to see the latest statuses."));
-  renderAll();
-})();
+// ---- statuses come from the repo ----
+// Agents change task status with scripts/plan.mjs on the idea-map branch; this page shows a snapshot of docs/tasks.json.
+banner("Read-only snapshot of docs/tasks.json on idea-map, " + PLAN.snapshot + ". Agents update statuses with scripts/plan.mjs; docs/PLAN.md on GitHub is always current.");
 </script>

@@ -13,7 +13,12 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:up": "docker compose -f packages/db/compose.yaml up -d --wait",
+    "db:stop": "docker compose -f packages/db/compose.yaml down",
+    "db:migrate": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db migrate",
+    "db:status": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db migrate:status",
+    "db:reset": "pnpm --filter @ideamap/db... build && pnpm --filter @ideamap/db reset"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -14,6 +14,8 @@ Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task 
 
 The QA agent may read the code to find weaknesses, but it judges against the criteria and the spec, never against what the code happens to do.
 
+QA also tests the PR **as it would land**. In a scratch checkout, merge the current `origin/idea-map` into the PR head, then run the root `pnpm typecheck` and the full test suite with a database (`DATABASE_URL` set) as well as the task's own checks. A failure that only appears after that merge is a FAIL. Green tests on the task branch alone don't prove the combined branch works.
+
 ## Criteria file format
 
 Four sections, always in this order: **Functional**, **Security**, **Performance**, **Usability**. Usability means the people who use the result: teachers and students for screens, developers for packages and tooling. A section can be marked not applicable only with a reason.
@@ -42,3 +44,16 @@ Problems not covered by a check, each with steps to reproduce and a suggested we
 ```
 
 Verdict is PASS only when every **must** check passes. Evidence is real output (a command and its result, measured numbers, a screenshot path), never "looks fine".
+
+## External review (Codex)
+
+Codex, an outside reviewer the user brings in, checks each merged checkpoint on `idea-map` and commits its findings as files whose names start with `Codex-` (any folder). Each file lists **errors** and **suggestions**.
+
+| Step | Who | What |
+|---|---|---|
+| Find | Coordinator, on every pass | Lists `Codex-*` files on `idea-map` that are not yet in `docs/qa/codex-ledger.json` |
+| Errors | Coordinator | Each error becomes a must-fix follow-up task, `<ID>cx<n>` (for example `C1cx1`), with QA criteria in `docs/qa/<ID>cx<n>.md` built from the Codex text. The original error is quoted, and every check is weighted **must**. These tasks start ahead of other ready work, and go through independent QA like any task |
+| Suggestions | Coordinator | Added as **should** checks to the criteria of the next not-yet-started task that touches the same area, with the Codex file cited. Suggestions with no such task go into one backlog task, `CXB`, that collects them |
+| Record | Coordinator | Adds the file, its commit, and the tasks or criteria it fed into `codex-ledger.json` |
+
+Codex files are never edited, moved or deleted by agents. They are the reviewer's record.

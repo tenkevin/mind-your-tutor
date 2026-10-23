@@ -37,7 +37,12 @@ One coordinator session runs the swarm:
 - **QA:** when a PR is open and CI is green, it starts a separate QA agent session for that PR. The QA agent never wrote the code, and QA agents don't count towards the limit of 4.
 - **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
 - **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
+- **Integration gate:** a PR merges only when its head already contains the current `idea-map` head (GitHub compare shows it 0 commits behind) and CI is green on that exact head. Otherwise the agent merges `origin/idea-map` and pushes first. Merges happen one at a time, and after each one the coordinator checks `idea-map`'s CI. If it's red, all merging stops until an immediate fix task lands. (Added after F4 and C3, each green on its own, broke `idea-map` together: Codex F4-E3.)
 - **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
+
+## Coordinator and QA communication
+
+Check `origin/idea-map` before contacting another coordinator: read `docs/PLAN.md`, `docs/HANDOFF.md`, `docs/qa/STATUS.md`, the relevant immutable Codex reports, and `docs/qa/codex-ledger.json`. These documents carry routine status, assignments, evidence paths and next actions. Reserve direct cross-session messages for urgent findings or actionable blockers; do not send acknowledgment/status loops. Publish routine reports in batches and re-check branch state before writing. The coordinator alone changes task state via `scripts/plan.mjs`; independent QA preserves its separate role and never edits published `Codex-*` files.
 
 ## Conventions
 
@@ -55,6 +60,8 @@ Until F1 lands, these are the defaults it must set up. After F1, the repo config
 | Commits | Imperative subject, prefixed with the task ID: `F3: add Ideas tab schema` |
 
 ## Rules
+
+- Never edit, move or delete a file whose name starts with `Codex-`. Those are an external reviewer's findings (docs/qa/README.md, External review). Tasks named `<ID>cx<n>` fix Codex errors and take priority.
 
 - Change task status only through `scripts/plan.mjs`. Never edit `docs/PLAN.md` by hand.
 - Own one task at a time.

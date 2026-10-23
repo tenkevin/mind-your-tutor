@@ -20,6 +20,8 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D9 | Idea explanations: sheet first, AI fallback | `Ideas.explanation` is optional. If it's empty, Ms. Ivy drafts one from the idea's objective and links. A draft reaches students only after a teacher approves it (and can edit it) in Teacher Settings. Approved text is stored per curriculum, shared by all its classes, and reused on re-import until the sheet supplies its own |
 | D10 | Keep the Nocturne design's colours as they are | The design system ships unchanged, and these pairs below WCAG AA are accepted: `.input` border on bg and surface (1.55–1.58:1, needs 3:1); `.card-meta` on surface (4.25:1); `.btn-primary` hover on surface (3.96:1) and active on bg and surface (3.92 and 3.38:1); `.btn-ghost` hover on surface (4.08:1) and active on bg and surface (4.20 and 3.60:1). Text pairs need 4.5:1. No other exceptions: new colours and components must meet AA, and `packages/ui` tests check every button state on both grounds, failing if the set of failing pairs changes |
 | D11 | Each class shapes its own library | The curriculum's Library tab sets the shared documents and their default `use_for`. In Teacher Settings, a teacher can, for their class only: change how the AI uses each shared document (`agent`, `tutor`, `both`, or `off` to hide it), and upload their own documents (lab sheets, notes) with their own `use_for`. Atlas and Ms. Ivy search the shared library plus the class's uploads, after the class's settings are applied. Changes never affect other classes on the same curriculum |
+| D12 | Missing objectives and questions don't block an import | `Units.objective` and `Assessment.question` may be empty, as the pack spec's "missing" behaviour says. The data checks flag them (warnings), and Atlas can draft a replacement that reaches students only after a teacher approves it, the same flow as D9 explanations. An empty question is never asked by Milo |
+| D13 | One built-in persona list | Ms. Ivy, Milo and Atlas are defined once, in `packages/ai`'s persona registry. A pack with no Personas tab stores no personas, which means "use the built-ins", so improvements to the built-ins reach every curriculum. A Personas tab overrides by `persona_id`, and class overrides in Teacher Settings sit on top |
 
 ## 2. The core split
 
@@ -248,6 +250,7 @@ The rules that keep the tracker trustworthy:
 
 - `POST /events` takes batches. The server checks each event against its schema, sets `seq`, drops ids it has already recorded, and rejects events from a version the class isn't pinned to (with a grace period after a publish).
 - Events go into a Postgres table (`interaction_event`) split into monthly partitions. Generated map views and AI outputs are stored in their own tables, referenced by id. The client keeps an offline queue and resends it.
+- Replay and other hot-path reads should bound `recorded_at` (for example, from the time of the student's latest progress snapshot), so Postgres can skip old monthly partitions instead of probing every one.
 - Exporting to the education data standards xAPI or Caliper is possible later. It will be designed in, not built now.
 - Teacher views (M5) read the tracker: a timeline for each student, and a class heatmap of where students stall.
 
@@ -291,21 +294,22 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
 | Security | TLS everywhere, encryption at rest, per-org row-level security in Postgres |
-| Accessibility | WCAG 2.1 AA for both apps, except the three design-system colour pairs accepted in D10; read-aloud for K–2 later |
+| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; read-aloud for K–2 later |
 
 ## 11. Teacher Settings page: how each section maps
 
 | Section in the design | Reads | Writes |
 |---|---|---|
 | Header: subject · topic, save state, Preview as student | effective config | — |
-| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`, draft version issues | starts an `ImportJob` |
+| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`; the draft version's import and data-check issues (C2, grouped by cause) | starts an `ImportJob` |
 | Draft and publish (new, required by D2) | draft vs published diff | publish to selected classes |
 | Course details | effective config, with origin per field | class override, or curriculum default for authors |
-| AI personas & prompts | persona templates, variable list | template versions; **Test** calls the gateway |
+| AI personas & prompts | built-in personas from the `packages/ai` registry (D13), then pack overrides, then class overrides; variable list | class template overrides; **Test** calls the gateway |
 | Schedule | units from published version | due dates (class) |
 | Card classification | ideas, auto rarity from layout | rarity overrides |
 | From the spreadsheet (read-only tabs, column mapping) | version body | column mapping (applies on next import) |
-| Atlas panel and knowledge sources | library docs, app guide | library uploads; chat goes through the gateway |
+| Atlas panel and knowledge sources | shared library docs, with this class's `use_for` per doc, plus this class's uploads (D11); app guide | per-class `use_for` (agent, tutor, both, off); class uploads; chat goes through the gateway |
+| Drafts to approve (new, D9 and D12) | AI-drafted idea explanations, unit objectives and assessment questions waiting for approval | approve, edit or reject; approved text is stored per curriculum |
 
 The "Re-sync" button in the prototype becomes **Import new version**, and a new **Publish** step sits beside it.
 
@@ -316,3 +320,7 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 3. Which SSO and rostering providers does the first school use?
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
+6. **Embedding model and width (F4):** `chunk.embedding` is `vector(1024)` (Voyage-sized) so it can carry an HNSW index, which needs a fixed width. Changing models means a migration that re-creates the column and re-indexes the library. Which embedding model do we use?
+7. **Deleting a student on request vs append-only events (F4):** FERPA's "delete on request" (§10) conflicts with an append-only `interaction_event` that refuses `DELETE` for every role, and with the foreign keys from events to `app_user`. Typed text already lives apart and can be deleted (§8.2). Proposal for M1 or F6: an owner-only procedure that removes one student's events, generated views and AI outputs (the only path that bypasses the append-only trigger), recorded as an `AuditEvent`.
+
+8. **Publish preview affected-student count (C5):** §7 requires a count but does not define whether it includes all enrolled students in selected classes or only students whose recorded progress changes. Coordinator recommends all enrolled students in the selected classes for this content-change preview; user clarification is pending. Do not silently implement tracker-dependent impact semantics or claim C5 until its criteria settle this scope.

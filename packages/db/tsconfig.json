@@ -1,4 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Typecheck and tests read the contracts from source, so they don't need a build
+    // first; the build itself (tsconfig.build.json) uses the built package.
+    "paths": { "@ideamap/contracts": ["../contracts/src/index.ts"] }
+  },
   "include": ["src"]
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LayoutSchema, QuizzesSchema, RankedLinksSchema } from './derived.js';
 import { PackIssueSchema } from './issues.js';
 import { PackSchema } from './pack.js';
 import { TAB_NAMES } from './spec.js';
@@ -30,13 +31,13 @@ export const VersionSourceSchema = z.object({
 });
 
 /**
- * Data derived from the pack (§5 "derived: ranked links, layout, quizzes"). C3 owns
- * these shapes; until it defines them they are stored as given. `null` until derived.
+ * Data derived from the pack (§5 "derived: ranked links, layout, quizzes"), as
+ * `derive()` in packages/domain returns it. `null` until derived.
  */
 export const VersionDerivedSchema = z.object({
-  ranked_links: z.unknown().optional(),
-  layout: z.unknown().optional(),
-  quizzes: z.unknown().optional(),
+  ranked_links: RankedLinksSchema,
+  layout: LayoutSchema,
+  quizzes: QuizzesSchema,
 });
 
 export const CurriculumVersionSchema = z
