@@ -369,7 +369,8 @@
       "deps": [
         "M1",
         "C3",
-        "F1c"
+        "F1c",
+        "F1d"
       ],
       "done_when": "apply() in packages/tracker is pure with no clock, randomness or network; replaying the same events always gives identical progress, metrics and signals, covered by property tests",
       "placeholder": true,
@@ -730,6 +731,18 @@
       "status": "doing",
       "owner": "codex-c1cx1",
       "updated": "2026-10-23"
+    },
+    {
+      "id": "F1d",
+      "title": "Close independent QA ambient-global tracker determinism gap",
+      "size": 1,
+      "deps": [
+        "F1c"
+      ],
+      "done_when": "F1c QA finding1: production ambient declarations cannot hide banned globals, process access is guarded, existing determinism regressions and performance budgets pass",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null
     }
   ]
 }
