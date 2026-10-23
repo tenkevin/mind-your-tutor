@@ -6,7 +6,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
-**Stop boundary:** user requested “After C9, stop.” C9 is the final task to complete through independent QA and verified merge. Finish current F1d review/F5 integration to handoff only; do not start new C2cx5/F5 reviews or follow-on implementation.
+**Stopped after C9:** user boundary reached. C9 has independent PASS and verified merge `73feaab`; actual merge build/plan green. All builders and independent QA are idle. Do not start new work or reviews until the user resumes.
 
 | Task / PR | Evidence and state | Next action / owner |
 |---|---|---|
@@ -20,14 +20,14 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 | F4cx1 / #17 | **QA coverage blocked:** latest synchronized head `3e97696` CI green, but required dynamic shadow-table tests repeat probes stopped by the original automated security-filter interruption (Codex-F4-database.md). | Keep unverified. Independent reviewer cannot certify F1/F2/F4/S1 or full-suite F5; source/permitted evidence only. Do not rerun or delegate the blocked tests through another path; builder/CI results are not independent PASS. |
 | C2cx5 / #18 | Builder complete at `4762bf0d8e2d32e42e9b9604dbd793fcd7258747`: contracts 212, domain 94, connectors 101, DB 161; root checks passed. No migration changed; import level is derived consistently from severity. | Exact-head CI passed. Independent review deferred by the C9 stop boundary; future current-base synchronization required before merge. |
 | F1d / #16 | Fresh independent all-must PASS at `0dd326d` + base `738b4f8`, integrated tree `76e6f81`; 210 ambient cases, tracker 172, DB 161. Published [report](codex/Codex-F1d-review-0dd326d.md). Current remote head `a56c820` is a metadata-only synchronization. | Parked unmerged at the user C9-only stopping boundary; future merge requires latest-base synchronization and exact-head CI. |
-| C9 / #19 | Independent all-must PASS on `2ae52d4`, pinned base `7dcedc2`, tree `a70d1f62`; full root checks/DB 161 pass. [Immutable report](codex/Codex-C9-review-2ae52d4.md). | Final synchronization, unchanged-code check and exact CI before merge; actual integration CI then stop. Suggestions are deferred in CXB. |
+| C9 / #19 | Independent all-must PASS on `2ae52d4`, final head `79e4494`; merged `73feaab` with actual build/plan green. Full root checks/DB 161 pass. [Completion report](reports/C9.md). | Done; coordinator stopped. Suggestions deferred in CXB. |
 
 ## Reviewer and builder boundaries
 
 - Coordinator: Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`; owns claims, criteria, routing, integration checks and merges.
 - Independent QA coordinator: Codex thread `01a165ed-292f-7d71-8826-a8193dd72a3e`; owns independent evidence and new immutable reports, not implementation or task-state changes.
-- C9 primary builder: local Luna agent `/root/c1_memory_fix`, worktree `/home/kevin/coordinator-worktrees/c9`; earlier C1cx1 and F1d work is handed off.
-- C9 persona component: local Luna agent `/root/f2_ci_fix`, worktree `/home/kevin/coordinator-worktrees/c9-personas`; commit `06263e4` handed to primary builder. Its C2cx5 work is frozen at the head above.
+- C9 primary builder (completed/stopped): local Luna agent `/root/c1_memory_fix`, worktree `/home/kevin/coordinator-worktrees/c9`; earlier C1cx1 and F1d work is handed off.
+- C9 persona component (completed/stopped): local Luna agent `/root/f2_ci_fix`, worktree `/home/kevin/coordinator-worktrees/c9-personas`; commit `06263e4` handed to primary builder. Its C2cx5 work is frozen at the head above.
 
 ## Pending design clarification
 

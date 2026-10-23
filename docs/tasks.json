@@ -318,7 +318,7 @@
       ],
       "done_when": "Contracts accept empty Units.objective and Assessment.question; C1 imports them without skipping or blocking; C2 flags them as warnings; built-in personas live only in packages/ai's registry and a pack with no Personas tab stores none; open questions 6 and 7 from C1 are removed from ARCHITECTURE.md",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-c9",
       "updated": "2026-10-23"
     },
