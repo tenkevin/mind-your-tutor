@@ -5,8 +5,8 @@ export default defineConfig({
   resolve: { conditions: ['@ideamap/source'] },
   ssr: { resolve: { conditions: ['@ideamap/source'] } },
   test: {
-    // Each DB test file migrates its own database; the retention scale test seeds 1M rows.
-    testTimeout: 600_000,
+    // Database tests migrate their own database; give slow CI runners room.
+    testTimeout: 60_000,
     hookTimeout: 120_000,
   },
 });

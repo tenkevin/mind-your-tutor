@@ -54,7 +54,8 @@ run; add a new one.
 | 0010 class library    | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                                             |
 | 0011 isolation        | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                                               |
 | 0012 function binding | Trusted `search_path` for every app function; schema-qualified relation access and a fail-closed class pin guard (F4cx1)                                                |
-| 0013 privacy          | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports and `export_subject` (F6) |
+| 0013 import jobs      | `import_job.steps` (Teacher Settings pipeline progress) and `idempotency_key` (one job per repeated upload; C4)                                                         |
+| 0015 privacy          | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports and `export_subject` (F6) |
 
 ## Roles and row-level security
 

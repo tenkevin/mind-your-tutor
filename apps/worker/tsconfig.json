@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Typecheck and test against workspace sources, so they run before `pnpm build`.
+    // Type-check against workspace packages' source, so typecheck needs no build first.
     "customConditions": ["@ideamap/source"]
   },
   "include": ["src"]

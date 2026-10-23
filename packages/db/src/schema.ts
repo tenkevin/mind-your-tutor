@@ -1,6 +1,7 @@
 import type {
   ClassConfig,
   ExplanationSource,
+  ImportStep,
   Pack,
   PersonaId,
   VersionDerived,
@@ -55,9 +56,9 @@ export interface OrganizationTable {
   text_retention_days: Generated<number>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
-  /** Days AI transcripts are kept (§10; default 90, from 0013). */
+  /** Days AI transcripts are kept (§10; default 90, from 0015). */
   ai_retention_days: Generated<number>;
-  /** Days export files are kept (default 7, from 0013). */
+  /** Days export files are kept (default 7, from 0015). */
   export_retention_days: Generated<number>;
 }
 
@@ -297,6 +298,8 @@ export interface ImportJobTable {
   started_at: NullableTimestamp;
   finished_at: NullableTimestamp;
   updated_at: CreatedAt;
+  steps: ColumnType<ImportStep[], JsonText<ImportStep[]> | undefined, JsonText<ImportStep[]>>;
+  idempotency_key: string | null;
 }
 
 export interface ExportJobTable {
@@ -319,7 +322,7 @@ export interface ExportJobTable {
   updated_at: CreatedAt;
 }
 
-/** Which students an export file holds (0013). */
+/** Which students an export file holds (0015). */
 export interface ExportSubjectTable {
   export_job_id: string;
   student_id: string;
@@ -335,7 +338,7 @@ export interface AuditEventTable {
   target_id: string | null;
   detail: ColumnType<Record<string, unknown>, JsonText<Record<string, unknown>> | undefined, never>;
   at: CreatedAt;
-  /** The class the change belongs to, for a class's history (0013). */
+  /** The class the change belongs to, for a class's history (0015). */
   class_id: string | null;
   curriculum_id: string | null;
   /** Only what changed, with secrets redacted. Null for a create (before) or a delete (after). */
@@ -591,6 +594,8 @@ export const COLUMNS = {
     'started_at',
     'finished_at',
     'updated_at',
+    'steps',
+    'idempotency_key',
   ],
   export_job: [
     'id',

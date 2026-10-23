@@ -343,6 +343,9 @@ describe.skipIf(!hasDatabase)('retention job interrupted (F6-F4)', () => {
   });
 });
 
+/** Seeding 1,000,000 rows and the 5-minute bar need more than the default timeout. */
+const SCALE_TIMEOUT = 600_000;
+
 describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
   const ROWS = Number(process.env.IDEAMAP_PERF_TEXT_ROWS ?? 1_000_000);
   let t: TestDatabase;
@@ -362,61 +365,65 @@ describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
       `.compile(t.db),
     );
     await sql`ANALYZE interaction_text`.execute(t.db);
-  });
+  }, SCALE_TIMEOUT);
   afterAll(async () => {
     await t?.drop();
   });
 
-  it('deletes half of 1,000,000 rows in batches in under 5 minutes, without blocking inserts', async () => {
-    const retention = await t.loginAs(RETENTION_ROLE);
-    const app = await t.loginAs(APP_ROLE);
-    let running = true;
-    const insertTimes: number[] = [];
-    const inserts = (async () => {
-      while (running) {
-        const started = performance.now();
-        await withOrg(app, a.orgId, (trx) =>
-          trx
-            .insertInto('interaction_text')
-            .values({
-              org_id: a.orgId,
-              class_id: a.classId,
-              student_id: a.studentId,
-              kind: 'chat',
-              body: 'live',
-            })
-            .execute(),
-        );
-        insertTimes.push(performance.now() - started);
-        await new Promise((r) => setTimeout(r, 10));
+  it(
+    'deletes half of 1,000,000 rows in batches in under 5 minutes, without blocking inserts',
+    async () => {
+      const retention = await t.loginAs(RETENTION_ROLE);
+      const app = await t.loginAs(APP_ROLE);
+      let running = true;
+      const insertTimes: number[] = [];
+      const inserts = (async () => {
+        while (running) {
+          const started = performance.now();
+          await withOrg(app, a.orgId, (trx) =>
+            trx
+              .insertInto('interaction_text')
+              .values({
+                org_id: a.orgId,
+                class_id: a.classId,
+                student_id: a.studentId,
+                kind: 'chat',
+                body: 'live',
+              })
+              .execute(),
+          );
+          insertTimes.push(performance.now() - started);
+          await new Promise((r) => setTimeout(r, 10));
+        }
+      })();
+
+      let batches = 0;
+      const started = performance.now();
+      const result = await runRetention(retention, { onBatch: () => batches++ });
+      const elapsed = performance.now() - started;
+      running = false;
+      await inserts;
+
+      expect(result.interaction_text).toBe(Math.floor(ROWS / 2));
+      expect(batches).toBeGreaterThanOrEqual(Math.floor(ROWS / 2 / 5000));
+      expect(elapsed).toBeLessThan(5 * 60_000);
+      expect(insertTimes.length).toBeGreaterThan(0);
+      insertTimes.sort((x, y) => x - y);
+      const worst = insertTimes[insertTimes.length - 1]!;
+      if (process.env.IDEAMAP_PERF_VERBOSE) {
+        console.log({
+          rows: ROWS,
+          elapsedMs: Math.round(elapsed),
+          batches,
+          inserts: insertTimes.length,
+          worstInsertMs: worst,
+        });
       }
-    })();
-
-    let batches = 0;
-    const started = performance.now();
-    const result = await runRetention(retention, { onBatch: () => batches++ });
-    const elapsed = performance.now() - started;
-    running = false;
-    await inserts;
-
-    expect(result.interaction_text).toBe(Math.floor(ROWS / 2));
-    expect(batches).toBeGreaterThanOrEqual(Math.floor(ROWS / 2 / 5000));
-    expect(elapsed).toBeLessThan(5 * 60_000);
-    expect(insertTimes.length).toBeGreaterThan(0);
-    insertTimes.sort((x, y) => x - y);
-    const worst = insertTimes[insertTimes.length - 1]!;
-    if (process.env.IDEAMAP_PERF_VERBOSE) {
-      console.log({
-        rows: ROWS,
-        elapsedMs: Math.round(elapsed),
-        batches,
-        inserts: insertTimes.length,
-        worstInsertMs: worst,
-      });
-    }
-    // Inserts kept going: none waited on the job for long.
-    expect(worst).toBeLessThan(1000);
-  });
+      // Inserts kept going: none waited on the job for long.
+      expect(worst).toBeLessThan(1000);
+    },
+    SCALE_TIMEOUT,
+  );
 });
 
 describe('retention schedule', () => {

@@ -12,17 +12,19 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildServer } from './index.js';
-import type { Authenticate } from './privacy.js';
+import type { Authenticate } from './imports.js';
 
 // F6-F7 and F6-S1 over HTTP: only an admin of the student's organization may export
 // or delete a student.
 
-/** Test sign-in: the `x-test-caller` header is `orgId:userId`. */
+/** Test sign-in: the `x-test-caller` header is `orgId:userId`, always claiming admin. */
 const testSignIn: Authenticate = async (request) => {
   const header = request.headers['x-test-caller'];
   if (typeof header !== 'string') return null;
   const [orgId, userId] = header.split(':');
-  return orgId && userId ? { orgId, userId } : null;
+  // Every caller claims to be an admin: the routes must read the role from the
+  // database instead, so teachers and students are still refused.
+  return orgId && userId ? { orgId, userId, role: 'admin' } : null;
 };
 
 describe('privacy routes without sign-in', () => {

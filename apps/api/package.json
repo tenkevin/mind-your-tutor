@@ -16,8 +16,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ideamap/connectors": "workspace:*",
+    "@ideamap/contracts": "workspace:*",
+    "@ideamap/db": "workspace:*",
+    "@ideamap/worker": "workspace:*",
     "fastify": "catalog:",
-    "@ideamap/db": "workspace:*"
+    "kysely": "0.29.7",
+    "pg-boss": "12.38.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",

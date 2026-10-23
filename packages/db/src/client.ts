@@ -85,7 +85,7 @@ export function withClass<T>(
 }
 
 /**
- * Name the user the transaction acts for. Audit rows written by triggers (0013) and
+ * Name the user the transaction acts for. Audit rows written by triggers (0015) and
  * by `writeAudit` record them as the actor. Call inside `withOrg`: the user must
  * belong to that organization, or the audited write fails.
  */

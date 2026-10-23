@@ -1,18 +1,11 @@
 import { deleteStudent, exportStudent, PrivacyError, type Db, type ExportStore } from '@ideamap/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { Authenticate } from './imports.js';
 
 // FERPA export and delete for one student (ARCHITECTURE.md §10; task F6). Only an
 // admin of the student's organization may call these: the caller's organization comes
-// from their sign-in, never from the URL, and their role is read from the database.
-
-/** The signed-in user, as sign-in establishes it. */
-export interface Caller {
-  orgId: string;
-  userId: string;
-}
-
-/** Who is calling, or null when no one is signed in. */
-export type Authenticate = (request: FastifyRequest) => Promise<Caller | null>;
+// from their sign-in, never from the URL, and their role is read from the database
+// (the caller's claimed role is not trusted).
 
 /** Until sign-in exists (§10 SSO), nobody is signed in, so every privacy call is refused. */
 export const noSignIn: Authenticate = async () => null;

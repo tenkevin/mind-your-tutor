@@ -1,7 +1,7 @@
 # Idea Map data inventory
 
 Status: v1 · 2026-10-23 · task F6
-Covers: every table and column in the Idea Map database (migrations 0001 to 0013), plus export files.
+Covers: every table and column in the Idea Map database (migrations 0001 to 0015), plus export files.
 Sources: `docs/ARCHITECTURE.md` §8.2, §8.6, §10, D9, D11.
 Kept honest by a test: `packages/db/src/inventory.test.ts` fails if the database has a column this document doesn't list, or this document lists one the database doesn't have.
 
@@ -166,6 +166,8 @@ The only places that hold what a student wrote, and what the AI said in a conver
 | `import_job.id`, `import_job.org_id`, `import_job.curriculum_id`, `import_job.version_id`, `import_job.created_at`, `import_job.started_at`, `import_job.finished_at`, `import_job.updated_at` | Keys and timing of a curriculum import | No | System | Staff | Length of the agreement | With the district |
 | `import_job.status`, `import_job.source`, `import_job.error` | The imported file's reference and mapping, and how the import went | No | Staff | Staff | Length of the agreement | With the district |
 | `import_job.created_by` | Who started it | Staff | System | Staff | Length of the agreement | With the district |
+| `import_job.steps` | Progress through the import pipeline shown in Teacher Settings (parse, map, check, derive) | No | System | Staff | Length of the agreement | With the district |
+| `import_job.idempotency_key` | The upload's idempotency key, so the same upload sent twice makes one job | No | System | Staff | Length of the agreement | With the district |
 | `export_job.id`, `export_job.org_id`, `export_job.kind`, `export_job.curriculum_id`, `export_job.class_id`, `export_job.status`, `export_job.created_at`, `export_job.finished_at`, `export_job.updated_at` | Keys, kind and timing of an export (curriculum reports, class progress, FERPA student records) | No | System | The staff member who asked; admins | Length of the agreement | With the district |
 | `export_job.params` | What was exported; for a student record, the student's random id | Student record | Staff | As above | Length of the agreement | With the district |
 | `export_job.result_ref`, `export_job.error` | Where the export file is stored, and any error | No | System | As above | Cleared when the file is deleted | Retention job after `export_retention_days` (default 7); FERPA delete for that student's files |

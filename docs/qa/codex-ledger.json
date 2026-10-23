@@ -298,6 +298,60 @@
         "F6-E1, F6-E2 (flattened config.token bypasses audit redaction), F6-E3 (student export drops AI token counts/redacted_at) -> agent-f6 on PR #20; saved as reports/F6-run1.md"
       ],
       "suggestions": "Concurrent export/delete regression folded into F6-E1 fix. Retention daemon bootstrap, combined migration ordering of F5/F4cx1/F6 0012s, backup expiry procedures -> CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C4-review-7623133.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C4"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS; merged 6c14ece. C4-P3 should FAIL (parallel imports 5.07x vs 2x; one batch-size-1 worker; the test widens the budget) -> CXB. API bootstrap must wire import deps and the authenticator -> T2 criteria via CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C6-review-8cc23ab.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C6"
+      ],
+      "errors": [
+        "C6-E1 blank template fails import, C6-E2 XLSX truncation/char stripping, C6-E3 comma list ambiguity -> agent-c6 on PR #21 (open; no new task); saved as reports/C6-run1.md"
+      ],
+      "suggestions": "C6-F7 (real Excel/Sheets) can't be executed by any agent: coordinator reconciles it in docs/qa/C6.md (OOXML validation + LibreOffice by QA; Excel/Google Sheets open-check by the user before L1). CSV apostrophe safety-prefix round trip -> CXB. Export API auth scope -> T2/T-task criteria via CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-0fef315.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [
+        "F5-E1 still open (in-flight replay erases edits queued during the await) -> agent-f5 on PR #15; saved as reports/F5-run2.md"
+      ],
+      "suggestions": "S1 replay serialization / disable Try again while pending folded into the F5-E1 fix. S2 per-process OIDC state already in CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-941340b.md",
+      "commit": "392d82f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [],
+      "suggestions": "F5-E1 corrected on head 941340b (head-only). UNVERIFIED on current base: merge conflicts with C4 (API/worker configs, connector+contracts index, db migrations, lockfile). Auth migration must be 0014 after 0013_import_jobs; re-run every-route policy sweep with C4 routes. Routed to agent-f5; no new task."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-review-b52d29e.md",
+      "commit": "392d82f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [],
+      "suggestions": "F6-E1/E2/E3 corrected on head b52d29e (head-only). Integration blocked: conflicts with C4; inventory/schema must include import_job.steps and idempotency_key; migration renumber. S1 class-export producers take the privacy lock before snapshotting identifying data -> future export-producer criteria via CXB. S2 retention scheduler bootstrap already in CXB."
     }
   ]
 }

@@ -20,3 +20,9 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 | Codex-F6-review-0412b2c.md | Retention job is registered (`scheduleRetention`) but no deployed worker bootstraps it; verify a real daily run | Deployment / L1 criteria |
 | Codex-F6-review-0412b2c.md | F5, F4cx1 and F6 each add a `0012` migration: renumber and re-run the inventory on the combined schema; separate branch PASSes don't prove the combination | Coordinator, at each of those merges |
 | Codex-F6-review-0412b2c.md | Backup expiry and operator procedures are documented, not tested | Deployment / L1 criteria |
+| Codex-C4-review-7623133.md C4-P3 | Parallel imports run 5.07x one import (budget 2x): one batch-size-1 worker. Assert the real budget and add bounded worker concurrency | Worker/scale criteria before L1 |
+| Codex-C4-review-7623133.md | `apps/api/src/index.ts` starts `buildServer()` without import dependencies; wire imports and the authenticator into the API bootstrap | T2 criteria |
+| Codex-C6-review-8cc23ab.md | A formula-safe CSV keeps its leading apostrophe on C1 reimport; define a reversible representation (don't strip every apostrophe) | Importer/exporter criteria |
+| Codex-C6-review-8cc23ab.md | When an export API exists, enforce org/class authorization before choosing the pack (C6-S2) | T2/T-task criteria |
+| C6 criteria reconciliation | Open the template, pack, data-check and alignment exports in real Excel and Google Sheets (accents, frozen header, formula-like text shown as text) | Manual check by the user, L1 criteria |
+| Codex-F6-review-b52d29e.md S1 | Any class-export producer must take the student privacy lock **before** collecting identifying data, then record subjects and write in the same transaction | Next class-export producer criteria (T-tasks / M5) |
