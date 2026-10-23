@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
+import { validDerived } from './test/derived.js';
 import { errorCode, freshDatabase, hasDatabase, PG, type TestDatabase } from './test/harness.js';
 import {
   SOURCE,
@@ -280,7 +281,7 @@ describe.skipIf(!hasDatabase)('version status (F4-F3)', () => {
     expect(
       await errorCode(() =>
         draft()
-          .set({ derived: json({ layout: {} }) })
+          .set({ derived: json(validDerived()) })
           .execute(),
       ),
     ).toBeNull();
