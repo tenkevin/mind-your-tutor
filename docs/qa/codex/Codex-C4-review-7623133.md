@@ -1,0 +1,81 @@
+Reviews: C4
+
+# Independent QA: C4 / PR #22
+
+Verdict: **PASS (all 17 must checks pass); C4-P3 should FAIL.**
+
+Independent reviewer: Codex QA C4. Date: 2026-10-22 America/Los_Angeles (raw UTC timestamps cross into 2026-10-23). No blocking Errors found. This report certifies the exact scratch integration below, not a future integration commit.
+
+Publication-time base drift: coordinator reported that the base subsequently advanced to `be6697d6fa97aa681d65a68abf7280928ed49b4c`, including F4cx1 merge `45d89c5` with an additional migration and function-binding suite. Those changes were not merged into this reviewed tree or executed here; previously blocked suites were not retried. PASS remains scoped to pinned base `dfc44cf7fafc88ee51272a402d6aed080783e09f` and actual tree `e977c0aa92e4b65d0045192c97ddd4156cc60dfc`. It is not current-base merge authorization.
+
+PR head: `76231337f3cc340d45784d9f6961c5ecf8837825`.
+Pinned base: `dfc44cf7fafc88ee51272a402d6aed080783e09f`.
+Detached scratch checkout: `/home/kevin/codex-qa-2026-10-22/c4-review-7623133`.
+Command: `git merge --no-commit --no-ff dfc44cf7fafc88ee51272a402d6aed080783e09f`.
+Merge exit 0; no unmerged index entries. HEAD tree `29d807c0268442b8bbdf715cce566912d6cad0fc`; actual merged index tree `e977c0aa92e4b65d0045192c97ddd4156cc60dfc`. These trees differ: the pinned-base integration adds 12 documentation/task-state files, 449 insertions and 10 deletions, and no application implementation changes. Detailed evidence: `c4-tree-7623133.log`.
+
+Authorization: explicitly assigned independent QA only. No implementation changes, remote writes, PR comments, merges to shared branches, claims or task-state changes. Existing blocked PR #13 and F4cx1 shadow-table actions are excluded. Before root execution, test imports/source were scanned; the existing ordinary DB isolation tests include a denied `CREATE TEMP TABLE scratch` permission check, with no F4cx1 dynamic shadow-trigger suite present. No new adversarial DB tests are introduced.
+
+Environment: Node 22.22.0 / pnpm 10.28.0 from `/home/kevin/codex-qa-2026-10-22/toolchain/node_modules/.bin`; Vitest 5.0.5. Offline frozen installation passed (`c4-install-7623133.log`). Dedicated disposable container `codex-qa-c4-7623133`, image `pgvector/pgvector:pg16`, bound only on `127.0.0.1:55442`; `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55442/c4_qa`. Test harnesses create/migrate/drop their own synthetic databases. No real application database was used. F5 released the heavy window before C4 root checks/measurements; C4 then released it to C6. The final OS high-water RSS capture ran only after C6 explicitly released its window back. Functional OS-kill recovery waited on pg-boss supervision and did not overlap another heavy workload.
+
+External independent harness: `c4-independent.test.ts`, `c4-independent.config.mjs`. It uses the actual HTTP routes, real pg-boss workers, existing test DB scope and independently assembled three-format fixtures; records exact checksums, progress snapshots, errors, concurrency results, raw paired timings, and 2,000-idea XLSX latency/RSS. It does not alter project implementation or published QA files.
+
+## Criteria
+
+| Check | Weight | Result | Evidence |
+| --- | --- | --- | --- |
+| C4-F1 | must | PASS | Independent real HTTP XLSX upload and real pg-boss worker produce one draft; persisted pack has 18 ideas, derived has 27 kept links and centre `evap`; persisted data-check severities are exactly error/info/warning. External harness assertions plus checked-in worker integration tests. |
+| C4-F2 | must | PASS | Independent HTTP XLSX, ZIP of eight CSV tabs, and JSON imports deep-equal in both persisted pack and derived data. Each stores the SHA-256 independently recomputed from its actual source bytes. |
+| C4-F3 | must | PASS | HTTP returns queued; existing real worker test captures running during Check data; all independent imports finish succeeded with six ordered names and start/finish timestamps. Full root worker 18/18 includes this intermediate-state assertion. |
+| C4-F4 | must | PASS | Independent ZIP missing Ideas.title yields failed, no new version, and cell/column-level importer problems. Before/after serialized version rows remain identical. |
+| C4-F5 | must | PASS | All three independent drafts retain the sample's error, report `can_publish:false`, and remain draft. |
+| C4-F6 | must | PASS | Independent three sequential uploads yield numbers 1/2/3; immutable rows remain byte-equivalent after subsequent failed import. SHA-256 and nonempty applied mapping stored on every row. Full worker suite also applies a saved title→heading mapping and verifies the earlier draft unchanged. |
+| C4-F7 | must | PASS | Independent three concurrent submissions with one idempotency key create one job/draft; interrupted functional retry yields one additional numbered draft. Separately, a real Node child is killed by actual SIGKILL after Check data, then a fresh child starts. Real pg-boss lease expiry/redelivery (retry_count=1) produces exactly one numbered draft, and repeated submission returns the same job. No manual redelivery/state rewrite in that check. See lifecycle scope below. |
+| C4-F8 | must | PASS | Worker source commits draft, success status and a separate `library-index` queue send atomically; independent import returns without awaiting indexing. Root worker integration verifies the separate pg-boss row/payload; indexing handler is explicitly an A3 stub. |
+| C4-F9 | must | PASS | Root lint, format:check, typecheck, build and plan check pass. First DB-backed root `pnpm test` exits 0: 38 files / 869 tests, including DB 161, worker 18, API 7, connectors 111, domain 96, contracts 217. Exact-head build/plan CI both success; evidence and access caveat below. |
+| C4-S1 | must | PASS | Existing real HTTP tests return 401 absent caller, 403 student, 403 other org, with unchanged queue count; worker tests also deny other-org job reads. These tests ran independently in the full root suite. F5 route policy is not part of this branch; criteria permit the job API's own org check. |
+| C4-S2 | must | PASS | Existing HTTP and worker tests refuse the bounded 60 MiB file and 120 MiB-expanded archive fixtures before queueing; honest and understated archive sizes covered by HTTP/connector tests. Queue/object counts unchanged. No newly enlarged or unbounded fixture used. |
+| C4-S3 | must | PASS | Existing tests verify random UUID key in per-org prefix, sanitized name stored only as data, FileObjectStore files 0600 and directories 0700, and no public-serving path. Source confirms exclusive writes and private local storage. |
+| C4-S4 | must | PASS | Every worker tenant database operation uses `deps.scope(orgId, ...)`; production orgScope delegates to withOrg. Existing test scope drops to app role with SET LOCAL org context; existing wrong-org/no-org integration assertions pass. No new adversarial DB probe added. |
+| C4-P1 | must | PASS | Independent local HTTP upload→draft: XLSX 559.03 ms, CSV 464.21 ms, JSON 483.90 ms; all <5000 ms. Exact-head CI also runs the checked-in sample threshold test. These are individual observations, not a claimed warmed median. |
+| C4-P2 | must | PASS | Independent 2000 ideas / 4000 links XLSX: first measured 1269.87 ms; separate high-water capture 1342.24 ms, sampled peak 206,704,640 bytes, OS process maxRSS 214,777,856 bytes (~204.83 MiB), below 536,870,912 bytes. See reproducibility/memory limits below. |
+| C4-P3 | should | FAIL | Five parallel org imports succeed without cross-org rows, but 2482.20 ms versus single samples 418.07/491.35/490.04 ms (median 490.04 ms), ratio 5.065×, above written <2× budget. First failed assertion preserved. Nonblocking suggestion below. |
+| C4-U1 | must | PASS | All six step names/results match Teacher Settings source line402; independent raw logs contain `18 ideas, 31 links`, `3 notes`, `Top 3 in and out per idea`, layout/quizzes/library messages and timestamps. |
+| C4-U2 | must | PASS | Independent failure names `broken.zip › Ideas.csv · Ideas, row1, title`, explains adding/mapping the missing column, and says `Fix the sheet and upload again.`; no new version. |
+
+## Errors
+
+None found against the must criteria. All required checks are verified; no must criterion is left UNVERIFIED.
+
+## Suggestions
+
+1. **C4-P3: retain the written parallel-import budget in the test and improve worker concurrency if that budget remains desired.** `apps/worker/src/imports.test.ts:458–459` explicitly accepts `Math.max(2 * one, 5 * one + 2000)`, contrary to the existing should criterion's <2× budget. Independent measured ratio is 5.065×. `apps/worker/src/index.ts:51–54` registers one batch-size 1 import worker, consistent with serial polling. Suggested follow-up: assert the actual 2× budget, then introduce bounded worker concurrency/throughput suitable for the workload; do not silently widen the criterion. This is a should failure, not a merge-blocking Error.
+
+Deployment scope note: `apps/api/src/index.ts:21–23` starts `buildServer()` with no import dependencies, so this PR's configured HTTP flow is demonstrated through `buildServer({imports:...})` and the permitted job entry point. Deploying imports still requires wiring the dependencies and authenticator into the API bootstrap. This does not invalidate C4's explicitly permitted test entry points or assert F5 integration exists.
+
+## Reproducibility and evidence
+
+All relative artifact paths below are under `/home/kevin/codex-qa-2026-10-22/`. Prefix commands with `PATH=/home/kevin/codex-qa-2026-10-22/toolchain/node_modules/.bin:$PATH`. Commands ran in `c4-review-7623133` unless an explicit root follows.
+
+- Setup: `pnpm install --offline --frozen-lockfile` → `c4-install-7623133.log`.
+- Root checks: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build`, `node scripts/plan.mjs check` → `c4-lint-7623133.log`, `c4-format-7623133.log`, `c4-typecheck-7623133.log`, `c4-build-7623133.log`, `c4-plan-7623133.log`. No implementation edits were made between checks.
+- Full database-backed baseline: `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55442/c4_qa pnpm test` → `c4-root-test-first-7623133.log`, exit0 on first attempt. Full default DB performance fixture sizes retained (1,000,000 events / 10,000 chunks); no reduced performance environment. Since the integrated tree passes, no separate bare-base rerun was needed for failure attribution.
+- Independent command: `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:55442/c4_qa node_modules/.bin/vitest run --root /home/kevin/codex-qa-2026-10-22 --config /home/kevin/codex-qa-2026-10-22/c4-independent.config.mjs`. First complete run → `c4-independent-first-7623133.log`: three must-focused tests pass, P3 fails. Vitest's initial default hides passing-test stdout; this is disclosed rather than treating missing raw numbers as recorded evidence.
+- To retain the previously hidden measurements, config sets `silent:false`; `--testNamePattern 'three-format|2000'` → `c4-independent-measurements-7623133.log`, two pass. Input generation and acceptance budgets unchanged. This is additional raw-output capture, not replacement of the first P3 failure.
+- To verify actual OS memory high-water, final `--testNamePattern '2000'` → `c4-independent-highwater-7623133.log`, one pass. Independent workbook232,227 bytes; SHA-256 `2889d624a9fca7c08fc0ff7264afbc025990842094674b733704264db98b2830`. The harness fully specifies its generation, including2000 ideas and4000 links. Initial1269.87ms run's216,039,424-byte figure was interval-sampled RSS only; final run also captures Linux `process.resourceUsage().maxRSS *1024`. This is the OS high-water for the Vitest worker process that executes import, including fixture construction and setup; it is not the sum of the Postgres process and test runner. The import runs in the same process as the harness, so its full process RSS is included conservatively. Local machine timing is not presented as a separately measured CI timing.
+- Actual OS lifecycle: `--testNamePattern 'actual OS'` → `c4-os-lifecycle-clean-child-7623133.log`, one pass,63.12s. External `c4-worker-child.mjs` uses built worker/connector/database code; child PIDs and actual SIGKILL exit are retained. The synthetic queue lease is shortened from production300s to2s and retry delay to0 before submitting; default production supervision is retained and recovers on its normal poll. Import job stays running with zero versions after kill, then queue row becomes completed with `retry_count:1`; exactly one version number1, and same-key resubmission returns the same job. There is no direct `runImport` call/manual redelivery in this lifecycle fixture. This validates real crash/restart recovery with accelerated lease time; it does not claim a five-minute production-duration soak.
+- First lifecycle harness failures are retained: `c4-os-lifecycle-first-7623133.log` used a nonexistent Kysely `dist/esm/index.js` path; `c4-os-lifecycle-fixed-harness-7623133.log` inherited Vitest's source-resolution condition into plain Node. Both failed before the feature ran. The harness fix uses `dist/index.js`, `execArgv:[]`, and empty NODE_OPTIONS for a clean built-code child; no implementation changed.
+- Exact-head CI: coordinator independently read both REST responses, exits0, completed/success at this exact head; `evidence/c4-parent-ci-7623133.txt`. Build run [39897906134](https://github.com/tenkevin/mind-your-tutor/actions/runs/39897906134), plan run [39897906106](https://github.com/tenkevin/mind-your-tutor/actions/runs/39897906106). Child's earlier ambient-credential requests returned404 (`c4-ci-build-7623133.json`, `c4-ci-plan-7623133.json`); coordinator's direct authenticated read is the evidence, and the404 is an access/environment first failure, not a code failure.
+- Harness source/hash artifacts: `c4-independent.test.ts`, `c4-independent.config.mjs`, `c4-worker-child.mjs`, `c4-harness-hashes-7623133.txt`. Source review included C4 criteria, architecture/spec, fixture README, worker/API tests, queue/worker/import/storage source and migrations. Never opened `pnpm-lock.yaml` or `project/support.js`.
+
+## Cleanup and handoff
+
+All synthetic test databases were dropped by their harnesses; final dedicated-container query confirms no `ideamap_test_%` database remains. Named container `codex-qa-c4-7623133` was stopped and retained for recoverability; no container/volume was deleted. Generated per-lifecycle upload directories were removed by the lifecycle harness's finally cleanup. Child workers were stopped; no API server was launched outside in-process Fastify injection. Final cleanup/index/source-diff evidence: `c4-cleanup-7623133.log`.
+
+Scratch worktree and external evidence remain available. Its no-commit merge index remains at `e977c0aa92e4b65d0045192c97ddd4156cc60dfc`; `git diff HEAD -- apps packages` is empty. Only the pinned-base merge's documented metadata additions remain staged. No shared source, task state, immutable report, PR comment or remote ref was changed. Parent coordinator owns publication and any next action; reviewer stops after this report.
+
+## Parent review and routing
+
+Parent read this complete report, the independent harness, raw first concurrency failure, measured import samples and actual SIGKILL/recovery output. Parent independently checked exact-head CI through authenticated REST. The evidence supports **all-must PASS on the pinned integration only**. No must-fix Error is asserted. Retain the C4-P3 result as a should-level follow-up under Suggestions; its 5.065× ratio must not be relabeled PASS using the repository's relaxed assertion. The real crash test closes the earlier simulated-exception-only coverage gap without changing application code.
+
+Publication is batched after completion because no urgent blocking defect was confirmed. New F4cx1 application changes on the publication base require current-base integration evidence before merge; do not carry this scoped PASS across them merely because each PR's older CI is green. QA did not merge C4 or alter task state.
