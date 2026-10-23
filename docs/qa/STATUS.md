@@ -6,6 +6,21 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
+## Monday QA queue (as of 2026-10-23 17:00 UTC)
+
+Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).
+
+**Needs independent QA, highest priority first:**
+1. **F6 #20.** agent-f6 is re-integrating with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
+2. **T1** (PR pending, agent-t1): the teacher shell; unlocks T2 and T3.
+3. **C5 #23** at `6f43575`: first run; criteria in docs/qa/C5.md (D14 count).
+4. **C6 #21** at `750a50b`: re-run after the C6-E1/E2/E3 fixes; C6-F7 reconciled.
+
+Coordinator note: Codex's runner excludes `function_binding.test.ts`. The coordinator closes that gate locally (Postgres 16 + pgvector) before merging, as it did for F4cx1 and F5.
+
+**Criteria ready, waiting on merges:** A1 (F6), T2 (T1), T3 (T1), T4 (T3), T5 (T3), T6 (T2), T7 (T3, A1), T8 (T2, C5), A2 (A1), A5 (A1).
+**Blocked on a human spec:** M1–M5 (ARCHITECTURE §8.6); S1–S4 and C7 wait on them.
+
 **Resumed 2026-10-23 03:00 UTC.** Since resume:
 - F1d #16 merged `d040362` (independent PASS on 0dd326d, carried through idea-map-only merges).
 - C2cx5 #18 merged `1e0e348` (Codex PASS on 7dd6511; reports/C2cx5.md).
