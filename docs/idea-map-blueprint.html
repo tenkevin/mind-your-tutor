@@ -8,7 +8,7 @@
   --bg: #161826; --surface: #232532; --raise: #2b2d3b; --text: #e9e9ed; --muted: #b2b6ca; --faint: #75798c;
   --line: color-mix(in srgb, #e9e9ed 16%, transparent); --line-soft: color-mix(in srgb, #e9e9ed 8%, transparent);
   --accent: #9184d9; --accent-soft: #2b2741; --accent-ink: #e7e5fe; --accent-edge: #796cbf;
-  --ok: #6fcf97; --ok-soft: #1d3329; --warn: #e6b45c; --warn-soft: #3a2f1b; --err: #ef8a80;
+  --ok: #6fcf97; --ok-soft: #1d3329; --warn: #e6b45c; --warn-soft: #3a2f1b; --err: #ef8a80; --crit: #f0605f;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   --r: 8px;
@@ -18,13 +18,13 @@
   --bg: #f6f6fb; --surface: #ffffff; --raise: #eeeef6; --text: #1c1e2b; --muted: #555a6e; --faint: #868a9c;
   --line: color-mix(in srgb, #1c1e2b 16%, transparent); --line-soft: color-mix(in srgb, #1c1e2b 8%, transparent);
   --accent: #5d50b0; --accent-soft: #ebe8fb; --accent-ink: #3b3180; --accent-edge: #8b80d6;
-  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e;
+  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e; --crit: #c8322f;
   color-scheme: light; } }
 :root[data-theme="light"] {
   --bg: #f6f6fb; --surface: #ffffff; --raise: #eeeef6; --text: #1c1e2b; --muted: #555a6e; --faint: #868a9c;
   --line: color-mix(in srgb, #1c1e2b 16%, transparent); --line-soft: color-mix(in srgb, #1c1e2b 8%, transparent);
   --accent: #5d50b0; --accent-soft: #ebe8fb; --accent-ink: #3b3180; --accent-edge: #8b80d6;
-  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e;
+  --ok: #1f8a4c; --ok-soft: #e1f4e8; --warn: #a66a00; --warn-soft: #fbf0d9; --err: #b33a2e; --crit: #c8322f;
   color-scheme: light; }
 
 * { box-sizing: border-box; }
@@ -82,6 +82,9 @@ td:first-child { white-space: nowrap; }
 svg text { font-family: var(--font-body); }
 .node { cursor: pointer; }
 .node:focus-visible rect.body { stroke: var(--accent); stroke-width: 2.5; }
+.donebar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.donebar .mono { padding: 2px 7px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); }
+.card.crit { border-left: 3px solid var(--crit); }
 .detail { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; padding: 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
 .detail .meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -97,7 +100,6 @@ svg text { font-family: var(--font-body); }
 .col h3 { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 2px; }
 .col h3 span { font-weight: 400; color: var(--faint); font-variant-numeric: tabular-nums; }
 .card { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); cursor: grab; }
-.card.crit { border-left: 3px solid var(--accent); }
 .card .top { display: flex; align-items: center; gap: 8px; }
 .card .t { font-size: 13px; line-height: 1.4; }
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
@@ -115,7 +117,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <header>
   <div class="wrap bar">
-    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.2 · 23 Oct 2026</span></div>
+    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.3 · 23 Oct 2026</span></div>
     <nav role="tablist" aria-label="Views">
       <button role="tab" id="tab-architecture" data-view="architecture">Architecture</button>
       <button role="tab" id="tab-graph" data-view="graph">Dependencies</button>
@@ -150,6 +152,22 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Per-class library (D11)</td><td>Each class sets how the AI uses each shared document (Atlas, tutor, both or off) and can upload its own lab sheets.</td></tr>
           <tr><td>Gaps don't block import (D12)</td><td>Empty unit objectives and assessment questions are flagged, and Atlas drafts them for approval.</td></tr>
           <tr><td>One persona list (D13)</td><td>Ms. Ivy, Milo and Atlas live in one registry. A pack without a Personas tab uses them, and pack and class overrides sit on top.</td></tr>
+          <tr><td>Publish audience (D14)</td><td>The publish preview counts <b>students receiving this update</b>: every unique student enrolled in the selected classes.</td></tr>
+          <tr><td>Explained feedback (D15)</td><td>Formative feedback arrives with its reason and a <b>Challenge this</b> button that goes to the teacher. Summative feedback waits for the teacher. Teacher rulings become examples, never training data.</td></tr>
+          <tr><td>Fairness audits (D16)</td><td>No demographics stored per student. Schools and districts are compared on parity, disparate impact (flag under 0.8) and teacher agreement. Feedback passes grounding, a verifier and a tone check before a student sees it.</td></tr>
+          <tr><td>UDL 3.0 (D17)</td><td>Every student feature offers several ways to engage, read and answer, including read-aloud and spoken input, alongside WCAG 2.1 AA.</td></tr>
+          <tr><td>No Moodle (D18)</td><td>No Moodle or LTI. The tracer borrows Moodle's design only: its event shape, educational levels and per-component privacy. Encryption uses AES-256-GCM.</td></tr>
+          <tr><td>What is traced (D19)</td><td>Learning events only, with time on task rounded to 30 s and 5 s. Never clicks, scrolls, keystrokes, device, IP or location.</td></tr>
+          <tr><td>What is inferred (D20)</td><td>Mastery per idea and a <b>may need help</b> signal for the teacher, always with its reason. No risk scores, behaviour profiles, clustering or rankings.</td></tr>
+          <tr><td>Who sees traces (D21)</td><td>Students see their own progress, teachers their own classes, admins only school and district totals. No parent view in the app.</td></tr>
+          <tr><td>How long (D22)</td><td>Raw events are kept while the student is enrolled, then deleted. Anonymous class totals may stay.</td></tr>
+          <tr><td>Race audit (D23)</td><td>The district joins a pseudonymous sample with its own records and returns totals only. Idea Map never holds race.</td></tr>
+          <tr><td>Opt-out (D24)</td><td>Tracing is on by default. A family or district can opt a student out of audits, totals and research.</td></tr>
+          <tr><td>Research (D25)</td><td>Allowed on de-identified data under a district agreement. Identifiable or under-13 non-educational use needs parental opt-in.</td></tr>
+          <tr><td>Anonymous layer (D26)</td><td>Names and places become labels such as Person A on the student's device before anything reaches the cloud. The server double-checks.</td></tr>
+          <tr><td>Specific interests (D27)</td><td>Interests such as a favourite team reach the model, so examples connect to the student. Identifiers never do.</td></tr>
+          <tr><td>Two memories (D28)</td><td>Short-term is the conversation. Long-term keeps misconceptions, what helped, pace and up to five interest categories, never feelings, family or health.</td></tr>
+          <tr><td>Memory controls (D29)</td><td>Memory lasts while the student is enrolled. The student can see, delete or switch it off, and so can their teacher.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -159,20 +177,23 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
       <div class="stack">
         <div class="tier"><span class="label">Browser</span><div class="boxes">
           <div class="box key"><b>Teacher console</b><small>Settings, import, publish, Atlas</small></div>
-          <div class="box"><b>Student explorer</b><small>Map, quizzes, Milo, missions</small></div>
+          <div class="box"><b>Student explorer</b><small>Map, quizzes, Milo, missions, read-aloud and voice</small></div>
+          <div class="box key"><b>Anonymous layer</b><small>Blurs names and places on the device</small></div>
         </div></div>
         <div class="tier"><span class="label">API</span><div class="boxes">
           <div class="box"><b>Auth &amp; roles</b><small>SSO, org tenancy</small></div>
           <div class="box"><b>Curricula &amp; classes</b><small>Versions, layered config</small></div>
           <div class="box key"><b>Interaction tracker</b><small>Event log and deterministic rules</small></div>
           <div class="box"><b>Map generation</b><small>Reads tracker state; views stored</small></div>
-          <div class="box key"><b>AI gateway</b><small>Prompt fill, safety, rate limits</small></div>
+          <div class="box key"><b>AI gateway</b><small>Prompt fill, safety, rate limits, backstop blur</small></div>
+          <div class="box"><b>Feedback and memory</b><small>Reasons, challenges, teacher queue, learning summary</small></div>
         </div></div>
         <div class="tier"><span class="label">Workers</span><div class="boxes">
           <div class="box"><b>Import</b><small>Parse, map columns, validate</small></div>
           <div class="box"><b>Derive</b><small>Checks, ranking, layout, quizzes</small></div>
           <div class="box"><b>Index</b><small>Library chunks and embeddings</small></div>
           <div class="box"><b>Export</b><small>Templates, reports, drafted rows</small></div>
+          <div class="box"><b>Audits</b><small>Fairness by school and district, research export</small></div>
         </div></div>
         <div class="tier"><span class="label">Storage</span><div class="boxes">
           <div class="box"><b>Postgres</b><small>Data, job queue (pg-boss), vectors (pgvector)</small></div>
@@ -210,24 +231,40 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
     </div>
 
     <div class="block">
-      <h2>Interaction tracker and map generation <span class="pill spec" style="font-size:11px;vertical-align:middle">Placeholder</span></h2>
-      <p>The tracker records every student action and input as it happens, in a log that is only ever added to. Progress, rewards and behaviour metrics such as time on each idea, attempts, hint use, idle time, stalls and guessing are calculated from that log by fixed rules. The same events always give the same numbers.</p>
+      <h2>Interaction tracker and map generation <span class="pill ready" style="font-size:11px;vertical-align:middle">Spec v1</span></h2>
+      <p>The tracker records learning events, never behaviour around them, in a log that is only ever added to. Mastery, unlocks, XP, streaks and cards are calculated from that log by fixed rules, so the same events always give the same numbers.</p>
+      <div class="two">
+        <div class="block">
+          <span class="label">Recorded</span>
+          <div class="chips">
+            <span class="pill phase">idea opened</span><span class="pill phase">time on idea (30 s)</span><span class="pill phase">quiz answered (5 s)</span><span class="pill phase">hint requested</span><span class="pill phase">link rebuilt</span><span class="pill phase">teach-back</span><span class="pill phase">feedback shown or challenged</span><span class="pill phase">mission completed</span><span class="pill phase">teacher rulings</span>
+          </div>
+        </div>
+        <div class="block">
+          <span class="label">Never recorded</span>
+          <div class="chips">
+            <span class="pill wait">clicks</span><span class="pill wait">scrolls and hovers</span><span class="pill wait">keystrokes</span><span class="pill wait">device</span><span class="pill wait">IP address</span><span class="pill wait">location</span>
+          </div>
+        </div>
+      </div>
       <div class="scroll"><table>
-        <thead><tr><th></th><th>Interaction tracker</th><th>Map generation and AI</th></tr></thead>
+        <thead><tr><th>Output</th><th>Rule</th></tr></thead>
         <tbody>
-          <tr><td>Job</td><td>Record behaviour and work out progress and signals</td><td>Decide what the map shows; write explanations, feedback and questions</td></tr>
-          <tr><td>Deterministic?</td><td><b>Yes, always.</b> No clock, randomness or model calls in the rules</td><td><b>No need.</b> May use heuristics, randomness or a model</td></tr>
-          <tr><td>Kept honest by</td><td>Replaying events gives identical results</td><td>Everything shown to a student is stored and recorded as a tracker event</td></tr>
+          <tr><td>Mastered</td><td>A quiz scores above the class pass mark (70 by default). Mastery % is the best score.</td></tr>
+          <tr><td>XP</td><td>10 per correct answer, ×2 / ×3 / ×4 for runs of 2 / 4 / 6. Pass +50, perfect +50, link rebuilt +5, unit +200.</td></tr>
+          <tr><td>Streak</td><td>+1 on the first pass of a day, in the class time zone.</td></tr>
+          <tr><td>May need help</td><td>Three wrong after a hint, or a prerequisite stalled for 5 school days. Teacher only, with the reason.</td></tr>
         </tbody>
       </table></div>
       <div class="flow">
         <span class="step">Student acts</span><span class="arrow">→</span>
+        <span class="step gate">Names blurred on the device</span><span class="arrow">→</span>
         <span class="step gate">Tracker records the event</span><span class="arrow">→</span>
-        <span class="step gate">Rules update progress and signals</span><span class="arrow">→</span>
-        <span class="step">Map generator reads that state</span><span class="arrow">→</span>
-        <span class="step">Generated view saved and logged</span>
+        <span class="step">Rules update progress</span><span class="arrow">→</span>
+        <span class="step">Map and AI read that state</span><span class="arrow">→</span>
+        <span class="step">What they show is saved and logged</span>
       </div>
-      <p class="note">An AI verdict on a teach-back answer is saved as an event, so the tracker's rules use the recorded verdict and never ask the model again. Generated maps must still respect the tracker's locks. Typed text is stored separately with its own retention period. The event list and metric definitions still need writing up, so tasks M1–M5 can't be claimed yet.</p>
+      <p class="note">Teachers see a timeline and heatmap for their own classes. Admins see school and district totals and fairness audits. Raw events are kept while the student is enrolled. Full spec: ARCHITECTURE §8.</p>
     </div>
 
     <div class="block">
@@ -265,6 +302,10 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>COPPA</td><td>School-authorised consent; collect only name, school email and roster ids</td></tr>
           <tr><td>FERPA</td><td>District owns the data; signed data processing agreement; export and delete on request</td></tr>
           <tr><td>AI vendor</td><td>Zero-retention, no-training terms; pseudonymous ids in prompts</td></tr>
+          <tr><td>Anonymous layer</td><td>Names and places replaced on the student's device before any text leaves it; a server backstop catches misses</td></tr>
+          <tr><td>Learning traces</td><td>Learning events only, kept while enrolled; opt-out from audits and research</td></tr>
+          <tr><td>AI memory</td><td>Learning facts and up to five interest categories; the student can view, delete or turn it off</td></tr>
+          <tr><td>Fairness and research</td><td>Audits by school and district; race audit run by the district; research on de-identified data only</td></tr>
           <tr><td>Transcripts</td><td>Stored redacted, retention set per district (default 90 days), visible to the class teacher</td></tr>
           <tr><td>Access</td><td>Admin, author, teacher and student roles; row-level security per org; audit log on config changes and publishes</td></tr>
           <tr><td>Sign-in</td><td>Google Workspace for Education, Clever or ClassLink; rosters imported from OneRoster CSV</td></tr>
@@ -278,7 +319,10 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
         <tbody>
           <tr><td>Shared edits</td><td>Who may change defaults on a shared curriculum: its author only, or any teacher (by making a copy)?</td></tr>
           <tr><td>Changed questions</td><td>If a new version changes a unit's assessment questions, do students who already taught Milo keep the trophy?</td></tr>
-          <tr><td>First school</td><td>Which SSO and rostering provider, transcript retention period and hosting region?</td></tr>
+          <tr><td>First school</td><td>Which sign-in and rostering provider, transcript retention period and hosting region?</td></tr>
+          <tr><td>Embedding model</td><td>Which model the library search uses; changing it later means re-indexing.</td></tr>
+          <tr><td>Privacy layer</td><td>Check the design against the SoulSpeak paper; pick the on-device name detector; decide whether devices may hold the class roster.</td></tr>
+          <tr><td>Scale-out</td><td>Sign-in state and rate limits are per server process until the app runs on several servers.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -288,19 +332,19 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
   <section class="view" id="view-graph" role="tabpanel" aria-labelledby="tab-graph" hidden>
     <div class="block">
       <h1>Dependency graph</h1>
-      <p class="lede">Generated from the task list. Each column is the earliest a task can start, given what it waits on. The highlighted chain is the critical path to the pilot, and colours follow the board.</p>
+      <p class="lede">Open work only, in lanes by what it delivers and ordered by priority. Done work is folded into one strip. Arrows that another path already implies are left out, and each task shows its slack: how many weeks it can slip before the pilot does. Red is the critical path. Select a task to see everything it needs and unblocks.</p>
     </div>
     <div class="toolbar">
       <div class="legend">
         <span><i style="border-color:var(--faint)"></i>To do</span>
         <span><i style="border-color:var(--accent)"></i>In progress</span>
         <span><i style="border-color:var(--warn)"></i>Review</span>
-        <span><i style="border-color:var(--ok);background:var(--ok-soft)"></i>Done</span>
-        <span><i style="border-color:var(--accent);background:var(--accent)"></i>Critical path</span>
-        <span><i style="border-color:var(--accent-edge);border-style:dashed"></i>Needs a spec</span>
+        <span><i style="border-color:var(--ok);background:var(--ok-soft)"></i>Ready</span>
+        <span><i style="border-color:var(--crit);border-width:2.5px"></i>Critical path</span>
       </div>
       <span class="stats" id="critStat"></span>
     </div>
+    <div class="donebar" id="donebar"></div>
     <div class="graphbox" id="graphbox"></div>
     <div class="detail" id="detail" aria-live="polite"></div>
   </section>
@@ -309,7 +353,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
   <section class="view" id="view-board" role="tabpanel" aria-labelledby="tab-board" hidden>
     <div class="block">
       <h1>Project board</h1>
-      <p class="lede">Where every task stands, from the repo. Cards in To do say whether they're ready, waiting on other tasks, or need a spec first.</p>
+      <p class="lede">Where every task stands, from the repo. Each column is sorted by priority: ready work first, then by slack, so critical-path tasks (red edge) come before tasks that can wait.</p>
     </div>
     <div class="banner" id="saveBanner">Connecting to the shared board…</div>
     <div class="toolbar">
@@ -322,68 +366,666 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <script>
 const PLAN = {
-  snapshot: "2026-10-23 00:40 UTC",
-  phases: [
-    {"id": "F", "name": "Foundations"},
-    {"id": "C", "name": "Curriculum pipeline"},
-    {"id": "M", "name": "Tracker & map generation"},
-    {"id": "T", "name": "Teacher console"},
-    {"id": "A", "name": "AI layer"},
-    {"id": "S", "name": "Student app hooks"},
-    {"id": "L", "name": "Launch"},
-    {"id": "X", "name": "Later"}
-  ],
-  tasks: [
-    {"id": "F1", "title": "Monorepo, CI, lint and test setup", "size": 1, "deps": [], "status": "done", "owner": "agent-f1"},
-    {"id": "F1b", "title": "Fix F1 QA failures: tracker determinism lint, CI permissions", "size": 1, "deps": [], "status": "done", "owner": "agent-f1b"},
-    {"id": "F1c", "title": "Close remaining tracker determinism gaps (from F1b QA)", "size": 1, "deps": ["F1b"], "status": "review", "owner": "agent-f1c"},
-    {"id": "F2", "title": "Port Nocturne tokens and components to packages/ui", "size": 1, "deps": ["F1"], "status": "done", "owner": "agent-f2"},
-    {"id": "F2cx1", "title": "Fix Codex error F2-E1: placeholder text contrast", "size": 1, "deps": [], "status": "review", "owner": "agent-f2cx1"},
-    {"id": "F3", "title": "Domain types and zod contracts for import tabs and config", "size": 2, "deps": ["F1"], "status": "done", "owner": "agent-f3"},
-    {"id": "F4", "title": "Postgres schema and migrations", "size": 2, "deps": ["F3"], "status": "done", "owner": "agent-f4"},
-    {"id": "F4b", "title": "Close F4 QA findings: event-key ledger isolation, class-scoped library settings", "size": 1, "deps": ["F4"], "status": "review", "owner": "agent-f4b"},
-    {"id": "F4cx3", "title": "Fix Codex error: idea-map typecheck and DB test broken by partial derived fixtures (F4-E3)", "size": 1, "deps": [], "status": "review", "owner": "agent-f4cx3"},
-    {"id": "F4cx1", "title": "Fix Codex errors F4-E1/F4-E2: temporary-table shadowing of event uniqueness and draft-pin guard", "size": 1, "deps": ["F4b"], "status": "todo"},
-    {"id": "F5", "title": "SSO sign-in, roles and org tenancy", "size": 3, "deps": ["F4"], "status": "doing", "owner": "agent-f5"},
-    {"id": "F6", "title": "Privacy baseline: data inventory, retention, audit log", "size": 2, "deps": ["F4"], "status": "doing", "owner": "agent-f6"},
-    {"id": "C1", "title": "CSV and XLSX import with column mapping", "size": 2, "deps": ["F3"], "status": "review", "owner": "agent-c1"},
-    {"id": "C2", "title": "Data checks engine", "size": 1, "deps": ["F3"], "status": "done", "owner": "agent-c2"},
-    {"id": "C2cx5", "title": "Fix Codex error C2-E5: store data-check issues in versions; gate publishing on data-check errors", "size": 1, "deps": ["C8"], "status": "todo"},
-    {"id": "C3", "title": "Derivation: link ranking, layout, quiz generation", "size": 2, "deps": ["F3"], "status": "done", "owner": "agent-c3"},
-    {"id": "C4", "title": "Job queue and import job producing a draft version", "size": 2, "deps": ["C1", "C2", "C3", "F4", "C2cx5"], "status": "todo"},
-    {"id": "C5", "title": "Draft vs published diff and Publish flow", "size": 2, "deps": ["C4"], "status": "todo"},
-    {"id": "C6", "title": "Exports: template, data-check and alignment reports", "size": 1, "deps": ["C2", "F4"], "status": "todo"},
-    {"id": "C7", "title": "Progress migration rules on publish", "size": 2, "deps": ["C5", "S1"], "status": "todo"},
-    {"id": "C8", "title": "Data-check and quiz quality fixes (from C2 and C3 QA)", "size": 1, "deps": ["C2", "C3"], "status": "review", "owner": "agent-c8"},
-    {"id": "C9", "title": "Apply D12 and D13: optional objectives and questions, one built-in persona list", "size": 1, "deps": ["C1", "C2"], "status": "todo"},
-    {"id": "CXB", "title": "Codex suggestions waiting for task criteria (holding list, not claimable)", "size": 1, "deps": [], "placeholder": true, "status": "todo"},
-    {"id": "M1", "title": "Tracker event catalogue and schemas", "size": 1, "deps": ["F3"], "placeholder": true, "status": "todo"},
-    {"id": "M2", "title": "Event ingest API and append-only event store", "size": 2, "deps": ["M1", "F4", "F5", "F4b"], "placeholder": true, "status": "todo"},
-    {"id": "M3", "title": "Deterministic tracker rules: progress, behaviour metrics, signals", "size": 2, "deps": ["M1", "C3", "F1c"], "placeholder": true, "status": "todo"},
-    {"id": "M4", "title": "Map generation from tracker state", "size": 2, "deps": ["C3", "M3"], "placeholder": true, "status": "todo"},
-    {"id": "M5", "title": "Teacher trace views: student timeline and class heatmap", "size": 2, "deps": ["M2", "M3", "T1"], "placeholder": true, "status": "todo"},
-    {"id": "T1", "title": "Teacher console shell, nav and save state", "size": 1, "deps": ["F2", "F5"], "status": "todo"},
-    {"id": "T2", "title": "Curriculum data section: import, pipeline, data checks", "size": 2, "deps": ["T1", "C4"], "status": "todo"},
-    {"id": "T3", "title": "Course details with layered config", "size": 2, "deps": ["T1", "F4"], "status": "todo"},
-    {"id": "T4", "title": "Schedule: due dates per unit", "size": 1, "deps": ["T3"], "status": "todo"},
-    {"id": "T5", "title": "Card classification overrides", "size": 1, "deps": ["T3", "C3"], "status": "todo"},
-    {"id": "T6", "title": "Read-only data tabs and column mapping UI", "size": 1, "deps": ["T2", "C1"], "status": "todo"},
-    {"id": "T7", "title": "Persona editor: templates, variables, preview, test", "size": 2, "deps": ["T3", "A1"], "status": "todo"},
-    {"id": "T8", "title": "Publish screen: diff review and class picker", "size": 1, "deps": ["T2", "C5"], "status": "todo"},
-    {"id": "A1", "title": "AI gateway: server-side calls, prompt fill, rate limits", "size": 2, "deps": ["F5", "F6"], "status": "todo"},
-    {"id": "A2", "title": "Student safety: moderation, guardrails, teacher flags", "size": 2, "deps": ["A1"], "status": "todo"},
-    {"id": "A3", "title": "Resource library and RAG indexing, with per-class library settings and uploads", "size": 2, "deps": ["A1", "C4", "F4b"], "status": "todo"},
-    {"id": "A4", "title": "Atlas agent with tools", "size": 2, "deps": ["A3", "C2", "T2"], "status": "todo"},
-    {"id": "A5", "title": "Persona eval harness per grade band", "size": 1, "deps": ["A1"], "status": "todo"},
-    {"id": "A6", "title": "Draft missing explanations, unit objectives and assessment questions, with teacher approval", "size": 2, "deps": ["A1", "C4", "T2"], "status": "todo"},
-    {"id": "S1", "title": "Progress snapshots: cached state rebuilt from events", "size": 2, "deps": ["M2", "M3"], "status": "todo"},
-    {"id": "S2", "title": "Student explorer reads published version and class config", "size": 3, "deps": ["S1", "C5", "F2", "M4"], "status": "todo"},
-    {"id": "S3", "title": "Missions driven by due dates", "size": 1, "deps": ["S2", "T4"], "status": "todo"},
-    {"id": "S4", "title": "Tutor and peer chat through the gateway", "size": 2, "deps": ["S2", "A2"], "status": "todo"},
-    {"id": "L1", "title": "Pilot: one curriculum shared by two classes", "size": 2, "deps": ["T5", "T6", "T7", "T8", "A4", "A5", "S3", "S4", "C6", "C7", "M5", "A6", "C8", "C9", "F4cx1", "F4cx3", "F2cx1", "C2cx5"], "status": "todo"},
-    {"id": "X1", "title": "Google Drive import picker", "size": 1, "deps": ["C1", "L1"], "status": "todo"},
-    {"id": "X2", "title": "Cloudinary media provider", "size": 1, "deps": ["C4", "L1"], "status": "todo"}
-  ]
+ "snapshot": "2026-10-23 19:45 UTC",
+ "phases": [
+  {
+   "id": "F",
+   "name": "Foundations"
+  },
+  {
+   "id": "C",
+   "name": "Curriculum pipeline"
+  },
+  {
+   "id": "M",
+   "name": "Tracker & map generation"
+  },
+  {
+   "id": "T",
+   "name": "Teacher console"
+  },
+  {
+   "id": "A",
+   "name": "AI layer"
+  },
+  {
+   "id": "S",
+   "name": "Student app hooks"
+  },
+  {
+   "id": "L",
+   "name": "Launch"
+  },
+  {
+   "id": "X",
+   "name": "Later"
+  }
+ ],
+ "tasks": [
+  {
+   "id": "F1",
+   "title": "Monorepo, CI, lint and test setup",
+   "size": 1,
+   "deps": [],
+   "status": "done",
+   "owner": "agent-f1"
+  },
+  {
+   "id": "F1b",
+   "title": "Fix F1 QA failures: tracker determinism lint, CI permissions",
+   "size": 1,
+   "deps": [],
+   "status": "done",
+   "owner": "agent-f1b"
+  },
+  {
+   "id": "F1c",
+   "title": "Close remaining tracker determinism gaps (from F1b QA)",
+   "size": 1,
+   "deps": [
+    "F1b"
+   ],
+   "status": "done",
+   "owner": "agent-f1c"
+  },
+  {
+   "id": "F2",
+   "title": "Port Nocturne tokens and components to packages/ui",
+   "size": 1,
+   "deps": [
+    "F1"
+   ],
+   "status": "done",
+   "owner": "agent-f2"
+  },
+  {
+   "id": "F2cx1",
+   "title": "Fix Codex error F2-E1: placeholder text contrast",
+   "size": 1,
+   "deps": [],
+   "status": "done",
+   "owner": "agent-f2cx1"
+  },
+  {
+   "id": "F3",
+   "title": "Domain types and zod contracts for import tabs and config",
+   "size": 2,
+   "deps": [
+    "F1"
+   ],
+   "status": "done",
+   "owner": "agent-f3"
+  },
+  {
+   "id": "F4",
+   "title": "Postgres schema and migrations",
+   "size": 2,
+   "deps": [
+    "F3"
+   ],
+   "status": "done",
+   "owner": "agent-f4"
+  },
+  {
+   "id": "F4b",
+   "title": "Close F4 QA findings: event-key ledger isolation, class-scoped library settings",
+   "size": 1,
+   "deps": [
+    "F4"
+   ],
+   "status": "done",
+   "owner": "agent-f4b"
+  },
+  {
+   "id": "F4cx3",
+   "title": "Fix Codex error: idea-map typecheck and DB test broken by partial derived fixtures (F4-E3)",
+   "size": 1,
+   "deps": [],
+   "status": "done",
+   "owner": "agent-f4cx3"
+  },
+  {
+   "id": "F4cx1",
+   "title": "Fix Codex errors F4-E1/F4-E2: temporary-table shadowing of event uniqueness and draft-pin guard",
+   "size": 1,
+   "deps": [
+    "F4b"
+   ],
+   "status": "done",
+   "owner": "codex-f4cx1"
+  },
+  {
+   "id": "F5",
+   "title": "SSO sign-in, roles and org tenancy",
+   "size": 3,
+   "deps": [
+    "F4"
+   ],
+   "status": "done",
+   "owner": "agent-f5"
+  },
+  {
+   "id": "F6",
+   "title": "Privacy baseline: data inventory, retention, audit log",
+   "size": 2,
+   "deps": [
+    "F4"
+   ],
+   "status": "review",
+   "owner": "agent-f6"
+  },
+  {
+   "id": "C1",
+   "title": "CSV and XLSX import with column mapping",
+   "size": 2,
+   "deps": [
+    "F3",
+    "C1cx1"
+   ],
+   "status": "done",
+   "owner": "agent-c1"
+  },
+  {
+   "id": "C2",
+   "title": "Data checks engine",
+   "size": 1,
+   "deps": [
+    "F3"
+   ],
+   "status": "done",
+   "owner": "agent-c2"
+  },
+  {
+   "id": "C2cx5",
+   "title": "Fix Codex error C2-E5: store data-check issues in versions; gate publishing on data-check errors",
+   "size": 1,
+   "deps": [
+    "C8"
+   ],
+   "status": "done",
+   "owner": "codex-c2cx5"
+  },
+  {
+   "id": "C3",
+   "title": "Derivation: link ranking, layout, quiz generation",
+   "size": 2,
+   "deps": [
+    "F3"
+   ],
+   "status": "done",
+   "owner": "agent-c3"
+  },
+  {
+   "id": "C4",
+   "title": "Job queue and import job producing a draft version",
+   "size": 2,
+   "deps": [
+    "C1",
+    "C2",
+    "C3",
+    "F4",
+    "C2cx5"
+   ],
+   "status": "done",
+   "owner": "agent-c4"
+  },
+  {
+   "id": "C5",
+   "title": "Draft vs published diff and Publish flow",
+   "size": 2,
+   "deps": [
+    "C4"
+   ],
+   "status": "review",
+   "owner": "agent-c5"
+  },
+  {
+   "id": "C6",
+   "title": "Exports: template, data-check and alignment reports",
+   "size": 1,
+   "deps": [
+    "C2",
+    "F4"
+   ],
+   "status": "review",
+   "owner": "agent-c6"
+  },
+  {
+   "id": "C7",
+   "title": "Progress migration rules on publish",
+   "size": 2,
+   "deps": [
+    "C5",
+    "S1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "C8",
+   "title": "Data-check and quiz quality fixes (from C2 and C3 QA)",
+   "size": 1,
+   "deps": [
+    "C2",
+    "C3"
+   ],
+   "status": "done",
+   "owner": "agent-c8"
+  },
+  {
+   "id": "C9",
+   "title": "Apply D12 and D13: optional objectives and questions, one built-in persona list",
+   "size": 1,
+   "deps": [
+    "C1",
+    "C2"
+   ],
+   "status": "done",
+   "owner": "codex-c9"
+  },
+  {
+   "id": "CXB",
+   "title": "Codex suggestions waiting for task criteria (holding list, not claimable)",
+   "size": 1,
+   "deps": [],
+   "status": "todo",
+   "placeholder": true
+  },
+  {
+   "id": "MD",
+   "title": "Decision gate: education data mining and interaction tracing (user)",
+   "size": 1,
+   "deps": [],
+   "status": "done",
+   "owner": "user"
+  },
+  {
+   "id": "M1",
+   "title": "Tracker event catalogue and schemas",
+   "size": 1,
+   "deps": [
+    "MD",
+    "F3"
+   ],
+   "status": "review",
+   "owner": "agent-m1"
+  },
+  {
+   "id": "M2",
+   "title": "Event ingest API and append-only event store",
+   "size": 2,
+   "deps": [
+    "M1",
+    "F4",
+    "F5",
+    "F4b"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "M3",
+   "title": "Deterministic tracker rules: progress, behaviour metrics, signals",
+   "size": 2,
+   "deps": [
+    "M1",
+    "C3",
+    "F1c",
+    "F1d"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "M4",
+   "title": "Map generation from tracker state",
+   "size": 2,
+   "deps": [
+    "C3",
+    "M3"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "M5",
+   "title": "Teacher trace views: student timeline and class heatmap",
+   "size": 2,
+   "deps": [
+    "M2",
+    "M3",
+    "T1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T1",
+   "title": "Teacher console shell, nav and save state",
+   "size": 1,
+   "deps": [
+    "F2",
+    "F5"
+   ],
+   "status": "review",
+   "owner": "agent-t1"
+  },
+  {
+   "id": "T2",
+   "title": "Curriculum data section: import, pipeline, data checks",
+   "size": 2,
+   "deps": [
+    "T1",
+    "C4"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T3",
+   "title": "Course details with layered config",
+   "size": 2,
+   "deps": [
+    "T1",
+    "F4"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T4",
+   "title": "Schedule: due dates per unit",
+   "size": 1,
+   "deps": [
+    "T3"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T5",
+   "title": "Card classification overrides",
+   "size": 1,
+   "deps": [
+    "T3",
+    "C3"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T6",
+   "title": "Read-only data tabs and column mapping UI",
+   "size": 1,
+   "deps": [
+    "T2",
+    "C1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T7",
+   "title": "Persona editor: templates, variables, preview, test",
+   "size": 2,
+   "deps": [
+    "T3",
+    "A1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "T8",
+   "title": "Publish screen: diff review and class picker",
+   "size": 1,
+   "deps": [
+    "T2",
+    "C5"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A1",
+   "title": "AI gateway: server-side calls, prompt fill, rate limits",
+   "size": 2,
+   "deps": [
+    "F5",
+    "F6"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A2",
+   "title": "Student safety: moderation, guardrails, teacher flags",
+   "size": 2,
+   "deps": [
+    "A1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A3",
+   "title": "Resource library and RAG indexing, with per-class library settings and uploads",
+   "size": 2,
+   "deps": [
+    "A1",
+    "C4",
+    "F4b"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A4",
+   "title": "Atlas agent with tools",
+   "size": 2,
+   "deps": [
+    "A3",
+    "C2",
+    "T2"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A5",
+   "title": "Persona eval harness per grade band",
+   "size": 1,
+   "deps": [
+    "A1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A6",
+   "title": "Draft missing explanations, unit objectives and assessment questions, with teacher approval",
+   "size": 2,
+   "deps": [
+    "A1",
+    "C4",
+    "T2"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "S1",
+   "title": "Progress snapshots: cached state rebuilt from events",
+   "size": 2,
+   "deps": [
+    "M2",
+    "M3"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "S2",
+   "title": "Student explorer reads published version and class config",
+   "size": 3,
+   "deps": [
+    "S1",
+    "C5",
+    "F2",
+    "M4",
+    "S5"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "S3",
+   "title": "Missions driven by due dates",
+   "size": 1,
+   "deps": [
+    "S2",
+    "T4"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "S4",
+   "title": "Tutor and peer chat through the gateway",
+   "size": 2,
+   "deps": [
+    "S2",
+    "A2",
+    "A7",
+    "A8"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "L1",
+   "title": "Pilot: one curriculum shared by two classes",
+   "size": 2,
+   "deps": [
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "A4",
+    "A5",
+    "S3",
+    "S4",
+    "C6",
+    "C7",
+    "M5",
+    "A6",
+    "C8",
+    "C9",
+    "F4cx1",
+    "F4cx3",
+    "F2cx1",
+    "C2cx5",
+    "A7",
+    "A9",
+    "A10",
+    "M6",
+    "S5"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "X1",
+   "title": "Google Drive import picker",
+   "size": 1,
+   "deps": [
+    "C1",
+    "L1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "X2",
+   "title": "Cloudinary media provider",
+   "size": 1,
+   "deps": [
+    "C4",
+    "L1"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "C1cx1",
+   "title": "Fix C1-E1: bound CSV parser memory and reject duplicate ZIP tabs early",
+   "size": 1,
+   "deps": [
+    "F3"
+   ],
+   "status": "done",
+   "owner": "codex-c1cx1"
+  },
+  {
+   "id": "F1d",
+   "title": "Close independent QA ambient-global tracker determinism gap",
+   "size": 1,
+   "deps": [
+    "F1c"
+   ],
+   "status": "done",
+   "owner": "codex-f1d"
+  },
+  {
+   "id": "A7",
+   "title": "Anonymous layer: on-device entity blur and server backstop",
+   "size": 2,
+   "deps": [
+    "A1",
+    "F5"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A8",
+   "title": "Dual memory: conversation history and long-term learning summary",
+   "size": 2,
+   "deps": [
+    "A7",
+    "F6"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A9",
+   "title": "Explained feedback, Challenge this and teacher review queue",
+   "size": 2,
+   "deps": [
+    "A2",
+    "M2",
+    "A7",
+    "S5"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "A10",
+   "title": "Pre-send feedback safeguards",
+   "size": 2,
+   "deps": [
+    "A9",
+    "A5",
+    "M6"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "M6",
+   "title": "Fairness audits: school and district monitoring, district-run sampled audit",
+   "size": 2,
+   "deps": [
+    "M3",
+    "A9",
+    "F6"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "M7",
+   "title": "De-identified research export",
+   "size": 1,
+   "deps": [
+    "M3",
+    "F6"
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "S5",
+   "title": "UDL 3.0 baseline for the student app",
+   "size": 2,
+   "deps": [
+    "F2"
+   ],
+   "status": "review",
+   "owner": "agent-s5"
+  }
+ ]
 };
 const STATUSES = [["todo", "To do"], ["doing", "In progress"], ["review", "Review"], ["done", "Done"]];
 const SIZE = { 1: "≤1 wk", 2: "1–2 wks", 3: "2–3 wks" };
@@ -420,43 +1062,92 @@ show(startView);
 
 // ---- graph ----
 const NS = "http://www.w3.org/2000/svg";
-const NW = 176, NH = 54, CW = 214, RH = 70, PAD = 18;
+// Lanes group open work by what it delivers, in priority order (same as docs/PLAN.md).
+const LANES = [
+  ["Trust: privacy, feedback, fairness", ["A1", "A2", "A5", "A7", "A8", "A9", "A10", "M6", "M7"]],
+  ["Tracker and insight", ["M1", "M2", "M3", "M4", "M5"]],
+  ["Curriculum and publishing", ["F6", "C5", "C6", "C7"]],
+  ["Teacher console", ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "A3", "A4", "A6"]],
+  ["Student app", ["S5", "S1", "S2", "S3", "S4"]],
+  ["Pilot, then later", ["L1", "X1", "X2"]],
+];
+const PILOT = "L1";
+const openIds = PLAN.tasks.filter(t => st(t.id) !== "done" && !t.placeholder).map(t => t.id);
+const isOpen = new Set(openIds);
+// Slack against the pilot: weeks a task can slip before the pilot does; null for work after the pilot.
+const SLACK = (() => {
+  const feeds = new Set(), up = id => { if (feeds.has(id)) return; feeds.add(id); byId[id].deps.forEach(up); }; up(PILOT);
+  const lf = {}, end = ef[PILOT];
+  const latest = id => lf[id] ?? (lf[id] = Math.min(end, ...(dependents[id] || []).filter(c => feeds.has(c)).map(c => latest(c) - byId[c].size)));
+  return Object.fromEntries(PLAN.tasks.map(t => [t.id, feeds.has(t.id) ? latest(t.id) - ef[t.id] : null]));
+})();
+const slackText = id => SLACK[id] === null ? "after the pilot" : SLACK[id] === 0 ? "critical" : "+" + SLACK[id] + " wk slack";
+// Drawn edges: open tasks only, minus any edge another path already implies.
+const DRAWN = (() => {
+  const out = {}, edges = [];
+  PLAN.tasks.forEach(t => isOpen.has(t.id) && t.deps.forEach(d => { if (isOpen.has(d)) { edges.push([d, t.id]); (out[d] = out[d] || []).push(t.id); } }));
+  const implied = (a, b) => { const seen = new Set(), stack = (out[a] || []).filter(x => x !== b); while (stack.length) { const x = stack.pop(); if (x === b) return true; if (!seen.has(x)) { seen.add(x); stack.push(...(out[x] || [])); } } return false; };
+  return edges.filter(([a, b]) => !implied(a, b));
+})();
+const NW = 182, NH = 58, CW = 214, RH = 70, PAD = 18, LANE_HEAD = 26, LANE_GAP = 14;
 function layoutGraph() {
-  const cols = {}; PLAN.tasks.forEach(t => (cols[layer[t.id]] = cols[layer[t.id]] || []).push(t.id));
-  const order = {}; const pIdx = id => PLAN.phases.findIndex(p => p.id === id[0]);
-  Object.keys(cols).sort((a, b) => a - b).forEach(c => {
-    const bary = id => { const ds = byId[id].deps; return ds.length ? ds.reduce((s, d) => s + order[d], 0) / ds.length : pIdx(id); };
-    cols[c].sort((a, b) => bary(a) - bary(b) || pIdx(a) - pIdx(b));
-    cols[c].forEach((id, i) => { order[id] = i; });
+  // Column = longest chain of open prerequisites, so arrows always run left to right.
+  const col = {}; const c = id => col[id] ?? (col[id] = Math.max(0, ...byId[id].deps.filter(d => isOpen.has(d)).map(d => c(d) + 1)));
+  openIds.forEach(c);
+  const pos = {}, lanes = []; let y = PAD;
+  LANES.forEach(([name, ids]) => {
+    const here = ids.filter(id => isOpen.has(id)); if (!here.length) return;
+    const rows = {}; here.forEach(id => { (rows[col[id]] = rows[col[id]] || []).push(id); });
+    const depth = Math.max(...Object.values(rows).map(r => r.length));
+    here.forEach(id => { const r = rows[col[id]]; pos[id] = { x: PAD + col[id] * CW, y: y + LANE_HEAD + r.indexOf(id) * RH }; });
+    lanes.push({ name, y, h: LANE_HEAD + depth * RH - (RH - NH) + 10 }); y += LANE_HEAD + depth * RH - (RH - NH) + 10 + LANE_GAP;
   });
-  const maxRows = Math.max(...Object.values(cols).map(c => c.length));
-  const pos = {};
-  Object.entries(cols).forEach(([c, ids]) => { const off = (maxRows - ids.length) * RH / 2; ids.forEach((id, i) => { pos[id] = { x: PAD + c * CW, y: PAD + off + i * RH }; }); });
-  return { pos, w: PAD * 2 + (Object.keys(cols).length - 1) * CW + NW, h: PAD * 2 + (maxRows - 1) * RH + NH };
+  const w = PAD * 2 + (Math.max(...openIds.map(id => col[id])) + 1) * CW - (CW - NW);
+  return { pos, lanes, w, h: y + PAD - LANE_GAP };
 }
 const G = layoutGraph();
 function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 const COLOR = { todo: "var(--faint)", doing: "var(--accent)", review: "var(--warn)", done: "var(--ok)" };
 function drawGraph() {
+  const bar = document.getElementById("donebar"); bar.textContent = "";
+  const done = PLAN.tasks.filter(t => st(t.id) === "done");
+  const lab = document.createElement("span"); lab.textContent = `Done (${done.length}):`; bar.appendChild(lab);
+  done.forEach(t => { const x = document.createElement("span"); x.className = "mono"; x.title = t.title; x.textContent = t.id; bar.appendChild(x); });
+  if (!isOpen.has(selected)) selected = openIds.find(id => SLACK[id] === 0) || openIds[0];
   const box = document.getElementById("graphbox"); box.textContent = "";
-  const svg = el("svg", { width: G.w, height: G.h, viewBox: `0 0 ${G.w} ${G.h}`, role: "img", "aria-label": "Task dependency graph" }, box);
+  const svg = el("svg", { width: G.w, height: G.h, viewBox: `0 0 ${G.w} ${G.h}`, role: "img", "aria-label": "Open tasks by workstream with their dependencies" }, box);
+  G.lanes.forEach(l => {
+    el("rect", { x: 6, y: l.y, width: G.w - 12, height: l.h, rx: 8, fill: "var(--raise)", opacity: 0.55 }, svg);
+    const t = el("text", { x: 16, y: l.y + 17, "font-size": 11, "font-weight": 600, fill: "var(--muted)", "letter-spacing": "0.06em" }, svg); t.textContent = l.name.toUpperCase();
+  });
   const rel = new Set([selected, ...byId[selected].deps, ...(dependents[selected] || [])]);
-  PLAN.tasks.forEach(t => t.deps.forEach(d => {
-    const a = G.pos[d], b = G.pos[t.id], x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
-    const onCrit = critEdges.has(d + ">" + t.id);
-    const touch = d === selected || t.id === selected;
+  const crit0 = id => SLACK[id] === 0;
+  // Non-critical arrows into the pilot fold into one arrow per lane.
+  const laneOf = id => LANES.findIndex(([, ids]) => ids.includes(id));
+  const feedLanes = new Set();
+  const pin = G.pos[PILOT];
+  DRAWN.forEach(([d, id]) => {
+    if (id === PILOT && SLACK[d] !== 0 && laneOf(d) !== laneOf(PILOT) && d !== selected) { feedLanes.add(LANES[laneOf(d)][0]); return; }
+    const a = G.pos[d], b = G.pos[id], x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+    const onCrit = crit0(d) && crit0(id), touch = d === selected || id === selected;
     el("path", { d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`, fill: "none",
-      stroke: touch ? "var(--accent-ink)" : onCrit ? "var(--accent)" : "var(--line)", "stroke-width": touch || onCrit ? 2 : 1.2,
-      opacity: touch || onCrit ? 1 : 0.9 }, svg);
-  }));
-  PLAN.tasks.forEach(t => {
-    const p = G.pos[t.id], s = st(t.id), g = el("g", { class: "node", transform: `translate(${p.x},${p.y})`, tabindex: 0, role: "button", "aria-label": `${t.id} ${t.title}, ${STATUSES.find(x => x[0] === s)[1]}` }, svg);
-    g.style.opacity = rel.has(t.id) || selected === null ? 1 : 0.55;
-    el("rect", { class: "body", width: NW, height: NH, rx: 7, fill: s === "done" ? "var(--ok-soft)" : t.id === selected ? "var(--accent-soft)" : "var(--bg)", stroke: needsSpec(t.id) ? "var(--accent-edge)" : COLOR[s], "stroke-width": s === "todo" ? 1.2 : 2, "stroke-dasharray": t.id[0] === "X" ? "4 3" : byId[t.id].placeholder ? "6 4" : "none" }, g);
-    if (crit.has(t.id)) el("rect", { x: 0, y: 8, width: 3, height: NH - 16, rx: 1.5, fill: "var(--accent)" }, g);
-    const idT = el("text", { x: 10, y: 17, "font-size": 11, "font-weight": 600, fill: "var(--muted)" }, g); idT.textContent = t.id + "  ·  " + SIZE[t.size];
-    wrapText(t.title, 26).slice(0, 2).forEach((line, i) => { const tx = el("text", { x: 10, y: 33 + i * 14, "font-size": 12, fill: "var(--text)" }, g); tx.textContent = line; });
-    const pick = () => { selected = t.id; drawGraph(); drawDetail(); };
+      stroke: touch ? "var(--accent-ink)" : onCrit ? "var(--crit)" : "var(--line)", "stroke-width": onCrit ? 2.6 : touch ? 2 : 1.2 }, svg);
+  });
+  if (pin) G.lanes.filter(l => feedLanes.has(l.name)).forEach(l => {
+    const x1 = G.w - 14, y1 = l.y + 18, x2 = pin.x + NW / 2, y2 = pin.y - 2;
+    el("path", { d: `M${x1 - 40},${y1} L${x1},${y1} C${x1 + 0},${(y1 + y2) / 2} ${x2},${y1 + 30} ${x2},${y2}`, fill: "none", stroke: "var(--line)", "stroke-width": 1.4, "stroke-dasharray": "3 3" }, svg);
+    const t = el("text", { x: x1 - 44, y: y1 + 4, "font-size": 10, fill: "var(--faint)", "text-anchor": "end" }, svg); t.textContent = "feeds the pilot";
+  });
+  openIds.forEach(id => {
+    const t = byId[id], p = G.pos[id], s = st(id), ready = s === "todo" && !waitingOn(id).length;
+    const g = el("g", { class: "node", transform: `translate(${p.x},${p.y})`, tabindex: 0, role: "button", "aria-label": `${id} ${t.title}, ${STATUSES.find(x => x[0] === s)[1]}, ${slackText(id)}` }, svg);
+    g.style.opacity = rel.has(id) ? 1 : 0.6;
+    el("rect", { class: "body", width: NW, height: NH, rx: 7, fill: id === selected ? "var(--accent-soft)" : ready ? "var(--ok-soft)" : "var(--bg)",
+      stroke: crit0(id) ? "var(--crit)" : ready ? "var(--ok)" : COLOR[s], "stroke-width": crit0(id) ? 2.5 : s === "todo" && !ready ? 1.2 : 2, "stroke-dasharray": SLACK[id] === null ? "4 3" : "none" }, g);
+    if (s === "doing" || s === "review") el("circle", { cx: NW - 10, cy: 11, r: 4, fill: COLOR[s] }, g);
+    const idT = el("text", { x: 10, y: 17, "font-size": 11, "font-weight": 600, fill: crit0(id) ? "var(--crit)" : "var(--muted)" }, g); idT.textContent = id + "  ·  " + slackText(id);
+    wrapText(t.title, 27).slice(0, 2).forEach((line, i) => { const tx = el("text", { x: 10, y: 34 + i * 14, "font-size": 12, fill: "var(--text)" }, g); tx.textContent = line; });
+    const pick = () => { selected = id; drawGraph(); drawDetail(); };
     g.addEventListener("click", pick); g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
   });
 }
@@ -467,7 +1158,7 @@ function drawDetail() {
   const left = document.createElement("div");
   const h = document.createElement("h3"); h.textContent = t.id + " · " + t.title; left.appendChild(h);
   const sub = document.createElement("div"); sub.className = "note";
-  sub.textContent = phaseName(t.id) + " · " + SIZE[t.size] + (crit.has(t.id) ? " · on the critical path" : "") + (needsSpec(t.id) ? " · placeholder: needs a spec before anyone can start" : st(t.id) === "todo" ? (w.length ? " · waiting on " + w.join(", ") : " · ready to start") : "");
+  sub.textContent = phaseName(t.id) + " · " + SIZE[t.size] + " · " + slackText(t.id) + (needsSpec(t.id) ? " · placeholder: needs a spec before anyone can start" : st(t.id) === "todo" ? (w.length ? " · waiting on " + w.join(", ") : " · ready to start") : "");
   left.appendChild(sub); d.appendChild(left);
   d.appendChild(statusSelect(t.id));
   const meta = document.createElement("div"); meta.className = "meta";
@@ -476,7 +1167,7 @@ function drawDetail() {
   meta.append(deps, next); d.appendChild(meta);
 }
 const critWeeks = ef["L1"];
-document.getElementById("critStat").innerHTML = `<span>Critical path to pilot: <b>${[...crit].length} tasks</b>, up to <b>${critWeeks} weeks</b> with one person per task</span>`;
+document.getElementById("critStat").innerHTML = `<span>Critical path: <b>${openIds.filter(id => SLACK[id] === 0).join(" → ")}</b>, about <b>${critWeeks} weeks</b> end to end</span>`;
 
 // ---- board ----
 function statusSelect(id) {
@@ -501,7 +1192,7 @@ function drawBoard() {
   const tasks = PLAN.tasks.filter(t => !phaseFilter || t.id[0] === phaseFilter);
   STATUSES.forEach(([key, label]) => {
     const list = tasks.filter(t => st(t.id) === key);
-    if (key === "todo") { const rank = id => needsSpec(id) ? 2 : waitingOn(id).length ? 1 : 0; list.sort((a, b) => rank(a.id) - rank(b.id) || layer[a.id] - layer[b.id]); }
+    if (key !== "done") { const rank = id => needsSpec(id) ? 2 : st(id) === "todo" && waitingOn(id).length ? 1 : 0, sl = id => SLACK[id] === null ? 99 : SLACK[id] ?? 98; list.sort((a, b) => rank(a.id) - rank(b.id) || sl(a.id) - sl(b.id)); }
     const col = document.createElement("div"); col.className = "col"; col.dataset.status = key;
     const h = document.createElement("h3"); h.textContent = label; const n = document.createElement("span"); n.textContent = list.length; h.appendChild(n); col.appendChild(h);
     if (!list.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = key === "todo" ? "Nothing left to start." : "Drop a card here."; col.appendChild(e); }
@@ -513,11 +1204,11 @@ function drawBoard() {
   });
   const done = PLAN.tasks.filter(t => st(t.id) === "done").length;
   const ready = PLAN.tasks.filter(t => st(t.id) === "todo" && !needsSpec(t.id) && !waitingOn(t.id).length).length;
-  const critLeft = [...crit].filter(id => st(id) !== "done").length;
+  const critLeft = openIds.filter(id => SLACK[id] === 0).length;
   document.getElementById("boardStats").innerHTML = `<span><b>${done}</b> of ${PLAN.tasks.length} done</span><span><b>${ready}</b> ready to start</span><span><b>${critLeft}</b> critical-path tasks left</span>`;
 }
 function card(t) {
-  const c = document.createElement("div"); c.className = "card" + (crit.has(t.id) ? " crit" : ""); c.draggable = canWrite;
+  const c = document.createElement("div"); c.className = "card" + (SLACK[t.id] === 0 && st(t.id) !== "done" ? " crit" : ""); c.draggable = canWrite;
   c.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", t.id));
   const top = document.createElement("div"); top.className = "top";
   const id = document.createElement("span"); id.className = "mono"; id.textContent = t.id;
@@ -527,7 +1218,7 @@ function card(t) {
   else if (st(t.id) === "todo") { const w = waitingOn(t.id), p = document.createElement("span"); p.className = "pill " + (w.length ? "wait" : "ready"); p.textContent = w.length ? "Waiting on " + (w.length > 3 ? w.slice(0, 3).join(", ") + " +" + (w.length - 3) : w.join(", ")) : "Ready"; top.appendChild(p); }
   const tt = document.createElement("div"); tt.className = "t"; tt.textContent = t.title;
   const foot = document.createElement("div"); foot.className = "foot";
-  const sz = document.createElement("span"); sz.textContent = SIZE[t.size] + (crit.has(t.id) ? " · critical path" : "");
+  const sz = document.createElement("span"); sz.textContent = SIZE[t.size] + (st(t.id) === "done" ? "" : " · " + slackText(t.id));
   foot.append(sz, statusSelect(t.id));
   c.append(top, tt, foot);
   c.addEventListener("dblclick", () => { selected = t.id; show("graph"); drawGraph(); drawDetail(); });
