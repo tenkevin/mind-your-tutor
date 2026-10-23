@@ -66,10 +66,10 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 | Status | Tasks |
 |---|---|
 | Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1 |
-| Correction in review | F4cx1 PR #17, builder complete; synchronized `3d18a23`, independent QA pending |
+| Correction in review | F1d PR #16 enum correction pushed at `0dd326d`; refreshed CI/review pending |
 | Correction building | F1d PR #16 returned to codex-f1d after independent ambient-enum lint FAIL; C2cx5 building with codex-c2cx5 |
 | Newly unlocked correction | C2cx5 claimed by codex-c2cx5 after C8 integration PASS |
-| QA blocked | #13 F2cx1 at `c7883aa`: automated content-risk block stopped the delegated review; no independent PASS |
+| QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
 | Waiting | C9 dependency-ready, deferred behind correction QA; C4 after C2cx5; C6 ready |
@@ -114,7 +114,7 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 ## 8. What's next, in priority order
 
 1. Correct F1d-F1 ambient-enum lint coverage on existing PR #16, then obtain fresh independent QA. C1/C1cx1 are complete.
-2. Review completed F4cx1 PR #17 independently after refreshed exact-head CI; preserve the existing isolation fixes.
+2. Keep F4cx1 PR #17 unverified: required dynamic tests repeat earlier security-filter-blocked probes. Do not retry or reroute those actions. Preserve permitted source evidence and continue unrelated corrections.
 3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Continue independent fixes while PR #13 remains blocked.
 4. C2cx5 is now claimed; start C9 after C1, C4 after C2cx5/C1, and C6 when urgent fixes and capacity permit. Reconcile the F6 claim before assigning its continuation.
 5. Settle/publish C5 criteria from the specification; T1 criteria are already published; bring in CXB's appropriate suggestions. F5 unlocks T1, then the teacher tasks.
