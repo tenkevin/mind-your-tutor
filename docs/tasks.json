@@ -334,10 +334,22 @@
       "updated": null
     },
     {
+      "id": "MD",
+      "title": "Decision gate: education data mining and interaction tracing (user)",
+      "size": 1,
+      "deps": [],
+      "done_when": "The user has settled, with the coordinator, the open decisions on what student interactions are traced and mined, why, for whom, how long they are kept, and what is inferred from them. They are recorded as D-numbered decisions in ARCHITECTURE §1 and written into §8 / §8.6. Only the user clears this gate (sets placeholder to false and marks it done); agents and the coordinator never do.",
+      "placeholder": true,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
       "id": "M1",
       "title": "Tracker event catalogue and schemas",
       "size": 1,
       "deps": [
+        "MD",
         "F3"
       ],
       "done_when": "Every event type in ARCHITECTURE.md section 8.2 has a zod schema in packages/tracker, and the open items in 8.6 are written up",

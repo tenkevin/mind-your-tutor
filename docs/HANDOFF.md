@@ -6,6 +6,8 @@ Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#
 
 **Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either. The work runs as a swarm: build agents per task, independent QA agents per PR, Codex as an outside reviewer, and one coordinator, which is you.
 
+> **Hard stop at gate `MD`:** no work on education data mining or interaction tracing (M1–M5 and everything downstream) until the user clears it. See AGENTS.md.
+
 ## 1. Read in this order
 
 | # | File | Why | Time |

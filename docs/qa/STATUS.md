@@ -6,6 +6,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
+> **Hard stop at gate `MD`:** no work on education data mining or interaction tracing (M1–M5 and everything downstream) until the user clears it. See AGENTS.md.
+
 ## Monday QA queue (as of 2026-10-23 17:00 UTC)
 
 Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).

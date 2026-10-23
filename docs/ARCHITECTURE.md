@@ -175,6 +175,8 @@ Exports: blank template workbook, data-check report, standards alignment report 
 
 ## 8. Interaction tracker and map generation (placeholder)
 
+> **Gate `MD` (2026-10-23): stop before development.** The user will settle further decisions on education data mining and interaction tracing with the coordinator before any of §8 is specified or built. Nothing in §8 is final until `MD` is cleared; see AGENTS.md "Hard stop".
+
 > **Placeholder.** The direction below is agreed. The event catalogue, metric definitions and retention periods still need writing up, and tasks M1–M5 can't be claimed until they are (see §8.6).
 
 Two parts with opposite rules:
@@ -326,3 +328,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 8. ~~Publish preview affected-student count (C5)~~ **Settled as D14** (user, 2026-10-22): all unique students enrolled in the selected classes.
 9. **Sign-in state across API instances (F5):** the sign-in flow's state is single-use per API process (an in-memory set), backed by a 10-minute encrypted cookie and the provider's single-use code. With several API instances, a captured callback could be replayed once on another instance inside that window. Move the used-state set to Postgres (or a shared cache) before running more than one instance? The same goes for the failed-sign-in limit per IP.
 10. **Provider tenant claims (F5):** sign-in maps a provider's tenant claim to an org via `sso_tenant`: Google `hd`, Clever `district`, ClassLink `tenant_id`. The Clever and ClassLink claim names are unverified until open question 3 picks the providers; each is a setting (`IDEAMAP_SSO_<ID>_TENANT_CLAIM`).
+11. **Education data mining and tracing (gate MD), user to decide:** what is traced and at what granularity; the purposes (mastery, teacher insight, research); which inferences are allowed (knowledge tracing, risk or behaviour signals); who sees them (teacher, admin, student, parent); retention and aggregation; consent and opt-out under COPPA and FERPA; whether any data leaves the district or is used to train models. No M-task work until these are settled.
