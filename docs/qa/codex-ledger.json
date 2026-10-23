@@ -202,6 +202,26 @@
         "F1d-E1 -> same unmerged F1d PR16 for correction and independent rerun; no duplicate task"
       ],
       "suggestions": "Ambient-form coverage and same-suite recovery remain F1d regression scope; other tracker limitations remain existing CXB/M1/M3 routing."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F1d-review-0dd326d.md",
+      "commit": "58b6c0f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F1d"
+      ],
+      "errors": [],
+      "suggestions": "F1d-E1 corrected; independent integrated PASS retained. PR16 remains unmerged at user C9-only stopping boundary; future merge needs current-base sync/exact CI. Preserve ambient-form and same-suite cleanup regressions."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx1-review-3e97696.md",
+      "commit": "58b6c0f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx1"
+      ],
+      "errors": [],
+      "suggestions": "UNVERIFIED due unavailable blocked dynamic coverage, not a new implementation error; existing F4-E1/E2 ownership remains F4cx1. Comment/inventory/rollback documentation suggestions -> CXB; no blocked-test retry/reroute."
     }
   ]
 }

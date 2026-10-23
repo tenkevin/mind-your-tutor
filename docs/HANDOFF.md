@@ -67,7 +67,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 |---|---|
 | Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1 |
 | Correction in review | F1d PR #16 enum correction pushed at `0dd326d`; refreshed CI/review pending |
-| Correction in review | F1d PR #16 corrected and independent re-review active; C2cx5 PR #18 builder complete, CI/review pending |
+| Correction in review | F1d PR #16 now has fresh independent PASS (unmerged); C2cx5 PR #18 builder/CI green, independent review deferred |
 | Auth integration | F5 PR #15 synchronization underway by `/root/f4_guard_fix`, verified base only; independent QA pending |
 | QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
@@ -115,7 +115,7 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 
 **User stop boundary:** finish C9 through independent QA, merge and actual integration checks, then stop coordination. Start no further tasks. Existing F5 integration and F1d review may finish to a documented handoff; C2cx5/F5 new QA assignments are deferred. Never treat blocked PR #13/#17 as approved.
 
-1. Correct F1d-F1 ambient-enum lint coverage on existing PR #16, then obtain fresh independent QA. C1/C1cx1 are complete.
+1. Finish C9 only, then stop as requested. F1d-F1 is corrected and independently passes; PR #16 stays ready for a future gated merge. C1/C1cx1 are complete.
 2. Keep F4cx1 PR #17 unverified: required dynamic tests repeat earlier security-filter-blocked probes. Do not retry or reroute those actions. Preserve permitted source evidence and continue unrelated corrections.
 3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Continue independent fixes while PR #13 remains blocked.
 4. C2cx5 is now claimed; start C9 after C1, C4 after C2cx5/C1, and C6 when urgent fixes and capacity permit. Reconcile the F6 claim before assigning its continuation.
