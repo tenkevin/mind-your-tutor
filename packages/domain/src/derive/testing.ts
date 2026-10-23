@@ -141,9 +141,14 @@ export function expectRules(pack: Pack, derived: VersionDerived, maxLinks = 3, q
       }
       expect(q.link).not.toBeNull();
       const link = q.link!;
+      // C8-F6: the teacher's relation appears quoted, exactly as written, never conjugated.
+      const relations = pack.links
+        .filter((l) => l.from_id === link.from_id && l.to_id === link.to_id)
+        .map((l) => `“${l.relation.replace(/\s+/g, ' ').trim()}”`);
+      expect(relations.some((r) => q.text.includes(r))).toBe(true);
       expect(keptKeys.has(`${link.from_id}>${link.to_id}`)).toBe(true);
       expect([link.from_id, link.to_id]).toContain(id);
-      const truth = q.explanation.slice('The map says: '.length);
+      const truth = q.explanation.slice('The map says: '.length, -1);
       expect(keptStatements.has(truth)).toBe(true);
       if (q.kind === 'complete_link') {
         const neighbour = link.from_id === id ? link.to_id : link.from_id;
@@ -154,7 +159,6 @@ export function expectRules(pack: Pack, derived: VersionDerived, maxLinks = 3, q
         for (const o of q.options) {
           if (o === q.answer) continue;
           // C8-F5: no distractor completes a true sentence, whatever its case.
-          expect(allStatements.has(q.text.replace('…', o).toLowerCase() + '.')).toBe(false);
           expect(allStatements.has(q.text.replace('…', o).toLowerCase())).toBe(false);
           expect(o.toLowerCase()).not.toBe(idea.title.toLowerCase());
           const other = ids.find((i) => titleOf.get(i) === o)!;

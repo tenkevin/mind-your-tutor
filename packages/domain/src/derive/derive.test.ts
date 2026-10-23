@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VersionDerivedSchema, parsePack, type Pack } from '@ideamap/contracts';
 import { derive } from '../index.js';
-import { readsPlural } from './quiz.js';
 import { expectRules, makePack, randomPack, type LinkInput } from './testing.js';
 
 function samplePack(): Pack {
@@ -69,8 +68,8 @@ describe('derive on the water-cycle sample (C3-F3)', () => {
   it('writes questions that read as plain English (C3-U1, U2)', () => {
     const evap = derived.quizzes.banks.find((b) => b.idea_id === 'evap')!;
     const texts = evap.questions.map((q) => q.text);
-    expect(texts).toContain('The Sun powers Evaporation.');
-    expect(texts).toContain('… powers Evaporation');
+    expect(texts).toContain('The Sun → “powers” → Evaporation');
+    expect(texts).toContain('… → “powers” → Evaporation');
     for (const q of evap.questions.filter((q) => q.answer === 'False')) {
       expect(q.explanation).toMatch(/^The map says: .+\.$/);
     }
@@ -260,7 +259,7 @@ describe('security (C3-S1, S2, S3)', () => {
     const texts = derived.quizzes.banks
       .find((b) => b.idea_id === 'a')!
       .questions.map((q) => q.text);
-    expect(texts).toContain('<img src=x onerror=alert(1)> </script><b>x Idea b0.');
+    expect(texts).toContain('<img src=x onerror=alert(1)> → “</script><b>x” → Idea b0');
   });
 
   it('handles ids that are Object.prototype names', () => {
@@ -325,7 +324,7 @@ describe('quiz quality (C8)', () => {
         { from_id: 'c', to_id: 'j' },
       ],
     );
-    const truths = new Set(['water leads to tg.', 'water leads to tj.']);
+    const truths = new Set(['water → “leads to” → tg', 'water → “leads to” → tj']);
     for (let seed = 1; seed <= 30; seed++) {
       const derived = derive(pack, { seed });
       expectRules(pack, derived);
@@ -333,7 +332,7 @@ describe('quiz quality (C8)', () => {
         for (const q of bank.questions.filter((q) => q.kind === 'complete_link')) {
           for (const o of q.options.filter((o) => o !== q.answer)) {
             expect(o.toLowerCase()).not.toBe('water');
-            expect(truths.has(`${q.text.replace('…', o)}.`.toLowerCase())).toBe(false);
+            expect(truths.has(q.text.replace('…', o).toLowerCase())).toBe(false);
           }
         }
       }
@@ -363,30 +362,77 @@ describe('quiz quality (C8)', () => {
     expect(all).not.toMatch(/(?<!category for )(Glaciers|Oceans|Rain & snow) is /);
   });
 
-  it('keeps a swapped-in subject the same number as the one it replaces (C8-F6)', () => {
-    expect(['Glaciers', 'Oceans', 'Rain & snow', 'Rivers', 'Plants'].map(readsPlural)).toEqual([
-      true,
-      true,
-      true,
-      true,
-      true,
-    ]);
-    expect(
-      ['The Sun', 'Freezing', 'Process', 'Photosynthesis', 'Water vapour', 'DNA'].map(readsPlural),
-    ).toEqual([false, false, false, false, false, false]);
-    const titleOf = new Map(sample.ideas.map((i) => [i.idea_id, i.title]));
-    for (let seed = 1; seed <= 10; seed++) {
+  // Link questions quote the teacher's relation and ask about the map, so no swap of a
+  // singular idea for a plural one (or back) can make a verb disagree (C8-F6, C8-U2).
+  const children = makePack(
+    [
+      'Children',
+      'Games',
+      'The Sun',
+      'Temperature',
+      'Evaporation',
+      'Cloud',
+      'Freezing',
+      'Water',
+      'Ice',
+      'Condensation',
+      'Climate',
+      'Soil',
+    ].map((title, i) => ({ idea_id: `i${i}`, title })),
+    [{ from_id: 'i0', to_id: 'i1', relation: 'play' }],
+  );
+
+  it('never puts a swapped idea in front of a bare verb (C8-F6: Children play Games)', () => {
+    const swapsBothWays = { singularForPlural: 0, pluralForSingular: 0, incoming: 0 };
+    for (let seed = 1; seed <= 20; seed++) {
+      const derived = derive(children, { seed });
+      expectRules(children, derived);
+      for (const bank of derived.quizzes.banks) {
+        for (const q of bank.questions.filter((q) => q.kind !== 'category')) {
+          expect(q.text).toMatch(/^(.+) → “play” → (.+)$/);
+          expect(q.explanation).toBe('The map says: Children → “play” → Games.');
+          if (q.answer === 'False' && !q.text.startsWith('Children'))
+            swapsBothWays.singularForPlural++;
+          if (q.kind === 'complete_link' && q.text.startsWith('…')) swapsBothWays.incoming++;
+        }
+      }
+      expect(JSON.stringify(derived.quizzes)).not.toMatch(/The Sun play|Children plays/);
+    }
+    // The case Codex found ("The Sun play Games.") is now asked as a link on the map.
+    const texts = derive(children, { seed: 5 }).quizzes.banks.flatMap((b) =>
+      b.questions.map((q) => q.text),
+    );
+    expect(texts).toContain('The Sun → “play” → Games');
+    expect(swapsBothWays.singularForPlural).toBeGreaterThan(0);
+    expect(swapsBothWays.incoming).toBeGreaterThan(0);
+
+    // Plural into a singular subject's place, the other way round.
+    const sun = makePack(
+      ['The Sun', 'Evaporation', 'Glaciers', 'Oceans', 'Rain & snow', 'Rivers', 'Plants'].map(
+        (title, i) => ({ idea_id: `s${i}`, title }),
+      ),
+      [{ from_id: 's0', to_id: 's1', relation: 'powers' }],
+    );
+    for (let seed = 1; seed <= 20; seed++) {
+      const derived = derive(sun, { seed });
+      expectRules(sun, derived);
+      const all = derived.quizzes.banks.flatMap((b) => b.questions.map((q) => q.text));
+      for (const text of all)
+        expect(text).not.toMatch(/^(Glaciers|Oceans|Rain & snow|Rivers|Plants) powers/);
+    }
+  });
+
+  it('asks about the map and quotes the relation on the sample (C8-U2, C3 suggestion 1)', () => {
+    for (let seed = 1; seed <= 5; seed++) {
       for (const bank of derive(sample, { seed }).quizzes.banks) {
-        for (const q of bank.questions) {
-          // Only questions that put another idea in the subject's place.
-          if (!q.link || q.link.to_id !== bank.idea_id || q.link.from_id === bank.idea_id) continue;
-          const subject = readsPlural(titleOf.get(q.link.from_id)!);
-          if (q.kind === 'complete_link') {
-            for (const o of q.options) expect(readsPlural(o)).toBe(subject);
-          } else if (q.answer === 'False') {
-            const swap = titleOf.get(q.id.split('/').at(-1)!)!;
-            expect(readsPlural(swap)).toBe(subject);
-          }
+        for (const q of bank.questions.filter((q) => q.kind !== 'category')) {
+          expect(q.text).toMatch(/^.+ → “[^”]+” → .+$/);
+          if (q.kind === 'true_false')
+            expect(q.prompt).toBe('True or false: this link is on the map.');
+          // The sentences Codex read as agreement errors no longer appear as sentences.
+          expect(q.text).not.toMatch(
+            /^(Oceans supplies|Oceans moderates|Plants feeds|Clouds soaks in as|The Sun play)/,
+          );
         }
       }
     }
@@ -414,12 +460,14 @@ describe('quiz quality (C8)', () => {
         }
       }
     }
-    // The QA report's examples of "False" statements a teacher would mark true.
+    // QA's examples of "False" statements a teacher would mark true, where the swap sits
+    // next to the replaced end. ("Rain & snow creates Water vapour" swaps in an idea
+    // three links from both ends; no graph rule can rule it out, and since questions now
+    // ask whether a link is on the map, False is the right answer for it.)
     const known = [
-      'Oceans supplies Water cycle.',
-      'Rain & snow feeds Water cycle.',
-      'Clouds is a stage of Water cycle.',
-      'Rain & snow creates Water vapour.',
+      'Oceans → “supplies” → Water cycle',
+      'Rain & snow → “feeds” → Water cycle',
+      'Clouds → “is a stage of” → Water cycle',
     ];
     for (let seed = 1; seed <= 20; seed++) {
       const texts = derive(sample, { seed }).quizzes.banks.flatMap((b) =>

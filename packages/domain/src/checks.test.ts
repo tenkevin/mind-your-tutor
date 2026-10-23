@@ -232,7 +232,7 @@ describe('loops of every shape (C2-F4)', () => {
     );
     expect(issues).toHaveLength(1);
     expect(issues[0]!.message).toBe(
-      "Prerequisites form a loop, so 2 ideas can never unlock: A requires itself and B; B requires A. Removing one requirement won't break it: remove requirements in Ideas → requires until no idea here depends on itself.",
+      'Prerequisites form a loop, so 2 ideas can never unlock: A requires itself and B; B requires A. This group can contain several loops: remove requirements in Ideas → requires until no prerequisite loops remain.',
     );
   });
 
@@ -250,7 +250,27 @@ describe('loops of every shape (C2-F4)', () => {
       '3 ideas can never unlock: A requires B and C; B requires A; C requires A.',
     );
     expect(issues[0]!.message).not.toContain('Remove one of these');
-    expect(issues[0]!.message).toContain("Removing one requirement won't break it");
+    expect(issues[0]!.message).toContain('This group can contain several loops');
+  });
+
+  it('makes no claim about how many removals a shared-requirement loop needs (C8-F2)', () => {
+    // Both loops (A→B→C→A and A→C→A) share C→A, so removing that one requirement is enough.
+    const specs = [
+      { idea_id: 'a', requires: ['b', 'c'] },
+      { idea_id: 'b', requires: ['c'] },
+      { idea_id: 'c', requires: ['a'] },
+    ];
+    const [issue] = checkPack(pack(specs));
+    expect(issue!.kind).toBe('cycle');
+    expect(issue!.items).toEqual(['a', 'b', 'c']);
+    expect(issue!.message).toBe(
+      'Prerequisites form a loop, so 3 ideas can never unlock: A requires B and C; B requires C; C requires A. This group can contain several loops: remove requirements in Ideas → requires until no prerequisite loops remain.',
+    );
+    expect(issue!.message).not.toMatch(/won't break|Remove one of these/);
+    const fixed = checkPack(
+      pack(specs.map((s) => (s.idea_id === 'c' ? { ...s, requires: [] } : s))),
+    );
+    expect(ofKind(fixed, 'cycle')).toEqual([]);
   });
 
   it('keeps "remove one of these" for a single ring (C8-F2)', () => {
@@ -549,7 +569,7 @@ describe('spec "missing" behaviours (C8-F4, C8-F9)', () => {
       fix: { tab: 'Ideas', column: 'objective' },
     });
     expect(issues[0]!.message).toBe(
-      '2 ideas have no objective, so the tutor and quizzes have no stated goal for them: A and C. Add one in Ideas → objective.',
+      '2 ideas have no objective, so the tutor will write them from the links: A and C. To set your own, add it in Ideas → objective.',
     );
     expect(canPublish(issues)).toBe(true);
   });

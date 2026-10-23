@@ -5,37 +5,26 @@ import { hashString, pickDistinct, seeded, shuffle, type Random } from './random
 // Quiz banks (prototype `genQuiz`). Every question comes from the map: links the map
 // draws, the idea's category from the pack's Categories tab, and false statements made
 // by swapping one end of a kept link for an idea that has no link to this one at all.
+// Link questions ask about the map, not the world, and quote the relation as the
+// teacher wrote it, so swapping an idea in never has to make a verb agree with it.
 
 const DISTRACTORS = 3;
 const MAX_CATEGORY_OPTIONS = 4;
 const MIN_FALSE_STATEMENTS = 2;
+const TRUE_FALSE_PROMPT = 'True or false: this link is on the map.';
 
 function clean(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-/** "The Sun" + "powers" + "Evaporation" → "The Sun powers Evaporation." */
+/** A link as the map shows it: "The Sun" + "powers" + "Evaporation" → `The Sun → “powers” → Evaporation`. */
 export function statement(from: string, relation: string, to: string): string {
-  const s = clean(`${from} ${relation} ${to}`);
-  return /[.!?]$/.test(s) ? s : `${s}.`;
+  return `${clean(from)} → “${clean(relation)}” → ${clean(to)}`;
 }
 
 /** Statements compare without case, so "Water" and "water" are the same idea to a student. */
 function sentenceKey(text: string): string {
   return text.toLowerCase();
-}
-
-/**
- * A guess at whether a title reads as plural ("Glaciers", "Rain & snow") or singular
- * ("The Sun", "Process", "Photosynthesis"). Only used to keep a swapped-in subject the
- * same number as the one it replaces, so a relation like "powers" or "melt into" still
- * agrees with it. A wrong guess only narrows the choice of swaps.
- */
-export function readsPlural(title: string): boolean {
-  const t = clean(title).toLowerCase();
-  if (/(^|\s)(&|and)(\s|$)/.test(t)) return true;
-  const last = t.split(' ').at(-1) ?? '';
-  return /[a-z]{2}s$/.test(last) && !/(ss|us|is|ics|ous)$/.test(last);
 }
 
 interface Context {
@@ -162,15 +151,13 @@ export function quizBank(ctx: Context, idea: Idea): QuizBank {
     const ref = { from_id: link.from_id, to_id: link.to_id };
     const tag = linkKey(link.from_id, link.to_id).replace('\u0000', '>');
     const relation = clean(link.relation);
-    // The sentence an option would make: never a true one, or a student could argue for it.
+    // The link an option would make: never a true one, or a student could argue for it.
     const complete = (t: string) =>
       forward ? statement(ownTitle, relation, t) : statement(t, relation, ownTitle);
     const used = new Set([sentenceKey(answer)]);
     const distractors = pickDistinct(others, DISTRACTORS, random, (o) => {
       const t = clean(o.title);
       if (used.has(sentenceKey(t)) || same(t, ownTitle) || isTrue(complete(t))) return false;
-      // An option in the subject's place should agree with the relation as the answer does.
-      if (!forward && readsPlural(t) !== readsPlural(answer)) return false;
       used.add(sentenceKey(t));
       return true;
     }).map((o) => clean(o.title));
@@ -179,23 +166,21 @@ export function quizBank(ctx: Context, idea: Idea): QuizBank {
         id: `${id}/complete_link/${tag}`,
         kind: 'complete_link',
         prompt: 'Which idea completes the link?',
-        text: forward
-          ? `${title(link.from_id)} ${relation} …`
-          : `… ${relation} ${title(link.to_id)}`,
+        text: complete('…'),
         options: shuffle([answer, ...distractors], random),
         answer,
-        explanation: `The map says: ${truth}`,
+        explanation: `The map says: ${truth}.`,
         link: ref,
       });
     }
     add({
       id: `${id}/true/${tag}`,
       kind: 'true_false',
-      prompt: 'True or false?',
+      prompt: TRUE_FALSE_PROMPT,
       text: truth,
       options: ['True', 'False'],
       answer: 'True',
-      explanation: `The map says: ${truth}`,
+      explanation: `The map says: ${truth}.`,
       link: ref,
     });
   }
@@ -207,8 +192,7 @@ export function quizBank(ctx: Context, idea: Idea): QuizBank {
   // never comes from next to either end of the link, and is first sought at least three
   // links from this idea, so "Rain & snow feeds Water cycle" (rain falls as
   // precipitation, which is part of the water cycle) isn't marked false. Closer swaps
-  // are used only if those run out. A swapped-in subject also keeps the number of the
-  // one it replaces, so the relation agrees with it.
+  // are used only if those run out.
   const nearby = new Set<string>();
   for (const n of linked) for (const m of ctx.linkedTo.get(n)!) nearby.add(m);
   const wanted = Math.max(MIN_FALSE_STATEMENTS, ctx.quizLength - pool.length);
@@ -225,7 +209,6 @@ export function quizBank(ctx: Context, idea: Idea): QuizBank {
       if (same(swapTitle, replaced) || same(swapTitle, ownTitle)) continue;
       if (ctx.linkedTo.get(replacedId)!.has(swap.idea_id)) continue;
       if (far && nearby.has(swap.idea_id)) continue;
-      if (!forward && readsPlural(swapTitle) !== readsPlural(replaced)) continue;
       const text = forward
         ? statement(ownTitle, link.relation, swapTitle)
         : statement(swapTitle, link.relation, ownTitle);
@@ -234,11 +217,11 @@ export function quizBank(ctx: Context, idea: Idea): QuizBank {
       add({
         id: `${id}/false/${linkKey(link.from_id, link.to_id).replace('\u0000', '>')}/${swap.idea_id}`,
         kind: 'true_false',
-        prompt: 'True or false?',
+        prompt: TRUE_FALSE_PROMPT,
         text,
         options: ['True', 'False'],
         answer: 'False',
-        explanation: `The map says: ${statement(title(link.from_id), link.relation, title(link.to_id))}`,
+        explanation: `The map says: ${statement(title(link.from_id), link.relation, title(link.to_id))}.`,
         link: { from_id: link.from_id, to_id: link.to_id },
       });
       if (pool.length > before) made++;

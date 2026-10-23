@@ -34,7 +34,7 @@ export const DATA_CHECK_KINDS = [
   'media',
   /** A unit has ideas with no Assessment question. */
   'assessment_coverage',
-  /** Ideas have no objective (required; the spec says it is flagged). */
+  /** Ideas have no objective (optional; the tutor writes one from links). */
   'objective',
   /** The Categories tab has no rows, so every idea uses one category, "Idea". */
   'no_categories',

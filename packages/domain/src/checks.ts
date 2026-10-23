@@ -115,7 +115,8 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     const inside = new Set(component);
     const within = component.map((i) => requires[i]!.filter((r) => inside.has(r)));
     // One ring (each idea requires exactly one other in it): removing any one of
-    // these requirements breaks it. Anything else needs more than one removal.
+    // these requirements breaks it. Any other shape can hold several loops, which may
+    // or may not share a requirement, so the advice makes no claim about how many.
     const ring = within.every((reqs) => reqs.length === 1);
     const shape = ring
       ? `${describeLoop(loopPath(requires, component).map((i) => title(ids[i]!)))}. ` +
@@ -123,8 +124,8 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
       : `${describeTangle(
           component.map((i, k) => ({ id: ids[i]!, reqs: within[k]!.map((r) => ids[r]!) })),
           title,
-        )}. Removing one requirement won't break it: remove requirements in Ideas → requires ` +
-        `until no idea here depends on itself.`;
+        )}. This group can contain several loops: remove requirements in Ideas → requires ` +
+        `until no prerequisite loops remain.`;
     add(
       'cycle',
       'error',
@@ -329,16 +330,18 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     );
   }
 
-  // Missing objectives: required, and "flagged in data checks" (the field spec).
+  // Missing objectives. Ideas.objective is optional in the field spec (the tutor writes
+  // one from links), so this is a warning that the teacher hasn't set one, not an error.
+  // Units.objective is the required one, and the pack parser enforces it.
   const noObjective = [...ideas.values()].filter((i) => !i.objective?.trim());
   if (noObjective.length > 0) {
     const n = noObjective.length;
     add(
       'objective',
       'warning',
-      `${n === 1 ? '1 idea has' : `${n} ideas have`} no objective, so the tutor and quizzes have no ` +
-        `stated goal for ${n === 1 ? 'it' : 'them'}: ${titles(noObjective.map((i) => i.idea_id))}. ` +
-        `Add one in Ideas → objective.`,
+      `${n === 1 ? '1 idea has' : `${n} ideas have`} no objective, so the tutor will write ` +
+        `${n === 1 ? 'one' : 'them'} from the links: ${titles(noObjective.map((i) => i.idea_id))}. ` +
+        `To set your own, add it in Ideas → objective.`,
       noObjective.map((i) => i.idea_id),
       'Ideas',
       'objective',
