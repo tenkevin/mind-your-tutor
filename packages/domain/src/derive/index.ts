@@ -8,7 +8,10 @@ export { layOut } from './layout.js';
 export { statement } from './quiz.js';
 
 export interface DeriveOptions {
-  /** Seeds quiz generation (D6). The same pack and seed always give the same result. */
+  /**
+   * Seeds quiz generation (D6). The same pack and seed always give the same result.
+   * Generation uses the low 32 bits as a signed integer, and that is the seed stored.
+   */
   seed: number;
   /** The most kept links an idea may have in each direction. Default 3. */
   maxLinks?: number;
@@ -37,12 +40,13 @@ export function derive(pack: Pack, options: DeriveOptions): VersionDerived {
 
   const ranked = rankLinks(pack, maxLinks);
   const layout = layOut(pack, ranked.kept);
-  const ctx = quizContext(pack, ranked.kept, options.seed | 0, quizLength);
+  const seed = options.seed | 0;
+  const ctx = quizContext(pack, ranked.kept, seed, quizLength);
   return {
     ranked_links: ranked,
     layout,
     quizzes: {
-      seed: options.seed,
+      seed,
       quiz_length: quizLength,
       banks: ctx.ideaList.map((idea) => quizBank(ctx, idea)),
     },

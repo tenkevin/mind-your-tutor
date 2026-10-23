@@ -28,8 +28,18 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     message: string,
     items: string[],
     tab: TabName,
-    column: string,
-  ) => out.push({ kind, level, message, items, fix: { tab, column } });
+    column: string | readonly [string, ...string[]],
+  ) =>
+    out.push({
+      kind,
+      level,
+      message,
+      items,
+      fix:
+        typeof column === 'string'
+          ? { tab, column }
+          : { tab, column: column[0], columns: [...column] },
+    });
 
   // The first row with an idea_id wins; duplicates are reported below.
   const ideas = new Map<string, Pack['ideas'][number]>();
@@ -99,30 +109,44 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
       .map((r) => index.get(r))
       .filter((r): r is number => r !== undefined),
   );
+  const loopOf = new Map<string, string[]>(); // idea_id → the loop it is in
   for (const component of loops(requires)) {
-    const path = loopPath(requires, component).map((i) => ids[i]!);
     const members = component.map((i) => ids[i]!);
+    const inside = new Set(component);
+    const within = component.map((i) => requires[i]!.filter((r) => inside.has(r)));
+    // One ring (each idea requires exactly one other in it): removing any one of
+    // these requirements breaks it. Any other shape can hold several loops, which may
+    // or may not share a requirement, so the advice makes no claim about how many.
+    const ring = within.every((reqs) => reqs.length === 1);
+    const shape = ring
+      ? `${describeLoop(loopPath(requires, component).map((i) => title(ids[i]!)))}. ` +
+        `Remove one of these from Ideas → requires to break the loop.`
+      : `${describeTangle(
+          component.map((i, k) => ({ id: ids[i]!, reqs: within[k]!.map((r) => ids[r]!) })),
+          title,
+        )}. This group can contain several loops: remove requirements in Ideas → requires ` +
+        `until no prerequisite loops remain.`;
     add(
       'cycle',
       'error',
-      `Prerequisites form a loop, so ${count(members.length, 'idea')} can never unlock: ${describeLoop(path.map(title))}. ` +
-        `Remove one of these from Ideas → requires to break the loop.`,
+      `Prerequisites form a loop, so ${count(members.length, 'idea')} can never unlock: ${shape}`,
       members,
       'Ideas',
       'requires',
     );
-    const why = `is in a prerequisite loop`;
-    for (const id of members) if (!broken.has(id)) broken.set(id, why);
+    for (const id of members) {
+      loopOf.set(id, members);
+      if (!broken.has(id)) broken.set(id, 'is in a prerequisite loop');
+    }
   }
 
   // Knock-on blocks: ideas that need a broken idea, directly or through others.
-  // Multi-source BFS over "is required by", so each idea names its nearest cause.
+  // Multi-source BFS over "is required by", so each idea gets its nearest cause.
   const requiredBy = ids.map((): number[] => []);
   requires.forEach((reqs, i) => {
     for (const r of reqs) requiredBy[r]!.push(i);
   });
   const cause: (number | undefined)[] = ids.map(() => undefined);
-  const via: (number | undefined)[] = ids.map(() => undefined);
   const queue: number[] = [];
   ids.forEach((id, i) => {
     if (broken.has(id)) {
@@ -135,29 +159,42 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     for (const next of requiredBy[from]!) {
       if (cause[next] !== undefined) continue;
       cause[next] = cause[from];
-      via[next] = from;
       queue.push(next);
     }
   }
+  // One warning per root cause: an idea with an unknown prerequisite, or a whole loop.
+  const blocked = new Map<string, string[]>(); // root cause → blocked idea_ids, Ideas order
   ids.forEach((id, i) => {
     const root = cause[i];
     if (root === undefined || root === i) return;
     const rootId = ids[root]!;
-    const step = via[i]!;
-    const chain =
-      step === root
-        ? `it requires ${title(rootId)}`
-        : `it requires ${title(ids[step]!)}, which depends on ${title(rootId)}`;
+    const key = loopOf.get(rootId)?.[0] ?? rootId;
+    const group = blocked.get(key) ?? [];
+    group.push(id);
+    blocked.set(key, group);
+  });
+  for (const [key, affected] of blocked) {
+    const loop = loopOf.get(key);
+    const because = !loop
+      ? `${title(key)}, which ${broken.get(key)}`
+      : loop.length === 1
+        ? `${title(key)}, which requires itself`
+        : `the loop between ${titles(loop)}`;
+    const fix = loop ? 'Break the loop' : `Fix ${title(key)}`;
+    const n = affected.length;
     add(
       'blocked',
       'warning',
-      `${title(id)} may never unlock: ${chain}, and ${title(rootId)} ${broken.get(rootId)}. ` +
-        `Fix ${title(rootId)} in Ideas → requires first.`,
-      [id, rootId],
+      n === 1
+        ? `${title(affected[0]!)} may never unlock, because it depends on ${because}. ` +
+            `${fix} in Ideas → requires first.`
+        : `${n} ideas may never unlock, because they depend on ${because}: ${titles(affected)}. ` +
+            `${fix} in Ideas → requires first.`,
+      affected,
       'Ideas',
       'requires',
     );
-  });
+  }
 
   // Links to unknown ideas: the row is skipped.
   const linked = new Set<string>();
@@ -178,13 +215,24 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
         `Fix it in Links → ${unknown.length === 2 ? 'from_id and to_id' : ideas.has(link.from_id) ? 'to_id' : 'from_id'}.`,
       unique(known),
       'Links',
-      ideas.has(link.from_id) ? 'to_id' : 'from_id',
+      unknown.length === 2 ? ['from_id', 'to_id'] : ideas.has(link.from_id) ? 'to_id' : 'from_id',
     );
   }
 
   // Unknown categories: the idea uses the first category.
   const categories = new Set(pack.categories.map((c) => c.category));
   const first = pack.categories[0]?.category;
+  if (first === undefined && ideas.size > 0) {
+    add(
+      'no_categories',
+      'warning',
+      `The Categories tab has no rows, so every idea uses one category, "Idea". ` +
+        `Add the kinds of idea in Categories → category.`,
+      [...ideas.keys()],
+      'Categories',
+      'category',
+    );
+  }
   if (first !== undefined) {
     for (const idea of ideas.values()) {
       if (categories.has(idea.category)) continue;
@@ -201,8 +249,8 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
   }
 
   // Assessment rows for unknown ideas: the row is skipped.
+  // A question covers its idea only in the idea's own unit.
   const asked = new Map<number, Set<string>>(); // unit → idea_ids with a question
-  const questions = new Map<number, number>(); // unit → valid question rows
   for (const item of pack.assessment) {
     if (!ideas.has(item.idea_id)) {
       add(
@@ -216,7 +264,34 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
       );
       continue;
     }
-    questions.set(item.unit, (questions.get(item.unit) ?? 0) + 1);
+    const subject = ideas.get(item.idea_id)!;
+    if (!units.has(item.unit)) {
+      add(
+        'assessment_unknown_unit',
+        'warning',
+        `The unit ${item.unit} Assessment question for ${subject.title} is skipped, ` +
+          `because unit ${item.unit} isn't a unit in the Units tab. ` +
+          `Fix it in Assessment → unit (${subject.title} is in unit ${subject.unit}).`,
+        [item.idea_id],
+        'Assessment',
+        'unit',
+      );
+      continue;
+    }
+    // An idea in an unknown unit already has its own error; don't add a second issue.
+    if (item.unit !== subject.unit && units.has(subject.unit)) {
+      add(
+        'assessment_unit_mismatch',
+        'warning',
+        `The Assessment question for ${subject.title} is in unit ${item.unit}, but ${subject.title} ` +
+          `is in unit ${subject.unit}, so it doesn't count as a question for either unit. ` +
+          `Fix it in Assessment → unit, or in Ideas → unit.`,
+        [item.idea_id],
+        'Assessment',
+        'unit',
+      );
+      continue;
+    }
     const set = asked.get(item.unit) ?? new Set<string>();
     set.add(item.idea_id);
     asked.set(item.unit, set);
@@ -255,6 +330,24 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     );
   }
 
+  // Missing objectives. Ideas.objective is optional in the field spec (the tutor writes
+  // one from links), so this is a warning that the teacher hasn't set one, not an error.
+  // Units.objective is the required one, and the pack parser enforces it.
+  const noObjective = [...ideas.values()].filter((i) => !i.objective?.trim());
+  if (noObjective.length > 0) {
+    const n = noObjective.length;
+    add(
+      'objective',
+      'warning',
+      `${n === 1 ? '1 idea has' : `${n} ideas have`} no objective, so the tutor will write ` +
+        `${n === 1 ? 'one' : 'them'} from the links: ${titles(noObjective.map((i) => i.idea_id))}. ` +
+        `To set your own, add it in Ideas → objective.`,
+      noObjective.map((i) => i.idea_id),
+      'Ideas',
+      'objective',
+    );
+  }
+
   // Missing media.
   const noMedia = [...ideas.values()].filter((i) => i.media_url === null);
   if (noMedia.length > 0) {
@@ -279,11 +372,11 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
   }
   for (const unit of unique(pack.units.map((u) => u.unit))) {
     const unitIdeas = ideasByUnit.get(unit) ?? [];
-    const k = questions.get(unit) ?? 0;
-    const m = unitIdeas.length;
-    if (k >= m) continue;
     const missing = unitIdeas.filter((id) => !asked.get(unit)?.has(id));
-    const detail = missing.length > 0 ? ` No question yet for ${titles(missing)}.` : '';
+    if (missing.length === 0) continue;
+    const m = unitIdeas.length;
+    const k = m - missing.length;
+    const detail = ` No question yet for ${titles(missing)}.`;
     add(
       'assessment_coverage',
       'info',
@@ -405,6 +498,23 @@ function describeLoop(path: readonly string[]): string {
         ]
       : steps;
   return `${path[0]} requires ${shown.join(', which requires ')}`;
+}
+
+/**
+ * A loop that isn't one ring, idea by idea: "A requires itself and B; B requires A;
+ * C requires A". Every idea is named, up to MAX_NAMES of them.
+ */
+function describeTangle(
+  members: readonly { id: string; reqs: readonly string[] }[],
+  title: (id: string) => string,
+): string {
+  const lines = members.slice(0, MAX_NAMES).map(({ id, reqs }) => {
+    const names = reqs.map((r) => (r === id ? 'itself' : title(r)));
+    return `${title(id)} requires ${list(names)}`;
+  });
+  const rest = members.length - MAX_NAMES;
+  if (rest > 0) lines.push(`and ${count(rest, 'more idea')} in the loop`);
+  return lines.join('; ');
 }
 
 /** "A", "A and B", "A, B and C", or "A, B, … and 7 more". */
