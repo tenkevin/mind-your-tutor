@@ -72,7 +72,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 | QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
-| Waiting | C9 dependency-ready, deferred behind correction QA; C4 after C2cx5; C6 ready |
+| Next implementation | C9 claimed by codex-c9 after user directed continuing outside the isolated QA blockage; C4 waits for C2cx5; C6 ready |
 | Placeholder | M1–M5 and CXB remain unclaimable; tracker specification still needs a person |
 
 C1's historical scoped PASS was superseded by the C1-S2 reconciliation. The corrected implementation now has a fresh combined independent PASS, with both bounded archive families and full DB-backed integration tested. PR #8 is merged and both C1/C1cx1 are done; see docs/qa/reports/C1.md.
