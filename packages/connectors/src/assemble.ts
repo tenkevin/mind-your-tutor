@@ -14,7 +14,6 @@ import {
 } from '@ideamap/contracts';
 import { error, fromPackIssue, info, warning } from './issues.js';
 import { mapCourse, mapRows, type MappedTab } from './mapping.js';
-import { BUILT_IN_PERSONAS } from './personas.js';
 import type { RawCell, RawSheet } from './types.js';
 
 // Turns mapped rows into a pack through the F3 contracts, applying the spec's
@@ -33,10 +32,7 @@ const TAB_DEFAULTS = {
     note: 'one category, “Idea”, is used',
   },
   Assessment: { rows: (): unknown[] => [], note: 'units have no fixed teach-back questions' },
-  Personas: {
-    rows: (): unknown[] => BUILT_IN_PERSONAS.map((p) => ({ ...p })),
-    note: 'the built-in personas (Ms. Ivy, Milo and Atlas) are used',
-  },
+  Personas: { rows: (): unknown[] => [], note: 'Using the built-in personas' },
   Library: { rows: (): unknown[] => [], note: 'the library is empty' },
 } as const satisfies Partial<Record<RowTab, unknown>>;
 
@@ -92,25 +88,11 @@ const REQUIRED_FALLBACKS: Partial<
       note: `The idea uses the first category, ${ctx.firstCategory}, until it has one.`,
     }),
   },
-  Assessment: {
-    question: () => ({
-      value: SKIP,
-      note: 'The row was skipped; Atlas can draft a question for it.',
-    }),
-  },
   Personas: {
     persona_id: () => ({
       value: SKIP,
       note: 'The row was skipped and the built-in persona is used.',
     }),
-    name: (row) => {
-      const builtIn = BUILT_IN_PERSONAS.find(
-        (p) => typeof row.persona_id === 'string' && p.persona_id === row.persona_id.trim(),
-      );
-      return builtIn
-        ? { value: builtIn.name, note: `The built-in name, ${builtIn.name}, is used.` }
-        : { value: SKIP, note: 'The row was skipped.' };
-    },
   },
   Library: {
     title: (row) => {
@@ -154,9 +136,28 @@ function parseRow(
     const result = parseTabRow(tab, current, row);
     const notes = result.issues.filter((i) => i.severity !== 'error');
     if (result.ok) {
+      const missingPersonaName =
+        tab === 'Personas' &&
+        (current.name === null ||
+          current.name === undefined ||
+          (typeof current.name === 'string' && current.name.trim() === ''))
+          ? [
+              warning({
+                code: 'cell',
+                source,
+                tab,
+                row,
+                column: 'name',
+                value: null,
+                fallback: 'Built-in default',
+                effect: 'uses_fallback',
+                message: 'The name is missing; the built-in persona name will be used.',
+              }),
+            ]
+          : [];
       return {
         value: result.value,
-        issues: [...issues, ...notes.map((i) => fromPackIssue(i, source))],
+        issues: [...issues, ...notes.map((i) => fromPackIssue(i, source)), ...missingPersonaName],
         blocked: false,
       };
     }

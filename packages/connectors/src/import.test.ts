@@ -1,7 +1,7 @@
 import { parsePack, type ColumnMapping, type ImportIssue } from '@ideamap/contracts';
 import { describe, expect, it } from 'vitest';
+import { resolveEffectivePersonas } from '../../ai/src/personas.js';
 import {
-  BUILT_IN_PERSONAS,
   CONNECTORS,
   formatImportIssue,
   groupIssuesByTab,
@@ -97,6 +97,51 @@ describe('C1-F1 all three forms give the same pack', () => {
   it('matches what the F3 contracts give for pack.json', async () => {
     const { pack } = await importPack(fixtureCsvFiles());
     expect(pack).toEqual(parsePack(JSON.parse(fixtureText('pack.json'))).value);
+  });
+
+  it('retains blank unit objectives and assessment rows across CSV, XLSX and JSON', async () => {
+    const input = JSON.parse(fixtureText('pack.json')) as {
+      units: { objective: string | null }[];
+      assessment: { question: string | null }[];
+    };
+    input.units[0]!.objective = null;
+    input.assessment[0]!.question = null;
+    input.assessment[1]!.question = null;
+    const sheets = Object.fromEntries(
+      TABS.map((tab) => {
+        const rows = parseCsv(fixtureText(`${tab}.csv`), 100_000, 100, tab).rows;
+        const header = rows[0]!;
+        if (tab === 'Units') rows[1]![header.indexOf('objective')] = '';
+        if (tab === 'Assessment') {
+          rows[1]![header.indexOf('question')] = '';
+          rows[2]![header.indexOf('question')] = '';
+        }
+        return [tab, rows];
+      }),
+    );
+    const [csv, xl, js] = await Promise.all([
+      importPack(
+        TABS.map((tab) => {
+          let text = fixtureText(`${tab}.csv`);
+          if (tab === 'Units') text = setCell(0, 'objective', '')(text);
+          if (tab === 'Assessment') {
+            text = setCell(0, 'question', '')(text);
+            text = setCell(1, 'question', '')(text);
+          }
+          return file(`${tab}.csv`, text);
+        }),
+      ),
+      importPack(file('water-cycle.xlsx', xlsx(sheets))),
+      importPack(file('pack.json', JSON.stringify(input))),
+    ]);
+    for (const result of [csv, xl, js]) {
+      expect(result.ok).toBe(true);
+      expect(result.pack!.units[0]!.objective).toBeNull();
+      expect(result.pack!.assessment[0]!.question).toBeNull();
+      expect(result.pack!.assessment[1]!.question).toBeNull();
+    }
+    expect(csv.pack).toEqual(js.pack);
+    expect(xl.pack).toEqual(js.pack);
   });
 
   it('keeps the deliberate data problems for C2', async () => {
@@ -350,7 +395,7 @@ describe('C1-F6 missing-value behaviour follows the spec', () => {
     expect(r.issues.map((i) => i.severity)).toEqual(['warning', 'warning']);
   });
 
-  it('required columns with a spec fallback: question skips, title and persona name fill in, objective blocks', async () => {
+  it('blank optional questions and objectives are retained; title and persona defaults are reported', async () => {
     const r = await importPack(
       csvFiles({
         Assessment: setCell(0, 'question', ''),
@@ -359,17 +404,71 @@ describe('C1-F6 missing-value behaviour follows the spec', () => {
       }),
     );
     expect(r.ok).toBe(true);
-    expect(r.pack!.assessment).toHaveLength(17);
+    expect(r.pack!.assessment).toHaveLength(18);
+    expect(r.pack!.assessment[0]!.question).toBeNull();
     expect(r.pack!.library[0]!.title).toBe('Water cycle unit plan');
-    expect(r.pack!.personas[1]!.name).toBe('Milo');
+    expect(r.pack!.personas).toHaveLength(3);
+    expect(r.pack!.personas[1]).toMatchObject({ persona_id: 'peer', name: null });
     expect(r.issues.map((i) => [i.tab, i.effect])).toEqual([
-      ['Assessment', 'skips_row'],
       ['Personas', 'uses_fallback'],
       ['Library', 'uses_fallback'],
     ]);
-    const blocked = await importPack(csvFiles({ Units: setCell(0, 'objective', '') }));
-    expect(blocked.ok).toBe(false);
-    expect(errors(blocked)[0]).toMatchObject({ tab: 'Units', row: 2, column: 'objective' });
+    const blankObjective = await importPack(csvFiles({ Units: setCell(0, 'objective', '') }));
+    expect(blankObjective.ok).toBe(true);
+    expect(blankObjective.pack!.units[0]!.objective).toBeNull();
+  });
+
+  it('imports partial persona overrides for AI resolution without dropping their explicit values', async () => {
+    const edit = setCell(
+      1,
+      'name',
+      '',
+    )(
+      setCell(
+        1,
+        'role',
+        '',
+      )(
+        setCell(
+          1,
+          'tone',
+          'socratic',
+        )(setCell(1, 'prompt_template', '')(fixtureText('Personas.csv'))),
+      ),
+    );
+    const result = await importPack(csvFiles({ Personas: () => edit }));
+    expect(result.ok).toBe(true);
+    const peer = result.pack!.personas.find((persona) => persona.persona_id === 'peer')!;
+    expect(peer).toMatchObject({ name: null, role: null, tone: 'socratic', prompt_template: null });
+
+    const resolved = resolveEffectivePersonas(result.pack!.personas).find(
+      (persona) => persona.persona_id === 'peer',
+    );
+    expect(resolved).toMatchObject({
+      name: 'Milo',
+      role: 'Virtual classmate',
+      tone: 'socratic',
+      prompt_template: expect.stringContaining('{peerAge}'),
+    });
+  });
+
+  it('imports a peer-only Personas tab and resolves the remaining built-ins', async () => {
+    const rows = parseCsv(fixtureText('Personas.csv'), 1000, 20, 'Personas').rows;
+    const header = rows[0]!;
+    const peer = rows.find((row) => row[header.indexOf('persona_id')] === 'peer')!;
+    peer[header.indexOf('name')] = 'Mia';
+    const csv = [header, peer]
+      .map((row) =>
+        row.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(','),
+      )
+      .join('\n');
+    const result = await importPack(csvFiles({ Personas: () => csv }));
+    expect(result.ok).toBe(true);
+    expect(resolveEffectivePersonas(result.pack!.personas).map((persona) => persona.name)).toEqual([
+      'Ms. Ivy',
+      'Mia',
+      'Atlas',
+    ]);
   });
 
   it('an invalid pass_mark warns and uses 70', async () => {
@@ -387,10 +486,10 @@ describe('C1-F6 missing-value behaviour follows the spec', () => {
 });
 
 describe('C1-F7 missing optional tabs do not block', () => {
-  it('without Personas, Library and Categories: built-in personas, empty library, one category "Idea"', async () => {
+  it('without Personas, Library and Categories: empty personas, empty library, one category "Idea"', async () => {
     const r = await importPack(csvFiles({ Personas: null, Library: null, Categories: null }));
     expect(r.ok).toBe(true);
-    expect(r.pack!.personas).toEqual(BUILT_IN_PERSONAS);
+    expect(r.pack!.personas).toEqual([]);
     expect(r.pack!.library).toEqual([]);
     expect(r.pack!.categories).toEqual([{ category: 'Idea', icon: null, description: null }]);
     const notes = r.issues.filter((i) => i.code === 'tab_default');
@@ -400,10 +499,9 @@ describe('C1-F7 missing optional tabs do not block', () => {
       ['info', 'Library'],
     ]);
     expect(r.issues.every((i) => i.severity === 'info')).toBe(true);
-  });
-
-  it('the built-in personas are the fixture personas', async () => {
-    expect(BUILT_IN_PERSONAS).toEqual((await importPack(json())).pack!.personas);
+    expect(notes.find((i) => i.tab === 'Personas')!.message).toContain(
+      'Using the built-in personas',
+    );
   });
 
   it('a missing core tab blocks', async () => {

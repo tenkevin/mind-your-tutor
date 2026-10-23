@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./personas": {
+      "types": "./dist/personas.d.ts",
+      "default": "./dist/personas.js"
     }
   },
   "scripts": {

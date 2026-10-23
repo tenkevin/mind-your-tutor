@@ -1,6 +1,8 @@
 # Handoff: Idea Map coordinator
 
-Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#12), `834a340` (#10), `9269dd2` (#11), and `649f46a` (#8) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
+**Coordinator stopped after C9 as requested.** No implementation or QA assignment is active. Resume only when the user asks.
+
+Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#12), `834a340` (#10), `9269dd2` (#11), `649f46a` (#8), and `73feaab` (#19/C9) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
 
 **Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either. The work runs as a swarm: build agents per task, independent QA agents per PR, Codex as an outside reviewer, and one coordinator, which is you.
 
@@ -61,23 +63,21 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 5. State at snapshot (check before acting)
 
-**`idea-map` is green at `649f46a`.** PR #14 (F4cx3), PR #12 (F4b), PR #10 (F1c), PR #11 (C8), and PR #8 (C1/C1cx1) merged in separate passes after independent QA and exact-head CI, with integration CI confirmed after each. Completion reports are in `docs/qa/reports/`. Read `docs/qa/STATUS.md` for the live review queue and evidence.
+**`idea-map` application integration is green at `73feaab` (C9).** PR #14 (F4cx3), PR #12 (F4b), PR #10 (F1c), PR #11 (C8), and PR #8 (C1/C1cx1) merged in separate passes after independent QA and exact-head CI, with integration CI confirmed after each. C9 PR #19 also merged after independent PASS, exact-head CI and actual merge CI. Completion reports are in `docs/qa/reports/`. Read `docs/qa/STATUS.md` for the live review queue and evidence.
 
 | Status | Tasks |
 |---|---|
-| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1 |
-| Correction in review | F4cx1 PR #17, builder complete; synchronized `3d18a23`, independent QA pending |
-| Correction building | F1d PR #16 returned to codex-f1d after independent ambient-enum lint FAIL; C2cx5 building with codex-c2cx5 |
-| Newly unlocked correction | C2cx5 claimed by codex-c2cx5 after C8 integration PASS |
-| QA blocked | #13 F2cx1 at `c7883aa`: automated content-risk block stopped the delegated review; no independent PASS |
-| Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
+| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1, C9 |
+| Correction in review | F1d PR #16 now has fresh independent PASS (unmerged); C2cx5 PR #18 builder/CI green, independent review deferred |
+| Auth integration complete | F5 PR #15 frozen at `a827f1c`, local and exact-head CI green; independent QA and latest-base sync deferred |
+| QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
-| Waiting | C9 dependency-ready, deferred behind correction QA; C4 after C2cx5; C6 ready |
+| Final task complete — stopped | C9 PR #19 merged at `73feaab`; independent PASS and actual merge build/plan green. See `docs/qa/reports/C9.md`. C4/C6 and all follow-on work are deferred |
 | Placeholder | M1–M5 and CXB remain unclaimable; tracker specification still needs a person |
 
 C1's historical scoped PASS was superseded by the C1-S2 reconciliation. The corrected implementation now has a fresh combined independent PASS, with both bounded archive families and full DB-backed integration tested. PR #8 is merged and both C1/C1cx1 are done; see docs/qa/reports/C1.md.
 
-PR #12's conflict with PR #14 was resolved using the shared `validDerived()` fixture, retaining its schema validation and roundtrip equality assertion; duplicate `derivedData()` was removed. Independent QA must assess the synchronized head. PR #13's prior CI failure was the DB fixture defect, not a UI failure; synchronization introduces no UI task-code changes, and fresh independent QA is pending.
+PR #12's conflict with PR #14 was resolved using the shared `validDerived()` fixture, retaining its schema validation and roundtrip equality assertion; duplicate `derivedData()` was removed. PR #12 passed independent QA and is complete. PR #13's prior CI failure was the DB fixture defect, not a UI failure; synchronization introduced no UI task-code changes, but its independent review remains blocked as recorded above.
 
 T1 criteria are published; C5 remains a local draft pending the affected-student-count clarification recorded in architecture §12. Continue to ask only about genuinely new product/design decisions; no architecture decision changed during these corrections.
 
@@ -87,8 +87,8 @@ T1 criteria are published; C5 remains a local draft pending the affected-student
 |---|---|
 | Coordinator | Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`; `/home/kevin/mind-your-tutor` |
 | Independent QA coordinator | Codex thread `01a165ed-292f-7d71-8826-a8193dd72a3e` (title: Check GitHub connectivity) |
-| F1d builder | Luna-high `/root/c1_memory_fix`; `/home/kevin/coordinator-worktrees/f1d`; earlier C1cx1 implementation finished |
-| F2cx1 integration builder | Luna-high `/root/f2_ci_fix`; work finished; T1 draft published as criteria |
+| C9 primary builder | Completed/stopped: Luna-high `/root/c1_memory_fix`; `/home/kevin/coordinator-worktrees/c9`; earlier C1cx1/F1d work handed off |
+| C9 persona component | Completed/stopped: Luna-high `/root/f2_ci_fix`; persona component and null-default follow-up integrated into C9 |
 | F4b integration | Coordinator worktree `/home/kevin/coordinator-worktrees/f4b`; no builder self-approval; separate QA session reviews |
 | Local takeover evidence/drafts | `/home/kevin/coordinator-takeover-2026-10-22/` |
 
@@ -113,9 +113,10 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 
 ## 8. What's next, in priority order
 
-1. Correct F1d-F1 ambient-enum lint coverage on existing PR #16, then obtain fresh independent QA. C1/C1cx1 are complete.
-2. Review completed F4cx1 PR #17 independently after refreshed exact-head CI; preserve the existing isolation fixes.
-3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Continue independent fixes while PR #13 remains blocked.
-4. C2cx5 is now claimed; start C9 after C1, C4 after C2cx5/C1, and C6 when urgent fixes and capacity permit. Reconcile the F6 claim before assigning its continuation.
-5. Settle/publish C5 criteria from the specification; T1 criteria are already published; bring in CXB's appropriate suggestions. F5 unlocks T1, then the teacher tasks.
-6. Keep M1–M5 unclaimed until the user supplies the tracker specification (architecture §8.6). Record genuinely new design questions in architecture §12 and continue independent work.
+**User stop boundary reached:** C9 is independently verified, merged and integration-green. Coordination is stopped; start no further tasks or reviews until the user resumes work. F1d/F5/C2cx5 are at their recorded handoffs. Never treat blocked PR #13/#17 as approved.
+
+1. C9 is complete. Preserve the stopped state. Its header consistency, benchmark reproducibility and message-polish suggestions are deferred in CXB.
+2. Leave F1d PR #16 unmerged with its fresh independent PASS. Leave C2cx5 PR #18 and F5 PR #15 at their documented builder/CI handoffs; do not start their independent reviews during this run.
+3. Keep #13 F2cx1 and #17 F4cx1 unverified. Do not retry or reroute their blocked review actions.
+4. For a future coordinator after the user resumes work: re-check current base and all exact PR heads; apply the one-merge-per-pass gate. C4 waits for C2cx5, C6 is ready, and F6 ownership needs reconciliation. These are deferred, not assignments for this run.
+5. C5 criteria remain a draft pending the affected-student-count decision; T1 criteria are published. M1–M5 remain unclaimable pending a human-written tracker specification.

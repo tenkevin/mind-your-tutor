@@ -71,7 +71,12 @@ export function isSafeMediaRef(value: string): boolean {
     if (name === 'https') {
       try {
         const url = new URL(value);
-        return url.protocol === 'https:' && url.hostname.length > 0;
+        return (
+          url.protocol === 'https:' &&
+          url.hostname.length > 0 &&
+          url.username.length === 0 &&
+          url.password.length === 0
+        );
       } catch {
         return false;
       }

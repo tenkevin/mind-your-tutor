@@ -61,7 +61,7 @@ export const CourseRowSchema = course.row;
 const units = tab('Units', (c) => ({
   unit: c.integer('unit'),
   name: c.text('name', LIMITS.title),
-  objective: c.text('objective', LIMITS.objective),
+  objective: c.text('objective', LIMITS.objective).nullable().default(null),
   standard_codes: c.list('standard_codes', LIMITS.code).default([]),
   due_date: c.date('due_date').nullable().default(null),
 }));
@@ -105,7 +105,7 @@ export const CategoryRowSchema = categories.row;
 const assessment = tab('Assessment', (c) => ({
   unit: c.integer('unit'),
   idea_id: c.slug('idea_id'),
-  question: c.text('question', LIMITS.question),
+  question: c.text('question', LIMITS.question).nullable().default(null),
   key_points: c.list('key_points', LIMITS.keyPoint).default([]),
 }));
 export const AssessmentItemSchema = assessment.schema;
@@ -113,7 +113,7 @@ export const AssessmentItemRowSchema = assessment.row;
 
 const personas = tab('Personas', (c) => ({
   persona_id: c.oneOf('persona_id', PERSONA_IDS),
-  name: c.text('name', LIMITS.title),
+  name: c.text('name', LIMITS.title).nullable().default(null),
   role: c.text('role', LIMITS.title).nullable().default(null),
   audience: c.oneOf('audience', AUDIENCES).default('Students'),
   tone: c.oneOf('tone', TONES).default('warm'),
