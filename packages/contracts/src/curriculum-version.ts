@@ -84,6 +84,15 @@ export const VersionIssuesSchema = z.array(VersionIssueSchema).superRefine((issu
   }
 });
 
+/** False while an import blocker or an error-level data check remains (§7, C2). */
+export function canPublishIssues(issues: readonly VersionIssue[]): boolean {
+  return !issues.some((issue) =>
+    issue.origin === 'import'
+      ? issue.severity === 'error' && issue.effect === 'blocks_import'
+      : issue.level === 'error',
+  );
+}
+
 export const CurriculumVersionSchema = z
   .object({
     id: z.uuid(),
@@ -113,12 +122,7 @@ export const CurriculumVersionSchema = z
         message: 'A draft version has not been published, so published_at must be empty.',
       });
     }
-    const publishBlocked = version.issues.some((issue) =>
-      issue.origin === 'import'
-        ? issue.severity === 'error' && issue.effect === 'blocks_import'
-        : issue.level === 'error',
-    );
-    if (version.status !== 'draft' && publishBlocked) {
+    if (version.status !== 'draft' && !canPublishIssues(version.issues)) {
       ctx.addIssue({
         code: 'custom',
         path: ['issues'],

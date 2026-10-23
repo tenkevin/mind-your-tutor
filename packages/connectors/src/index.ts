@@ -15,6 +15,7 @@ export {
   DEFAULT_LIMITS,
   formatImportIssue,
   groupIssuesByTab,
+  megabytes,
   sortIssues,
   type ImportLimits,
   type IssueGroup,
@@ -22,3 +23,11 @@ export {
 export { needsFormulaEscape, similarity } from './mapping.js';
 export { matchTab, looseName } from './tabs.js';
 export { serialToIsoDate, dateToIsoDate } from './dates.js';
+export { screenUpload, sha256, type Screened } from './screen.js';
+export {
+  FileObjectStore,
+  MemoryObjectStore,
+  isUploadKeyFor,
+  uploadKey,
+  type ObjectStore,
+} from './storage.js';

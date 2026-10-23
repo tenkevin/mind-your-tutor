@@ -1,9 +1,18 @@
 import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { importRoutes, type ImportRoutesOptions } from './imports.js';
 
-export function buildServer(): FastifyInstance {
+export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
+
+export interface ServerOptions {
+  /** Curriculum imports (C4); left out, the routes aren't registered. */
+  imports?: ImportRoutesOptions;
+}
+
+export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const app = Fastify({ logger: false });
   app.get('/health', () => ({ ok: true }));
+  if (options.imports) importRoutes(app, options.imports);
   // A fixed body, so unknown paths aren't echoed back.
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
   return app;

@@ -10,6 +10,7 @@ import * as m0008 from './0008_tracker.js';
 import * as m0009 from './0009_jobs_and_audit.js';
 import * as m0010 from './0010_class_library.js';
 import * as m0011 from './0011_isolation.js';
+import * as m0012 from './0012_import_jobs.js';
 
 // Every migration, in order. Listed by hand rather than read from disk, so the same
 // list works from src (tests) and dist (the CLI). Add new ones at the end; never
@@ -26,4 +27,5 @@ export const migrations: Record<string, Migration> = {
   '0009_jobs_and_audit': m0009,
   '0010_class_library': m0010,
   '0011_isolation': m0011,
+  '0012_import_jobs': m0012,
 };

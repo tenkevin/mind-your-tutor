@@ -53,6 +53,7 @@ run; add a new one.
 | 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
 | 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                   |
 | 0011 isolation     | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                     |
+| 0012 import jobs   | `import_job.steps` (Teacher Settings pipeline progress) and `idempotency_key` (one job per repeated upload; C4)                               |
 
 ## Roles and row-level security
 
