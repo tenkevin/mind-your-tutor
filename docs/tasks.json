@@ -219,7 +219,7 @@
       ],
       "done_when": "Codex C2-E5 (docs/qa/codex/Codex-C2-checks.md): CurriculumVersion stores parse and data-check issues without loss; publish rule blocks on error-level data checks; one shared issue type in contracts",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-c2cx5",
       "updated": "2026-10-23"
     },
@@ -276,9 +276,9 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c6",
+      "updated": "2026-10-23"
     },
     {
       "id": "C7",
@@ -741,7 +741,7 @@
       ],
       "done_when": "F1c QA finding1: production ambient declarations cannot hide banned globals, process access is guarded, existing determinism regressions and performance budgets pass",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-f1d",
       "updated": "2026-10-23"
     }

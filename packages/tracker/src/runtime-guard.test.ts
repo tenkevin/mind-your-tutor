@@ -137,6 +137,7 @@ const HOST_GLOBALS = [
   'Temporal',
   'Intl',
   'crypto',
+  'process',
 ] as const;
 
 // Pushes an undo step for each patch, so a failure part way through still
@@ -309,6 +310,8 @@ describe('tracker runtime guard', () => {
     ['new MessageChannel()', () => new MessageChannel()],
     ['new WeakRef({})', () => new WeakRef({})],
     ['navigator.hardwareConcurrency', () => navigator.hardwareConcurrency],
+    ["process.env['SYNTHETIC_F1D_FIXTURE']", () => process.env['SYNTHETIC_F1D_FIXTURE']],
+    ["process.getBuiltinModule('node:path')", () => process.getBuiltinModule('node:path')],
   ])('throws on %s', async (_, probe) => {
     await expect(guarded(probe)).rejects.toThrow(NondeterminismError);
   });
@@ -327,7 +330,13 @@ describe('tracker runtime guard', () => {
   });
 
   it('restores everything afterwards', async () => {
+    const realProcess = process;
     await expect(guarded(() => Date.now())).rejects.toThrow();
+    await expect(guarded(() => process.env['SYNTHETIC_F1D_FIXTURE'])).rejects.toThrow(
+      NondeterminismError,
+    );
+    await expect(guarded(() => 42)).resolves.toBe(42);
+    expect(process).toBe(realProcess);
     expect(typeof Date.now()).toBe('number');
     expect(new Date(0).constructor).toBe(Date);
     expect(typeof Math.random()).toBe('number');

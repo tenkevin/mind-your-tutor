@@ -4,7 +4,7 @@ Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task 
 
 ## Authorization and handoff
 
-Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Stopped after C9:** do not start another review until the user resumes work. Routine state and reports belong in these living documents; direct messages are reserved for urgent findings, actionable blockers or authorized startup assignments. QA owns evidence and verdicts; the coordinator owns task states and merges. An unavailable required check remains unverified; do not retry or reroute previously blocked review actions through another tool, session or CI.
+Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Resumed 2026-10-23 03:00 UTC by the user** ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent QA and the integration gate. Routine state and reports belong in these living documents; direct messages are reserved for urgent findings, actionable blockers or authorized startup assignments. QA owns evidence and verdicts; the coordinator owns task states and merges. An unavailable required check remains unverified; do not retry or reroute previously blocked review actions through another tool, session or CI.
 
 ## Who does what
 

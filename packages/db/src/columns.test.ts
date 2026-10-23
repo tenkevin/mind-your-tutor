@@ -97,6 +97,8 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
         derived: json(derived),
         issues: json([
           {
+            origin: 'import',
+            level: 'warning',
             severity: 'warning',
             effect: 'none',
             tab: 'Ideas',
@@ -105,6 +107,14 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
             value: null,
             fallback: null,
             message: 'No media.',
+          },
+          {
+            origin: 'data_check',
+            kind: 'prereq',
+            level: 'error',
+            message: 'Groundwater requires "aquifer".',
+            items: ['ground'],
+            fix: { tab: 'Ideas', column: 'requires' },
           },
         ]),
         source: json(SOURCE),
@@ -116,7 +126,28 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
     expect(version.pack).toEqual(pack);
     expect(version.derived).toEqual(derived);
     expect(version.status).toBe('draft');
-    expect(version.issues).toHaveLength(1);
+    expect(version.issues).toEqual([
+      {
+        origin: 'import',
+        level: 'warning',
+        severity: 'warning',
+        effect: 'none',
+        tab: 'Ideas',
+        row: 4,
+        column: 'media_url',
+        value: null,
+        fallback: null,
+        message: 'No media.',
+      },
+      {
+        origin: 'data_check',
+        kind: 'prereq',
+        level: 'error',
+        message: 'Groundwater requires "aquifer".',
+        items: ['ground'],
+        fix: { tab: 'Ideas', column: 'requires' },
+      },
+    ]);
     expect(typeof inserted.number).toBe('number');
   });
 
