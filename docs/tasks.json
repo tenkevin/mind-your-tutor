@@ -716,6 +716,19 @@
       "status": "todo",
       "owner": null,
       "updated": null
+    },
+    {
+      "id": "C1cx1",
+      "title": "Fix C1-E1: bound CSV parser memory and reject duplicate ZIP tabs early",
+      "size": 1,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "Existing C1 PR safely refuses long-cell and duplicate-tab archives without process death; independent C1cx1 QA passes",
+      "placeholder": false,
+      "status": "doing",
+      "owner": "codex-c1cx1",
+      "updated": "2026-10-23"
     }
   ]
 }
