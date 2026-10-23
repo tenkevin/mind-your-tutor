@@ -18,3 +18,4 @@ export * from './derived.js';
 export * from './explanation.js';
 export * from './data-checks.js';
 export * from './import-job.js';
+export * from './publish.js';

@@ -19,10 +19,12 @@
     "@ideamap/connectors": "workspace:*",
     "@ideamap/contracts": "workspace:*",
     "@ideamap/db": "workspace:*",
+    "@ideamap/domain": "workspace:*",
     "@ideamap/worker": "workspace:*",
     "fastify": "catalog:",
     "kysely": "0.29.7",
-    "pg-boss": "12.38.0"
+    "pg-boss": "12.38.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
