@@ -32,3 +32,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 ## Pending design clarification
 
 C5's affected-student count is not defined precisely in architecture §7. The user has been asked whether it means all enrolled students in selected classes or only students whose recorded progress changes; see architecture §12. C5 criteria remain a local draft pending this clarification. This does not block the urgent fix queue.
+
+## C9 performance evidence clarification
+
+The builder withdrew its unsubstantiated C2 6.12ms-versus-9.3ms comparison. Independent paired same-input measurements preserve the 10% regression budget; [C9-P1](C9.md) documents the method and required historical-input limitation. Independent full-suite verdict remains pending.
