@@ -35,6 +35,29 @@ Each check has:
 - a weight: **must** blocks a PASS; **should** is reported but doesn't block, and the coordinator decides whether to file a follow-up task
 - the check itself, the **steps** to verify it (commands, inputs, what to look at) and the **pass bar** (an exact number or observable result)
 
+## UDL 3.0 checklist (student-facing tasks)
+
+Decision D17 makes the CAST UDL Guidelines 3.0 acceptance criteria for every student-facing feature, alongside WCAG 2.1 AA with only D10's exceptions. The criteria for any task that changes what a student sees or does must include the checks below as **must** checks (ids `<ID>-U<n>`), adapted to the feature, or mark one not applicable with a reason. The shared components from S5 live in `apps/student/src/udl/` and `udl-reference.html` (run `pnpm --filter @ideamap/student dev`, open `/udl-reference.html`) shows each one. Using them is the expected way to pass.
+
+**Engagement** (the why of learning)
+- Choice: where the feature offers a task, the student can choose among what's open (missions, order of ideas), and locked items say in words what unlocks them (`MissionPicker`).
+- Pacing: a multi-step task can be paused and resumed where it was left, and nothing times out on the student (`StepFlow`).
+- Feedback that sustains effort: formative feedback says why, in plain words, and offers **Challenge this** (D15, `Feedback`).
+
+**Representation** (the what of learning)
+- Text is always present; read-aloud is available on explanations, questions and feedback, with pause, stop and the spoken word highlighted (`ReadAloud`, `IdeaText`).
+- Every image or video has alt text or a caption, and nothing is shown only as a picture or only as a colour (state also in words or an icon).
+- Text size to 200% (browser zoom and the in-app setting) keeps the layout usable, and animation stops under `prefers-reduced-motion` or the student's Calm screen setting (`DisplaySettings`).
+- Wording suits the youngest grade the feature serves (K-2 when it reaches them).
+
+**Action and expression** (the how of learning)
+- Every typed answer, chat message and challenge can also be spoken (`SpeakOrType`): speech becomes text on the device, the student checks it before sending, and typing always works.
+- Keyboard alone completes the task; controls are at least 44 px, and icons always have a text label.
+
+**Privacy for all three** (D19, §8.2)
+- Read-aloud and speech input run in the browser only: on-device voices and on-device recognition, no audio uploaded or stored, no request to a third-party speech service. The mic prompt appears only after the student presses Talk and has seen a plain explanation.
+- The UDL controls themselves add no tracker events: choosing a mission, pausing, reading aloud, talking or changing display settings are not recorded. Only §8.2 events (for example `mission.completed`, `feedback.challenged`) are sent, by the feature that owns them.
+
 ## Report format
 
 The QA agent posts this as a PR comment (`gh api repos/<owner>/<repo>/issues/<n>/comments -F body=@report.md`; capital `-F` reads the file), and the coordinator saves it to `docs/qa/reports/<ID>.md`:
