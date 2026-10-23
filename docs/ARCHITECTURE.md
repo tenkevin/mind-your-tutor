@@ -300,14 +300,15 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Section in the design | Reads | Writes |
 |---|---|---|
 | Header: subject · topic, save state, Preview as student | effective config | — |
-| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`, draft version issues | starts an `ImportJob` |
+| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`; the draft version's import and data-check issues (C2, grouped by cause) | starts an `ImportJob` |
 | Draft and publish (new, required by D2) | draft vs published diff | publish to selected classes |
 | Course details | effective config, with origin per field | class override, or curriculum default for authors |
-| AI personas & prompts | persona templates, variable list | template versions; **Test** calls the gateway |
+| AI personas & prompts | built-in personas from the `packages/ai` registry (D13), then pack overrides, then class overrides; variable list | class template overrides; **Test** calls the gateway |
 | Schedule | units from published version | due dates (class) |
 | Card classification | ideas, auto rarity from layout | rarity overrides |
 | From the spreadsheet (read-only tabs, column mapping) | version body | column mapping (applies on next import) |
-| Atlas panel and knowledge sources | library docs, app guide | library uploads; chat goes through the gateway |
+| Atlas panel and knowledge sources | shared library docs, with this class's `use_for` per doc, plus this class's uploads (D11); app guide | per-class `use_for` (agent, tutor, both, off); class uploads; chat goes through the gateway |
+| Drafts to approve (new, D9 and D12) | AI-drafted idea explanations, unit objectives and assessment questions waiting for approval | approve, edit or reject; approved text is stored per curriculum |
 
 The "Re-sync" button in the prototype becomes **Import new version**, and a new **Publish** step sits beside it.
 
