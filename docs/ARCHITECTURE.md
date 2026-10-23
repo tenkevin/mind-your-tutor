@@ -23,6 +23,10 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D12 | Missing objectives and questions don't block an import | `Units.objective` and `Assessment.question` may be empty, as the pack spec's "missing" behaviour says. The data checks flag them (warnings), and Atlas can draft a replacement that reaches students only after a teacher approves it, the same flow as D9 explanations. An empty question is never asked by Milo |
 | D13 | One built-in persona list | Ms. Ivy, Milo and Atlas are defined once, in `packages/ai`'s persona registry. A pack with no Personas tab stores no personas, which means "use the built-ins", so improvements to the built-ins reach every curriculum. A Personas tab overrides by `persona_id`, and class overrides in Teacher Settings sit on top |
 | D14 | Publish preview counts the audience | "Students receiving this update" = unique students enrolled in the selected classes, whether or not their progress changes (user, 2026-10-22, via Codex QA) |
+| D15 | AI feedback explains itself, and teachers close the loop | Formative feedback (practice, quizzes, Milo) reaches the student immediately, with its reason and the rubric or key point it rests on, plus a **Challenge this** button that sends the student's objection and the AI's reasoning to the teacher. Summative feedback is approved or edited by the teacher before release. Teacher approvals, edits and challenge rulings are stored as labelled examples per curriculum and question, and are retrieved to ground future feedback. The model is never trained on them: §10's zero-retention, no-training rule stands (user, 2026-10-23) |
+| D16 | Fairness audits without per-student demographics | Idea Map stores no per-student race, ethnicity or similar demographics. Routine monitoring compares groups at a generalised level agreed with the district (for example by school or zip area), suppressing small groups. A periodic racial-disparity audit runs on a random sample of students with the district; open details are in §12 question 11. The metrics are demographic parity difference, disparate impact ratio (flagged below 0.8, used as a monitoring threshold, not a legal test), and teacher-agreement and challenge-upheld rates per group. Before any feedback reaches a student, safeguards act as an independent QA step: rubric grounding, a separate verifier, a tone and reading-level check, routing to the teacher on low confidence or verifier disagreement, and automatic teacher review for a question whose audit drifts past threshold (user, 2026-10-23) |
+| D17 | Universal Design for Learning | CAST UDL Guidelines 3.0 are acceptance criteria for every student-facing feature, alongside WCAG 2.1 AA (with D10's exceptions). That means multiple means of engagement, representation (text, read-aloud, visual) and action and expression (typed or spoken answers and challenges), including for AI feedback (user, 2026-10-23) |
+| D18 | No Moodle; borrow its tracing design | No Moodle or UBUMonitor integration, and no LTI (D4 unchanged). Moodle's open-source design informs our own tracer (§8): its log-store event shape, its classification of educational level, its privacy-provider pattern (each component declares, exports and deletes its own data) and its analytics indicator and target model. We take ideas and data models only, never code: Moodle is GPLv3 and PHP. We also don't copy its practice of logging IP addresses (COPPA). Any encryption at rest uses AES-256-GCM, never Blowfish (user, 2026-10-23) |
 
 ## 2. The core split
 
@@ -280,6 +284,8 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 - An eval harness runs each persona against fixed prompts per grade band (K–2, 3–5, 6–8, 9–12) before template changes ship.
 
 ### Safety for student-facing personas
+
+- AI feedback follows D15 (reasons, Challenge this, teacher approval for summative) and passes D16's pre-send safeguards before a student sees it.
 - Input and output moderation on every student turn.
 - Fixed guardrails appended after the teacher's template, so editing a prompt cannot remove them (stay on topic, no personal data requests, age-appropriate language).
 - Concerning messages (self-harm, abuse) raise a flag to the teacher and admin, per district policy.
@@ -297,7 +303,7 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
 | Security | TLS everywhere, encryption at rest, per-org row-level security in Postgres |
-| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; read-aloud for K–2 later |
+| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; read-aloud for K–2 later; CAST UDL 3.0 for student-facing features (D17) |
 
 ## 11. Teacher Settings page: how each section maps
 
@@ -328,4 +334,12 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 8. ~~Publish preview affected-student count (C5)~~ **Settled as D14** (user, 2026-10-22): all unique students enrolled in the selected classes.
 9. **Sign-in state across API instances (F5):** the sign-in flow's state is single-use per API process (an in-memory set), backed by a 10-minute encrypted cookie and the provider's single-use code. With several API instances, a captured callback could be replayed once on another instance inside that window. Move the used-state set to Postgres (or a shared cache) before running more than one instance? The same goes for the failed-sign-in limit per IP.
 10. **Provider tenant claims (F5):** sign-in maps a provider's tenant claim to an org via `sso_tenant`: Google `hd`, Clever `district`, ClassLink `tenant_id`. The Clever and ClassLink claim names are unverified until open question 3 picks the providers; each is a setting (`IDEAMAP_SSO_<ID>_TENANT_CLAIM`).
-11. **Education data mining and tracing (gate MD), user to decide:** what is traced and at what granularity; the purposes (mastery, teacher insight, research); which inferences are allowed (knowledge tracing, risk or behaviour signals); who sees them (teacher, admin, student, parent); retention and aggregation; consent and opt-out under COPPA and FERPA; whether any data leaves the district or is used to train models. No M-task work until these are settled.
+11. **Education data mining and tracing (gate MD).** Settled: D15–D18. Still for the user to decide before the gate clears:
+    - For D16, which generalised level to use: school or district level (recommended), or student home zip (that is personal information under COPPA and FERPA).
+    - For the sampled racial-disparity audit, who holds race. Recommended: the district joins Idea Map's pseudonymous outcomes with its own records and returns only aggregates, so Idea Map never stores race. Also the sample size and how often the audit runs.
+    - What is traced and at what level of detail.
+    - Which inferences are allowed (knowledge tracing, risk or behaviour signals).
+    - Who sees what (teacher, admin, student, parent).
+    - Retention and aggregation of traces.
+    - Consent and opt-out.
+    - Research use.
