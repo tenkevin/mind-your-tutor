@@ -202,6 +202,20 @@ export default tseslint.config(
           ),
         },
         {
+          selector: `TSEnumDeclaration > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
+          selector: `TSModuleDeclaration[declare=true] > Identifier.id[name=/^(${BANNED_GLOBAL_NAMES.join('|')})$/]`,
+          message: banned(
+            'Local ambient declaration of a prohibited global (it hides the determinism check)',
+            'time, ids and seeds',
+          ),
+        },
+        {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: banned('new Date() with no argument (the current time)', 'time'),
         },

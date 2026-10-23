@@ -215,8 +215,15 @@ describe('tracker determinism lint rules', () => {
     'declare var process: unknown;',
     'declare function fetch(input: string): unknown;',
     'declare class Date {}',
+    'declare enum process { env }',
+    'declare enum process { env } export const probe = () => process.env;',
+    'declare namespace process { const env: unknown }',
   ])('rejects ambient declaration form %s', async (declaration) => {
     expectBanned(await lint(`${declaration}\n`), 'no-restricted-syntax');
+  });
+
+  it('allows deterministic event-derived code alongside the ambient guards', async () => {
+    expect(await lint('export const times = events.map((event) => event.at);\n')).toEqual([]);
   });
 
   it('leaves other packages alone', async () => {
