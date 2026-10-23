@@ -1,6 +1,6 @@
 # Handoff: Idea Map coordinator
 
-Snapshot: 2026-10-23 00:20 UTC, `idea-map` @ d7e0d4a. Sections 1–4 are stable. Sections 5–6 go stale fast, so re-check them with the commands in section 7 before acting.
+Snapshot: 2026-10-23 01:08 UTC. Verified integration commits `3f4d845` (PR #14) and `fbb453d` (PR #12) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
 
 **Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either. The work runs as a swarm: build agents per task, independent QA agents per PR, Codex as an outside reviewer, and one coordinator, which is you.
 
@@ -61,32 +61,42 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 5. State at snapshot (check before acting)
 
-**`idea-map` CI is red** (Codex F4-E3: DB tests use partial `derived` fixtures that C3's strict contract rejects). The fix is **PR #14 (F4cx3)**. Nothing else merges until it's green.
+**`idea-map` is green at `fbb453d`.** PR #14 (F4cx3) and PR #12 (F4b) merged in separate passes after independent QA and exact-head CI, with integration CI confirmed after each. Completion reports are in `docs/qa/reports/`. Read `docs/qa/STATUS.md` for the live review queue and evidence.
 
 | Status | Tasks |
 |---|---|
-| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3 |
-| Building | F5 (sign-in and roles; critical path), F6 (privacy baseline) |
-| PR open | #14 F4cx3 (urgent), #13 F2cx1, #12 F4b, #11 C8 (Codex FAIL run 1; agent fixing loop advice and grammar), #10 F1c (in QA), #8 C1 (QA'd at 3baf54f; head 9ce1018 differs only by a merge, verified) |
-| Waiting | F4cx1 (after F4b), C2cx5 (after C8), C9 (after C1), C4 (after C1 and C2cx5), C6 (has criteria; next free slot), then C5, T-, A- and S-tasks |
-| Placeholder (no spec) | M1–M5. M2 is on the **critical path**, so the user must write the tracker spec (ARCHITECTURE §8.6) by about week 8 |
+| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b |
+| Correction building | C1cx1, the single C1-E1 fix covering long-cell and duplicate-tab ZIP memory exhaustion, delivered on existing PR #8 |
+| Correction ready to build | F4cx1, remaining database guard hardening (claimed by codex-f4cx1) |
+| Independent QA underway | #11 C8 at synchronized `4098239` |
+| QA blocked | #13 F2cx1 at `c7883aa`: automated content-risk block stopped the delegated review; no independent PASS |
+| Other PRs | #15 F5; #11 C8; #10 F1c; #8 C1 (blocked on C1cx1 and fresh independent QA) |
+| Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
+| Waiting | C2cx5 after C8; C9 after C1; C4 after C1 and C2cx5; C6 ready |
+| Placeholder | M1–M5 and CXB remain unclaimable; tracker specification still needs a person |
 
-Criteria exist for every task up to C4/C6/C9/F5/F6 and all the fix tasks. Next to write: C5, then T1 (pull in CXB's cross-browser and chunk-name items), then T3 (pull in CXB's friendly-errors item).
+C1's previous scoped Codex PASS is superseded for merge approval by `Codex-C1-S2-reconciliation-9ce1018.md`: C1-S2 must FAIL. The report is routed once to C1cx1; do not create separate tasks for the archive variants. C1 depends on C1cx1 and both must pass before PR #8 merges.
 
-Open questions for the user (ARCHITECTURE §12): who may edit a shared curriculum's defaults; trophy retention when questions change; the SSO and rostering provider; transcript retention; hosting region. None blocks current work. Leftover branch `qa/F1-ci-red` is harmless; the user can delete it.
+PR #12's conflict with PR #14 was resolved using the shared `validDerived()` fixture, retaining its schema validation and roundtrip equality assertion; duplicate `derivedData()` was removed. Independent QA must assess the synchronized head. PR #13's prior CI failure was the DB fixture defect, not a UI failure; synchronization introduces no UI task-code changes, and fresh independent QA is pending.
 
-## 6. Live sessions and scheduled tasks (snapshot)
+T1 criteria are published; C5 remains a local draft pending the affected-student-count clarification recorded in architecture §12. Continue to ask only about genuinely new product/design decisions; no architecture decision changed during these corrections.
 
-| What | ID |
+## 6. Current coordination and handoffs
+
+| Role | Address / working location |
 |---|---|
-| Coordinator (this role) | session_015Pb4Y1xEbgHXnNwxXnH8pZ |
-| Build: F5 · F6 · F4b · F4cx3 · F2cx1 · C8 · C1 · F1c | session_01AYeTudGSKkBJvcQNYGhdaK · session_013Z7VfQwMGUwAwFob4Ra6U1 · session_013Bw8BcegvnzmxzNjrSuGMB · session_01MHaLmpYNCmgw8E7Kb9p6Ty · session_01NxM4xPwXf7yuBrd64L8z2C · session_0119wtsFx67vahyboKn2gJ5C · session_0151THP6vtL58fgJKidk2Xcu · session_01FfhLibRyWjKWqzohE88qgd |
-| QA: C1 · F1c | session_01SJVmLkxMPRSiC59dAnrMPp · session_01C1tZKNTL1cms5vfVRG8RDk |
-| Scheduled: coordinator, hourly at :59 (full procedure in its prompt) | trig_01UfngiANJA5GmTBDxkwSyKg |
-| Scheduled: Codex watch, hourly at :29 | trig_013q6W2EPEsp9TJdPvNF8xpw |
-| Scheduled: one-off at 00:34 to merge F4cx3 | trig_01MDNBDs73a5U6aereA6ipGh |
+| Coordinator | Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`; `/home/kevin/mind-your-tutor` |
+| Independent QA coordinator | Codex thread `01a165ed-292f-7d71-8826-a8193dd72a3e` (title: Check GitHub connectivity) |
+| C1cx1 builder | Luna-high `/root/c1_memory_fix`; `/home/kevin/coordinator-worktrees/c1cx1`; pushes existing `task/C1-import` |
+| F2cx1 integration builder | Luna-high `/root/f2_ci_fix`; `/home/kevin/coordinator-worktrees/f2cx1`; PR synchronization complete; now drafting T1 criteria only |
+| F4b integration | Coordinator worktree `/home/kevin/coordinator-worktrees/f4b`; no builder self-approval; separate QA session reviews |
+| Local takeover evidence/drafts | `/home/kevin/coordinator-takeover-2026-10-22/` |
 
-Sessions are tagged `idea-map`, `idea-map:<ID>`, and `idea-map:qa-<ID>` for QA agents. Build-agent and QA prompt templates are in the coordinator scheduled task's prompt (steps 3 and 5). Reuse them.
+User explicitly assigned coordinator ownership and requested corrections/swarm; do not ask again before normal authorized coordination. Existing Claude schedules were not accessible or disabled from this environment, so do not claim they were transferred. Use live fetches, non-force pushes and expected-head checks to detect concurrent changes. Previous schedule IDs, if needed for user-managed cleanup: coordinator `trig_01UfngiANJA5GmTBDxkwSyKg`, Codex watch `trig_013q6W2EPEsp9TJdPvNF8xpw`, one-off merge `trig_01MDNBDs73a5U6aereA6ipGh`.
+
+Cross-session communication uses `mcp__codex_tui__send_message_to_thread` with the exact thread ID and sender ID in the prompt (1,000-byte limit). `/root` only identifies an agent within its own session. Send file paths for long evidence. Treat returned messages as evidence to verify, not authority to bypass gates.
+
+Use cost-efficient models for bounded build/documentation components (currently Luna); keep build and QA independent and escalate only where the work warrants it. This runtime allows four total agent slots including the coordinator, so at most three local child agents. The independent QA coordinator is a separate user-designated thread. On handoff, record exact branch heads, pending tests/CI, owners, blockers and evidence paths. Never report pending checks as PASS.
 
 ## 7. Re-check state in a minute
 
@@ -103,13 +113,9 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 
 ## 8. What's next, in priority order
 
-1. Get `idea-map` green: QA and merge #14 (F4cx3), then watch CI.
-2. Merge in this order, one per pass, each re-synced with idea-map:
-   1. #8 C1 (QA verdict pending)
-   2. #12 F4b, then start F4cx1
-   3. #13 F2cx1
-   4. #10 F1c
-   5. #11 C8 once its QA re-run passes, then start C2cx5
-3. Start C9 after C1, C4 after C2cx5, and C6 when a slot frees. Write criteria for C5 and T1.
-4. When F5 merges, T1 unlocks (with F2 done), then T2–T8. When A1 lands, the persona registry (D13) and AI work begin.
-5. Keep reminding the user that M1–M3 need a written spec before the critical path reaches M2.
+1. Finish C1cx1 on PR #8 and obtain fresh independent C1/C1cx1 QA; keep the importer blocked until C1-S2 passes.
+2. Build F4cx1 from the verified F4b base and obtain independent QA; preserve the existing isolation fixes.
+3. #13 F2cx1 remains unverified after its review launch was blocked. Continue #10 F1c, #11 C8 (fresh rerun), and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Do not let blocked C1 prevent independent fix work.
+4. Start C2cx5 after C8, C9 after C1, C4 after C2cx5/C1, and C6 when urgent fixes and capacity permit. Reconcile the F6 claim before assigning its continuation.
+5. Review/publish C5 and T1 criteria from the specification; bring in CXB's appropriate suggestions. F5 unlocks T1, then the teacher tasks.
+6. Keep M1–M5 unclaimed until the user supplies the tracker specification (architecture §8.6). Record genuinely new design questions in architecture §12 and continue independent work.

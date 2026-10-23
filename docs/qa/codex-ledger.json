@@ -147,6 +147,16 @@
       ],
       "suggestions": "Regression/evidence scope -> C1cx1 criteria. Existing C2-E5 and F3-S5 routing retained; unverified observations are not new findings.",
       "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx3-review-3641f00.md",
+      "commit": "24c38b3",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx3"
+      ],
+      "errors": [],
+      "suggestions": "Existing F4-E3 correction independently passes; carried forward after task-path equality and exact-head CI. Postmerge F5 passed at3f4d845; record docs/qa/reports/F4cx3.md."
     }
   ]
 }

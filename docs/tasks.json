@@ -129,7 +129,7 @@
       ],
       "done_when": "Findings 1, 2 and 4 in docs/qa/reports/F4.md fixed by a new migration with database tests: no cross-org writes or probing via interaction_event_key, class_library_setting class-scoped (D11), app role TEMP revoked",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f4b",
       "updated": "2026-10-23"
     },
@@ -140,7 +140,7 @@
       "deps": [],
       "done_when": "Codex F4-E3 (docs/qa/codex/Codex-F4-integration-1523878.md): DB fixtures conform to the strict VersionDerived contract; root typecheck and DB-backed tests pass; CI green on idea-map",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f4cx3",
       "updated": "2026-10-23"
     },
@@ -153,9 +153,9 @@
       ],
       "done_when": "Codex F4-E2 and the rest of F4-E1 (docs/qa/codex/Codex-F4-database.md): guard_class_pin and every remaining trigger/guard/definer function schema-qualify relations or pin search_path with pg_temp last and fail closed; a test enumerates all functions. F4b (migration 0011) already fixes record_interaction_event_keys() and revokes TEMP; keep those tests",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "codex-f4cx1",
+      "updated": "2026-10-23"
     },
     {
       "id": "F5",
@@ -188,7 +188,8 @@
       "title": "CSV and XLSX import with column mapping",
       "size": 2,
       "deps": [
-        "F3"
+        "F3",
+        "C1cx1"
       ],
       "done_when": "fixtures/water-cycle imports from the eight CSVs, water-cycle.xlsx and pack.json into identical parsed packs using the column mapping",
       "placeholder": false,
