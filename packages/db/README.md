@@ -87,7 +87,7 @@ The event key ledger (`interaction_event_key`) is readable by the app role but n
 writable. Its rows are written only by `app.record_interaction_event_keys()`, the
 trigger on `interaction_event`. The function is `SECURITY DEFINER`, owned by the
 migration role, with its persistent relation references qualified as `public.*` and
-`search_path` pinned to `pg_catalog, public, pg_temp`. It refuses any row that isn't
+`search_path` pinned to `pg_catalog, pg_temp`. It refuses any row that isn't
 for a student of the organization the transaction acts for. The ledger references the
 student by `(org_id, student_id)` and keys event ids by `(org_id, id)`, so one
 organization can't write, block or probe another's keys.
@@ -95,9 +95,8 @@ organization can't write, block or probe another's keys.
 The app role holds only the table privileges each migration grants. It can execute
 only `app.current_org_id()` and `app.current_class_id()` in the `app` schema (trigger
 functions fire without EXECUTE). Every function in `app` pins `search_path` to the
-trusted `pg_catalog, public, pg_temp` order; every persistent relation reference in a
-function is schema-qualified. `public` is trusted because migration 0001 revoked
-`CREATE` on it from `PUBLIC`. Keep this rule for every new function and verify the full
+trusted `pg_catalog, pg_temp` order; every persistent relation reference in a function
+is schema-qualified. Keep this rule for every new function and verify the full
 function/trigger/definer inventory with `src/function_binding.test.ts`.
 `PUBLIC` has no `TEMP` on the database, so the app role can't create temporary tables
 either; the tests also grant TEMP in a disposable database to verify the function

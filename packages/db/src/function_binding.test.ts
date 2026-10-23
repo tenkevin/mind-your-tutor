@@ -260,7 +260,7 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
 
     expect(rows.map((row) => row.signature)).toEqual(APP_FUNCTION_INVENTORY);
     for (const fn of rows) {
-      expect(fn.config, fn.signature).toEqual(['search_path=pg_catalog, public, pg_temp']);
+      expect(fn.config, fn.signature).toEqual(['search_path=pg_catalog, pg_temp']);
     }
     expect(rows.filter((fn) => fn.trigger_function).map((fn) => fn.signature)).toEqual([
       'app.guard_class_pin()',

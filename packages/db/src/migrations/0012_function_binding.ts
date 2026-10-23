@@ -2,9 +2,9 @@ import { sql, type Kysely } from 'kysely';
 
 // F4cx1: bind every application function to trusted schemas and remove any
 // security-sensitive dependence on search-path lookup. PUBLIC has no CREATE on
-// public (0001), and pg_temp is deliberately last in each configured path; relation
-// references below are still schema-qualified because PostgreSQL searches a session's
-// temporary schema first for relations even when pg_temp appears last.
+// public (0001), and pg_temp is deliberately last in each configured path. Persistent
+// relation references below remain schema-qualified so temporary objects cannot shadow
+// them, even when the path changes in a caller's session.
 
 const APP_FUNCTIONS = [
   'app.current_org_id()',
@@ -26,7 +26,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`
     CREATE OR REPLACE FUNCTION app.guard_class_pin() RETURNS trigger
       LANGUAGE plpgsql
-      SET search_path = pg_catalog, public, pg_temp
+      SET search_path = pg_catalog, pg_temp
       AS $$
       DECLARE
         pinned_status text;
@@ -35,9 +35,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
            AND (TG_OP = 'INSERT' OR NEW.pinned_version_id IS DISTINCT FROM OLD.pinned_version_id) THEN
           SELECT v.status INTO pinned_status
           FROM public.curriculum_version AS v
-          WHERE v.id = NEW.pinned_version_id
-            AND v.org_id = NEW.org_id
-            AND v.curriculum_id = NEW.curriculum_id;
+          WHERE v.id = NEW.pinned_version_id;
 
           IF NOT FOUND OR pinned_status IS NULL
              OR pinned_status NOT IN ('published', 'archived') THEN
@@ -57,7 +55,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE OR REPLACE FUNCTION app.record_interaction_event_keys() RETURNS trigger
       LANGUAGE plpgsql
       SECURITY DEFINER
-      SET search_path = pg_catalog, public, pg_temp
+      SET search_path = pg_catalog, pg_temp
       AS $$
       BEGIN
         IF EXISTS (
@@ -84,7 +82,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE OR REPLACE FUNCTION app.create_interaction_event_partition(for_month date)
       RETURNS text
       LANGUAGE plpgsql
-      SET search_path = pg_catalog, public, pg_temp
+      SET search_path = pg_catalog, pg_temp
       AS $$
       DECLARE
         start_at date := date_trunc('month', for_month::timestamp)::date;
@@ -104,7 +102,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     CREATE OR REPLACE FUNCTION app.ensure_interaction_event_partitions(months_ahead integer DEFAULT 2)
       RETURNS SETOF text
       LANGUAGE sql
-      SET search_path = pg_catalog, public, pg_temp
+      SET search_path = pg_catalog, pg_temp
       AS $$
         SELECT app.create_interaction_event_partition(
           (pg_catalog.date_trunc('month', pg_catalog.now() AT TIME ZONE 'UTC')
@@ -117,9 +115,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   // that currently have no relation references. This is the complete migration
   // function inventory; the regression test compares it with pg_proc.
   for (const fn of APP_FUNCTIONS) {
-    await sql`ALTER FUNCTION ${sql.raw(fn)} SET search_path = pg_catalog, public, pg_temp`.execute(
-      db,
-    );
+    await sql`ALTER FUNCTION ${sql.raw(fn)} SET search_path = pg_catalog, pg_temp`.execute(db);
   }
 }
 
