@@ -74,7 +74,10 @@ const NO_CLASS = 'There is no such class.';
 
 function mayReview(caller: Caller): void {
   if (!REVIEW_ROLES.includes(caller.role)) {
-    throw new PublishRequestError(403, 'Only teachers, authors and admins can review a curriculum.');
+    throw new PublishRequestError(
+      403,
+      'Only teachers, authors and admins can review a curriculum.',
+    );
   }
 }
 
@@ -236,7 +239,10 @@ async function loadClasses(
  * classes, whether or not their progress changes. One query; row-level security
  * keeps it to the caller's organization.
  */
-export async function studentsReceiving(trx: Trx, classIds: readonly string[]): Promise<StudentsReceiving> {
+export async function studentsReceiving(
+  trx: Trx,
+  classIds: readonly string[],
+): Promise<StudentsReceiving> {
   const sorted = [...classIds].sort();
   let count = 0;
   if (sorted.length > 0) {
@@ -320,7 +326,10 @@ export async function publish(
   if (idempotencyKey !== undefined && idempotencyKey !== null) {
     const parsed = IdempotencyKeySchema.safeParse(idempotencyKey);
     if (!parsed.success) {
-      throw new PublishRequestError(400, 'The Idempotency-Key must be 1 to 200 printable characters.');
+      throw new PublishRequestError(
+        400,
+        'The Idempotency-Key must be 1 to 200 printable characters.',
+      );
     }
     key = keyHash(parsed.data);
   }

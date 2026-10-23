@@ -5,7 +5,7 @@ import type { Caller } from '@ideamap/worker';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { packA, packB, packE, reordered } from '../../../packages/domain/src/testing.js';
+import { packA, packB, packE, reordered } from '../../../packages/contracts/src/testing/publish.js';
 import {
   appScope,
   freshDatabase,
@@ -81,7 +81,11 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       ]),
     );
   const version = (id: string) =>
-    t.db.selectFrom('curriculum_version').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+    t.db
+      .selectFrom('curriculum_version')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
   const audits = () =>
     t.db.selectFrom('audit_event').selectAll().orderBy('at').orderBy('id').execute();
 
@@ -503,7 +507,11 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     // The database refuses both on its own (F4 foreign keys and guard_class_pin).
     const scope = appScope(t.db);
     const crossOrg = scope(a.orgId, (trx) =>
-      trx.updateTable('class').set({ pinned_version_id: versionA }).where('id', '=', ids.bClass!).execute(),
+      trx
+        .updateTable('class')
+        .set({ pinned_version_id: versionA })
+        .where('id', '=', ids.bClass!)
+        .execute(),
     );
     expect((await crossOrg).every((r) => r.numUpdatedRows === 0n)).toBe(true);
     await expect(

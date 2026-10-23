@@ -40,7 +40,11 @@ export function publishRoutes(app: FastifyInstance, options: PublishRoutesOption
       if (error instanceof PublishRequestError) {
         return reply
           .code(error.status)
-          .send(error.blocking ? { error: error.message, blocking: error.blocking } : { error: error.message });
+          .send(
+            error.blocking
+              ? { error: error.message, blocking: error.blocking }
+              : { error: error.message },
+          );
       }
       const status = error.statusCode && error.statusCode < 500 ? error.statusCode : 500;
       // Only our own messages reach the client; anything unexpected gets a fixed one.

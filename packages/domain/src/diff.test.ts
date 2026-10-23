@@ -1,7 +1,7 @@
 import { CurriculumDiffSchema } from '@ideamap/contracts';
 import { describe, expect, it } from 'vitest';
 import { diffPacks } from './index.js';
-import { packA, packB, reordered } from './testing.js';
+import { packA, packB, reordered } from '../../contracts/src/testing/publish.js';
 
 // C5: the draft vs published diff (docs/qa/C5.md F1–F3, P1, U1).
 
@@ -11,7 +11,9 @@ describe('diffPacks (C5)', () => {
     expect(diff).toEqual({
       first_publish: false,
       empty: false,
-      ideas_added: [{ idea_id: 'snow', title: 'Snow', unit: { unit: 2, name: 'Water in the sky' } }],
+      ideas_added: [
+        { idea_id: 'snow', title: 'Snow', unit: { unit: 2, name: 'Water in the sky' } },
+      ],
       ideas_removed: [
         { idea_id: 'glacier', title: 'Glaciers', unit: { unit: 3, name: 'Water comes back' } },
       ],

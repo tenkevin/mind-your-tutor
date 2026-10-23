@@ -1,14 +1,11 @@
 // Test helpers for C5: the QA fixtures A, B and E from docs/qa/C5.md, built from
 // fixtures/water-cycle/pack.json.
-import { readFileSync } from 'node:fs';
-import { parsePack, type Pack } from '@ideamap/contracts';
+import { parsePack } from '../parse.js';
+import type { Pack } from '../pack.js';
+import { readPackJson } from './fixtures.js';
 
 /** The sample pack as JSON, unmodified (fixture E: one data-check error). */
-export function rawSample(): Record<string, unknown> & { ideas: Record<string, unknown>[] } {
-  return JSON.parse(
-    readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url), 'utf8'),
-  ) as never;
-}
+export const rawSample = readPackJson;
 
 export function parsed(raw: unknown): Pack {
   const result = parsePack(raw);
