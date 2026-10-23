@@ -36,7 +36,9 @@ Everything else is an error: Node built-ins (`node:fs`, `node:zlib`, `node:v8`â€
 
 Still allowed: `new Date(event.at)`, `Date.parse(...)`, `Date.UTC(...)`, the `getUTC*` and `toISOString` methods, `Math.max` and the other `Math` functions, `Date` as a type and `instanceof Date`.
 
-`src/determinism.test.ts` checks each rule and its message.
+The lint also rejects local ambient declarations that shadow a prohibited global
+(for example, `declare const process`), so declarations cannot hide a use from
+these checks. `src/determinism.test.ts` checks each rule and its message.
 
 ## 2. Runtime guard (`src/runtime-guard.test.ts`)
 
@@ -47,7 +49,8 @@ While the guard is on, these throw a `NondeterminismError`:
 - `Date.now()`, `new Date()`, `Date()` and the local-time `Date` methods, however `Date` is reached (`new Date(0).constructor` and `Function('return Date')()` give the guarded one)
 - `Math.random()`
 - the `performance`, `Intl`, `crypto`, `fetch`, `navigator`, `Temporal`, `WeakRef`, `MessageChannel` and similar globals (any use)
-- `process.hrtime` and the other `process` clocks
+- any access to the global `process` object, including environment variables
+  and built-in module helpers; `process.hrtime` and the other process clocks
 - `node:crypto`'s random functions
 - timers, through the globals and through `node:timers`, plus `AbortSignal.timeout` and `Atomics.wait`
 - locale-dependent methods (`localeCompare`, `toLocaleString`â€¦)
@@ -56,4 +59,4 @@ With the guard on, the test imports the tracker (so module-level code is covered
 
 **When you add an export,** add it to `SAMPLES` in `src/runtime-guard.test.ts`, with argument lists built from `SAMPLE_EVENTS`. Typecheck fails until you do. Until then the guard calls a new function with no arguments and with `SAMPLE_EVENTS`.
 
-The test runner (vitest) times its own module loading while the guard is on, so a call made directly from vitest or vite code goes through to the real API. Calls from anywhere else get the error.
+The test runner (vitest) times its own module loading while the guard is on, so a call made directly from vitest or vite code goes through to the real API. Calls from anywhere else get the error. This guard covers the tracker code exercised by these tests; it is not an exhaustive sandbox for arbitrary imported dependencies.
