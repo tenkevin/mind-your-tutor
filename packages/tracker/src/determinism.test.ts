@@ -37,7 +37,7 @@ describe('tracker determinism lint rules', () => {
     // Aliases
     ["Date['now']()", 'no-restricted-properties'],
     ['new globalThis.Date()', 'no-restricted-globals'],
-    ['Reflect.construct(Date, [])', 'no-restricted-syntax'],
+    ['Reflect.construct(Date, [])', 'no-restricted-globals'],
     ['globalThis.performance.now()', 'no-restricted-globals'],
     ['window.fetch', 'no-restricted-globals'],
     ['process.hrtime()', 'no-restricted-globals'],
@@ -77,6 +77,101 @@ describe('tracker determinism lint rules', () => {
   });
 
   it.each([
+    "import { clock } from './clock.test.js';",
+    "export { clock } from './clock.test.js';",
+    "export * from './rules/x.test';",
+    "import '../fixtures.test.ts';",
+  ])('rejects importing a test file: %s', async (code) => {
+    const messages = await lint(`${code}\n`);
+    expectBanned(messages, 'no-restricted-imports');
+    expect(messages[0]?.message).toContain('*.test.* file');
+  });
+
+  // Only relative paths, @ideamap/contracts and @ideamap/domain (F1b QA finding 4).
+  it.each([
+    'node:readline',
+    'node:stream',
+    'node:sqlite',
+    'node:inspector',
+    'node:zlib',
+    'node:async_hooks',
+    'node:diagnostics_channel',
+    'node:v8',
+    'node:test',
+    'node:url',
+    'path',
+    'undici',
+    'node-fetch',
+    'axios',
+    'zod',
+    '@ideamap/db',
+    '@ideamap/ai',
+    '@ideamap/contracts/src/x.js',
+    '@ideamap/domainx',
+    'x@ideamap/domain',
+    '/abs/path.js',
+  ])('rejects importing %s (not on the allow list)', async (mod) => {
+    expectBanned(await lint(`import '${mod}';\n`), 'no-restricted-imports');
+    expectBanned(await lint(`export * from '${mod}';\n`), 'no-restricted-imports');
+  });
+
+  it.each(['@ideamap/contracts', '@ideamap/domain', './x.js', '../x.js', './rules/deep/x.js', '.'])(
+    'allows importing %s',
+    async (mod) => {
+      expect(await lint(`import '${mod}';\n`)).toEqual([]);
+    },
+  );
+
+  // F1b QA findings 2, 3 and 4.
+  it.each([
+    ['new Date(0).constructor.now()', 'no-restricted-properties'],
+    ['new Date.prototype.constructor()', 'no-restricted-properties'],
+    ['Object.getPrototypeOf(new Date(0)).constructor.now()', 'no-restricted-properties'],
+    ["(function () {}).constructor('return Date.now()')()", 'no-restricted-properties'],
+    ["(() => {}).constructor('return Math.random()')()", 'no-restricted-properties'],
+    ["[].constructor.constructor('return Date.now()')()", 'no-restricted-properties'],
+    ["({})['constructor']", 'no-restricted-properties'],
+    ['new Date(...[])', 'no-restricted-syntax'],
+    ["Date['n' + 'ow']()", 'no-restricted-syntax'],
+    ["Math['ran' + 'dom']()", 'no-restricted-syntax'],
+    ['new Intl.DateTimeFormat().format()', 'no-restricted-globals'],
+    ['Intl.DateTimeFormat()', 'no-restricted-globals'],
+    ['AbortSignal.timeout(1)', 'no-restricted-globals'],
+    ['new MessageChannel()', 'no-restricted-globals'],
+    ["new BroadcastChannel('x')", 'no-restricted-globals'],
+    ['Atomics.waitAsync', 'no-restricted-globals'],
+    ['new WeakRef({})', 'no-restricted-globals'],
+    ['new FinalizationRegistry(() => {})', 'no-restricted-globals'],
+    ['navigator.hardwareConcurrency', 'no-restricted-globals'],
+    ['Temporal.Now.instant()', 'no-restricted-globals'],
+    ["Reflect.get(Date, 'now')", 'no-restricted-globals'],
+    ["'a'.localeCompare('b')", 'no-restricted-properties'],
+    ['(1234.5).toLocaleString()', 'no-restricted-properties'],
+    ['new Date(0).getHours()', 'no-restricted-properties'],
+    ['new Date(0).getTimezoneOffset()', 'no-restricted-properties'],
+  ])('rejects %s', async (expr, rule) => {
+    expectBanned(await lint(`export const x = ${expr};\n`), rule);
+  });
+
+  it('rejects computed access through a variable', async () => {
+    expectBanned(
+      await lint("const k = 'now';\nexport const x = Date[k]();\n"),
+      'no-restricted-syntax',
+    );
+  });
+
+  // Messages name the call, not "aliasing" (F1b QA finding 5).
+  it.each([
+    ['Date()', 'Date() (it returns the current time)'],
+    ['Reflect.construct(Date, [])', 'Reflect.construct(Date, [])'],
+  ])('names %s in its message', async (expr, text) => {
+    const messages = await lint(`export const x = ${expr};\n`);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.message).toContain(text);
+    expect(messages[0]?.message).not.toContain('Aliasing');
+  });
+
+  it.each([
     'packages/tracker/src/q.mts',
     'packages/tracker/src/q.cts',
     'packages/tracker/src/q.js',
@@ -96,6 +191,9 @@ describe('tracker determinism lint rules', () => {
     ["Date.parse('2026-01-01T00:00:00Z')"],
     ['Date.UTC(2026, 0, 1)'],
     ['Math.max(1, 2)'],
+    ["Math['max'](1, 2)"],
+    ['new Date(0).getUTCHours()'],
+    ['new Date(0).toISOString()'],
     ['({}) instanceof Date'],
     ['{ Date: 1, Math: 2 }'],
   ])('allows %s', async (expr) => {
