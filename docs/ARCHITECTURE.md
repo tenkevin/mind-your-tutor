@@ -250,6 +250,7 @@ The rules that keep the tracker trustworthy:
 
 - `POST /events` takes batches. The server checks each event against its schema, sets `seq`, drops ids it has already recorded, and rejects events from a version the class isn't pinned to (with a grace period after a publish).
 - Events go into a Postgres table (`interaction_event`) split into monthly partitions. Generated map views and AI outputs are stored in their own tables, referenced by id. The client keeps an offline queue and resends it.
+- Replay and other hot-path reads should bound `recorded_at` (for example, from the time of the student's latest progress snapshot), so Postgres can skip old monthly partitions instead of probing every one.
 - Exporting to the education data standards xAPI or Caliper is possible later. It will be designed in, not built now.
 - Teacher views (M5) read the tracker: a timeline for each student, and a class heatmap of where students stall.
 
@@ -321,3 +322,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 5. Hosting region and provider (affects the data processing agreement).
 6. **Embedding model and width (F4):** `chunk.embedding` is `vector(1024)` (Voyage-sized) so it can carry an HNSW index, which needs a fixed width. Changing models means a migration that re-creates the column and re-indexes the library. Which embedding model do we use?
 7. **Deleting a student on request vs append-only events (F4):** FERPA's "delete on request" (§10) conflicts with an append-only `interaction_event` that refuses `DELETE` for every role, and with the foreign keys from events to `app_user`. Typed text already lives apart and can be deleted (§8.2). Proposal for M1 or F6: an owner-only procedure that removes one student's events, generated views and AI outputs (the only path that bypasses the append-only trigger), recorded as an `AuditEvent`.
+8. **Publish preview affected-student count (C5):** §7 requires a count but does not define whether it includes all enrolled students in selected classes or only students whose recorded progress changes. Coordinator recommends all enrolled students in the selected classes for this content-change preview; user clarification is pending. Do not silently implement tracker-dependent impact semantics or claim C5 until its criteria settle.

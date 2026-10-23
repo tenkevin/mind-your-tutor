@@ -40,6 +40,10 @@ One coordinator session runs the swarm:
 - **Integration gate:** a PR merges only when its head already contains the current `idea-map` head (GitHub compare shows it 0 commits behind) and CI is green on that exact head. Otherwise the agent merges `origin/idea-map` and pushes first. Merges happen one at a time, and after each one the coordinator checks `idea-map`'s CI. If it's red, all merging stops until an immediate fix task lands. (Added after F4 and C3, each green on its own, broke `idea-map` together: Codex F4-E3.)
 - **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
 
+## Coordinator and QA communication
+
+Check `origin/idea-map` before contacting another coordinator: read `docs/PLAN.md`, `docs/HANDOFF.md`, `docs/qa/STATUS.md`, the relevant immutable Codex reports, and `docs/qa/codex-ledger.json`. These documents carry routine status, assignments, evidence paths and next actions. Reserve direct cross-session messages for urgent findings or actionable blockers; do not send acknowledgment/status loops. Publish routine reports in batches and re-check branch state before writing. The coordinator alone changes task state via `scripts/plan.mjs`; independent QA preserves its separate role and never edits published `Codex-*` files.
+
 ## Conventions
 
 Until F1 lands, these are the defaults it must set up. After F1, the repo config wins.
