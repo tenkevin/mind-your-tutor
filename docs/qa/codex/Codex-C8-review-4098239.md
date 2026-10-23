@@ -1,0 +1,111 @@
+Reviews: C8
+
+# Independent C8 QA: PR #11, 4098239
+
+Reviewed HEAD: `4098239e399ce3a62da04542fdf29ebd3f58acbf`. Synchronized base: `fbb453d66c2cc35e69e58656b5e3e34aaa2e11b2`. Review date: 2026-10-22 PDT. Tester: Codex, independent of implementation. Environment: Linux, Node 22.22.0, pnpm 10.28.0; isolated detached worktree `/home/kevin/codex-qa-2026-10-22/quality-4098239`.
+
+**C8 verdict: PASS for this exact HEAD and pinned base, with performance timing sensitivity disclosed.** The prior C2-E4 shared-edge advice counterexample and C3-E2 Children/play grammar counterexample are resolved. The separate unchanged-tree database-enabled baseline retry passes after its first run missed the derive timing threshold; both results are retained below. This scoped C8 PASS does not close separate existing **C2-E5 / C2cx5** and does not authorize a merge. Live base has since advanced, so synchronization and refreshed exact-head CI remain coordinator gates.
+
+The reviewer read current-head AGENTS, PLAN, HANDOFF, QA README/C8 criteria, prior published Codex report and routing ledger, relevant architecture/spec and fixture documentation. No implementation edits, task/status changes, commits, pushes, PR comments, merges, database connections or database security probes. Published review files were not edited. Artifacts are outside the repository.
+
+## Gate and validation
+
+Source inspection and harness preparation occurred while CI was running; full local QA execution began only after both exact-head checks completed successfully:
+
+- [build success](https://github.com/tenkevin/mind-your-tutor/actions/runs/39882145770/job/120181752612)
+- [check success](https://github.com/tenkevin/mind-your-tutor/actions/runs/39882145773/job/120181753388)
+
+`git merge-base --is-ancestor fbb453d66c2cc35e69e58656b5e3e34aaa2e11b2 HEAD` exited 0. The requested base is already included, so no synthetic merge was needed. `git diff 80203ba 4098239 -- packages/domain packages/contracts/src/data-checks.ts` is empty, confirming the reported merge-only carry-forward for those paths. This audit nevertheless executed the changed behavior anew against the full 4098239 checkout; it does not infer PASS from that equality.
+
+From the isolated worktree, with `/home/kevin/codex-qa-2026-10-22/toolchain/node_modules/.bin` prepended to PATH:
+
+```text
+pnpm install --frozen-lockfile  PASS
+pnpm lint                     PASS
+pnpm format:check             PASS
+pnpm typecheck                PASS
+pnpm test                     PASS (domain 91, contracts 208, tracker 56, UI 73)
+pnpm build                    PASS
+node scripts/plan.mjs check    plan: ok
+node /home/kevin/codex-qa-2026-10-22/reports/c8-quality-probe-4098239.mjs  exit 0
+```
+
+The root local test command completed with database suite **3 passed / 158 skipped** because DATABASE_URL was intentionally unset. There was no local full database validation in this pure-algorithm review; the platform audit handles baseline database verification, and the exact-head CI build includes its database service/test/migration steps. No local database coverage is implied by the root command's exit code.
+
+Supplementary evidence, read in full by this reviewer:
+
+- `/home/kevin/codex-qa-2026-10-22/evidence/c8-baseline-4098239.md`: separate fresh worktree, exact integrated tree **`0c39698758e6268aedb4213f8c9b2801b6db833a`**. First database-enabled root suite failed the existing derive performance assertion at **1014.21 ms** against 1000 ms; database completion was not established in that aborted attempt. A single repeat of the same root command on the unchanged tree completed **exit 0 in 55.77 s**, domain **91/91**, database **161/161**, existing event-ingestion measurement **14,295 rows/s**. The successful test does not print its exact derive duration. Faster independent standalone timings plus fail/pass variation suggest timing sensitivity, but no particular cause is proven. The first failure has not been discarded.
+- `/home/kevin/codex-qa-2026-10-22/evidence/c8-parent-probe-4098239.txt`: coordinator independently reran this exact retained harness, exit 0, 600 completion checks with zero ambiguity and 90 semantic runs; checks **10.43 ms**, derive **339.40 ms**, deep chain **72.19 ms**.
+- `/home/kevin/codex-qa-2026-10-22/evidence/c8-cli-review-4098239.md`: actual supplemental read-only Codex CLI source review found no actionable C8 regressions. It did not run behavioral/baseline tests and is not substituted for them.
+
+Retained independent harness: `/home/kevin/codex-qa-2026-10-22/reports/c8-quality-probe-4098239.mjs`. It adapts the earlier external harness to the intentionally quoted relation representation. Its input-derived oracle still checks every alternative completion against **all original pack links, including hidden links**, with case/whitespace normalization; the semantic acceptance rule was not removed. It also independently checks map-scoped True/False statements against original/kept edges and validates true-link explanations. It imports built public exports, not production test helpers or the implementation's statement-formatting helper.
+
+## Criteria results
+
+| Criterion | Weight | Result | Completed evidence |
+|---|---|---|---|
+| C8-F1 | must | PASS | Three ideas, assessment IDs i0/i1/i0: i2 reported missing. Valid-unit mismatch and unknown unit 9 each warn/skip; missing coverage remains in the correct units. Existing regressions pass. |
+| C8-F2 | must | PASS | Both original multicycle shapes and shared-edge counterexample name all affected members and use neutral “until no prerequisite loops remain” advice. Removing only c→a clears the shared-edge graph, without contradicting advice. |
+| C8-F3 | must | PASS | Own 2000-idea pack with two unknown roots/two loops: four grouped blocked warnings, affected sizes 333/333/664/664, eight total issues. 10000 broken-root chain: two total issues, blocked items preserves 9999 IDs. |
+| C8-F4 | must | PASS | Null, empty and whitespace idea objectives produce a grouped warning with Ideas/objective target. Message now says the tutor will write objectives from links and explains how to set your own, matching current optional idea-objective spec. |
+| C8-F5 | must | PASS | 120 fixture/seed combinations across incoming/outgoing, duplicate/case-equivalent titles, with/without hidden conflicting links: 600 complete-link questions; **0** alternative correct pack statements; **0** case-equivalent option labels; 60 hidden-link instances. |
+| C8-F6 | must | PASS | Valid Children→play→Games fixture, seed 5, now quotes “play” in a map-link question instead of constructing “The Sun play Games.” Category template is agreement-neutral. Also tested singular-source “powers” with plural replacements over 30 seeds. |
+| C8-F7 | must | PASS | Seeds 1, 2**32+1, 2**31, -1, -(2**32)-1, MAX_SAFE_INTEGER and MIN_SAFE_INTEGER store `seed | 0` and replay to identical full outputs from that stored seed. |
+| C8-F8 | should | PASS | True/False explicitly asks whether the link is on the map. Remaining plausible world claims no longer ask a world-truth question. Existing adjacency/distance regressions pass; future teacher flagging UI is not claimed tested. |
+| C8-F9 | should | PASS | Empty Categories warns; a doubly unknown link supplies fix.columns ['from_id','to_id']. |
+| C8-F10 | must | PASS on completed baseline repeat, caveat retained | This agent's local commands exit 0; exact-head CI build/check green; separate unchanged-tree full baseline repeat passes domain 91 and DB 161. First root attempt's derive 1014.21-ms threshold failure remains recorded. Sample remains precisely 1 prereq error ground/aquifer, 1 codes warning rain, 1 media info with 11 affected IDs. |
+| C8-S1 | must | PASS | Production checks imports remain type-only and derivation imports pure siblings/types. Independent 10000-idea broken-root chain completes without stack overflow in **71.90 ms**. Existing deep/fanout tests pass. No database probes. |
+| C8-P1 | must | PASS | Own 2000 ideas/6000 links/2000 assessments with 20 planted unknown units: all 20 found, checks **11.18 ms** (<200); full derive **464.09 ms** (<1000), schema validation afterward. |
+| C8-U1 | must | PASS | Summary **8 to review** for four roots; **2 to review** for 10000 broken-root chain; complete affected IDs retained. |
+| C8-U2 | must | PASS | Read all seed-1 questions for sun/glacier/ocean/rain/rivers, 46 questions. Relations are explicitly quoted edge labels, categories read naturally, no generated agreement errors/doubled spaces/stray punctuation. “…” occurs only as a completion blank. |
+
+Independent oracle additionally passed **90 fixture/seed runs** (sample, Children/play, singular-source powers; 30 seeds each), checking exact answer membership, visibly distinct options, no duplicated question text, True/False map scope and truth, known true-link explanations, completion alternatives and JSON round trips. Sample derivation remains **27 kept / 4 hidden, centre evap, 18 banks, minimum 8 questions**. The existing domain suite retains ranking/layout/random-pack and fixture-reference tests.
+
+## Errors
+
+**No in-scope C8 must-fix correctness errors found at 4098239.** Previously failing C8-F2/F6/U2 now pass on the retained counterexamples and current sample. The first baseline performance failure and successful unchanged-tree repeat are explicitly retained under validation/F10; the available independent measurements and exact-head CI do not establish a stable performance regression.
+
+Canonical **C2-E5** still reproduces: an otherwise valid draft with issues=[] parses; changing only issues to `checkPack(parsedSample)` yields success:false with **21 validation errors**, because CurriculumVersionSchema still expects PackIssue rather than DataCheckIssue. The ledger and PLAN already route this to **C2cx5**, dependent on C8. It is deliberately not duplicated or used to block this scoped C8 verdict. Its existing correction/regression requirements remain unchanged.
+
+## Suggestions
+
+- Preserve both semantic oracles when changing presentation: no alternative visible answer should complete **any** original pack link, and an answer marked False must be absent from all original links. The quoted map-edge representation resolves grammar without needing linguistic guesses, but formatting-only assertions would not protect grading correctness.
+- The graph-distance filter remains a heuristic about plausibility. Keep the explicit **“True or false: this link is on the map.”** prompt in consumers, exports and future UI; dropping its scope could revive canonical C3-S1. This is a regression guard, not an unresolved C8 error.
+- Existing D12/C9 work owns optional unit objectives and assessment questions. The current C8 idea-objective fallback wording is corrected; this PASS should not be taken as validation of that separate importer/contract workflow or teacher flagging UI.
+- Timing checks can be sensitive to concurrent root-suite workloads. Preserve successful and failed measurements and consider isolating/benchmarking the performance test in a future tooling task. Do not silently raise the threshold or rerun indefinitely until green; this review records one baseline repeat and the independent standalone observations.
+
+## Prior canonical findings
+
+| Original ID | Current status | Evidence / ownership |
+|---|---|---|
+| C2-E1 | Resolved | Distinct assessed-idea counting preserves missing idea report. |
+| C2-E2 | Resolved | Mismatch and unknown assessment units warned/skipped. |
+| C2-E3 | Resolved within C8 | Missing idea objectives warn, now with correct optional tutor fallback wording. |
+| C2-E4 | **Resolved** | Neutral multicycle advice; original two shapes and shared-edge graph independently pass. |
+| C2-E5 | Remains, separate scope | Existing C2cx5; 21-error integration repro retained, no duplicate routing. |
+| C3-E1 | Resolved | 600 completion questions, 0 semantic ambiguities/case-equivalent options, including hidden conflicts. |
+| C3-E2 | **Resolved** | Children/play and sample now use quoted relation labels; no subject-number guess or synthesized sentence agreement. |
+| C2-S1/S2/S3 | Resolved | Grouped warning summaries, empty Categories warning, multiple fix columns. |
+| C3-S1 | Resolved in question scope | Explicit map-link truth prompt; no assertion that absent edges are false facts about the world. |
+| C3-S2 | Resolved | Stored effective seed and full-output replay match at 32-bit boundaries. |
+
+For example, the former seed-5 grammar failure now produces:
+
+```json
+{
+  "prompt": "True or false: this link is on the map.",
+  "text": "The Sun → “play” → Games",
+  "answer": "False",
+  "explanation": "The map says: Children → “play” → Games."
+}
+```
+
+The former shared-edge advice is now:
+
+```text
+Idea 0 requires Idea 1 and Idea 2; Idea 1 requires Idea 2; Idea 2 requires Idea 0.
+This group can contain several loops: remove requirements in Ideas → requires
+until no prerequisite loops remain.
+```
+
+These are verified corrections to the existing findings, not newly imposed requirements. Performance numbers are local observations, not CI benchmarks. No browser visual/accessibility audit was performed. Final clean-worktree check and expected-head/base checks apply to this report's pinned checkout. During review the coordinator reported live `idea-map` advancing to **027cee1**, with documentation-only changes since pinned fbb453d. This review did not test an unpinned future merge: synchronize and obtain green CI on the exact refreshed HEAD before any merge, carrying forward task QA only after task-path equality is checked.

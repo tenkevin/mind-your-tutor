@@ -52,6 +52,7 @@ run; add a new one.
 | 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot` |
 | 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
 | 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                   |
+| 0011 isolation     | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                     |
 | 0012 auth          | `sso_tenant` (provider tenant → org), `auth_session`, `app.sso_tenant_org()`, `class.roster_source_id`; SSO provider ids become slugs (F5)    |
 
 ## Roles and row-level security
@@ -75,17 +76,39 @@ const classes = await withOrg(db, orgId, (trx) => trx.selectFrom('class').select
 
 With no organization set, the app role sees no rows.
 
-Class uploads (`class_library_doc`, `class_chunk`; D11) are also scoped to one class by
-a restrictive policy: they're visible only inside `withClass(db, orgId, classId, fn)`,
-for that class, so one class never sees another's uploads, even in the same
-organization. Children reference parents by
-`(org_id, id)`, so a row can't point at another organization's data either.
+A class's library settings and uploads (`class_library_setting`, `class_library_doc`,
+`class_chunk`; D11) are also scoped to one class by a restrictive `class_scope` policy:
+they're visible and writable only inside `withClass(db, orgId, classId, fn)`, for that
+class, so one class never sees or changes another's settings or uploads, even in the
+same organization. Children reference parents by `(org_id, id)`, so a row can't point
+at another organization's data either.
+
+The event key ledger (`interaction_event_key`) is readable by the app role but not
+writable. Its rows are written only by `app.record_interaction_event_keys()`, the
+trigger on `interaction_event`. The function is `SECURITY DEFINER`, owned by the
+migration role, with `search_path` pinned to `pg_catalog, pg_temp`. It refuses any row
+that isn't for a student of the organization the transaction acts for. The ledger
+references the student by `(org_id, student_id)` and keys event ids by `(org_id, id)`,
+so one organization can't write, block or probe another's keys.
+
+The app role holds only the table privileges each migration grants. It can execute
+only `app.current_org_id()` and `app.current_class_id()` in the `app` schema (trigger
+functions fire without EXECUTE). `PUBLIC` has no `TEMP` on the database, so it can't
+create temporary tables either.
+
+The isolation tests are `src/security.test.ts` (organization and class scope, the app
+role) and `src/isolation.test.ts` (the ledger, class-scoped settings and privileges):
+
+```
+DATABASE_URL=postgres://postgres:postgres@localhost:5433/postgres \
+  pnpm --filter @ideamap/db exec vitest run src/security.test.ts src/isolation.test.ts
+```
 
 ## Append-only and immutable data
 
 - `interaction_event`, `interaction_event_key`, `generated_map_view`, `ai_output` and
   `audit_event` refuse `UPDATE` and `DELETE` for every role, by trigger, and the app role
-  is granted only `SELECT` and `INSERT` on them.
+  is granted only `SELECT` and `INSERT` on them (only `SELECT` on `interaction_event_key`).
 - A published or archived `curriculum_version` can't have its body changed or be
   deleted. Status moves draft → published → archived, and archived → published for a
   rollback. A class can't be pinned to a draft.
@@ -100,7 +123,9 @@ detaching or dropping their partition.
 
 Postgres can't enforce a unique index across partitions unless it includes the
 partition key, so the event `id` and `(student_id, seq)` are kept unique by
-`interaction_event_key`, filled by a statement-level trigger on every insert.
+`interaction_event_key`, filled by a statement-level trigger on every insert (the id is
+unique per organization). Replay queries should bound `recorded_at`, for example from
+the latest progress snapshot, so old partitions are skipped (ARCHITECTURE.md §8.5).
 
 ## Typed access
 

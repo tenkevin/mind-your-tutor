@@ -625,6 +625,7 @@ export const TENANT_TABLES = Object.keys(COLUMNS) as TableName[];
 
 /** Tables also scoped to one class (D11): visible only inside `withClass`. */
 export const CLASS_SCOPED_TABLES = [
+  'class_library_setting',
   'class_library_doc',
   'class_chunk',
 ] as const satisfies readonly TableName[];

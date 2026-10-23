@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseCsv, parseOneRoster, RosterError } from './index.js';
+import { parseOneRosterCsv, parseOneRoster, RosterError } from './index.js';
 
 const fixture = (name: string) =>
   readFileSync(new URL(`../../../fixtures/oneroster/${name}`, import.meta.url), 'utf8');
@@ -12,21 +12,21 @@ const sample = () => ({
 
 describe('parseCsv', () => {
   it('reads quotes, doubled quotes, CRLF and a BOM', () => {
-    expect(parseCsv('﻿a,b\r\n"x, y","say ""hi"""\n')).toEqual([
+    expect(parseOneRosterCsv('﻿a,b\r\n"x, y","say ""hi"""\n')).toEqual([
       ['a', 'b'],
       ['x, y', 'say "hi"'],
     ]);
   });
 
   it('keeps empty fields and skips blank lines', () => {
-    expect(parseCsv('a,,c\n\n,b,\n')).toEqual([
+    expect(parseOneRosterCsv('a,,c\n\n,b,\n')).toEqual([
       ['a', '', 'c'],
       ['', 'b', ''],
     ]);
   });
 
   it('refuses an unclosed quote', () => {
-    expect(() => parseCsv('a,"b\n')).toThrow(RosterError);
+    expect(() => parseOneRosterCsv('a,"b\n')).toThrow(RosterError);
   });
 });
 
