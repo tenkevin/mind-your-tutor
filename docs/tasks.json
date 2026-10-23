@@ -153,7 +153,7 @@
       ],
       "done_when": "Codex F4-E2 and the rest of F4-E1 (docs/qa/codex/Codex-F4-database.md): guard_class_pin and every remaining trigger/guard/definer function schema-qualify relations or pin search_path with pg_temp last and fail closed; a test enumerates all functions. F4b (migration 0011) already fixes record_interaction_event_keys() and revokes TEMP; keep those tests",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-f4cx1",
       "updated": "2026-10-23"
     },
@@ -249,7 +249,7 @@
       ],
       "done_when": "Uploading a file runs a pg-boss job that stores a draft CurriculumVersion with derived data and issues",
       "placeholder": false,
-      "status": "doing",
+      "status": "done",
       "owner": "agent-c4",
       "updated": "2026-10-23"
     },
@@ -276,7 +276,7 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c6",
       "updated": "2026-10-23"
     },

@@ -264,6 +264,74 @@
       ],
       "errors": [],
       "suggestions": "UNVERIFIED again: dynamic shadow-table probes excluded by the reviewer's own restriction; no defect found. Suggestions (0012 comment, inventory scope, forward-only runbook) already in CXB from 3e97696. Merge blocked pending user decision on independent runtime evidence."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C5-affected-students-decision.md",
+      "commit": "d28194a",
+      "date": "2026-10-23",
+      "reviews": [
+        "C5"
+      ],
+      "errors": [],
+      "suggestions": "User decision recorded as D14 (ARCHITECTURE \u00a71, \u00a77; \u00a712 Q8 settled). Label and QA cases folded into docs/qa/C5.md (C5-F6, C5-U3)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-E1-historical-exports-0412b2c.md",
+      "commit": "d28194a",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [
+        "F6-E1 -> agent-f6 on PR #20 (F6 still open; no new task)"
+      ],
+      "suggestions": "Durable export provenance folded into the F6-E1 fix."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-review-0412b2c.md",
+      "commit": "863e573",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [
+        "F6-E1, F6-E2 (flattened config.token bypasses audit redaction), F6-E3 (student export drops AI token counts/redacted_at) -> agent-f6 on PR #20; saved as reports/F6-run1.md"
+      ],
+      "suggestions": "Concurrent export/delete regression folded into F6-E1 fix. Retention daemon bootstrap, combined migration ordering of F5/F4cx1/F6 0012s, backup expiry procedures -> CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C4-review-7623133.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C4"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS; merged 6c14ece. C4-P3 should FAIL (parallel imports 5.07x vs 2x; one batch-size-1 worker; the test widens the budget) -> CXB. API bootstrap must wire import deps and the authenticator -> T2 criteria via CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C6-review-8cc23ab.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C6"
+      ],
+      "errors": [
+        "C6-E1 blank template fails import, C6-E2 XLSX truncation/char stripping, C6-E3 comma list ambiguity -> agent-c6 on PR #21 (open; no new task); saved as reports/C6-run1.md"
+      ],
+      "suggestions": "C6-F7 (real Excel/Sheets) can't be executed by any agent: coordinator reconciles it in docs/qa/C6.md (OOXML validation + LibreOffice by QA; Excel/Google Sheets open-check by the user before L1). CSV apostrophe safety-prefix round trip -> CXB. Export API auth scope -> T2/T-task criteria via CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-0fef315.md",
+      "commit": "dd04cf5",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [
+        "F5-E1 still open (in-flight replay erases edits queued during the await) -> agent-f5 on PR #15; saved as reports/F5-run2.md"
+      ],
+      "suggestions": "S1 replay serialization / disable Try again while pending folded into the F5-E1 fix. S2 per-process OIDC state already in CXB."
     }
   ]
 }
