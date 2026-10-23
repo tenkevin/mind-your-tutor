@@ -43,7 +43,7 @@ export function parseCsv(
   maxRows: number,
   maxColumns: number,
   label: string,
-  limits: { maxCellChars?: number; maxHeaderChars?: number } = {},
+  limits: { maxCellChars?: number; maxHeaderChars?: number; headerlessFirstRow?: boolean } = {},
 ): CsvGrid {
   const delimiter = delimiterOf(text);
   const grid: CsvGrid = { rows: [], rowNumbers: [], unclosedQuoteAt: null };
@@ -59,18 +59,25 @@ export function parseCsv(
   let fieldEscaped = false;
   let fieldClosedAt: number | null = null;
   let fieldLength = 0;
+  let firstLogicalRow = true;
+  let logicalRowHasContent = false;
 
-  const limitFor = (recordNumber: number) => (recordNumber === 1 ? maxHeaderChars : maxCellChars);
-  const refuseLongField = (recordNumber: number) => {
-    const header = recordNumber === 1;
-    const limit = limitFor(recordNumber);
+  const isHeader = () =>
+    firstLogicalRow && logicalRowHasContent && limits.headerlessFirstRow !== true;
+  const limitFor = () => (isHeader() ? maxHeaderChars : maxCellChars);
+  const markRecordContent = (ch: string) => {
+    if (firstLogicalRow && !logicalRowHasContent && !/\s/.test(ch)) logicalRowHasContent = true;
+  };
+  const refuseLongField = () => {
+    const header = isHeader();
+    const limit = limitFor();
     throw new FileRefused(
       `${label} has a ${header ? 'header' : 'cell'} longer than ${limit.toLocaleString('en')} characters; the most a CSV ${header ? 'header' : 'cell'} can have is ${limit.toLocaleString('en')}.`,
     );
   };
   const addFieldCharacter = () => {
     fieldLength++;
-    if (fieldLength > limitFor(record)) refuseLongField(record);
+    if (fieldLength > limitFor()) refuseLongField();
   };
   const finishField = (end: number) => {
     if (!fieldQuoted) return text.slice(fieldStart, end);
@@ -99,6 +106,8 @@ export function parseCsv(
     }
     grid.rows.push(row);
     grid.rowNumbers.push(record);
+    if (logicalRowHasContent) firstLogicalRow = false;
+    logicalRowHasContent = false;
     row = [];
     record++;
     resetField(nextStart);
@@ -115,13 +124,17 @@ export function parseCsv(
       if (ch === '"') {
         if (text[i + 1] === '"') {
           fieldEscaped = true;
+          logicalRowHasContent = true;
           addFieldCharacter();
           i++;
         } else {
           quoted = false;
           fieldClosedAt = i;
         }
-      } else addFieldCharacter();
+      } else {
+        markRecordContent(ch);
+        addFieldCharacter();
+      }
     } else if (ch === '"' && i === fieldStart) {
       quoted = true;
       quoteOpenedAt = record;
@@ -139,7 +152,10 @@ export function parseCsv(
       const end = i;
       if (ch === '\r' && text[i + 1] === '\n') i++;
       addRow(end, i + 1);
-    } else addFieldCharacter();
+    } else {
+      markRecordContent(ch);
+      addFieldCharacter();
+    }
   }
   if (quoted) grid.unclosedQuoteAt = quoteOpenedAt;
   if (fieldStart < text.length || row.length > 0 || quoted) addRow(text.length, text.length);
@@ -160,7 +176,21 @@ export function csvSheet(
   const grid = parseCsv(text, limits.maxRowsPerTab, limits.maxColumns, source, {
     maxCellChars: limits.maxCsvCellChars,
     maxHeaderChars: limits.maxCsvHeaderChars,
+    ...(tab === 'Course' ? { headerlessFirstRow: true } : {}),
   });
+  if (tab === 'Course') {
+    const header = grid.rows.find((row) => row.some((cell) => cell.trim() !== ''));
+    if (
+      header?.some((cell) => cell.trim().toLowerCase() === 'key') &&
+      header.some((cell) => cell.trim().toLowerCase() === 'value')
+    ) {
+      const long = header.find((cell) => cell.length > limits.maxCsvHeaderChars);
+      if (long !== undefined)
+        throw new FileRefused(
+          `${source} has a header longer than ${limits.maxCsvHeaderChars.toLocaleString('en')} characters; the most a CSV header can have is ${limits.maxCsvHeaderChars.toLocaleString('en')}.`,
+        );
+    }
+  }
   if (grid.unclosedQuoteAt !== null) {
     issues.push(
       warning({

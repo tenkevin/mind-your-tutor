@@ -137,6 +137,57 @@ describe('the water-cycle sample (C2-F2)', () => {
   });
 });
 
+describe('optional unit objectives and assessment questions (C9)', () => {
+  it('flags each empty value as draftable and leaves publishing available', () => {
+    const p = sample();
+    p.units[0]!.objective = null;
+    p.assessment[0]!.question = null;
+    p.assessment[1]!.question = null;
+    const issues = checkPack(p);
+    const draftable = issues.filter(
+      (issue) => issue.kind === 'unit_objective' || issue.kind === 'assessment_question',
+    );
+    expect(draftable).toHaveLength(3);
+    expect(draftable).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'unit_objective',
+          level: 'warning',
+          draftable: true,
+          items: ['1'],
+          fix: { tab: 'Units', column: 'objective' },
+        }),
+        expect.objectContaining({
+          kind: 'assessment_question',
+          level: 'warning',
+          draftable: true,
+          items: [p.assessment[0]!.idea_id],
+          fix: { tab: 'Assessment', column: 'question' },
+        }),
+      ]),
+    );
+    expect(draftable.find((issue) => issue.kind === 'unit_objective')!.message).toMatch(
+      /Unit 1.*objective.*Atlas can draft one/,
+    );
+    expect(draftable.find((issue) => issue.kind === 'assessment_question')!.message).toMatch(
+      /Assessment question.*Atlas can draft one/,
+    );
+    expect(canPublish(issues)).toBe(canPublish(checkPack(sample())));
+  });
+
+  it('keeps structural warnings for empty questions with an unknown idea or mismatched unit', () => {
+    const p = sample();
+    p.assessment[0]!.question = null;
+    p.assessment[0]!.idea_id = 'missing-idea';
+    p.assessment[1]!.question = null;
+    p.assessment[1]!.unit = 3;
+    const issues = checkPack(p);
+    expect(ofKind(issues, 'assessment_unknown_idea')).toHaveLength(1);
+    expect(ofKind(issues, 'assessment_unit_mismatch')).toHaveLength(1);
+    expect(ofKind(issues, 'assessment_question')).toHaveLength(0);
+  });
+});
+
 describe('prototype checks (C2-F1)', () => {
   it('media: info naming each idea', () => {
     const [issue, ...rest] = checkPack(pack([{ idea_id: 'a', media_url: null }, { idea_id: 'b' }]));
@@ -603,6 +654,8 @@ describe('every kind (C2-F9)', () => {
       'media',
       'assessment_coverage',
       'objective',
+      'unit_objective',
+      'assessment_question',
       'no_categories',
       'assessment_unknown_unit',
       'assessment_unit_mismatch',

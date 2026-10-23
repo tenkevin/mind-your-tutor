@@ -66,8 +66,7 @@
         "description": "Groups ideas into missions. Each unit ends in a teach-back with Milo.",
         "required": [
           "unit",
-          "name",
-          "objective"
+          "name"
         ],
         "properties": {
           "unit": {
@@ -79,8 +78,11 @@
             "description": "text · If missing: Shows “Unit n” · Edited in: sheet"
           },
           "objective": {
-            "type": "string",
-            "description": "text · If missing: Flagged in data checks · Edited in: sheet"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: Flagged in data checks; Atlas can draft one · Edited in: sheet"
           },
           "standard_codes": {
             "type": [
@@ -266,8 +268,7 @@
         "description": "Fixed teach-back questions. Milo asks one per lesson objective.",
         "required": [
           "unit",
-          "idea_id",
-          "question"
+          "idea_id"
         ],
         "properties": {
           "unit": {
@@ -279,8 +280,11 @@
             "description": "Ideas.idea_id · If missing: Row skipped · Edited in: sheet"
           },
           "question": {
-            "type": "string",
-            "description": "text · If missing: Placeholder; Atlas can draft · Edited in: sheet"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: Atlas can draft one; the empty question is never asked · Edited in: sheet"
           },
           "key_points": {
             "type": [
@@ -301,8 +305,7 @@
         "type": "object",
         "description": "AI prompt templates. Variables in braces are filled from the Course tab.",
         "required": [
-          "persona_id",
-          "name"
+          "persona_id"
         ],
         "properties": {
           "persona_id": {
@@ -310,7 +313,10 @@
             "description": "tutor | peer | agent | custom · If missing: Built-in default · Edited in: both"
           },
           "name": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "text · If missing: Built-in default · Edited in: both"
           },
           "role": {
