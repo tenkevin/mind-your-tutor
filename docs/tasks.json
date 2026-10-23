@@ -859,7 +859,7 @@
       ],
       "done_when": "Per D17: shared student-app components give multiple means of representation (text, read-aloud, visual), action and expression (typed or spoken answers and challenges) and engagement (choice of mission and pacing); a UDL 3.0 checklist is added to the QA README for every student-facing task",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-s5",
       "updated": "2026-10-23"
     }
