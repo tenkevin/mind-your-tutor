@@ -8,6 +8,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D29 and the §8 spec v1 exactly; see AGENTS.md.
 
+**Update 2026-10-23 20:05 UTC (user-approved):** independent Claude QA sessions are now reviewing all six PRs (F6 #20, T1 #24, C5 #23, C6 #21, M1 #25, S5 #26), so merges can start this weekend under the normal gates. On Monday, Codex reviews the merged work; its errors become `<ID>cx<n>` fix tasks as before. Stacked builds wait until Monday's QA. Criteria now exist for every open task except X1 and X2 (after the pilot).
+
 ## Monday QA queue (as of 2026-10-23 17:00 UTC)
 
 Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).
