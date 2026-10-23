@@ -43,6 +43,12 @@ tokens['--radius-md']; // '8px'
    it costs nothing until an app sets `font-weight: 600`.
 2. **`.input:disabled`** is added (45% opacity, `not-allowed` cursor), to match
    `.btn:disabled`. The prototype has no disabled field style.
+3. **`.input::placeholder`** is added: `color: var(--color-neutral-500)` with
+   `opacity: 1`, on `input` and `textarea`. The prototype left placeholders to
+   the browser default, `rgb(117,117,117)`, which is 3.30:1 on the field's
+   surface and fails AA (Codex F2-E1). neutral-500 passes 4.5:1 on both grounds
+   and still reads dimmer than typed text. `opacity: 1` stops Firefox dimming it
+   further.
 
 `src/styles.test.ts` checks that every token and rule still matches the
 prototype, and fails if they drift apart.
@@ -88,13 +94,16 @@ them per page.
 
 ## Contrast
 
-Text tokens pass WCAG AA (4.5:1) on `--color-bg` and `--color-surface`:
-`--color-text`, `--color-neutral-300/400/500`, the accent, field labels, table
-headers and every `.tag-*` variant. Don't use `--color-neutral-600` or darker
-for text.
+The design system meets WCAG AA except for a short list of accepted contrast
+deviations (D10). It is not fully AA compliant.
 
-A few design-system pairs fall short and are accepted as designed (decision
-D10 in `docs/ARCHITECTURE.md`):
+Text tokens pass AA (4.5:1) on `--color-bg` and `--color-surface`:
+`--color-text`, `--color-neutral-300/400/500`, the accent, field labels, table
+headers, `input` and `textarea` placeholders, and every `.tag-*` variant. Don't
+use `--color-neutral-600` or darker for text.
+
+The accepted contrast deviations (decision D10 in `docs/ARCHITECTURE.md`) are
+the only pairs below AA:
 
 - the `.input` border, on both grounds
 - `.card-meta` on `--color-surface`
@@ -102,7 +111,8 @@ D10 in `docs/ARCHITECTURE.md`):
 - `.btn-ghost` hover on surface, and active on both grounds
 
 New colours and components must meet AA. `src/styles.test.ts` measures the
-text, tag and input pairs and every button variant's default, hover and active
-state on both grounds. It reads the hover and active tints from `styles.css`.
+text, tag, input and placeholder pairs and every button variant's default, hover
+and active state on both grounds. It reads the placeholder colour and the hover
+and active tints from `styles.css`.
 It fails if the set of pairs below AA differs from D10's list in either
 direction: a new failure, or a fixed pair still on the list.

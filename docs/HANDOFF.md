@@ -1,6 +1,6 @@
 # Handoff: Idea Map coordinator
 
-**Coordinator stopped after C9 as requested.** No implementation or QA assignment is active. Resume only when the user asks.
+**Resumed 2026-10-23 03:00 UTC by the user** ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent QA and the integration gate. Coordinator: Claude session `session_015Pb4Y1xEbgHXnNwxXnH8pZ` (hourly scheduled task `trig_01UfngiANJA5GmTBDxkwSyKg`); Codex is the independent QA reviewer. Live queue: `docs/qa/STATUS.md`.
 
 Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#12), `834a340` (#10), `9269dd2` (#11), `649f46a` (#8), and `73feaab` (#19/C9) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
 
@@ -12,7 +12,7 @@ Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#
 |---|---|---|---|
 | 1 | this file | state, rules, gotchas | 5 min |
 | 2 | `AGENTS.md` | how work is claimed, built, QA'd and merged, including the integration gate | 3 min |
-| 3 | `docs/ARCHITECTURE.md` §1 (decisions D1–D13), §2, §7, §8 | settled design. Don't reopen D1–D13 | 10 min |
+| 3 | `docs/ARCHITECTURE.md` §1 (decisions D1–D14), §2, §7, §8 | settled design. Don't reopen D1–D14 | 10 min |
 | 4 | `docs/PLAN.md` | generated to-do list and dependency map | 2 min |
 | 5 | `docs/qa/README.md` | the QA gate and Codex routing | 3 min |
 
@@ -50,7 +50,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 5. **Fix tasks:** QA or Codex errors on merged work become `<ID>b` or `<ID>cx<n>` tasks, with must-only criteria. They start before other work and may exceed the 4-agent build limit by 2.
 6. **Suggestions** go into the next related task's criteria as should checks, or into `docs/qa/CXB.md`.
 7. Agents never edit `Codex-*` files, and never merge their own PRs. Never claim placeholder tasks (M1–M5, CXB).
-8. Ask the user only about genuinely new product or design decisions. Everything else follows D1–D13. Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
+8. Ask the user only about genuinely new product or design decisions. Everything else follows D1–D14. Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
 9. Enforce the stop/resume and handoff protocol in `AGENTS.md`. Documentation maintenance does not authorize restarting implementation or QA.
 
 ## 4. Gotchas (each one has bitten us)

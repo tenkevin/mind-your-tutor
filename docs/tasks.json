@@ -90,7 +90,7 @@
       "deps": [],
       "done_when": "Codex F2-E1 (docs/qa/codex/Codex-F2-ui.md): input and textarea placeholders set explicitly to a token with opacity 1, at least 4.5:1 on both grounds, with a regression test; D10 unchanged",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f2cx1",
       "updated": "2026-10-23"
     },
@@ -179,7 +179,7 @@
       ],
       "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f6",
       "updated": "2026-10-23"
     },
@@ -219,7 +219,7 @@
       ],
       "done_when": "Codex C2-E5 (docs/qa/codex/Codex-C2-checks.md): CurriculumVersion stores parse and data-check issues without loss; publish rule blocks on error-level data checks; one shared issue type in contracts",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-c2cx5",
       "updated": "2026-10-23"
     },
@@ -249,9 +249,9 @@
       ],
       "done_when": "Uploading a file runs a pg-boss job that stores a draft CurriculumVersion with derived data and issues",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-c4",
+      "updated": "2026-10-23"
     },
     {
       "id": "C5",
@@ -276,9 +276,9 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-c6",
+      "updated": "2026-10-23"
     },
     {
       "id": "C7",
@@ -741,7 +741,7 @@
       ],
       "done_when": "F1c QA finding1: production ambient declarations cannot hide banned globals, process access is guarded, existing determinism regressions and performance budgets pass",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-f1d",
       "updated": "2026-10-23"
     }

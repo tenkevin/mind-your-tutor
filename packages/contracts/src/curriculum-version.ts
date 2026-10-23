@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { LayoutSchema, QuizzesSchema, RankedLinksSchema } from './derived.js';
-import { ColumnMappingSchema } from './import.js';
+import { DataCheckIssueSchema } from './data-checks.js';
+import { ColumnMappingEntrySchema, ColumnMappingSchema, ImportIssueSchema } from './import.js';
 import { PackIssueSchema } from './issues.js';
 import { PackSchema } from './pack.js';
 
@@ -31,6 +32,58 @@ export const VersionDerivedSchema = z.object({
   quizzes: QuizzesSchema,
 });
 
+/** Maximum serialized issue bytes in one version's jsonb issue field. */
+export const MAX_VERSION_ISSUES_BYTES = 1_000_000;
+
+/**
+ * Issues stored on a version retain their original fields and gain an explicit
+ * origin. The schemas also accept the raw outputs of parsePack and checkPack, so
+ * callers can store both without reshaping or losing details. Existing stored
+ * PackIssues are recognized as import issues when read from older rows.
+ */
+const StoredImportIssueSchema = PackIssueSchema.extend({
+  severity: ImportIssueSchema.shape.severity,
+  origin: z.literal('import'),
+  level: z.enum(['error', 'warning', 'info']),
+  code: ImportIssueSchema.shape.code.optional(),
+  source: ImportIssueSchema.shape.source.optional(),
+  suggestion: z.union([ColumnMappingEntrySchema, z.null()]).optional(),
+});
+const StoredDataCheckIssueSchema = DataCheckIssueSchema.extend({ origin: z.literal('data_check') });
+
+const TaggedVersionIssueSchema = z.discriminatedUnion('origin', [
+  StoredImportIssueSchema,
+  StoredDataCheckIssueSchema,
+]);
+
+/** Normalize new raw parser/checker results and older import-only rows. */
+export const VersionIssueSchema = z.preprocess((value: unknown) => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const issue = value as Record<string, unknown>;
+  if (issue.origin === 'data_check' || (issue.origin === undefined && 'kind' in issue)) {
+    return { ...issue, origin: 'data_check' };
+  }
+  if (issue.origin === 'import' || (issue.origin === undefined && 'severity' in issue)) {
+    return {
+      ...issue,
+      origin: 'import',
+      level: issue.severity,
+    };
+  }
+  return value;
+}, TaggedVersionIssueSchema);
+export type VersionIssue = z.output<typeof VersionIssueSchema>;
+
+export const VersionIssuesSchema = z.array(VersionIssueSchema).superRefine((issues, ctx) => {
+  const size = new TextEncoder().encode(JSON.stringify(issues)).byteLength;
+  if (size >= MAX_VERSION_ISSUES_BYTES) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `Version issues exceed the ${MAX_VERSION_ISSUES_BYTES.toLocaleString('en')} byte storage limit.`,
+    });
+  }
+});
+
 export const CurriculumVersionSchema = z
   .object({
     id: z.uuid(),
@@ -40,7 +93,7 @@ export const CurriculumVersionSchema = z
     status: z.enum(VERSION_STATUSES),
     pack: PackSchema,
     derived: VersionDerivedSchema.nullable().default(null),
-    issues: z.array(PackIssueSchema).default([]),
+    issues: VersionIssuesSchema.default([]),
     source: VersionSourceSchema,
     created_at: z.iso.datetime({ offset: true }),
     published_at: z.iso.datetime({ offset: true }).nullable().default(null),
@@ -60,14 +113,16 @@ export const CurriculumVersionSchema = z
         message: 'A draft version has not been published, so published_at must be empty.',
       });
     }
-    if (
-      version.status !== 'draft' &&
-      version.issues.some((i) => i.severity === 'error' && i.effect === 'blocks_import')
-    ) {
+    const publishBlocked = version.issues.some((issue) =>
+      issue.origin === 'import'
+        ? issue.severity === 'error' && issue.effect === 'blocks_import'
+        : issue.level === 'error',
+    );
+    if (version.status !== 'draft' && publishBlocked) {
       ctx.addIssue({
         code: 'custom',
         path: ['issues'],
-        message: 'A version with problems that block the import cannot be published.',
+        message: 'A version with import blockers or error-level data checks cannot be published.',
       });
     }
   });

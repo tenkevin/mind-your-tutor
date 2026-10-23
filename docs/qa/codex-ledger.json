@@ -232,6 +232,72 @@
       ],
       "errors": [],
       "suggestions": "All-must PASS under documented paired performance method; historical C2 comparison remains unverified. Header blank-cell consistency, reproducible benchmarks and persona-info message polish -> CXB. Completed at merge73feaab after unchanged task-path verification, exact-head CI and actual merge CI; completion report saved as reports/C9.md. Coordinator stopped after C9; no follow-on work authorized."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C2cx5-review-7dd6511.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "C2cx5"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS on 7dd6511 (counts as QA). Row-field resolution of checker issue ids -> T2 criteria via CXB. Carried to 19e5389 (idea-map merge only, empty task-path diff)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-dc3c902.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [
+        "F5-E1 (F5-U3 FAIL) -> F5 build agent on PR #15; saved as reports/F5-run1.md; no new task (F5 still open)"
+      ],
+      "suggestions": "S1 folded into the F5-E1 fix (multi-URL transient replay regressions). S2 per-process callback used-state/limiter storage before multi-process deploy -> CXB (deployment/L1 criteria)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx1-review-733c823.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx1"
+      ],
+      "errors": [],
+      "suggestions": "UNVERIFIED again: dynamic shadow-table probes excluded by the reviewer's own restriction; no defect found. Suggestions (0012 comment, inventory scope, forward-only runbook) already in CXB from 3e97696. Merge blocked pending user decision on independent runtime evidence."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C5-affected-students-decision.md",
+      "commit": "d28194a",
+      "date": "2026-10-23",
+      "reviews": [
+        "C5"
+      ],
+      "errors": [],
+      "suggestions": "User decision recorded as D14 (ARCHITECTURE \u00a71, \u00a77; \u00a712 Q8 settled). Label and QA cases folded into docs/qa/C5.md (C5-F6, C5-U3)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-E1-historical-exports-0412b2c.md",
+      "commit": "d28194a",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [
+        "F6-E1 -> agent-f6 on PR #20 (F6 still open; no new task)"
+      ],
+      "suggestions": "Durable export provenance folded into the F6-E1 fix."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-review-0412b2c.md",
+      "commit": "863e573",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [
+        "F6-E1, F6-E2 (flattened config.token bypasses audit redaction), F6-E3 (student export drops AI token counts/redacted_at) -> agent-f6 on PR #20; saved as reports/F6-run1.md"
+      ],
+      "suggestions": "Concurrent export/delete regression folded into F6-E1 fix. Retention daemon bootstrap, combined migration ordering of F5/F4cx1/F6 0012s, backup expiry procedures -> CXB."
     }
   ]
 }
