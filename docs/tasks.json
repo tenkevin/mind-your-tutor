@@ -276,7 +276,7 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c6",
       "updated": "2026-10-23"
     },
