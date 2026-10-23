@@ -417,9 +417,9 @@
       ],
       "done_when": "Teacher app shell with header, section nav and the Saving and Saved indicator, behind sign-in",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t1",
+      "updated": "2026-10-23"
     },
     {
       "id": "T2",
