@@ -13,3 +13,5 @@
 3. `ideas.explanation` is added as an optional column (decision D9 in `docs/ARCHITECTURE.md`). It is also in `curriculum-pack.fields.json`, but not yet in the prototype's `curriculum-pack.js`.
 
 `edit` meanings: `sheet` comes only from the source data; `app` is set only in Teacher Settings; `both` means the sheet seeds it and Teacher Settings can override it for a class.
+
+Text cells are trimmed before validation. For `Ideas.explanation`, leading and trailing whitespace is removed, internal line breaks and spacing are kept, and a blank-only value becomes `null`.

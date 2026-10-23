@@ -45,6 +45,32 @@ describe('each tab accepts a valid row and rejects a bad one (F3-F12)', () => {
     Personas: { tone: 'grumpy' },
     Library: { file_url: 'javascript:alert(1)' },
   };
+  it('allows optional unit objectives and assessment questions while keeping their identifiers required', () => {
+    expect(parseWith('Units', { objective: '' })).toMatchObject({
+      ok: true,
+      value: { unit: 1, objective: null },
+    });
+    expect(parseWith('Assessment', { question: '' })).toMatchObject({
+      ok: true,
+      value: { unit: 1, idea_id: 'evap', question: null },
+    });
+    expect(parseWith('Personas', { name: '' })).toMatchObject({
+      ok: true,
+      value: { persona_id: 'tutor', name: null },
+    });
+    expect(without('Units', 'name').ok).toBe(false);
+    expect(without('Assessment', 'idea_id').ok).toBe(false);
+  });
+  it('trims explanation edges, keeps internal newlines and normalizes blank text to null', () => {
+    expect(parseWith('Ideas', { explanation: '  exact text\nsecond line  ' })).toMatchObject({
+      ok: true,
+      value: { explanation: 'exact text\nsecond line' },
+    });
+    expect(parseWith('Ideas', { explanation: ' \n ' })).toMatchObject({
+      ok: true,
+      value: { explanation: null },
+    });
+  });
   for (const tab of Object.keys(VALID) as TabName[]) {
     it(`${tab}: passes`, () => {
       const result = parseTabRow(tab, VALID[tab], 2);

@@ -83,7 +83,7 @@ export const PACK_SPEC: readonly TabSpec[] = [
     cols: [
       col('unit', 'integer', true, 'sheet', 'Blocks import'),
       col('name', 'text', true, 'sheet', 'Shows “Unit n”'),
-      col('objective', 'text', true, 'sheet', 'Flagged in data checks'),
+      col('objective', 'text', false, 'sheet', 'Flagged in data checks; Atlas can draft one'),
       col('standard_codes', 'list', false, 'sheet', 'No codes shown'),
       col('due_date', 'date', false, 'both', 'No due date'),
     ],
@@ -150,7 +150,13 @@ export const PACK_SPEC: readonly TabSpec[] = [
     cols: [
       col('unit', 'Units.unit', true, 'sheet', 'Row skipped'),
       col('idea_id', 'Ideas.idea_id', true, 'sheet', 'Row skipped'),
-      col('question', 'text', true, 'sheet', 'Placeholder; Atlas can draft'),
+      col(
+        'question',
+        'text',
+        false,
+        'sheet',
+        'Atlas can draft one; the empty question is never asked',
+      ),
       col('key_points', 'list', false, 'sheet', 'Milo checks against the objective'),
     ],
   },
@@ -160,7 +166,7 @@ export const PACK_SPEC: readonly TabSpec[] = [
     desc: 'AI prompt templates. Variables in braces are filled from the Course tab.',
     cols: [
       col('persona_id', 'tutor | peer | agent | custom', true, 'both', 'Built-in default'),
-      col('name', 'text', true, 'both', 'Built-in default'),
+      col('name', 'text', false, 'both', 'Built-in default'),
       col('role', 'text', false, 'both', 'Built-in default'),
       col('audience', 'Students | Teachers', false, 'both', 'Students'),
       col('tone', 'warm | calm | playful | socratic', false, 'both', 'warm'),

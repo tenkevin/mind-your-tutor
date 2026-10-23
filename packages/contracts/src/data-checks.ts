@@ -36,6 +36,10 @@ export const DATA_CHECK_KINDS = [
   'assessment_coverage',
   /** Ideas have no objective (optional; the tutor writes one from links). */
   'objective',
+  /** A unit has no objective; Atlas can draft one for approval. */
+  'unit_objective',
+  /** An Assessment row has no question; Atlas can draft one for approval. */
+  'assessment_question',
   /** The Categories tab has no rows, so every idea uses one category, "Idea". */
   'no_categories',
   /** An Assessment row names a unit that isn't in Units; the row is skipped. */
@@ -53,8 +57,10 @@ export const DataCheckIssueSchema = z.object({
   level: z.enum(DATA_CHECK_LEVELS),
   /** Plain text for teachers, naming idea titles. Not markup: the UI escapes it. */
   message: z.string(),
-  /** The idea_ids the issue is about, known ideas only, in Ideas order where it applies. */
+  /** The idea_ids or unit numbers the issue is about, in pack order where it applies. */
   items: z.array(z.string()),
+  /** Atlas can offer a draft for this issue. */
+  draftable: z.boolean().optional(),
   /** Where the teacher fixes it in the source sheet. */
   fix: z.object({
     tab: z.enum(TAB_NAMES),
