@@ -10,7 +10,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
 import { COLUMNS, type Database } from './schema.js';
 import { freshDatabase, hasDatabase, type TestDatabase } from './test/harness.js';
-import { derivedData, SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
+import { validDerived } from './test/derived.js';
+import { SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
 import type { Selectable } from 'kysely';
 
 // F4-F9: the typed layer in schema.ts matches the live schema, and rows round-trip
@@ -85,6 +86,7 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
   it('round-trips a CurriculumVersion through the contract', async () => {
     const seeded = await seedOrg(t.db, 'typed');
     const pack = waterCyclePack();
+    const derived = validDerived();
     const inserted = await t.db
       .insertInto('curriculum_version')
       .values({
@@ -92,7 +94,7 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
         curriculum_id: seeded.curriculumId,
         number: 3,
         pack: json(pack),
-        derived: json(derivedData()),
+        derived: json(derived),
         issues: json([
           {
             severity: 'warning',
@@ -112,6 +114,7 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
 
     const version = toContract(inserted);
     expect(version.pack).toEqual(pack);
+    expect(version.derived).toEqual(derived);
     expect(version.status).toBe('draft');
     expect(version.issues).toHaveLength(1);
     expect(typeof inserted.number).toBe('number');

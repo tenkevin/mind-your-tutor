@@ -90,7 +90,7 @@
       "deps": [],
       "done_when": "Codex F2-E1 (docs/qa/codex/Codex-F2-ui.md): input and textarea placeholders set explicitly to a token with opacity 1, at least 4.5:1 on both grounds, with a regression test; D10 unchanged",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f2cx1",
       "updated": "2026-10-23"
     },
@@ -140,7 +140,7 @@
       "deps": [],
       "done_when": "Codex F4-E3 (docs/qa/codex/Codex-F4-integration-1523878.md): DB fixtures conform to the strict VersionDerived contract; root typecheck and DB-backed tests pass; CI green on idea-map",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f4cx3",
       "updated": "2026-10-23"
     },
@@ -151,7 +151,7 @@
       "deps": [
         "F4b"
       ],
-      "done_when": "Codex F4-E1 and F4-E2 (docs/qa/codex/Codex-F4-database.md): every trigger/guard/definer function schema-qualifies relations or pins search_path with pg_temp last, fails closed; reproductions are regression tests",
+      "done_when": "Codex F4-E2 and the rest of F4-E1 (docs/qa/codex/Codex-F4-database.md): guard_class_pin and every remaining trigger/guard/definer function schema-qualify relations or pin search_path with pg_temp last and fail closed; a test enumerates all functions. F4b (migration 0011) already fixes record_interaction_event_keys() and revokes TEMP; keep those tests",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -166,7 +166,7 @@
       ],
       "done_when": "Teachers and students sign in with SSO; every API route checks role and org",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f5",
       "updated": "2026-10-23"
     },
@@ -716,6 +716,19 @@
       "status": "todo",
       "owner": null,
       "updated": null
+    },
+    {
+      "id": "C1cx1",
+      "title": "Fix C1-E1: bound CSV parser memory and reject duplicate ZIP tabs early",
+      "size": 1,
+      "deps": [
+        "F3"
+      ],
+      "done_when": "Existing C1 PR safely refuses long-cell and duplicate-tab archives without process death; independent C1cx1 QA passes",
+      "placeholder": false,
+      "status": "doing",
+      "owner": "codex-c1cx1",
+      "updated": "2026-10-23"
     }
   ]
 }
