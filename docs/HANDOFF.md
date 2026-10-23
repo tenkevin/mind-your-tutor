@@ -1,6 +1,6 @@
 # Handoff: Idea Map coordinator
 
-Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#12), `834a340` (#10), and `9269dd2` (#11) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
+Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#12), `834a340` (#10), `9269dd2` (#11), and `649f46a` (#8) are green. Coordinator ownership transferred explicitly to Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`. Sections 5–6 are live-state snapshots; re-check before acting.
 
 **Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either. The work runs as a swarm: build agents per task, independent QA agents per PR, Codex as an outside reviewer, and one coordinator, which is you.
 
@@ -61,21 +61,21 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 5. State at snapshot (check before acting)
 
-**`idea-map` is green at `9269dd2`.** PR #14 (F4cx3), PR #12 (F4b), PR #10 (F1c), and PR #11 (C8) merged in separate passes after independent QA and exact-head CI, with integration CI confirmed after each. Completion reports are in `docs/qa/reports/`. Read `docs/qa/STATUS.md` for the live review queue and evidence.
+**`idea-map` is green at `649f46a`.** PR #14 (F4cx3), PR #12 (F4b), PR #10 (F1c), PR #11 (C8), and PR #8 (C1/C1cx1) merged in separate passes after independent QA and exact-head CI, with integration CI confirmed after each. Completion reports are in `docs/qa/reports/`. Read `docs/qa/STATUS.md` for the live review queue and evidence.
 
 | Status | Tasks |
 |---|---|
-| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8 |
-| Correction in review | C1cx1 on existing PR #8 at `8daf5fd`; independent C1/C1cx1 QA active on corrected importer plus C8 integration |
-| Correction building | F4cx1 (codex-f4cx1, Luna-high `/root/f4_guard_fix`); F1d claimed by codex-f1d for the mandatory tracker follow-up |
+| Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1 |
+| Correction in review | F4cx1 PR #17, builder complete; synchronized `3d18a23`, independent QA pending |
+| Correction building | F1d PR #16 returned to codex-f1d after independent ambient-enum lint FAIL; C2cx5 building with codex-c2cx5 |
 | Newly unlocked correction | C2cx5 claimed by codex-c2cx5 after C8 integration PASS |
 | QA blocked | #13 F2cx1 at `c7883aa`: automated content-risk block stopped the delegated review; no independent PASS |
-| Other PRs | #15 F5; #8 C1 (blocked on C1cx1 and fresh independent QA) |
+| Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
-| Waiting | C9 after C1; C4 after C1 and C2cx5; C6 ready |
+| Waiting | C9 dependency-ready, deferred behind correction QA; C4 after C2cx5; C6 ready |
 | Placeholder | M1–M5 and CXB remain unclaimable; tracker specification still needs a person |
 
-C1's previous scoped Codex PASS is superseded for merge approval by `Codex-C1-S2-reconciliation-9ce1018.md`: C1-S2 must FAIL. The report is routed once to C1cx1; do not create separate tasks for the archive variants. C1 depends on C1cx1 and both must pass before PR #8 merges.
+C1's historical scoped PASS was superseded by the C1-S2 reconciliation. The corrected implementation now has a fresh combined independent PASS, with both bounded archive families and full DB-backed integration tested. PR #8 is merged and both C1/C1cx1 are done; see docs/qa/reports/C1.md.
 
 PR #12's conflict with PR #14 was resolved using the shared `validDerived()` fixture, retaining its schema validation and roundtrip equality assertion; duplicate `derivedData()` was removed. Independent QA must assess the synchronized head. PR #13's prior CI failure was the DB fixture defect, not a UI failure; synchronization introduces no UI task-code changes, and fresh independent QA is pending.
 
@@ -113,9 +113,9 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 
 ## 8. What's next, in priority order
 
-1. Finish C1cx1 on PR #8 and obtain fresh independent C1/C1cx1 QA; keep the importer blocked until C1-S2 passes.
-2. Build F4cx1 from the verified F4b base and obtain independent QA; preserve the existing isolation fixes.
-3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Do not let blocked C1 prevent independent fix work.
+1. Correct F1d-F1 ambient-enum lint coverage on existing PR #16, then obtain fresh independent QA. C1/C1cx1 are complete.
+2. Review completed F4cx1 PR #17 independently after refreshed exact-head CI; preserve the existing isolation fixes.
+3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Continue independent fixes while PR #13 remains blocked.
 4. C2cx5 is now claimed; start C9 after C1, C4 after C2cx5/C1, and C6 when urgent fixes and capacity permit. Reconcile the F6 claim before assigning its continuation.
 5. Settle/publish C5 criteria from the specification; T1 criteria are already published; bring in CXB's appropriate suggestions. F5 unlocks T1, then the teacher tasks.
 6. Keep M1–M5 unclaimed until the user supplies the tracker specification (architecture §8.6). Record genuinely new design questions in architecture §12 and continue independent work.
