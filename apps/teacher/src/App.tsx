@@ -28,11 +28,13 @@ function browserClient(): SessionClient {
 export function Shell({
   me,
   pending = 0,
+  retrying = false,
   onRetry,
   onSignOut,
 }: {
   me: MeResponse;
   pending?: number;
+  retrying?: boolean;
   onRetry?: () => void;
   onSignOut: () => void;
 }) {
@@ -53,8 +55,13 @@ export function Shell({
             {pending === 1
               ? "1 change from before you signed in hasn't been saved yet."
               : `${pending} changes from before you signed in haven't been saved yet.`}{' '}
-            <button type="button" className="btn btn-secondary" onClick={onRetry}>
-              Try again
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onRetry}
+              disabled={retrying}
+            >
+              {retrying ? 'Saving…' : 'Try again'}
             </button>
           </p>
         )}
@@ -100,13 +107,16 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       });
   }, [client]);
 
+  const [retrying, setRetrying] = useState(false);
   const retry = () => {
-    if (!client || view.kind !== 'signed-in') return;
+    if (!client || view.kind !== 'signed-in' || retrying) return;
     const me = view.me;
+    setRetrying(true);
     client
       .replayPendingWrites()
       .then(({ pending }) => setView({ kind: 'signed-in', me, pending }))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setRetrying(false));
   };
 
   if (view.kind === 'loading') return <h1>Idea Map · Teacher</h1>;
@@ -125,6 +135,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     <Shell
       me={view.me}
       pending={view.pending}
+      retrying={retrying}
       onRetry={retry}
       onSignOut={() => void client?.signOut()}
     />

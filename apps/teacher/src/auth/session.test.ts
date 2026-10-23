@@ -1,6 +1,13 @@
 import { CSRF_HEADER, type MeResponse } from '@ideamap/contracts';
 import { describe, expect, it } from 'vitest';
-import { createSessionClient, readPending, SignedOut, signInPath, type KeyValue } from './session';
+import {
+  createSessionClient,
+  readPending,
+  SignedOut,
+  signInPath,
+  stashWrite,
+  type KeyValue,
+} from './session';
 
 // F5-U3: an expired session sends the teacher to sign in and back, and keeps their edits.
 
@@ -221,6 +228,111 @@ describe('session client (F5-U3)', () => {
       expect(await client.replayPendingWrites()).toEqual({ saved: 2, pending: 1 });
       expect(state.attempts).not.toContain('/api/x');
       expect(readPending(store).map((w) => w.userId)).toEqual([TERRY]);
+    });
+  });
+
+  describe('keeps edits made while a replay waits on the server (F5-E1)', () => {
+    const A = '/api/classes/a/config';
+    const B = '/api/classes/b/config';
+
+    /** A server whose write responses wait until the test releases them. */
+    function heldServer() {
+      const sent: { url: string; body: unknown }[] = [];
+      const held: ((status: number) => void)[] = [];
+      const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url === '/api/me') return new Response(JSON.stringify(me(TERRY)), { status: 200 });
+        sent.push({ url, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+        const status = await new Promise<number>((resolve) => held.push(resolve));
+        return new Response('{}', { status });
+      }) as typeof fetch;
+      /** Let the oldest waiting request answer with `status`, then let the replay go on. */
+      const release = async (status = 200) => {
+        for (let i = 0; i < 20 && held.length === 0; i++) await Promise.resolve();
+        held.shift()!(status);
+        for (let i = 0; i < 20; i++) await Promise.resolve();
+      };
+      return { sent, fetchFn, release, waiting: () => held.length };
+    }
+
+    async function signedIn(server: ReturnType<typeof heldServer>, store: KeyValue) {
+      const client = createSessionClient({
+        fetch: server.fetchFn,
+        store,
+        here: () => '/',
+        go: () => {},
+      });
+      await client.load();
+      return client;
+    }
+
+    it('sends and keeps a write to another URL queued mid-replay', async () => {
+      const server = heldServer();
+      const store = memoryStore();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 70 } });
+      const client = await signedIn(server, store);
+      const replay = client.replayPendingWrites();
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: B, body: { edit: 75 } });
+      await server.release(200); // A accepted
+      expect(readPending(store).map((w) => [w.url, w.body])).toEqual([[B, { edit: 75 }]]);
+      await server.release(200); // B, sent by the same replay
+      expect(await replay).toEqual({ saved: 2, pending: 0 });
+      expect(server.sent).toEqual([
+        { url: A, body: { edit: 70 } },
+        { url: B, body: { edit: 75 } },
+      ]);
+      expect(readPending(store)).toEqual([]);
+    });
+
+    it('keeps and sends a newer autosave of the same form, not the acknowledged one', async () => {
+      const server = heldServer();
+      const store = memoryStore();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 70 } });
+      const client = await signedIn(server, store);
+      const replay = client.replayPendingWrites();
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 75 } });
+      await server.release(200); // the older A accepted
+      expect(readPending(store).map((w) => w.body)).toEqual([{ edit: 75 }]);
+      await server.release(200); // the newer A
+      expect(await replay).toEqual({ saved: 2, pending: 0 });
+      expect(server.sent.map((w) => w.body)).toEqual([{ edit: 70 }, { edit: 75 }]);
+      expect(readPending(store)).toEqual([]);
+    });
+
+    it('keeps a newer autosave for a later retry when the replay then fails', async () => {
+      const server = heldServer();
+      const store = memoryStore();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 70 } });
+      const client = await signedIn(server, store);
+      const replay = client.replayPendingWrites();
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 75 } });
+      await server.release(200);
+      await server.release(500); // the newer A fails this time
+      expect(await replay).toEqual({ saved: 1, pending: 1 });
+      expect(readPending(store).map((w) => w.body)).toEqual([{ edit: 75 }]);
+      const retry = client.replayPendingWrites();
+      await server.release(200);
+      expect(await retry).toEqual({ saved: 1, pending: 0 });
+      expect(server.sent.map((w) => w.body)).toEqual([{ edit: 70 }, { edit: 75 }, { edit: 75 }]);
+      expect(readPending(store)).toEqual([]);
+    });
+
+    it('runs overlapping replays once, with no duplicate saves', async () => {
+      const server = heldServer();
+      const store = memoryStore();
+      stashWrite(store, { userId: TERRY, method: 'PUT', url: A, body: { edit: 70 } });
+      const client = await signedIn(server, store);
+      const first = client.replayPendingWrites();
+      const second = client.replayPendingWrites();
+      expect(second).toBe(first);
+      await server.release(200);
+      expect(await first).toEqual({ saved: 1, pending: 0 });
+      expect(server.sent).toHaveLength(1);
+      expect(server.waiting()).toBe(0);
+      expect(readPending(store)).toEqual([]);
     });
   });
 });
