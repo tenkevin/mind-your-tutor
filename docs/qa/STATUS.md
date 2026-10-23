@@ -16,7 +16,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 | F1c / #10 | Merged at `834a340`; actual merge CI/plan green. [Completion and independent report](reports/F1c.md). | Done. Mandatory ambient-global/process follow-up remains [F1d](F1d.md), now claimed by codex-f1d; M3 depends on it. |
 | F5 / #15 | Open; no independent completion report recorded here. | Independent QA after urgent fixes; apply F5 criteria and scoped tenant/class checks. |
 | F4cx1 | Luna-high builder `/root/f4_guard_fix` is implementing remaining database guard hardening in `/home/kevin/coordinator-worktrees/f4cx1`. | Claimed by codex-f4cx1 after F4b completion; build agent to preserve its separate scope and existing F4b fixes. |
-| C2cx5 | Claimed by codex-c2cx5 after verified C8 completion. | Luna builder to implement existing criteria in isolated worktree; independent QA required. |
+| C2cx5 | Claimed by codex-c2cx5 after verified C8 completion. | Luna-high `/root/f2_ci_fix` implements existing criteria in `/home/kevin/coordinator-worktrees/c2cx5`; independent QA required. |
 | F1d | Luna-high builder `/root/c1_memory_fix` now owns this follow-up in `/home/kevin/coordinator-worktrees/f1d`. C1 implementation work is finished. | Claimed by codex-f1d; independent QA required after PR/CI. |
 
 ## Reviewer and builder boundaries
