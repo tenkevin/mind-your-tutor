@@ -70,7 +70,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 | Auth integration complete | F5 PR #15 frozen at `a827f1c`, local and exact-head CI green; independent QA and latest-base sync deferred |
 | QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
-| Final task in review | C9 PR #19 builder-complete at `25b8c97`; all local checks/DB 161 pass. Await independent QA and verified merge, then stop. C4/C6 and all other follow-on work are deferred |
+| Final task in review | C9 PR #19 independently passes at `2ae52d4`, full root checks/DB 161. Await final synchronization, exact-head CI and verified merge, then stop. C4/C6 and all other follow-on work are deferred |
 | Placeholder | M1–M5 and CXB remain unclaimable; tracker specification still needs a person |
 
 C1's historical scoped PASS was superseded by the C1-S2 reconciliation. The corrected implementation now has a fresh combined independent PASS, with both bounded archive families and full DB-backed integration tested. PR #8 is merged and both C1/C1cx1 are done; see docs/qa/reports/C1.md.
