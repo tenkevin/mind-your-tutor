@@ -1,133 +1,91 @@
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { APP_ROLE, DirectoryExportStore, type Db } from '@ideamap/db';
-import {
-  freshDatabase,
-  hasDatabase,
-  seedOrg,
-  type SeededOrg,
-  type TestDatabase,
-} from '@ideamap/db/testing';
-import type { FastifyInstance } from 'fastify';
+import { DirectoryExportStore } from '@ideamap/db';
+import { hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildServer } from './index.js';
-import type { Authenticate } from './imports.js';
+import { as, sessionFor, startApi, type Signed, type TestApi } from './test/harness.js';
 
-// F6-F7 and F6-S1 over HTTP: only an admin of the student's organization may export
-// or delete a student.
-
-/** Test sign-in: the `x-test-caller` header is `orgId:userId`, always claiming admin. */
-const testSignIn: Authenticate = async (request) => {
-  const header = request.headers['x-test-caller'];
-  if (typeof header !== 'string') return null;
-  const [orgId, userId] = header.split(':');
-  // Every caller claims to be an admin: the routes must read the role from the
-  // database instead, so teachers and students are still refused.
-  return orgId && userId ? { orgId, userId, role: 'admin' } : null;
-};
-
-describe('privacy routes without sign-in', () => {
-  it('refuses every call until sign-in exists', async () => {
-    const app = buildServer({
-      privacy: { db: {} as Db, store: new DirectoryExportStore(tmpdir()) },
-    });
-    for (const [method, url] of [
-      ['POST', '/privacy/students/00000000-0000-4000-8000-000000000000/export'],
-      ['DELETE', '/privacy/students/00000000-0000-4000-8000-000000000000'],
-    ] as const) {
-      const res = await app.inject({ method, url, headers: { 'x-test-caller': 'a:b' } });
-      expect(res.statusCode).toBe(401);
-    }
-    await app.close();
-  });
-});
+// F6-F7 and F6-S1 over HTTP, with real F5 sessions: only an admin of the student's
+// organization may export or delete a student.
 
 describe.skipIf(!hasDatabase)('privacy routes (F6-F7, F6-S1)', () => {
-  let t: TestDatabase;
-  let app: FastifyInstance;
-  let a: SeededOrg & { adminId: string };
-  let b: SeededOrg & { adminId: string };
+  let api: TestApi;
   let dir: string;
-
-  async function withAdmin(db: Db, label: string) {
-    const seeded = await seedOrg(db, label);
-    const admin = await db
-      .insertInto('app_user')
-      .values({ org_id: seeded.orgId, role: 'admin', name: `Admin ${label}` })
-      .returning('id')
-      .executeTakeFirstOrThrow();
-    return { ...seeded, adminId: admin.id };
-  }
+  let who: Record<'admin' | 'teacher' | 'student' | 'otherOrgAdmin', Signed>;
+  let studentId: string;
 
   beforeAll(async () => {
-    t = await freshDatabase();
-    a = await withAdmin(t.db, 'a');
-    b = await withAdmin(t.db, 'b');
     dir = await mkdtemp(join(tmpdir(), 'ideamap-api-exports-'));
-    app = buildServer({
-      privacy: {
-        db: await t.loginAs(APP_ROLE),
-        store: new DirectoryExportStore(dir),
-        authenticate: testSignIn,
-      },
-    });
+    api = await startApi({}, { privacy: new DirectoryExportStore(dir) });
+    const { users, orgs } = api.sample;
+    studentId = users['student-a1'];
+    who = {
+      admin: await sessionFor(api, users['admin-a'], orgs.a),
+      teacher: await sessionFor(api, users['teacher-a1'], orgs.a),
+      student: await sessionFor(api, studentId, orgs.a),
+      otherOrgAdmin: await sessionFor(api, users['admin-b'], orgs.b),
+    };
   });
   afterAll(async () => {
-    await app?.close();
-    await t?.drop();
+    await api?.close();
     if (dir) await rm(dir, { recursive: true, force: true });
   });
 
-  const call = (method: 'POST' | 'DELETE', caller: string | null, studentId = a.studentId) =>
-    app.inject({
-      method,
-      url:
-        method === 'POST'
-          ? `/privacy/students/${studentId}/export`
-          : `/privacy/students/${studentId}`,
-      headers: caller ? { 'x-test-caller': caller } : {},
-    });
+  const exportUrl = (id: string) => `/api/privacy/students/${id}/export`;
+  const deleteUrl = (id: string) => `/api/privacy/students/${id}`;
 
   it('refuses everyone but an admin of the student’s org', async () => {
     for (const [caller, status] of [
       [null, 401],
-      [`${a.orgId}:${a.teacherId}`, 403],
-      [`${a.orgId}:${a.studentId}`, 403],
-      [`${b.orgId}:${b.adminId}`, 404],
-      // Claiming org A while being org B's admin.
-      [`${a.orgId}:${b.adminId}`, 403],
+      ['teacher', 403],
+      ['student', 403],
+      ['otherOrgAdmin', 403],
     ] as const) {
-      for (const method of ['POST', 'DELETE'] as const) {
-        const res = await call(method, caller);
-        expect(res.statusCode, `${method} as ${caller}`).toBe(status);
-        expect(res.body).not.toContain('Student a');
+      const signed = caller ? who[caller] : null;
+      for (const [method, url] of [
+        ['POST', exportUrl(studentId)],
+        ['DELETE', deleteUrl(studentId)],
+      ] as const) {
+        const res = await as(api, signed)(method, url);
+        expect(res.statusCode, `${caller} ${method} ${url}`).toBe(status);
+        expect(res.body).not.toContain('Student');
       }
     }
     expect(await readdir(dir)).toEqual([]);
   });
 
-  it('refuses ids that are not uuids', async () => {
-    const res = await call('POST', `${a.orgId}:${a.adminId}`, '../../etc');
-    expect(res.statusCode).toBe(404);
+  it('refuses ids that are not a student of the org', async () => {
+    expect((await as(api, who.admin)('POST', exportUrl('not-a-uuid'))).statusCode).toBe(403);
+    // A user of the org who isn't a student.
+    const teacherId = api.sample.users['teacher-a1'];
+    expect((await as(api, who.admin)('POST', exportUrl(teacherId))).statusCode).toBe(404);
+    // Another org's student is invisible, so it looks like any id the admin can't use.
+    const otherStudent = api.sample.users['student-b1'];
+    expect((await as(api, who.admin)('DELETE', deleteUrl(otherStudent))).statusCode).toBe(403);
   });
 
-  it('lets the org admin export, then delete', async () => {
-    const exported = await call('POST', `${a.orgId}:${a.adminId}`);
-    expect(exported.statusCode).toBe(201);
+  it('lets the org admin export, then delete, which also signs the student out', async () => {
+    const exported = await as(api, who.admin)('POST', exportUrl(studentId));
+    expect(exported.statusCode, exported.body).toBe(201);
     expect(exported.headers['content-disposition']).toBe(
-      `attachment; filename="student-${a.studentId}.json"`,
+      `attachment; filename="student-${studentId}.json"`,
     );
-    expect(exported.json()).toMatchObject({
-      format: 'ideamap.student-record',
-      student: { id: a.studentId, name: 'Student a' },
-    });
+    const record = exported.json<{ student: { id: string }; auth_sessions: unknown[] }>();
+    expect(record).toMatchObject({ format: 'ideamap.student-record', student: { id: studentId } });
+    expect(record.auth_sessions.length).toBeGreaterThan(0);
+    expect(JSON.stringify(record)).not.toContain('token_hash');
 
-    const deleted = await call('DELETE', `${a.orgId}:${a.adminId}`);
-    expect(deleted.statusCode).toBe(200);
-    expect(deleted.json()).toMatchObject({ deleted: { interactionText: 1, exportFiles: 1 } });
-    expect(await readdir(dir, { recursive: true })).not.toContainEqual(
-      expect.stringMatching(/\.json$/),
-    );
+    const deleted = await as(api, who.admin)('DELETE', deleteUrl(studentId));
+    expect(deleted.statusCode, deleted.body).toBe(200);
+    expect(deleted.json()).toMatchObject({ deleted: { exportFiles: 1 } });
+    expect(deleted.json().deleted.authSessions).toBeGreaterThan(0);
+
+    // The export file is gone, and the student's session no longer works.
+    const files = await readdir(dir, { recursive: true });
+    for (const f of files.filter((name) => name.endsWith('.json'))) {
+      expect(await readFile(join(dir, f), 'utf8')).not.toContain(studentId);
+    }
+    expect((await as(api, who.student)('GET', '/api/me')).statusCode).toBe(401);
   });
 });

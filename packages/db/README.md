@@ -40,22 +40,23 @@ query builder, so one dependency covers both. Each migration is a TypeScript fil
 Pending migrations run in one transaction under a lock. Never edit a migration that has
 run; add a new one.
 
-| Migration             | Creates                                                                                                                                                                 |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001 extensions       | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                                            |
-| 0002 app role         | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                                                      |
-| 0003 job queue        | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                                                      |
-| 0004 tenancy          | `organization`, `app_user`                                                                                                                                              |
-| 0005 curricula        | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                                                  |
-| 0006 library          | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                                                |
-| 0007 classes          | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                                                        |
-| 0008 tracker          | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot`                           |
-| 0009 jobs, audit      | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                                             |
-| 0010 class library    | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                                             |
-| 0011 isolation        | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                                               |
-| 0012 function binding | Trusted `search_path` for every app function; schema-qualified relation access and a fail-closed class pin guard (F4cx1)                                                |
-| 0013 import jobs      | `import_job.steps` (Teacher Settings pipeline progress) and `idempotency_key` (one job per repeated upload; C4)                                                         |
-| 0015 privacy          | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports and `export_subject` (F6) |
+| Migration             | Creates                                                                                                                                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001 extensions       | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                                                                          |
+| 0002 app role         | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                                                                                    |
+| 0003 job queue        | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                                                                                    |
+| 0004 tenancy          | `organization`, `app_user`                                                                                                                                                                            |
+| 0005 curricula        | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                                                                                |
+| 0006 library          | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                                                                              |
+| 0007 classes          | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                                                                                      |
+| 0008 tracker          | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot`                                                         |
+| 0009 jobs, audit      | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                                                                           |
+| 0010 class library    | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                                                                           |
+| 0011 isolation        | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                                                                             |
+| 0012 function binding | Trusted `search_path` for every app function; schema-qualified relation access and a fail-closed class pin guard (F4cx1)                                                                              |
+| 0013 import jobs      | `import_job.steps` (Teacher Settings pipeline progress) and `idempotency_key` (one job per repeated upload; C4)                                                                                       |
+| 0014 auth             | `sso_tenant` (provider tenant → org), `auth_session`, `app.sso_tenant_org()`, `class.roster_source_id`; SSO provider ids become slugs (F5)                                                            |
+| 0015 privacy          | retention settings (text, AI, exports, sessions), the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports and `export_subject` (F6) |
 
 ## Roles and row-level security
 
@@ -197,8 +198,9 @@ for Teacher Settings. The log refuses `UPDATE`, `DELETE` and `TRUNCATE` for ever
 
 ### Retention
 
-`organization.text_retention_days` and `ai_retention_days` (default 90, §10) and
-`export_retention_days` (default 7) are per organization. The worker's retention job
+`organization.text_retention_days` and `ai_retention_days` (default 90, §10),
+`export_retention_days` (default 7) and `session_retention_days` (default 30, after a
+sign-in session ends) are per organization. The worker's retention job
 (`apps/worker/src/retention.ts`) deletes what is past them, in batches, as the
 `ideamap_retention` role. That role can see and delete only rows that are already due,
 and can't read their text. Like the app role it is `NOLOGIN`; give the worker's login
@@ -214,9 +216,11 @@ to that login, `EXPORT_DIR` to the export directory), or daily with `scheduleRet
 ### FERPA export and delete
 
 `exportStudent` and `deleteStudent` (in `privacy.ts`, served by `apps/api` at
-`POST /privacy/students/:id/export` and `DELETE /privacy/students/:id`) work only for an
+`POST /api/privacy/students/:id/export` and `DELETE /api/privacy/students/:id`, admin-only
+through F5's route policy) work only for an
 admin of the student's organization. Delete removes the student's name, email, roster
-ids, typed text, AI transcripts, progress cache, enrollments and export files, and keeps
+ids, typed text, AI transcripts, progress cache, enrollments, sign-in sessions and export
+files, and keeps
 their tracker events under the pseudonymous id. Any code that writes an export naming students (`class_progress`, `student_record`) must
 call `recordExportSubjects` in the job's transaction before writing the file: deletion
 removes every file listed for the student, whatever classes they're in by then, plus any

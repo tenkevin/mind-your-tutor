@@ -2,9 +2,9 @@ import { RETENTION_ROLE, type Db, type ExportStore } from '@ideamap/db';
 import { sql, type Transaction } from 'kysely';
 import type { Database } from '@ideamap/db';
 
-// The retention job (ARCHITECTURE.md §10; task F6). Deletes typed student text and AI
-// transcripts once they are past their organization's retention period, and removes
-// expired export files. Periods are per organization (organization.*_retention_days);
+// The retention job (ARCHITECTURE.md §10; task F6). Deletes typed student text, AI
+// transcripts and ended sign-in sessions once they are past their organization's
+// retention period, and removes expired export files. Periods are per organization (organization.*_retention_days);
 // the data inventory (docs/privacy/data-inventory.md) lists them.
 //
 // It runs as `ideamap_retention`, which can see and delete only rows that are already
@@ -32,11 +32,12 @@ export interface RetentionOptions {
   onBatch?: (batch: { kind: RetentionKind; orgId: string; rows: number }) => void;
 }
 
-export type RetentionKind = 'interaction_text' | 'ai_interaction' | 'export_files';
+export type RetentionKind = 'interaction_text' | 'ai_interaction' | 'auth_session' | 'export_files';
 
 export interface RetentionResult {
   interaction_text: number;
   ai_interaction: number;
+  auth_session: number;
   export_files: number;
   /** True when the signal stopped the run before it finished. */
   aborted: boolean;
@@ -50,7 +51,13 @@ function asRetention<T>(db: Db, fn: (trx: Transaction<Database>) => Promise<T>):
   });
 }
 
-const CUTOFF_KIND = { interaction_text: 'text', ai_interaction: 'ai' } as const;
+/** Per table: the organization period it follows, and the moment a row's period runs from. */
+const DUE = {
+  interaction_text: { kind: 'text', from: sql.ref('created_at') },
+  ai_interaction: { kind: 'ai', from: sql.ref('created_at') },
+  // A session's period runs from when it ended: revoked, or else expired.
+  auth_session: { kind: 'session', from: sql`coalesce(revoked_at, expires_at)` },
+} as const;
 
 export async function runRetention(
   db: Db,
@@ -63,6 +70,7 @@ export async function runRetention(
   const result: RetentionResult = {
     interaction_text: 0,
     ai_interaction: 0,
+    auth_session: 0,
     export_files: 0,
     aborted: false,
   };
@@ -76,19 +84,20 @@ export async function runRetention(
     trx.selectFrom('organization').select('id').orderBy('id').execute(),
   );
 
-  for (const table of ['interaction_text', 'ai_interaction'] as const) {
+  for (const table of ['interaction_text', 'ai_interaction', 'auth_session'] as const) {
+    const { kind, from } = DUE[table];
     for (const { id: orgId } of orgs) {
       for (;;) {
         if (stopped()) return result;
         // The policy shows only due rows; the explicit cutoff lets the
-        // (org_id, created_at) index find them.
+        // (org_id, created_at) indexes find them.
         const deleted = await asRetention(db, async (trx) => {
           const r = await sql`
             DELETE FROM ${sql.table(table)} WHERE id IN (
               SELECT id FROM ${sql.table(table)}
               WHERE org_id = ${orgId}
-                AND created_at < app.retention_cutoff(${orgId}, ${CUTOFF_KIND[table]})
-              ORDER BY created_at
+                AND ${from} < app.retention_cutoff(${orgId}, ${kind})
+              ORDER BY ${from}
               LIMIT ${batchSize})
           `.execute(trx);
           return Number(r.numAffectedRows ?? 0);

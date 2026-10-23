@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -47,6 +48,23 @@ async function seedWithAdmin(db: Db, label: string): Promise<Org> {
     .returning('id')
     .executeTakeFirstOrThrow();
   return { ...seeded, adminId: admin.id };
+}
+
+/** A signed-in session for `userId` (F5's auth_session), as sign-in would store it. */
+async function addSession(db: Db, orgId: string, userId: string): Promise<void> {
+  const now = Date.now();
+  await db
+    .insertInto('auth_session')
+    .values({
+      org_id: orgId,
+      user_id: userId,
+      token_hash: randomBytes(32),
+      provider: 'google',
+      created_at: new Date(now - 60_000),
+      last_seen_at: new Date(now),
+      expires_at: new Date(now + 3_600_000),
+    })
+    .execute();
 }
 
 async function latestAudit(db: Db, orgId: string, action: string) {
@@ -481,6 +499,7 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
     a = await seedWithAdmin(t.db, 'a');
     b = await seedWithAdmin(t.db, 'b');
     await t.db.updateTable('app_user').set({ email }).where('id', '=', a.studentId).execute();
+    await addSession(t.db, a.orgId, a.studentId);
     await t.db
       .insertInto('ai_interaction')
       .values({
@@ -550,6 +569,8 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
     expect(record.ai_outputs).toHaveLength(1);
     expect(record.ai_interactions).toHaveLength(2);
     expect(record.progress_snapshots).toHaveLength(1);
+    expect(record.auth_sessions).toHaveLength(1);
+    expect(record.auth_sessions[0]).not.toHaveProperty('token_hash');
     // Readable: indented, not one long line.
     expect(file.split('\n').length).toBeGreaterThan(20);
     expect(await latestAudit(t.db, a.orgId, 'student.exported')).toMatchObject({
@@ -572,6 +593,7 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
       aiInteractions: 2,
       progressSnapshots: 1,
       enrollments: 1,
+      authSessions: 1,
       exportFiles: 1,
     });
 
@@ -654,6 +676,7 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
       aiInteractions: 0,
       progressSnapshots: 0,
       enrollments: 0,
+      authSessions: 0,
       exportFiles: 0,
     });
   });
@@ -868,6 +891,7 @@ describe.skipIf(!hasDatabase)('student export covers every stored field (QA F6-E
       .set({ input_tokens: 123, output_tokens: 456, redacted_at: new Date('2026-10-01T00:00:00Z') })
       .where('user_id', '=', a.studentId)
       .execute();
+    await addSession(t.db, a.orgId, a.studentId);
     app = await t.loginAs(APP_ROLE);
     dir = await mkdtemp(join(tmpdir(), 'ideamap-export-fields-'));
   });
@@ -892,6 +916,7 @@ describe.skipIf(!hasDatabase)('student export covers every stored field (QA F6-E
       ai_outputs: 'ai_output',
       ai_interactions: 'ai_interaction',
       progress_snapshots: 'progress_snapshot',
+      auth_sessions: 'auth_session',
     };
     for (const [section, table] of Object.entries(sources) as [
       keyof typeof RECORD_OMITS,

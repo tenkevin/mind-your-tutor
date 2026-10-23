@@ -7,6 +7,7 @@ import {
   type ImportDeps,
 } from '@ideamap/worker';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { STAFF } from './policy.js';
 
 // Curriculum imports over HTTP (ARCHITECTURE.md §7, §11 "Curriculum data"):
 //
@@ -15,7 +16,10 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 //        202 with the queued job, or 200 with the first job for a repeated key.
 //   GET  /imports/:jobId                    the job's status, steps and draft.
 //
-// Who is asking comes from `authenticate`; F5's sign-in provides it.
+// Who is asking comes from `authenticate`; F5's sign-in provides it. The route
+// policies (F5-F4) refuse signed-out callers, students, and curricula or jobs the
+// caller's org can't see (403, as for any other route) before the body is read; the
+// worker repeats its own checks.
 
 export type Authenticate = (request: FastifyRequest) => Caller | null | Promise<Caller | null>;
 
@@ -77,7 +81,15 @@ export function importRoutes(app: FastifyInstance, options: ImportRoutesOptions)
 
   app.post<{ Params: { curriculumId: string } }>(
     '/curricula/:curriculumId/imports',
-    { bodyLimit: maxFileBytes },
+    {
+      bodyLimit: maxFileBytes,
+      config: {
+        policy: {
+          roles: STAFF,
+          scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+        },
+      },
+    },
     async (request, reply) => {
       const who = await caller(request);
       if (!Buffer.isBuffer(request.body)) {
@@ -93,8 +105,16 @@ export function importRoutes(app: FastifyInstance, options: ImportRoutesOptions)
     },
   );
 
-  app.get<{ Params: { jobId: string } }>('/imports/:jobId', async (request) => {
-    const who = await caller(request);
-    return { job: await getImportJob(options.deps, who, request.params.jobId) };
-  });
+  app.get<{ Params: { jobId: string } }>(
+    '/imports/:jobId',
+    {
+      config: {
+        policy: { roles: STAFF, scope: { kind: 'visible', table: 'import_job', param: 'jobId' } },
+      },
+    },
+    async (request) => {
+      const who = await caller(request);
+      return { job: await getImportJob(options.deps, who, request.params.jobId) };
+    },
+  );
 }

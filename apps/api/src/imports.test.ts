@@ -16,10 +16,23 @@ import {
   type Org,
   type TestDatabase,
 } from '../../worker/src/testing/db.js';
+import { CSRF_HEADER } from '@ideamap/contracts';
+import type { InjectOptions } from 'fastify';
+import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
+import { SESSION_COOKIE } from './policy.js';
+import { createSession } from './sessions.js';
+import { csrfToken, deriveKeys, sessionCookieValue } from './tokens.js';
 
-// C4 over HTTP: upload a file, poll the job, get a draft. Callers are picked by a
-// test header until F5's sign-in supplies them.
+// C4 over HTTP: upload a file, poll the job, get a draft. Callers sign in with F5
+// sessions; a test names one with the x-test-user header, which `inject` turns into
+// that caller's session cookie and CSRF token.
+
+const ORIGIN = 'https://teacher.ideamap.test';
+const config = loadConfig({
+  IDEAMAP_APP_ORIGINS: ORIGIN,
+  IDEAMAP_SESSION_SECRET: 'test-only-session-secret-0123456789abcdef',
+});
 
 describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
   let t: TestDatabase;
@@ -28,6 +41,26 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
   let a: Org;
   let b: Org;
   const callers = new Map<string, Caller>();
+  const sessions = new Map<string, { cookie: string; csrf: string }>();
+
+  /** app.inject, signed in as the caller named by x-test-user (if any). */
+  const inject = (options: InjectOptions) => {
+    const headers = { ...(options.headers as Record<string, string>) };
+    const signed = sessions.get(headers['x-test-user'] ?? '');
+    delete headers['x-test-user'];
+    const url = new URL(ORIGIN);
+    return app.inject({
+      ...options,
+      headers: {
+        ...headers,
+        host: url.host,
+        'x-forwarded-proto': 'https',
+        origin: ORIGIN,
+        ...(signed ? { [CSRF_HEADER]: signed.csrf } : {}),
+      },
+      cookies: signed ? { [SESSION_COOKIE]: signed.cookie } : {},
+    });
+  };
 
   const post = (
     as: string,
@@ -35,7 +68,7 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     body: Buffer,
     headers: Record<string, string> = {},
   ) =>
-    app.inject({
+    inject({
       method: 'POST',
       url: `/curricula/${curriculumId}/imports`,
       headers: { 'content-type': 'application/octet-stream', 'x-test-user': as, ...headers },
@@ -58,12 +91,20 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     a = await seedOrg(t.db, 'A');
     b = await seedOrg(t.db, 'B');
     callers.set('a-teacher', a.teacher).set('a-student', a.student).set('b-teacher', b.teacher);
-    app = buildServer({
-      imports: {
-        deps,
-        authenticate: (request) => callers.get(String(request.headers['x-test-user'])) ?? null,
-      },
-    });
+    const keys = deriveKeys(config.sessionSecret);
+    for (const [name, who] of callers) {
+      const { token } = await createSession(t.db, config, {
+        orgId: who.orgId,
+        userId: who.userId,
+        provider: 'google',
+        now: new Date(),
+      });
+      sessions.set(name, {
+        cookie: sessionCookieValue(who.orgId, token),
+        csrf: csrfToken(keys, token),
+      });
+    }
+    app = buildServer({ db: t.db, config, imports: { deps } });
   });
   afterAll(async () => {
     await app?.close();
@@ -83,7 +124,7 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     const until = Date.now() + 20_000;
     do {
       await new Promise((resolve) => setTimeout(resolve, 100));
-      const poll = await app.inject({
+      const poll = await inject({
         method: 'GET',
         url: `/imports/${job.id}`,
         headers: { 'x-test-user': 'a-teacher' },
@@ -115,7 +156,8 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     expect(student.statusCode).toBe(403);
     const other = await post('b-teacher', a.curriculumId, body);
     expect(other.statusCode).toBe(403);
-    expect(other.json()).toEqual({ error: "You can't import into this curriculum." });
+    // F5's route policy refuses another org's curriculum before the worker sees it.
+    expect(other.json()).toEqual({ error: 'Forbidden' });
     expect(await queued()).toBe(before);
   });
 
@@ -144,19 +186,20 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
   });
 
   it('refuses other content types and unknown jobs without echoing input', async () => {
-    const res = await app.inject({
+    const res = await inject({
       method: 'POST',
       url: `/curricula/${a.curriculumId}/imports`,
       headers: { 'content-type': 'text/html', 'x-test-user': 'a-teacher' },
       payload: '<x>',
     });
     expect(res.statusCode).toBe(415);
-    const missing = await app.inject({
+    const missing = await inject({
       method: 'GET',
       url: '/imports/<script>',
       headers: { 'x-test-user': 'a-teacher' },
     });
-    expect(missing.statusCode).toBe(404);
+    // F5's route policy answers ids the caller can't see, real or not, with 403.
+    expect(missing.statusCode).toBe(403);
     expect(missing.body).not.toContain('script');
   });
 });

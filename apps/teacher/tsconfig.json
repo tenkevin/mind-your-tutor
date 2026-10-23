@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.web.json",
+  "compilerOptions": {
+    // Read the contracts from source, as Vite does (vite.config.ts), so no build is needed first.
+    "paths": { "@ideamap/contracts": ["../../packages/contracts/src/index.ts"] }
+  },
   "include": ["src", "vite.config.ts"]
 }

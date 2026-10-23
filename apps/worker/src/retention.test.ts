@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { mkdtemp, readdir, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -86,6 +87,45 @@ async function seedAged(db: Db, org: SeededOrg): Promise<Map<number, string>> {
   return texts;
 }
 
+/** Sign-in sessions in each state, tagged by provider name. */
+const SESSIONS = {
+  's-active': { expires: 1, revoked: null },
+  's-expired29': { expires: -29, revoked: null },
+  's-expired31': { expires: -31, revoked: null },
+  's-revoked40': { expires: 1, revoked: -40 },
+} as const;
+
+async function seedSessions(db: Db, org: SeededOrg): Promise<void> {
+  const day = 86_400_000;
+  const now = Date.now();
+  for (const [provider, s] of Object.entries(SESSIONS)) {
+    await db
+      .insertInto('auth_session')
+      .values({
+        org_id: org.orgId,
+        user_id: org.studentId,
+        token_hash: randomBytes(32),
+        provider,
+        created_at: new Date(now - 60 * day),
+        last_seen_at: new Date(now - 30 * day),
+        expires_at: new Date(now + s.expires * day),
+        revoked_at: s.revoked === null ? null : new Date(now + s.revoked * day),
+      })
+      .execute();
+  }
+}
+
+async function remainingSessions(db: Db, orgId: string): Promise<string[]> {
+  const rows = await db
+    .selectFrom('auth_session')
+    .select('provider')
+    .where('org_id', '=', orgId)
+    .where('provider', 'like', 's-%')
+    .orderBy('provider')
+    .execute();
+  return rows.map((r) => r.provider);
+}
+
 async function remainingAges(db: Db, orgId: string) {
   const text = await db
     .selectFrom('interaction_text')
@@ -119,14 +159,17 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
     t = await freshDatabase();
     a = await seedOrg(t.db, 'a');
     b = await seedOrg(t.db, 'b');
-    // A keeps the defaults (90 days); B keeps text 30 days and transcripts 60.
+    // A keeps the defaults (90 days, sessions 30); B keeps text 30 days, transcripts
+    // 60 and ended sessions 7.
     await t.db
       .updateTable('organization')
-      .set({ text_retention_days: 30, ai_retention_days: 60 })
+      .set({ text_retention_days: 30, ai_retention_days: 60, session_retention_days: 7 })
       .where('id', '=', b.orgId)
       .execute();
     textsA = await seedAged(t.db, a);
     textsB = await seedAged(t.db, b);
+    await seedSessions(t.db, a);
+    await seedSessions(t.db, b);
     retention = await t.loginAs(RETENTION_ROLE);
     dir = await mkdtemp(join(tmpdir(), 'ideamap-retention-'));
   });
@@ -145,6 +188,7 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
     expect(result).toEqual({
       interaction_text: 1 + 4,
       ai_interaction: 1 + 3,
+      auth_session: 2 + 3,
       export_files: 0,
       aborted: false,
     });
@@ -154,6 +198,9 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
       ai: [29, 30, 31, 89, 90],
     });
     expect(await remainingAges(t.db, b.orgId)).toEqual({ text: [29, 30], ai: [29, 30, 31] });
+    // Sessions: kept while active, then for the org's period after they end.
+    expect(await remainingSessions(t.db, a.orgId)).toEqual(['s-active', 's-expired29']);
+    expect(await remainingSessions(t.db, b.orgId)).toEqual(['s-active']);
     // Seeded text from today is kept.
     expect(
       await t.db
@@ -192,6 +239,7 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
     expect(await runRetention(retention)).toEqual({
       interaction_text: 0,
       ai_interaction: 0,
+      auth_session: 0,
       export_files: 0,
       aborted: false,
     });
@@ -442,7 +490,13 @@ describe('retention schedule', () => {
     let ran = 0;
     await scheduleRetention(boss, async () => {
       ran++;
-      return { interaction_text: 0, ai_interaction: 0, export_files: 0, aborted: false };
+      return {
+        interaction_text: 0,
+        ai_interaction: 0,
+        auth_session: 0,
+        export_files: 0,
+        aborted: false,
+      };
     });
     expect(calls).toEqual([
       ['createQueue', RETENTION_QUEUE],

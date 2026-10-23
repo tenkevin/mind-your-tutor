@@ -166,7 +166,7 @@
       ],
       "done_when": "Teachers and students sign in with SSO; every API route checks role and org",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f5",
       "updated": "2026-10-23"
     },
@@ -262,7 +262,7 @@
       ],
       "done_when": "The API returns a draft vs published diff, and publishing moves the pinned version for the chosen classes",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c5",
       "updated": "2026-10-23"
     },

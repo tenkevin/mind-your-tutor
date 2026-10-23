@@ -115,7 +115,10 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       ADD COLUMN ai_retention_days integer NOT NULL DEFAULT 90
         CHECK (ai_retention_days BETWEEN 1 AND 3650),
       ADD COLUMN export_retention_days integer NOT NULL DEFAULT 7
-        CHECK (export_retention_days BETWEEN 1 AND 365)
+        CHECK (export_retention_days BETWEEN 1 AND 365),
+      -- Sign-in sessions (0014) are kept this long after they expire or are revoked.
+      ADD COLUMN session_retention_days integer NOT NULL DEFAULT 30
+        CHECK (session_retention_days BETWEEN 1 AND 365)
   `.execute(db);
 
   // 5. FERPA export files are export jobs too, so they expire with the others.
@@ -360,12 +363,13 @@ export async function up(db: Kysely<unknown>): Promise<void> {
         SELECT now() - make_interval(days => 1 + CASE kind
           WHEN 'text' THEN o.text_retention_days
           WHEN 'ai' THEN o.ai_retention_days
-          WHEN 'export' THEN o.export_retention_days END)
+          WHEN 'export' THEN o.export_retention_days
+          WHEN 'session' THEN o.session_retention_days END)
         FROM public.organization o WHERE o.id = org
       $$
   `.execute(db);
 
-  await sql`GRANT SELECT (id, text_retention_days, ai_retention_days, export_retention_days) ON organization TO ${r}`.execute(
+  await sql`GRANT SELECT (id, text_retention_days, ai_retention_days, export_retention_days, session_retention_days) ON organization TO ${r}`.execute(
     db,
   );
   await sql`CREATE POLICY retention_read ON organization FOR SELECT TO ${r} USING (true)`.execute(
@@ -399,6 +403,19 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       USING (${exportDue}) WITH CHECK (result_ref IS NULL)
   `.execute(db);
 
+  // Sign-in sessions, once expired or revoked for the organization's session period.
+  // No token hashes: the role sees only ids and dates.
+  await sql`
+    GRANT SELECT (id, org_id, expires_at, revoked_at), DELETE ON auth_session TO ${r}
+  `.execute(db);
+  const sessionDue = sql`coalesce(revoked_at, expires_at) < app.retention_cutoff(org_id, 'session')`;
+  for (const command of ['SELECT', 'DELETE']) {
+    await sql`
+      CREATE POLICY ${sql.id(`retention_${command.toLowerCase()}`)} ON auth_session
+        FOR ${sql.raw(command)} TO ${r} USING (${sessionDue})
+    `.execute(db);
+  }
+
   // Only the roles that need them may call the new functions.
   for (const fn of [
     'app.current_actor_id()',
@@ -419,7 +436,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
 export async function down(db: Kysely<unknown>): Promise<void> {
   const r = sql.id(RETENTION_ROLE);
-  for (const table of ['interaction_text', 'ai_interaction', 'export_job']) {
+  for (const table of ['interaction_text', 'ai_interaction', 'export_job', 'auth_session']) {
     await sql`DROP POLICY IF EXISTS retention_select ON ${sql.table(table)}`.execute(db);
     await sql`DROP POLICY IF EXISTS retention_delete ON ${sql.table(table)}`.execute(db);
     await sql`DROP POLICY IF EXISTS retention_update ON ${sql.table(table)}`.execute(db);
@@ -455,7 +472,7 @@ export async function down(db: Kysely<unknown>): Promise<void> {
       'template', 'data_checks', 'standards_alignment', 'drafted_rows', 'class_progress'))
   `.execute(db);
 
-  await sql`ALTER TABLE organization DROP COLUMN ai_retention_days, DROP COLUMN export_retention_days`.execute(
+  await sql`ALTER TABLE organization DROP COLUMN ai_retention_days, DROP COLUMN export_retention_days, DROP COLUMN session_retention_days`.execute(
     db,
   );
 }

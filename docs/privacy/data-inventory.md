@@ -30,6 +30,7 @@ This summary is written so it can be checked against a data processing agreement
 | Typed student text (chat, teach-back answers, transcripts) | 90 days | `organization.text_retention_days` (1 to 3650) | Retention job, daily |
 | AI transcripts (model requests and responses) | 90 days | `organization.ai_retention_days` (1 to 3650) | Retention job, daily |
 | Export files (student records, reports) | 7 days | `organization.export_retention_days` (1 to 365) | Retention job, daily |
+| Sign-in sessions (when and through which provider a user signed in) | 30 days after the session expires or is revoked | `organization.session_retention_days` (1 to 365) | Retention job, daily; a FERPA delete removes a student's at once |
 | Tracker events, generated map views, AI output shown to students | While the student's account exists | — | Pseudonymised by a FERPA delete; removed with the district at contract end |
 | Accounts (name, email, roster ids) | While the district keeps the user | — | FERPA delete, or the district removing the user |
 | Audit log | For the length of the agreement | — | Never edited or deleted by the app; removed with the district at contract end |
@@ -37,8 +38,8 @@ This summary is written so it can be checked against a data processing agreement
 
 **FERPA requests.** An admin of the district can, for one student:
 
-- **Export**: one JSON file with every record held about the student (account, classes, events, typed text, map views, AI output, AI transcripts, progress). The file expires after the export period (7 days by default).
-- **Delete**: removes the student's name, email and roster ids, everything they typed, their AI transcripts, their progress cache and class memberships, and any export file that could hold their name. Their tracker events stay, linked only to the random id that no longer leads to a person, so class-level reports stay correct. The deletion is recorded in the audit log with the random id only.
+- **Export**: one JSON file with every record held about the student (account, classes, events, typed text, map views, AI output, AI transcripts, progress, sign-in sessions without their token hashes). The file expires after the export period (7 days by default).
+- **Delete**: removes the student's name, email and roster ids, everything they typed, their AI transcripts, their progress cache and class memberships, their sign-in sessions (signing them out everywhere), and any export file that could hold their name. Their tracker events stay, linked only to the random id that no longer leads to a person, so class-level reports stay correct. The deletion is recorded in the audit log with the random id only.
 
 Teachers, students, and admins of other districts can't make these requests.
 
@@ -67,7 +68,7 @@ Every table also has keys and timestamps (`id`, `org_id`, `created_at`, `updated
 |---|---|---|---|---|---|---|
 | `organization.id`, `organization.created_at`, `organization.updated_at` | The district's record key and timestamps | No | System | Everyone in the district | Length of the agreement | With the district |
 | `organization.name` | The district or school name | No | Staff | Everyone in the district | Length of the agreement | With the district |
-| `organization.text_retention_days`, `organization.ai_retention_days`, `organization.export_retention_days` | The district's retention periods for typed text, AI transcripts and export files | No | Staff (admin) | Admins | Length of the agreement | With the district |
+| `organization.text_retention_days`, `organization.ai_retention_days`, `organization.export_retention_days`, `organization.session_retention_days` | The district's retention periods for typed text, AI transcripts, export files and ended sign-in sessions | No | Staff (admin) | Admins | Length of the agreement | With the district |
 | `app_user.id` | The user's random id. For students this is the pseudonymous id used everywhere else | Student record | System | Staff in the district | While the user exists, then kept with no personal data after a FERPA delete so events stay consistent | With the district |
 | `app_user.org_id`, `app_user.role`, `app_user.created_at`, `app_user.updated_at` | Which district the user belongs to, their role (admin, author, teacher, student), and timestamps | No | Roster | Staff in the district | While the user exists | With the district |
 | `app_user.name` | The user's name, shown to their teachers and admins | Identifying | Roster | The user; their teachers; admins | While the user exists | FERPA delete replaces it with "Removed student"; the district removing the user |
@@ -75,6 +76,17 @@ Every table also has keys and timestamps (`id`, `org_id`, `created_at`, `updated
 | `app_user.sso_provider`, `app_user.sso_subject` | Which sign-in provider (Google, Clever, ClassLink) and the user's id there | Identifying | Roster | Admins | While the user exists | FERPA delete clears them |
 | `app_user.roster_source_id` | The id from the district's OneRoster file, to match re-imports | Identifying | Roster | Admins | While the user exists | FERPA delete clears it |
 | `enrollment.class_id`, `enrollment.student_id`, `enrollment.org_id`, `enrollment.created_at` | Which students are in which class, and since when | Student record | Roster or Staff | The class's teacher; admins; the student | While the student is in the class | FERPA delete; removing the student from the class |
+
+## Sign-in
+
+Sessions are how a signed-in browser stays signed in (task F5). The browser holds a random token; the database keeps only its SHA-256 hash.
+
+| Field | What it is for | Student personal data? | Comes from | Who can see it | Kept for | How it is deleted |
+|---|---|---|---|---|---|---|
+| `auth_session.id`, `auth_session.org_id`, `auth_session.user_id` | The session's key, district, and the user it signs in | Student record | System | Admins | While active, then `session_retention_days` (default 30) after it expires or is revoked | Retention job; FERPA delete removes a student's sessions at once (signing them out) |
+| `auth_session.token_hash` | The hash of the sign-in cookie's token, to recognize the browser. A credential, so it is left out of student exports | No | System | Nobody (compared, never shown) | As the session | As the session |
+| `auth_session.provider`, `auth_session.created_at`, `auth_session.last_seen_at`, `auth_session.expires_at`, `auth_session.revoked_at` | Which sign-in provider was used, when the session started, was last used, expires, and was ended | Student record | System | Admins | As the session | As the session |
+| `sso_tenant.provider`, `sso_tenant.tenant`, `sso_tenant.org_id`, `sso_tenant.created_at` | Which district a sign-in provider's tenant (a Google Workspace domain, a Clever district) belongs to | No | Staff (operator) | Operators; admins see their own district's | Length of the agreement | With the district |
 
 ## Curriculum (no student data)
 
@@ -110,6 +122,7 @@ Every table also has keys and timestamps (`id`, `org_id`, `created_at`, `updated
 | `class.id`, `class.org_id`, `class.curriculum_id`, `class.created_at`, `class.updated_at` | Record keys and timestamps | No | System | The class's teacher and students; admins | Length of the agreement | With the district |
 | `class.name`, `class.time_zone` | The class's name, and its time zone for day streaks | No | Staff | The class's teacher and students; admins | Length of the agreement | Changed by staff (audited); with the district |
 | `class.pinned_version_id` | The published curriculum version the class's students see | No | Staff | The class's teacher; admins | Length of the agreement | Changed on publish or rollback (audited) |
+| `class.roster_source_id` | The class's id in the district's OneRoster file, to match re-imports | No | Roster | Admins | Length of the agreement | With the district |
 | `class.teacher_id` | The class's teacher | Staff | Staff | The class's teacher and students; admins | Length of the agreement | With the district |
 | `class_config.class_id`, `class_config.org_id`, `class_config.updated_at` | Record keys and timestamp | No | System | The class's teacher; admins | Length of the agreement | With the class |
 | `class_config.config` | The class's own settings: course details, pass mark, due dates, persona prompts, card rarity | No | Staff | The class's teacher; admins; students see the result | Length of the agreement | Changed by the teacher (audited); with the class |

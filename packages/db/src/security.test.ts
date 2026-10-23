@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
 import { APP_ROLE } from './migrations/helpers.js';
-import { CLASS_SCOPED_TABLES, TENANT_TABLES } from './schema.js';
+import { CLASS_SCOPED_TABLES, OWNER_LOOKUP_TABLES, TENANT_TABLES } from './schema.js';
 import {
   asApp,
   errorCode,
@@ -32,8 +32,9 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
   it('is enabled and forced on every tenant table', async () => {
     const { rows } = await sql<{ relname: string; on: boolean; forced: boolean; policies: number }>`
       SELECT c.relname, c.relrowsecurity AS on, c.relforcerowsecurity AS forced,
-        -- Policies for every role; the retention role's own (0012) are tested in privacy.test.ts.
-        (SELECT count(*)::int FROM pg_policy p WHERE p.polrelid = c.oid AND p.polroles = '{0}') AS policies
+        -- The retention role's own policies (F6) are tested in privacy.test.ts.
+        (SELECT count(*)::int FROM pg_policy p
+          WHERE p.polrelid = c.oid AND p.polname NOT LIKE 'retention\_%') AS policies
       FROM pg_class c
       WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p')
         AND NOT c.relispartition AND c.relname NOT LIKE 'kysely_%'
@@ -41,8 +42,10 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
     `.execute(t.db);
     expect(rows.map((r) => r.relname)).toEqual([...TENANT_TABLES].sort());
     const classScoped: readonly string[] = CLASS_SCOPED_TABLES;
+    const ownerLookup: readonly string[] = OWNER_LOOKUP_TABLES;
     for (const row of rows) {
-      const policies = classScoped.includes(row.relname) ? 2 : 1;
+      const policies =
+        classScoped.includes(row.relname) || ownerLookup.includes(row.relname) ? 2 : 1;
       expect(row, row.relname).toMatchObject({ on: true, forced: true, policies });
     }
   });

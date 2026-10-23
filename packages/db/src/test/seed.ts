@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parsePack, type ClassConfig, type Pack, type VersionSource } from '@ideamap/contracts';
 import { json, toVector, type Db } from '../client.js';
@@ -314,6 +315,24 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       persona: 'tutor',
       model: 'test-model',
       request: json({ messages: [] }),
+    })
+    .execute();
+
+  await db
+    .insertInto('sso_tenant')
+    .values({ provider: 'google', tenant: `${label}-${orgId}.example.org`, org_id: orgId })
+    .execute();
+  const now = new Date();
+  await db
+    .insertInto('auth_session')
+    .values({
+      org_id: orgId,
+      user_id: teacherId,
+      token_hash: Buffer.from(randomBytes(32)),
+      provider: 'google',
+      created_at: now,
+      last_seen_at: now,
+      expires_at: new Date(now.getTime() + 3_600_000),
     })
     .execute();
 

@@ -236,12 +236,15 @@ export interface StudentRecord {
   ai_outputs: Record<string, unknown>[];
   ai_interactions: Record<string, unknown>[];
   progress_snapshots: Record<string, unknown>[];
+  auth_sessions: Record<string, unknown>[];
 }
 
 /**
  * Columns a student record leaves out, per section: the organization (stated once at
- * the top) and the student's own id (the record is about them). Everything else
- * stored about the student is exported; `privacy.test.ts` checks this list.
+ * the top) and the student's own id (the record is about them). A session's
+ * `token_hash` is left out too: it is a credential (the hash of the sign-in cookie),
+ * not information about the student. Everything else stored about the student is
+ * exported; `privacy.test.ts` checks this list.
  */
 export const RECORD_OMITS = {
   student: ['org_id'],
@@ -252,6 +255,7 @@ export const RECORD_OMITS = {
   ai_outputs: ['org_id', 'student_id'],
   ai_interactions: ['org_id', 'user_id'],
   progress_snapshots: ['org_id', 'student_id'],
+  auth_sessions: ['org_id', 'user_id', 'token_hash'],
 } as const;
 
 function omit<T extends object>(row: T, keys: readonly string[]): Record<string, unknown> {
@@ -316,6 +320,12 @@ export async function collectStudentRecord(
     .selectAll()
     .where('student_id', '=', studentId)
     .execute();
+  const auth_sessions = await trx
+    .selectFrom('auth_session')
+    .selectAll()
+    .where('user_id', '=', studentId)
+    .orderBy('created_at')
+    .execute();
   return {
     format: 'ideamap.student-record',
     version: 1,
@@ -329,6 +339,7 @@ export async function collectStudentRecord(
     ai_outputs: omitAll(ai_outputs, RECORD_OMITS.ai_outputs),
     ai_interactions: omitAll(ai_interactions, RECORD_OMITS.ai_interactions),
     progress_snapshots: omitAll(progress_snapshots, RECORD_OMITS.progress_snapshots),
+    auth_sessions: omitAll(auth_sessions, RECORD_OMITS.auth_sessions),
   };
 }
 
@@ -373,6 +384,9 @@ export async function recordExportSubjects(
     .execute();
 }
 
+/** Runs `fn` in one transaction acting for the request's organization, as the app role. */
+export type OrgRun = <T>(fn: (trx: Trx) => Promise<T>) => Promise<T>;
+
 export interface StudentExport {
   exportJobId: string;
   /** The file's key in the export store. */
@@ -387,14 +401,23 @@ export interface StudentExport {
  * organization may do this. The file expires with the organization's export
  * retention, and is removed at once if the student is deleted.
  */
-export async function exportStudent(
+export function exportStudent(
   db: Db,
+  request: StudentRequest,
+  store: ExportStore,
+): Promise<StudentExport> {
+  return exportStudentIn((fn) => withOrg(db, request.orgId, fn), request, store);
+}
+
+/** As `exportStudent`, in a transaction the caller provides (the API's `req.withOrg`). */
+export async function exportStudentIn(
+  run: OrgRun,
   request: StudentRequest,
   store: ExportStore,
 ): Promise<StudentExport> {
   let written: string | null = null;
   try {
-    return await withOrg(db, request.orgId, async (trx) => {
+    return await run(async (trx) => {
       await authorize(trx, request);
       await actAs(trx, request.actorId);
       await lockStudents(trx, [request.studentId]);
@@ -441,6 +464,7 @@ export interface StudentDeletion {
   aiInteractions: number;
   progressSnapshots: number;
   enrollments: number;
+  authSessions: number;
   exportFiles: number;
 }
 
@@ -449,16 +473,25 @@ export interface StudentDeletion {
  * leaves their tracker events in place under their pseudonymous id (§8.2, §10):
  * the account keeps only its random id, role and organization, so nothing left
  * identifies them. Removes every export file that holds them (`export_subject`), and
- * any student-naming file whose contents weren't recorded. Audited with the
- * pseudonymous id only. Safe to repeat.
+ * any student-naming file whose contents weren't recorded, and signs them out
+ * everywhere. Audited with the pseudonymous id only. Safe to repeat.
  */
-export async function deleteStudent(
+export function deleteStudent(
   db: Db,
   request: StudentRequest,
   store: ExportStore,
 ): Promise<StudentDeletion> {
+  return deleteStudentIn((fn) => withOrg(db, request.orgId, fn), request, store);
+}
+
+/** As `deleteStudent`, in a transaction the caller provides (the API's `req.withOrg`). */
+export async function deleteStudentIn(
+  run: OrgRun,
+  request: StudentRequest,
+  store: ExportStore,
+): Promise<StudentDeletion> {
   const { orgId, studentId } = request;
-  return withOrg(db, orgId, async (trx) => {
+  return run(async (trx) => {
     await authorize(trx, request);
     await actAs(trx, request.actorId);
 
@@ -528,6 +561,10 @@ export async function deleteStudent(
       ),
       enrollments: count(
         await trx.deleteFrom('enrollment').where('student_id', '=', studentId).executeTakeFirst(),
+      ),
+      // Ends every sign-in session at once, and removes when and how they signed in.
+      authSessions: count(
+        await trx.deleteFrom('auth_session').where('user_id', '=', studentId).executeTakeFirst(),
       ),
       exportFiles: exports.length,
     };
