@@ -23,10 +23,15 @@ const me = (id: string): MeResponse => ({
 const TERRY = '1f8b8f7e-9f7c-4a40-9a5e-0d3c2b1a0f01';
 const TESS = '2f8b8f7e-9f7c-4a40-9a5e-0d3c2b1a0f02';
 
+type Outcome = 'ok' | 401 | 500 | 'network';
+
 function fakeServer() {
   const state = {
     signedIn: TERRY as string | null,
     writes: [] as { url: string; body: unknown; csrf: string }[],
+    /** Per-URL outcome for writes; anything unlisted succeeds. */
+    outcome: new Map<string, Outcome>(),
+    attempts: [] as string[],
   };
   const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -35,6 +40,10 @@ function fakeServer() {
         ? new Response(JSON.stringify(me(state.signedIn)), { status: 200 })
         : new Response('{}', { status: 401 });
     }
+    state.attempts.push(url);
+    const outcome = state.outcome.get(url) ?? 'ok';
+    if (outcome === 'network') throw new TypeError('Failed to fetch');
+    if (outcome !== 'ok') return new Response('{}', { status: outcome });
     if (!state.signedIn) return new Response('{}', { status: 401 });
     const headers = new Headers(init?.headers);
     state.writes.push({
@@ -90,7 +99,7 @@ describe('session client (F5-U3)', () => {
     state.signedIn = TERRY;
     const again = createSessionClient({ fetch: fetchFn, store, here: () => page, go: () => {} });
     await again.load();
-    expect(await again.replayPendingWrites()).toBe(1);
+    expect(await again.replayPendingWrites()).toEqual({ saved: 1, pending: 0 });
     expect(state.writes).toEqual([
       { url: '/api/classes/x/config', body: { course: { pass_mark: 75 } }, csrf: `csrf-${TERRY}` },
     ]);
@@ -107,7 +116,7 @@ describe('session client (F5-U3)', () => {
     state.signedIn = TESS;
     const other = createSessionClient({ fetch: fetchFn, store, here: () => '/', go: () => {} });
     await other.load();
-    expect(await other.replayPendingWrites()).toBe(0);
+    expect(await other.replayPendingWrites()).toEqual({ saved: 0, pending: 0 });
     expect(state.writes).toEqual([]);
     expect(readPending(store)).toEqual([]);
   });
@@ -118,5 +127,100 @@ describe('session client (F5-U3)', () => {
     const client = createSessionClient({ fetch: fetchFn, store, here: () => '/', go: () => {} });
     await client.load();
     expect([...store.data.values()].join()).not.toContain('csrf');
+  });
+
+  describe('keeps every edit until the server accepts it (F5-E1)', () => {
+    const URLS = ['/api/classes/a/config', '/api/classes/b/config', '/api/classes/c/library/d'];
+    const page = '/classes/a/settings?tab=units';
+
+    /** Three edits kept by an expired session, then a fresh sign-in on the same tab. */
+    async function keptEdits() {
+      const server = fakeServer();
+      const store = memoryStore();
+      const visits: string[] = [];
+      const deps = {
+        fetch: server.fetchFn,
+        store,
+        here: () => page,
+        go: (p: string) => visits.push(p),
+      };
+      const before = createSessionClient(deps);
+      await before.load();
+      server.state.signedIn = null;
+      for (const [i, url] of URLS.entries()) {
+        await expect(before.send('PUT', url, { edit: i })).rejects.toBeInstanceOf(SignedOut);
+      }
+      server.state.signedIn = TERRY;
+      server.state.attempts.length = 0;
+      visits.length = 0;
+      const client = createSessionClient(deps);
+      await client.load();
+      return { ...server, store, visits, client };
+    }
+    const keptUrls = (store: KeyValue) => readPending(store).map((w) => [w.url, w.body]);
+
+    it('on a 401 for the first write: keeps all three and returns to the page', async () => {
+      const { state, store, visits, client } = await keptEdits();
+      state.outcome.set(URLS[0]!, 401);
+      await expect(client.replayPendingWrites()).rejects.toBeInstanceOf(SignedOut);
+      expect(keptUrls(store)).toEqual(URLS.map((u, i) => [u, { edit: i }]));
+      expect(visits).toEqual([signInPath(page)]);
+    });
+
+    it('on a 401 midway: keeps the failed write and the untried one, not the saved one', async () => {
+      const { state, store, visits, client } = await keptEdits();
+      state.outcome.set(URLS[1]!, 401);
+      await expect(client.replayPendingWrites()).rejects.toBeInstanceOf(SignedOut);
+      expect(state.attempts).toEqual([URLS[0], URLS[1]]);
+      expect(keptUrls(store)).toEqual([
+        [URLS[1], { edit: 1 }],
+        [URLS[2], { edit: 2 }],
+      ]);
+      expect(visits).toEqual([signInPath(page)]);
+    });
+
+    it('on a server error: keeps that write, saves the others, and reports it', async () => {
+      const { state, store, client } = await keptEdits();
+      state.outcome.set(URLS[1]!, 500);
+      expect(await client.replayPendingWrites()).toEqual({ saved: 2, pending: 1 });
+      expect(keptUrls(store)).toEqual([[URLS[1], { edit: 1 }]]);
+    });
+
+    it('on a dropped connection: keeps the write and everything after it', async () => {
+      const { state, store, client } = await keptEdits();
+      state.outcome.set(URLS[0]!, 'network');
+      expect(await client.replayPendingWrites()).toEqual({ saved: 0, pending: 3 });
+      expect(keptUrls(store)).toEqual(URLS.map((u, i) => [u, { edit: i }]));
+    });
+
+    it('then recovers every edit when a retry succeeds', async () => {
+      const { state, store, client } = await keptEdits();
+      state.outcome.set(URLS[0]!, 500);
+      state.outcome.set(URLS[2]!, 'network');
+      expect(await client.replayPendingWrites()).toEqual({ saved: 1, pending: 2 });
+      state.outcome.clear();
+      expect(await client.replayPendingWrites()).toEqual({ saved: 2, pending: 0 });
+      expect(readPending(store)).toEqual([]);
+      expect(
+        state.writes
+          .map((w) => [w.url, w.body, w.csrf])
+          .sort(([a], [b]) => String(a).localeCompare(String(b))),
+      ).toEqual(URLS.map((u, i) => [u, { edit: i }, `csrf-${TERRY}`]));
+    });
+
+    it("still drops another user's kept edits without sending them", async () => {
+      const { state, store, client } = await keptEdits();
+      store.setItem(
+        'ideamap.pendingWrites',
+        JSON.stringify([
+          ...readPending(store),
+          { userId: TESS, method: 'PUT', url: '/api/x', body: 1 },
+        ]),
+      );
+      state.outcome.set(URLS[0]!, 500);
+      expect(await client.replayPendingWrites()).toEqual({ saved: 2, pending: 1 });
+      expect(state.attempts).not.toContain('/api/x');
+      expect(readPending(store).map((w) => w.userId)).toEqual([TERRY]);
+    });
   });
 });

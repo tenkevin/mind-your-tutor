@@ -14,7 +14,9 @@ import {
 // Expired sessions (F5-U3): a write refused with 401 is kept in sessionStorage, for
 // this tab and this user only, and the teacher is sent to sign in and back to the
 // same page. After sign-in, `replayPendingWrites` sends it again, so autosaved
-// Teacher Settings edits aren't lost.
+// Teacher Settings edits aren't lost. A kept write leaves storage only once the
+// server has accepted it: a 401, a server error or a dropped connection keeps it (and
+// every write not yet tried) for the next attempt.
 
 const PENDING_KEY = 'ideamap.pendingWrites';
 
@@ -57,11 +59,18 @@ export function stashWrite(store: KeyValue, write: PendingWrite): void {
 
 type Fetch = typeof fetch;
 
+/** What a replay did: writes the server accepted, and writes still kept to retry. */
+export interface ReplayResult {
+  saved: number;
+  pending: number;
+}
+
 export interface SessionClient {
   me: MeResponse | null;
   load(): Promise<MeResponse | null>;
   send(method: PendingWrite['method'], url: string, body?: unknown): Promise<Response>;
-  replayPendingWrites(): Promise<number>;
+  /** Resend kept writes. Throws SignedOut (after keeping them) if the session ends again. */
+  replayPendingWrites(): Promise<ReplayResult>;
   signOut(): Promise<void>;
 }
 
@@ -72,6 +81,21 @@ export function createSessionClient(deps: {
   here: () => string;
   go: (path: string) => void;
 }): SessionClient {
+  const request = (method: PendingWrite['method'], url: string, body: unknown) =>
+    deps.fetch(url, {
+      method,
+      credentials: 'same-origin',
+      headers: {
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        [CSRF_HEADER]: client.me?.csrfToken ?? '',
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+  const toSignIn = () => {
+    deps.go(signInPath(deps.here()));
+    return new SignedOut();
+  };
+
   const client: SessionClient = {
     me: null,
     async load() {
@@ -80,31 +104,40 @@ export function createSessionClient(deps: {
       return client.me;
     },
     async send(method, url, body) {
-      const res = await deps.fetch(url, {
-        method,
-        credentials: 'same-origin',
-        headers: {
-          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
-          [CSRF_HEADER]: client.me?.csrfToken ?? '',
-        },
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      });
+      const res = await request(method, url, body);
       if (res.status === 401) {
         if (client.me) stashWrite(deps.store, { userId: client.me.user.id, method, url, body });
-        deps.go(signInPath(deps.here()));
-        throw new SignedOut();
+        throw toSignIn();
       }
       return res;
     },
     async replayPendingWrites() {
       const me = client.me;
-      if (!me) return 0;
-      const pending = readPending(deps.store);
-      deps.store.removeItem(PENDING_KEY);
+      if (!me) return { saved: 0, pending: readPending(deps.store).length };
       // Only this user's edits: someone else signing in on this tab never sends them.
-      const mine = pending.filter((w) => w.userId === me.user.id);
-      for (const w of mine) await client.send(w.method, w.url, w.body);
-      return mine.length;
+      let kept = readPending(deps.store).filter((w) => w.userId === me.user.id);
+      const save = () =>
+        kept.length > 0
+          ? deps.store.setItem(PENDING_KEY, JSON.stringify(kept))
+          : deps.store.removeItem(PENDING_KEY);
+      save();
+      let saved = 0;
+      for (const w of [...kept]) {
+        let res: Response;
+        try {
+          res = await request(w.method, w.url, w.body);
+        } catch {
+          // Offline or the connection dropped: keep this write and the rest.
+          break;
+        }
+        // Signed out again: everything not yet saved stays kept for the next sign-in.
+        if (res.status === 401) throw toSignIn();
+        if (!res.ok) continue; // kept, to retry; later writes are independent
+        kept = kept.filter((k) => k !== w);
+        save();
+        saved++;
+      }
+      return { saved, pending: kept.length };
     },
     async signOut() {
       await client.send('POST', '/auth/sign-out');
