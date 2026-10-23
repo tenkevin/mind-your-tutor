@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import {
   DATA_CHECK_KINDS,
   DataCheckIssueSchema,
+  CurriculumVersionSchema,
+  VersionIssuesSchema,
   parsePack,
   type DataCheckIssue,
   type DataCheckKind,
@@ -134,6 +136,92 @@ describe('the water-cycle sample (C2-F2)', () => {
 
   it('matches the contract shape (C2-F7)', () => {
     for (const issue of issues) expect(DataCheckIssueSchema.parse(issue)).toEqual(issue);
+  });
+});
+
+describe('issues stored on a curriculum version (C2cx5)', () => {
+  const versionSource = {
+    kind: 'json',
+    file_ref: null,
+    file_name: null,
+    checksum: 'a'.repeat(64),
+    column_mapping: [],
+  } as const;
+
+  it('round-trips parse and data-check issues without losing their fields or origin', () => {
+    const clean = sample();
+    const parsed = parsePack({
+      ...clean,
+      personas: clean.personas.map((persona, i) =>
+        i === 0
+          ? { ...persona, prompt_template: `${persona.prompt_template ?? ''} {unknown}` }
+          : persona,
+      ),
+    });
+    if (!parsed.ok) throw new Error('sample with a prompt warning should parse');
+    const checks = checkPack(parsed.value);
+    const issues = [...parsed.issues, ...checks];
+    const version = CurriculumVersionSchema.parse({
+      id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      curriculum_id: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      number: 2,
+      status: 'draft',
+      pack: parsed.value,
+      derived: null,
+      issues,
+      source: versionSource,
+      created_at: '2026-10-22T09:00:00Z',
+      published_at: null,
+    });
+    const restored = CurriculumVersionSchema.parse(JSON.parse(JSON.stringify(version)));
+
+    expect(version.issues.filter((issue) => issue.origin === 'import')).toEqual(
+      parsed.issues.map((issue) => ({ ...issue, origin: 'import', level: issue.severity })),
+    );
+    expect(version.issues.filter((issue) => issue.origin === 'data_check')).toEqual(
+      checks.map((issue) => ({ ...issue, origin: 'data_check' })),
+    );
+    expect(restored.issues).toEqual(version.issues);
+  });
+
+  it('keeps C8 issues for 10,000 ideas below the 1 MB storage bound', () => {
+    const specs = chain(10_000, false);
+    specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
+    const checks = checkPack(pack(specs));
+    expect(checks.map((issue) => issue.kind)).toEqual(['prereq', 'blocked']);
+    expect(checks[1]!.items).toHaveLength(9_999);
+
+    const stored = VersionIssuesSchema.parse(checks);
+    const bytes = new TextEncoder().encode(JSON.stringify(stored)).byteLength;
+    expect(bytes).toBeLessThan(1_000_000);
+  });
+
+  it('parses a version with the largest valid C8 issue group in under 50 ms', () => {
+    const specs = chain(5000, false);
+    specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
+    const checked = pack(specs);
+    const parsed = parsePack({ ...sample(), ...checked });
+    if (!parsed.ok) throw new Error('large test pack should satisfy the pack schema');
+    const checks = checkPack(parsed.value);
+    const input = {
+      id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      curriculum_id: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      number: 2,
+      status: 'draft',
+      pack: parsed.value,
+      derived: null,
+      issues: checks,
+      source: versionSource,
+      created_at: '2026-10-22T09:00:00Z',
+      published_at: null,
+    };
+
+    const start = performance.now();
+    const version = CurriculumVersionSchema.parse(input);
+    const elapsed = performance.now() - start;
+
+    expect(version.issues[1]!.items).toHaveLength(4999);
+    expect(elapsed).toBeLessThan(50);
   });
 });
 
