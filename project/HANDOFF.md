@@ -1,6 +1,6 @@
 # Claude Design handoff (reference)
 
-> For agents on this repo: start with `AGENTS.md` at the root. Build work follows `docs/PLAN.md`. This note is kept as background on how the design files were exported; the instructions below are superseded by the plan.
+> Historical design-export reference only. Start with root `AGENTS.md`, current `docs/HANDOFF.md` and `docs/qa/STATUS.md` before using `docs/PLAN.md`. Coordination is stopped after C9; ready tasks and the instructions below do not authorize further work. This note preserves export background, not live assignments.
 
 
 This is a **handoff bundle** from Claude Design (claude.ai/design).
