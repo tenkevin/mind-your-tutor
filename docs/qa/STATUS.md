@@ -6,7 +6,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
-> **Hard stop at gate `MD`:** no work on education data mining or interaction tracing (M1–M5 and everything downstream) until the user clears it. See AGENTS.md.
+> **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D29 and the §8 spec v1 exactly; see AGENTS.md.
 
 ## Monday QA queue (as of 2026-10-23 17:00 UTC)
 

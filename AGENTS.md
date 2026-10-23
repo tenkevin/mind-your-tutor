@@ -73,13 +73,7 @@ Until F1 lands, these are the defaults it must set up. After F1, the repo config
 
 ## Rules
 
-- **Hard stop: education data mining and interaction tracing (gate `MD`).** The user has decisions to make before any of this is built. Until `MD` is done (only the user clears it), nobody designs, specifies or builds:
-  - tracker event schemas, event ingest or storage of student interactions;
-  - progress, mastery or behaviour metrics computed from interactions;
-  - knowledge tracing, learner models, predictions or inferences about students;
-  - teacher trace views (timelines, heatmaps), or student analytics or exports of interaction data.
-
-  That covers M1–M5 and everything downstream (S1–S4, C7, L1). Don't add such code inside other tasks either. If a task seems to need it, stop and tell the coordinator. Existing merged code (the `packages/tracker` skeleton, the F4 event tables) stays as it is and isn't extended.
+- **Tracing follows the user's decisions (gate `MD`, cleared 2026-10-23).** Build tracker, memory, feedback and audit features exactly to ARCHITECTURE D15–D29 and §8 spec v1. Changing what is traced (D19), inferred (D20), shown (D21) or kept (D22), or what memory holds (D28), is a user decision: stop and ask the coordinator, never extend it on your own.
 
 - Never edit, move or delete a file whose name starts with `Codex-`. Those are an external reviewer's findings (docs/qa/README.md, External review). Tasks named `<ID>cx<n>` fix Codex errors and take priority.
 

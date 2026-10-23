@@ -188,96 +188,113 @@ interface MediaProvider   { kind: string; resolve(url: string): Promise<MediaRef
 
 Exports: blank template workbook, data-check report, standards alignment report (ideas and units per code), Atlas-drafted rows as CSV, class progress summary.
 
-## 8. Interaction tracker and map generation (placeholder)
+## 8. Interaction tracker and map generation
 
-> **Gate `MD` (2026-10-23): stop before development.** The user will settle further decisions on education data mining and interaction tracing with the coordinator before any of §8 is specified or built. Nothing in §8 is final until `MD` is cleared; see AGENTS.md "Hard stop".
-
-> **Placeholder.** The direction below is agreed. The event catalogue, metric definitions and retention periods still need writing up, and tasks M1–M5 can't be claimed until they are (see §8.6).
+> **Spec v1 (2026-10-23), from decisions D15–D29.** Gate `MD` was cleared by the user on 2026-10-23. Any change to *what* is traced (D19), inferred (D20), shown (D21) or kept (D22) is a user decision and must not be made by an agent.
 
 Two parts with opposite rules:
 
 | | Interaction tracker | Map generation and AI |
 |---|---|---|
-| Job | Continuously record what each student does and types, and work out progress and behaviour from it | Decide what the map shows, and create explanations, feedback and questions |
+| Job | Record learning events (D19) and work out progress and mastery from them | Decide what the map shows, and create explanations, feedback and questions |
 | Deterministic? | **Yes, always.** The same events always give the same numbers | **No need.** It may use heuristics, randomness or a model |
 | How it stays trustworthy | Rules are pure and replayable | Whatever it shows a student is saved and recorded as a tracker event |
 
 ### 8.1 The tracker: deterministic by design
 
-Every student action and input is recorded as an event in an append-only log. Progress and behaviour metrics are **never edited directly**. They are calculated by replaying events through fixed rules in `packages/tracker`:
+Learning events go into an append-only log. Progress is **never edited directly**. It is calculated by replaying events through fixed rules in `packages/tracker`:
 
 ```
 state = events.reduce(apply, initialState(classConfig, rulesVersion))
 ```
 
-- **Deterministic:** no `Date.now()`, no randomness, no network and no model calls inside `apply`. Time comes from the events themselves.
-- **Continuous:** events stream in as the student works (batched every few seconds, plus on page hide), not only at quiz ends.
-- **Traceable:** for any number a teacher sees, the app can list exactly which events produced it.
-- **Repairable:** a fixed rule is applied by replaying the events, not by patching stored numbers. Rules carry a `rulesVersion`, so old results can always be reproduced.
-- **Fast reads:** the API keeps cached snapshots of the state (`ProgressSnapshot`: state plus last event sequence number) and applies only newer events. Snapshots can be dropped and rebuilt at any time.
+- **Deterministic:** no `Date.now()`, no randomness, no network and no model calls inside `apply`. Time comes from the events.
+- **Traceable:** for any number a teacher sees, the app lists the events that produced it.
+- **Repairable:** a fixed rule is applied by replaying events, never by patching numbers. Rules carry a `rulesVersion`, so old results stay reproducible.
+- **Fast reads:** `ProgressSnapshot` caches the state plus its last `seq`; only newer events are applied, and snapshots can be dropped and rebuilt.
+- **Event shape (D18, borrowed from Moodle's log store):** each event has a `type`, an **educational level** (`participating` for student learning actions, `teaching` for teacher actions, `other` for provenance records) and a target (`idea`, `quiz`, `unit`, `feedback` or `mission`) with its id. No IP address, device or location is ever recorded (D19).
 
-### 8.2 What the tracker records (draft)
+### 8.2 Event catalogue (D19)
 
 ```ts
 type InteractionEvent = {
-  id: string;            // client-generated id (ULID), so a resent event is not recorded twice
+  id: string;            // client ULID; a resent event is recorded once
   studentId: string;     // pseudonymous
   classId: string;
   versionId: string;     // curriculum version the student was on
-  seq: number;           // per-student sequence number assigned by the server; replay order
+  seq: number;           // per-student, set by the server; replay order
   at: string;            // client time; used for durations, seq decides order
   type: EventType;
-  payload: unknown;      // validated per type with zod
+  level: 'participating' | 'teaching' | 'other';
+  payload: unknown;      // validated per type with zod (M1)
 };
 ```
 
-| Area | Behaviour recorded |
+| Type | Level | Payload (all ids, never free text) |
+|---|---|---|
+| `idea.opened` | participating | ideaId |
+| `idea.active_time` | participating | ideaId, seconds (rounded to 30 s, per session; sent when the student leaves the idea or the page) |
+| `quiz.started` | participating | ideaId, attemptId, questionIds (from the published version) |
+| `quiz.answered` | participating | attemptId, questionId, choice, correct, attempt number, secondsToAnswer (rounded to 5 s) |
+| `quiz.finished` | participating | attemptId, score, of |
+| `hint.requested` | participating | ideaId or questionId |
+| `review.link_rebuilt` | participating | ideaId, linkId |
+| `teachback.done` | participating | unitId, textRef (typed answer, kept in `InteractionText`) |
+| `teachback.judged` | other | unitId, verdict (pass, retry), keyPointsHit, aiOutputId |
+| `feedback.shown` | participating | feedbackId, source (ai, teacher), reasonRef (D15) |
+| `feedback.challenged` | participating | feedbackId, textRef |
+| `feedback.ruled` | teaching | feedbackId, ruling (upheld, overturned, edited), by teacher |
+| `teacher.feedback.approved` / `teacher.feedback.edited` | teaching | feedbackId (D15 summative review) |
+| `mission.completed` | participating | missionId (unit with a due date, T4) |
+| `map.shown` | other | mapViewId (§8.4) |
+| `ai.output_shown` | other | aiOutputId (§8.4) |
+
+`other`-level events are provenance: they record what the student was shown, so the tracker never re-runs a generator or model. They are not behaviour. **Never recorded:** clicks, scrolls, hovers, zoom, mouse movement, keystrokes, idle or focus timing beyond `idea.active_time`, device, IP or location. Typed text (chat, teach-back answers, challenges) lives in `InteractionText` and is anonymised first (D26).
+
+### 8.3 What the tracker works out (D20)
+
+All outputs come from the rules alone, and changing one means a new `rulesVersion`. Defaults come from the prototype (`project/Idea Map Explorer v2.dc.html`).
+
+| Output | Rule (rulesVersion 1) |
 |---|---|
-| Navigation | `map.shown` (which generated map view, by id), `idea.focused`, `idea.opened`, `link.hovered`, `link.opened`, `zoom.changed`, `locked.clicked` |
-| Attention | `session.started`, `session.idle`, `session.resumed`, `page.hidden` |
-| Learning | `media.played`, `media.paused`, `media.completed`, `objective.viewed` |
-| Quiz | `quiz.started`, `question.shown`, `quiz.answered` (choice, correct, time taken), `quiz.finished`, `review.link_rebuilt` |
-| Teach-back | `teachback.started`, `teachback.answered` (mode, text ref), `teachback.judged` (verdict, key points hit) |
-| AI | `chat.turn` (persona, text ref), `ai.output_shown` (what the model produced, by id), `chat.flagged` |
-| Rewards | `card.revealed`, `mission.opened`, `buddy.reacted` |
+| Quiz length | The class setting, 3–12, default 8 |
+| Mastery % per idea | Best `quiz.finished` score for that idea, as a percentage (0–100) |
+| Idea mastered | Some finished attempt scores **above** the class pass mark (default 70) |
+| Idea unlocked | Every idea in its `requires` is mastered. An idea, once unlocked, stays unlocked after a publish adds a prerequisite (§7) |
+| Unit complete | Every idea in the unit is mastered and the latest `teachback.judged` is `pass`. A teacher may reopen a teach-back after a publish (§7) |
+| XP | A correct answer gives 10 × multiplier, where the combo multiplier is ×4 at 6 or more in a row, ×3 at 4+, ×2 at 2+, otherwise ×1; a wrong answer resets the combo. Quiz pass +50, perfect score +50 more, link rebuilt +5, unit complete +200 |
+| Day streak | +1 on the first quiz pass of a day, in the class time zone; one day with no pass resets it |
+| Cards | One per mastered idea, with that idea's effective rarity (T5) |
+| **May need help** (teacher only, D21) | Raised with its reason when either (a) 3 wrong answers on an idea's questions after a `hint.requested` on that idea, or (b) an unlocked idea that is a prerequisite of the student's next mission has no pass for 5 school days. Cleared by a later pass |
 
-Typed inputs (chat, teach-back answers, transcripts) live in a separate `InteractionText` table, referenced by id, with their own redaction and retention rules (§10). Deleting text never breaks a replay.
+**Never computed (D20):** risk, dropout or grade predictions; engagement, behaviour or personality scores; clustering; rankings between students. `idea.active_time` and `secondsToAnswer` are shown to the teacher as plain durations, never scored.
 
-### 8.3 What the tracker works out (draft)
-
-All of these come from the rules alone. Changing a definition means a new `rulesVersion`.
-
-| Output | Examples |
-|---|---|
-| Progress | Mastered ideas, unlocked ideas, unit completion, teach-back status |
-| Rewards | XP, combo, day streak (in the class time zone), cards earned |
-| Behaviour | Time on each idea, attempts per quiz, answer speed, hint and tutor use, retries after review, links explored versus skipped, idle time |
-| Signals for teachers | Stalls (repeated failed attempts or long idle time on one idea), guessing (very fast wrong answers), ideas skipped on the way to a unit test |
+**Opt-out (D24):** an opted-out student still gets every output above, because the app needs them, but their events are excluded from D16 audits, aggregates and D25 research.
 
 ### 8.4 Map generation and AI: free to vary, always recorded
 
-`generateMap` decides what a student sees: positions, which neighbours to show, blur and lock states, highlighted next steps. It may use the published layout, heuristics, randomness or a model, for example to personalise a path or suggest a next idea. The same goes for AI explanations, quiz wording and Milo's lines.
+`generateMap` decides what a student sees: positions, which neighbours to show, blur and lock states, and highlighted next steps. It may use heuristics, randomness or a model. The same goes for AI explanations, quiz wording, feedback and Milo's lines.
 
-The rules that keep the tracker trustworthy:
-1. **Inputs come from the tracker.** Generation reads the tracker's state (mastered, unlocked, stalls) and never keeps progress of its own.
-2. **Outputs are saved, not recomputed.** Each generated map view is stored with an id, and a `map.shown` event points to it. AI output is stored and referenced by `ai.output_shown`. Replaying the tracker reads these records and never calls the generator or the model again.
-3. **Judgements become events.** When a model judges a teach-back answer, the verdict is recorded as `teachback.judged`, and the tracker's rules use that recorded verdict.
-4. **Safety checks still apply.** Generated maps must respect prerequisites and locks from the tracker state. A check rejects any view that shows a locked idea as open.
+1. **Inputs come from the tracker.** Generation reads tracker state and never keeps progress of its own.
+2. **Outputs are saved, not recomputed.** Each generated map view and AI output is stored with an id, and `map.shown` or `ai.output_shown` points to it.
+3. **Judgements become events.** A model's teach-back verdict is recorded as `teachback.judged`, and the rules use the recorded verdict.
+4. **Safety checks still apply.** A generated view that shows a locked idea as open is rejected.
 
 ### 8.5 Ingest and storage
 
-- `POST /events` takes batches. The server checks each event against its schema, sets `seq`, drops ids it has already recorded, and rejects events from a version the class isn't pinned to (with a grace period after a publish).
-- Events go into a Postgres table (`interaction_event`) split into monthly partitions. Generated map views and AI outputs are stored in their own tables, referenced by id. The client keeps an offline queue and resends it.
-- Replay and other hot-path reads should bound `recorded_at` (for example, from the time of the student's latest progress snapshot), so Postgres can skip old monthly partitions instead of probing every one.
-- Exporting to the education data standards xAPI or Caliper is possible later. It will be designed in, not built now.
-- Teacher views (M5) read the tracker: a timeline for each student, and a class heatmap of where students stall.
+- `POST /events` takes batches. The server validates each event against its schema, sets `seq` and `level`, drops ids it already has, and rejects events from a version the class isn't pinned to (with a grace period after a publish) and any event type outside §8.2.
+- Events go in `interaction_event` (monthly partitions, F4). Hot-path reads bound `recorded_at` from the latest snapshot.
+- The client batches events every few seconds and on page hide, with an offline queue (as for F5 autosave).
+- **Retention (D22):** raw events are kept while the student is enrolled in the district, and deleted on unenrolment and on a FERPA delete (F6). Anonymous class aggregates (small groups suppressed) may be kept. `InteractionText` and AI transcripts keep the 90-day default (§10). Generated map views and AI outputs referenced by events are kept as long as those events are.
+- **Privacy provider (D18):** every table holding tracker or memory data registers with F6's inventory, export and delete, the way each Moodle component declares, exports and deletes its own data.
+- xAPI or Caliper export may come later, designed in but not built now.
 
-### 8.6 What must be written up before M tasks can be claimed
+### 8.6 Teacher views and audits
 
-1. The final event catalogue and payload fields (M1).
-2. Exact definitions of each metric and signal in §8.3: thresholds for "stall" and "guessing", streak day boundaries, combo and XP maths.
-3. How teach-back verdicts and quiz retries count towards unit completion.
-4. Retention periods for typed text, event metadata, generated maps and AI outputs (feeds F6).
+- **Teacher views (M5, D21):** for each student, a timeline of §8.2 events with durations, mastery per idea, "may need help" with its reason, and challenges; for the class, a heatmap of where students are unlocked but not yet passing. Teachers see only their own classes.
+- **Admins (D21):** school and district aggregates and D16 audit results only. Per-student detail only while handling an A2 flag.
+- **Fairness audits (D16, D23):** routine monitoring compares schools and districts. Metrics per question: demographic parity difference, disparate impact ratio (flagged below 0.8), and teacher-agreement and challenge-upheld rates. The sampled racial-disparity audit exports pseudonymous outcomes to the district, which returns aggregates only. Small groups (under 10) are suppressed everywhere.
+- **Research (D25):** de-identified exports only, under a district research agreement, excluding D24 opt-outs. Identifiable data, or use beyond education for under-13s, needs opt-in parental consent.
 
 ## 9. AI layer
 
@@ -293,6 +310,12 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 - Atlas can only draft. Writing to curriculum data stays a teacher action (export, edit, re-import), matching D4.
 - Templates use the existing variables (`{name} {tone} {subject} {topic} {grade} {age} {peerAge} {style} {length}`). The variable list lives in `packages/ai` so the settings page and the gateway agree. More work on prompts was flagged as coming, so templates are stored as versioned records, not code.
 - An eval harness runs each persona against fixed prompts per grade band (K–2, 3–5, 6–8, 9–12) before template changes ship.
+
+### Privacy layer, memory and feedback (D15, D16, D26–D29)
+
+- **Anonymous layer (D26, D27, task A7):** student text is blurred on the device before it leaves. People's names, places, contact details and school identifiers become neutral labels (Person A, Place B); the device keeps the mapping and fills replies back in. Interests stay specific in conversation. A server backstop blurs anything that slipped through before the model call, and counts it as a privacy miss.
+- **Dual memory (D28, D29, task A8):** short-term memory is the anonymised conversation. Long-term summaries hold misconceptions, what helped, preferred pace and up to five interests from an approved category list, and nothing else. A student can view, delete or turn memory off; it lasts while they are enrolled.
+- **Feedback (D15, tasks A9 and A10):** formative feedback comes with its reason and **Challenge this**; summative feedback waits for the teacher. Teacher rulings become labelled examples (never training data). Pre-send safeguards (D16) run first: grounding, a verifier, a tone and reading-level check, and routing to the teacher.
 
 ### Safety for student-facing personas
 
@@ -310,6 +333,7 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | FERPA | District is the data owner; signed data processing agreement; export and delete on request |
 | State laws (e.g. SOPIPA) | No sale or secondary use; vendor list published |
 | AI vendors | Use a zero-retention, no-training agreement with the model provider; send no student names to the model (pseudonymous ids) |
+| Fairness and research | D16 audits by school and district, with the race audit run by the district (D23); research on de-identified data only, under a district agreement (D25); tracing opt-out (D24) |
 | AI transcripts | Stored redacted, retention configurable per district (default 90 days), visible to the class teacher |
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
