@@ -1,7 +1,7 @@
 # Idea Map data inventory
 
 Status: v1 · 2026-10-23 · task F6
-Covers: every table and column in the Idea Map database (migrations 0001 to 0012), plus export files.
+Covers: every table and column in the Idea Map database (migrations 0001 to 0013), plus export files.
 Sources: `docs/ARCHITECTURE.md` §8.2, §8.6, §10, D9, D11.
 Kept honest by a test: `packages/db/src/inventory.test.ts` fails if the database has a column this document doesn't list, or this document lists one the database doesn't have.
 

@@ -1,7 +1,7 @@
 import { sql, type Transaction } from 'kysely';
 import { actAs, json, withOrg, type Db } from './client.js';
 import type { ExportStore } from './export-store.js';
-import { SECRET_KEY_PATTERN } from './migrations/0012_privacy.js';
+import { SECRET_KEY_PATTERN } from './migrations/0013_privacy.js';
 import type { Database } from './schema.js';
 
 // Privacy baseline (ARCHITECTURE.md §8.2, §10; task F6): audit writes, typed-text
@@ -50,7 +50,7 @@ export interface AuditEntry {
 /**
  * Write an audit row for something no trigger sees (an export, a deletion). The
  * actor is the user set with `actAs`. Config changes, approvals, library settings
- * and publishes are audited by triggers (0012) and need no call.
+ * and publishes are audited by triggers (0013) and need no call.
  */
 export async function writeAudit(trx: Trx, orgId: string, entry: AuditEntry): Promise<void> {
   const obj = (v: Record<string, unknown> | null | undefined) =>

@@ -6,7 +6,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { actAs, json, withOrg, type Db } from './client.js';
 import { DirectoryExportStore, type ExportStore } from './export-store.js';
-import { SECRET_KEY_PATTERN } from './migrations/0012_privacy.js';
+import { SECRET_KEY_PATTERN } from './migrations/0013_privacy.js';
 import { APP_ROLE, RETENTION_ROLE } from './migrations/helpers.js';
 import {
   classHistory,

@@ -40,20 +40,21 @@ query builder, so one dependency covers both. Each migration is a TypeScript fil
 Pending migrations run in one transaction under a lock. Never edit a migration that has
 run; add a new one.
 
-| Migration          | Creates                                                                                                                                            |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001 extensions    | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                       |
-| 0002 app role      | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                                 |
-| 0003 job queue     | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                                 |
-| 0004 tenancy       | `organization`, `app_user`                                                                                                                         |
-| 0005 curricula     | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                             |
-| 0006 library       | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                           |
-| 0007 classes       | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                                   |
-| 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot`      |
-| 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                        |
-| 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                        |
-| 0011 isolation     | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                          |
-| 0012 privacy       | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports (F6) |
+| Migration             | Creates                                                                                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001 extensions       | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                                            |
+| 0002 app role         | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                                                      |
+| 0003 job queue        | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                                                      |
+| 0004 tenancy          | `organization`, `app_user`                                                                                                                                              |
+| 0005 curricula        | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                                                  |
+| 0006 library          | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                                                |
+| 0007 classes          | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                                                        |
+| 0008 tracker          | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot`                           |
+| 0009 jobs, audit      | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                                             |
+| 0010 class library    | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                                             |
+| 0011 isolation        | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                                               |
+| 0012 function binding | Trusted `search_path` for every app function; schema-qualified relation access and a fail-closed class pin guard (F4cx1)                                                |
+| 0013 privacy          | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports and `export_subject` (F6) |
 
 ## Roles and row-level security
 
@@ -86,22 +87,50 @@ at another organization's data either.
 The event key ledger (`interaction_event_key`) is readable by the app role but not
 writable. Its rows are written only by `app.record_interaction_event_keys()`, the
 trigger on `interaction_event`. The function is `SECURITY DEFINER`, owned by the
-migration role, with `search_path` pinned to `pg_catalog, pg_temp`. It refuses any row
-that isn't for a student of the organization the transaction acts for. The ledger
-references the student by `(org_id, student_id)` and keys event ids by `(org_id, id)`,
-so one organization can't write, block or probe another's keys.
+migration role, with its persistent relation references qualified as `public.*` and
+`search_path` pinned to `pg_catalog, pg_temp`. It refuses any row that isn't
+for a student of the organization the transaction acts for. The ledger references the
+student by `(org_id, student_id)` and keys event ids by `(org_id, id)`, so one
+organization can't write, block or probe another's keys.
 
 The app role holds only the table privileges each migration grants. It can execute
 only `app.current_org_id()` and `app.current_class_id()` in the `app` schema (trigger
-functions fire without EXECUTE). `PUBLIC` has no `TEMP` on the database, so it can't
-create temporary tables either.
+functions fire without EXECUTE). Every function in `app` pins `search_path` to the
+trusted `pg_catalog, pg_temp` order; every persistent relation reference in a function
+is schema-qualified. Keep this rule for every new function and verify the full
+function/trigger/definer inventory with `src/function_binding.test.ts`.
+`PUBLIC` has no `TEMP` on the database, so the app role can't create temporary tables
+either; the tests also grant TEMP in a disposable database to verify the function
+binding remains safe when that defense is absent.
+
+### Rolling back migration 0011
+
+Migration 0011 changes event ids from globally unique to unique per organization. Its
+downgrade restores a global primary key on `interaction_event_key(id)`. After 0011,
+different organizations may legitimately record the same event id, so a populated
+ledger can contain rows that cannot fit that older constraint. Before considering the
+downgrade, run this preflight as the migration role:
+
+```sql
+SELECT id, array_agg(org_id ORDER BY org_id) AS organizations, count(*) AS copies
+FROM public.interaction_event_key
+GROUP BY id
+HAVING count(*) > 1;
+```
+
+Any returned row blocks the downgrade. Do not delete or rewrite ledger rows to make
+the constraint fit: event history is append-only. Keep migration 0011 applied and
+ship a forward correction that preserves the per-organization keys. An empty-database
+down/up check verifies migration mechanics only; it does not establish that this
+downgrade is safe with populated data.
 
 The isolation tests are `src/security.test.ts` (organization and class scope, the app
-role) and `src/isolation.test.ts` (the ledger, class-scoped settings and privileges):
+role), `src/isolation.test.ts` (the ledger, class-scoped settings and privileges), and
+`src/function_binding.test.ts` (function inventory and temporary-table shadowing):
 
 ```
 DATABASE_URL=postgres://postgres:postgres@localhost:5433/postgres \
-  pnpm --filter @ideamap/db exec vitest run src/security.test.ts src/isolation.test.ts
+  pnpm --filter @ideamap/db exec vitest run src/security.test.ts src/isolation.test.ts src/function_binding.test.ts
 ```
 
 ## Append-only and immutable data
