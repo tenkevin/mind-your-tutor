@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "paths": {}
+    // The build uses the built packages (pnpm -r builds dependencies first).
+    "customConditions": []
   },
-  "exclude": ["src/**/*.test.ts", "src/test"]
+  "exclude": ["src/**/*.test.ts", "src/test", "src/testing"]
 }

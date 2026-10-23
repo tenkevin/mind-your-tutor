@@ -1,6 +1,7 @@
 import type {
   ClassConfig,
   ExplanationSource,
+  ImportStep,
   Pack,
   PersonaId,
   VersionDerived,
@@ -191,7 +192,7 @@ export interface ClassTable {
   time_zone: Generated<string>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
-  /** OneRoster sourcedId, set by a roster import (0013). */
+  /** OneRoster sourcedId, set by a roster import (0014). */
   roster_source_id: string | null;
 }
 
@@ -290,6 +291,8 @@ export interface ImportJobTable {
   started_at: NullableTimestamp;
   finished_at: NullableTimestamp;
   updated_at: CreatedAt;
+  steps: ColumnType<ImportStep[], JsonText<ImportStep[]> | undefined, JsonText<ImportStep[]>>;
+  idempotency_key: string | null;
 }
 
 export interface ExportJobTable {
@@ -339,7 +342,7 @@ export interface AiInteractionTable {
   created_at: CreatedAt;
 }
 
-/** Maps a provider's tenant (domain, district) to an organization (0013, F5). */
+/** Maps a provider's tenant (domain, district) to an organization (0014, F5). */
 export interface SsoTenantTable {
   provider: SsoProvider;
   tenant: string;
@@ -347,7 +350,7 @@ export interface SsoTenantTable {
   created_at: CreatedAt;
 }
 
-/** A signed-in session (0013, F5). Only the SHA-256 of the cookie token is kept. */
+/** A signed-in session (0014, F5). Only the SHA-256 of the cookie token is kept. */
 export interface AuthSessionTable {
   id: Generated<string>;
   org_id: string;
@@ -578,6 +581,8 @@ export const COLUMNS = {
     'started_at',
     'finished_at',
     'updated_at',
+    'steps',
+    'idempotency_key',
   ],
   export_job: [
     'id',
@@ -634,7 +639,7 @@ export const CLASS_SCOPED_TABLES = [
   'class_chunk',
 ] as const satisfies readonly TableName[];
 
-/** Tables with one extra policy beyond tenant isolation: the owner's lookup (0013). */
+/** Tables with one extra policy beyond tenant isolation: the owner's lookup (0014). */
 export const OWNER_LOOKUP_TABLES = ['sso_tenant'] as const satisfies readonly TableName[];
 
 // Fails to compile if a `Database` column is missing from COLUMNS.

@@ -2,7 +2,10 @@ import { CSRF_HEADER, MeResponseSchema } from '@ideamap/contracts';
 import { freshDatabase, type TestDatabase } from '@ideamap/db/testing';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { expect } from 'vitest';
+import { MemoryObjectStore } from '@ideamap/connectors';
+import type { Sender } from '@ideamap/worker';
 import { loadConfig, type AuthConfig } from '../config.js';
+import { scoped, type Trx } from '../db.js';
 import {
   mockProviders,
   seedSample,
@@ -34,7 +37,10 @@ export interface TestApi {
   close(): Promise<void>;
 }
 
-export async function startApi(overrides: Record<string, string> = {}): Promise<TestApi> {
+export async function startApi(
+  overrides: Record<string, string> = {},
+  options: { imports?: boolean } = {},
+): Promise<TestApi> {
   const t = await freshDatabase();
   const sample = await seedSample(t.db);
   const clientId = 'ideamap-test';
@@ -55,7 +61,22 @@ export async function startApi(overrides: Record<string, string> = {}): Promise<
   }
   const config = loadConfig({ ...env, ...overrides });
   let offset = 0;
-  const app = buildServer({ db: t.db, config, now: () => new Date(Date.now() + offset) });
+  // C4's import routes, with an in-memory store and a queue that only records jobs.
+  const imports = options.imports
+    ? {
+        deps: {
+          scope: <T>(orgId: string, fn: (trx: Trx) => Promise<T>) => scoped(t.db, { orgId }, fn),
+          boss: { send: async () => 'queued' } as unknown as Sender,
+          store: new MemoryObjectStore(),
+        },
+      }
+    : undefined;
+  const app = buildServer({
+    db: t.db,
+    config,
+    now: () => new Date(Date.now() + offset),
+    imports,
+  });
   await app.ready();
   return {
     app,

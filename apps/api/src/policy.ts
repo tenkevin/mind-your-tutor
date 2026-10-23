@@ -30,7 +30,9 @@ export type ScopeRule =
   /** One curriculum: `edit` needs its author or an admin (D3); reading also allows its teachers. */
   | { kind: 'curriculum'; param: string; edit: boolean }
   /** One user in the caller's org, named by a route param. */
-  | { kind: 'user'; param: string };
+  | { kind: 'user'; param: string }
+  /** One row of this table that row-level security shows the caller's org (C4 imports). */
+  | { kind: 'visible'; table: 'curriculum' | 'import_job'; param: string };
 
 export type RoutePolicy =
   { public: true; reason: string } | { public?: false; roles: readonly Role[]; scope: ScopeRule };
@@ -123,6 +125,13 @@ async function inScope(
         .where('teacher_id', '=', session.userId)
         .executeTakeFirst();
       return Boolean(teaches);
+    }
+    case 'visible': {
+      const row =
+        scope.table === 'curriculum'
+          ? await trx.selectFrom('curriculum').select('id').where('id', '=', id).executeTakeFirst()
+          : await trx.selectFrom('import_job').select('id').where('id', '=', id).executeTakeFirst();
+      return Boolean(row);
     }
     case 'user': {
       const user = await trx

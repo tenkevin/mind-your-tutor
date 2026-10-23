@@ -5,8 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "@ideamap/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "@ideamap/source": "./src/test/harness.ts"
     }
   },
   "scripts": {

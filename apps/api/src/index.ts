@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import { createDb, type Db } from '@ideamap/db';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { loadConfig, type AuthConfig } from './config.js';
+import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
 import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
@@ -10,6 +11,7 @@ import { authRoutes } from './routes/auth.js';
 import { deriveKeys } from './tokens.js';
 
 export { loadConfig, type AuthConfig } from './config.js';
+export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
 export type { IdentityProvider } from './providers.js';
 
 export interface ServerOptions {
@@ -20,6 +22,8 @@ export interface ServerOptions {
   /** The clock, for session limits; tests move it forward. */
   now?: () => Date;
   logger?: boolean;
+  /** Curriculum imports (C4); left out, the routes aren't registered. */
+  imports?: Pick<ImportRoutesOptions, 'deps'>;
 }
 
 export function buildServer(options: ServerOptions): FastifyInstance {
@@ -46,6 +50,20 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
+  const { imports } = options;
+  if (imports) {
+    // Its own scope, for the upload body parser and error handler. The policy hooks
+    // above still apply; the caller is the signed-in session.
+    app.register(async (scope) =>
+      importRoutes(scope, {
+        deps: imports.deps,
+        authenticate: (req) =>
+          req.session
+            ? { orgId: req.session.orgId, userId: req.session.userId, role: req.session.role }
+            : null,
+      }),
+    );
+  }
 
   // Fixed bodies, so unknown paths and internal errors aren't echoed back.
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));

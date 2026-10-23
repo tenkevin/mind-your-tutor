@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { CSRF_HEADER } from '@ideamap/contracts';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -41,6 +42,11 @@ const ROUTE_URLS = [
   '/api/roster/import',
 ];
 
+/** C4's routes, registered when the server is given import deps. */
+const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+const PACK = readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url));
+const UPLOAD = { 'content-type': 'application/octet-stream', 'x-file-name': 'pack.json' };
+
 const PUBLIC = new Set([
   '/health',
   '/auth/providers',
@@ -76,14 +82,44 @@ describe('route-policy registry (F5-F4)', () => {
   });
 });
 
+describe('C4 import routes join the registry (F5-F4)', () => {
+  it('declares a staff, org-scoped policy for each import route', async () => {
+    const app = buildServer({
+      db: undefined as never,
+      config: offlineConfig,
+      imports: { deps: {} as never },
+    });
+    await app.ready();
+    const imports = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    expect(imports.map((r) => r.url).sort()).toEqual([...IMPORT_ROUTE_URLS].sort());
+    await app.close();
+    expect(imports.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
+      'GET /imports/:jobId',
+      'POST /curricula/:curriculumId/imports',
+    ]);
+    expect(imports.map((r) => r.policy)).toEqual([
+      {
+        roles: ['admin', 'author', 'teacher'],
+        scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+      },
+      {
+        roles: ['admin', 'author', 'teacher'],
+        scope: { kind: 'visible', table: 'import_job', param: 'jobId' },
+      },
+    ]);
+  });
+});
+
 describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let api: TestApi;
   let who: Record<
     'admin' | 'student' | 'otherClassTeacher' | 'otherOrgTeacher' | 'otherOrgAdmin',
     Signed
   >;
+  let jobId = '';
   beforeAll(async () => {
-    api = await startApi();
+    // With C4's import routes registered, so the sweep covers them too.
+    api = await startApi({}, { imports: true });
     const { users, orgs } = api.sample;
     who = {
       admin: await sessionFor(api, users['admin-a'], orgs.a),
@@ -92,6 +128,14 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       otherOrgTeacher: await sessionFor(api, users['teacher-b1'], orgs.b),
       otherOrgAdmin: await sessionFor(api, users['admin-b'], orgs.b),
     };
+    const started = await as(api, who.admin)(
+      'POST',
+      `/curricula/${api.sample.curricula.a}/imports`,
+      PACK,
+      UPLOAD,
+    );
+    expect(started.statusCode, started.body).toBe(202);
+    jobId = started.json<{ job: { id: string } }>().job.id;
   });
   afterAll(async () => {
     await api?.close();
@@ -102,6 +146,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     method: 'GET' | 'POST' | 'PUT';
     url: string;
     body?: unknown;
+    headers?: Record<string, string>;
     route: string;
   }[] {
     const { classes, curricula, users, libraryDocs } = api.sample;
@@ -164,6 +209,14 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
           enrollments: 'classSourcedId,userSourcedId,role\n',
         },
       },
+      {
+        route: '/curricula/:curriculumId/imports',
+        method: 'POST',
+        url: `/curricula/${curricula.a}/imports`,
+        body: PACK,
+        headers: UPLOAD,
+      },
+      { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -171,12 +224,14 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
 
   it('covers every protected route', () => {
     const covered = new Set(requests().map((r) => r.route));
-    expect(covered).toEqual(new Set(ROUTE_URLS.filter((u) => !PUBLIC.has(u))));
+    expect(covered).toEqual(
+      new Set([...ROUTE_URLS.filter((u) => !PUBLIC.has(u)), ...IMPORT_ROUTE_URLS]),
+    );
   });
 
   it('answers 401 to a signed-out caller on every protected route', async () => {
     for (const r of requests()) {
-      const res = await as(api, null)(r.method, r.url, r.body);
+      const res = await as(api, null)(r.method, r.url, r.body, r.headers);
       expect(res.statusCode, `${r.method} ${r.url}`).toBe(401);
     }
   });
@@ -217,6 +272,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     ],
     // A teacher reads the defaults of a curriculum they teach (A2 also uses curriculum A).
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
+    // C4: staff in the curriculum's org may import into it and read its jobs.
+    'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
+    'GET /imports/:jobId': ['admin', 'otherClassTeacher'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {
@@ -232,7 +290,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
               caller.startsWith('otherOrg') ? api.sample.orgs.b : api.sample.orgs.a,
             )
           : who[caller];
-        const res = await as(api, signed)(r.method, r.url, r.body);
+        const res = await as(api, signed)(r.method, r.url, r.body, r.headers);
         const label = `${caller}: ${r.method} ${r.url} → ${res.statusCode} ${res.body}`;
         if (allowed.includes(caller)) {
           expect(res.statusCode, label).toBeLessThan(300);
