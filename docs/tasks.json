@@ -354,9 +354,9 @@
       ],
       "done_when": "Every §8.2 event type (D19) has a zod schema with its educational level in packages/tracker or packages/contracts. Unknown types and forbidden fields (IP, device, location, free text) are rejected",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-m1",
+      "updated": "2026-10-23"
     },
     {
       "id": "M2",
