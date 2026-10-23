@@ -5,7 +5,8 @@
    1. The Google Fonts @import is replaced by self-hosted Inter (latin subset,
       woff2, SIL OFL 1.1, see fonts/OFL.txt). Student IP addresses must not go
       to third parties (ARCHITECTURE.md §10).
-   2. One addition at the end of the file: .input:disabled. */
+   2. Two additions at the end of the file: .input:disabled and
+      .input::placeholder. */
 @font-face {
   font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("./fonts/inter-latin-400-normal.woff2") format("woff2");
@@ -326,3 +327,10 @@ textarea.input { min-height: 90px; resize: vertical; }
 /* The prototype has no disabled state for fields. This mirrors .btn:disabled,
    as the design-system readme says disabled controls drop to 45% opacity. */
 .input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* The prototype leaves placeholders to the browser default, rgb(117,117,117),
+   which is 3.30:1 on the field's surface: below AA (Codex F2-E1). neutral-500
+   is the dimmest neutral step that still clears 4.5:1 on both grounds, so
+   a hint stays visibly dimmer than typed text. Firefox dims placeholders
+   with opacity, hence opacity: 1. */
+.input::placeholder { color: var(--color-neutral-500); opacity: 1; }

@@ -67,6 +67,7 @@ describe('stylesheet', () => {
     '.input:hover',
     '.input:focus-visible',
     '.input:disabled',
+    '.input::placeholder',
     'textarea.input',
     '.field > label',
     '.table th',
@@ -159,6 +160,14 @@ describe('contrast (WCAG AA)', () => {
     return over(hex(m[1] as Token), ground, Number(m[2]) / 100);
   };
 
+  // The placeholder colour, read from styles.css. It must be a token at full
+  // opacity: a missing rule would fall back to the browser's 3.30:1 grey.
+  const placeholder = (): Rgb => {
+    const m = /\.input::placeholder \{ color: var\((--[\w-]+)\); opacity: 1; \}/.exec(squash(css));
+    if (!m) throw new Error('no .input::placeholder { color: var(--token); opacity: 1; } rule');
+    return hex(m[1] as Token);
+  };
+
   // Button text is 14px at weight 500, so it needs 4.5:1. Each variant's text colour:
   const buttons = { '.btn-primary': accent, '.btn-secondary': text, '.btn-ghost': accent };
 
@@ -177,6 +186,10 @@ describe('contrast (WCAG AA)', () => {
       [`.card-meta on ${g}`, over(text, ground, 0.5), ground, 4.5],
       [`:focus-visible ring on ${g}`, accent, ground, 3],
       [`.input border on ${g}`, over(text, ground, 0.16), ground, 3],
+      // The field paints --color-surface itself; both grounds are measured so a
+      // transparent field on either would still pass.
+      [`input.input::placeholder on ${g}`, placeholder(), ground, 4.5],
+      [`textarea.input::placeholder on ${g}`, placeholder(), ground, 4.5],
     );
     for (const [btn, fg] of Object.entries(buttons)) {
       pairs.push(
