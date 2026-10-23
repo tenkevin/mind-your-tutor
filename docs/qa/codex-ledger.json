@@ -222,6 +222,16 @@
       ],
       "errors": [],
       "suggestions": "UNVERIFIED due unavailable blocked dynamic coverage, not a new implementation error; existing F4-E1/E2 ownership remains F4cx1. Comment/inventory/rollback documentation suggestions -> CXB; no blocked-test retry/reroute."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C9-review-2ae52d4.md",
+      "commit": "852f6e5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C9"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS under documented paired performance method; historical C2 comparison remains unverified. Header blank-cell consistency, reproducible benchmarks and persona-info message polish -> CXB. Merge only after final base synchronization, exact CI and unchanged task paths; stop after verified C9 completion."
     }
   ]
 }

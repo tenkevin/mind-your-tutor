@@ -20,7 +20,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 | F4cx1 / #17 | **QA coverage blocked:** latest synchronized head `3e97696` CI green, but required dynamic shadow-table tests repeat probes stopped by the original automated security-filter interruption (Codex-F4-database.md). | Keep unverified. Independent reviewer cannot certify F1/F2/F4/S1 or full-suite F5; source/permitted evidence only. Do not rerun or delegate the blocked tests through another path; builder/CI results are not independent PASS. |
 | C2cx5 / #18 | Builder complete at `4762bf0d8e2d32e42e9b9604dbd793fcd7258747`: contracts 212, domain 94, connectors 101, DB 161; root checks passed. No migration changed; import level is derived consistently from severity. | Exact-head CI passed. Independent review deferred by the C9 stop boundary; future current-base synchronization required before merge. |
 | F1d / #16 | Fresh independent all-must PASS at `0dd326d` + base `738b4f8`, integrated tree `76e6f81`; 210 ambient cases, tracker 172, DB 161. Published [report](codex/Codex-F1d-review-0dd326d.md). Current remote head `a56c820` is a metadata-only synchronization. | Parked unmerged at the user C9-only stopping boundary; future merge requires latest-base synchronization and exact-head CI. |
-| C9 / #19 | Builder complete at `25b8c97ad42520aa1e2c32990f3260197602ac3c`, base `b52dc4f`; all local checks and DB 161 pass. Evidence: `/home/kevin/codex-qa-2026-10-22/evidence/c9/`. | Final task: independent QA after exact-head CI; gated merge and actual integration CI, then stop. |
+| C9 / #19 | Independent all-must PASS on `2ae52d4`, pinned base `7dcedc2`, tree `a70d1f62`; full root checks/DB 161 pass. [Immutable report](codex/Codex-C9-review-2ae52d4.md). | Final synchronization, unchanged-code check and exact CI before merge; actual integration CI then stop. Suggestions are deferred in CXB. |
 
 ## Reviewer and builder boundaries
 
@@ -35,4 +35,4 @@ C5's affected-student count is not defined precisely in architecture §7. The us
 
 ## C9 performance evidence clarification
 
-The builder withdrew its unsubstantiated C2 6.12ms-versus-9.3ms comparison. Independent paired same-input measurements preserve the 10% regression budget; [C9-P1](C9.md) documents the method and required historical-input limitation. Independent full-suite verdict remains pending.
+The builder withdrew its unsubstantiated C2 6.12ms-versus-9.3ms comparison. Independent paired same-input measurements preserve the 10% regression budget; [C9-P1](C9.md) documents the method and required historical-input limitation. Independent full-suite verdict is PASS; historical comparison remains unverified as recorded in the immutable report.
