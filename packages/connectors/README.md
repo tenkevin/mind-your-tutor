@@ -23,3 +23,12 @@ docker run --network none --read-only --memory 768m --memory-swap 768m --cpus 1 
 | `assessmentDraftsReport(topic, rows)` | `water-cycle-assessment-drafts-2026-10-22.csv`: Atlas-drafted rows with exactly the Assessment columns                                                                                                                                                |
 
 Nothing exported runs as a formula. A CSV cell that `needsFormulaEscape` gets a leading apostrophe; XLSX cells are always typed values (never formulas), and formula-like text is written as text with Excel's quote prefix, so it reads back unchanged. Exports take curriculum data only.
+
+Nothing exported is cut short or dropped silently:
+
+- Characters XML can't hold (control characters, a lone half of a surrogate pair) are written in XLSX as Excel's `_xHHHH_` escapes, and text that already looks like one has its `_` escaped as `_x005F_`. The XLSX reader decodes these, as Excel and LibreOffice do, so the text reads back exactly.
+- A report list too long for one cell (Excel holds 32,767 characters) continues on the rows below, so every idea title and id is kept.
+- What can't be written as it is refuses the export with `ExportRefused`, naming the sheet, row and column: a cell over 32,767 characters, a broken character in a CSV, or a list item holding a comma or semicolon (the importer splits list cells on both, so the item would come back as two).
+- The blank template carries the spec's examples for the three required Course values (subject, topic and grade), marked in the Read me, so it imports as it is.
+
+Known limit: a CSV keeps the safety apostrophe, so formula-like text exported as CSV comes back from C1 with a leading `'`. XLSX keeps it exactly.

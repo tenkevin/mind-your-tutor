@@ -7,6 +7,8 @@ import {
   csvExport,
   dataCheckReport,
   EXPORT_TARGETS,
+  ExportRefused,
+  MAX_CELL_TEXT,
   fileSlug,
   importPack,
   needsFormulaEscape,
@@ -19,7 +21,7 @@ import {
   type FileRef,
 } from './index.js';
 import { file, fixtureBytes } from './testing/build.js';
-import { decodeEntities } from './xml.js';
+import { decodeEntities, decodeXstring, walkXml } from './xml.js';
 import { ZipReader } from './zip.js';
 
 const DATE = { date: '2026-10-22' };
@@ -56,6 +58,32 @@ async function workbookSheets(ref: FileRef) {
   return raw;
 }
 
+/** One worksheet's cell text, read straight from its XML (with _xHHHH_ decoded). */
+function xlsxCells(ref: FileRef, sheet: number): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let inText = false;
+  let at = 0;
+  walkXml(unzip(ref.bytes).get(`xl/worksheets/sheet${sheet}.xml`)!, {
+    open(tag) {
+      if (tag.name === 'row') rows.push((row = []));
+      else if (tag.name === 'c') {
+        const letters = /^[A-Z]+/.exec(tag.attrs.r ?? '')![0];
+        const col = [...letters].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+        while (row.length <= col) row.push('');
+        at = col;
+      } else if (tag.name === 't' || tag.name === 'v') inText = true;
+    },
+    close(name) {
+      if (name === 't' || name === 'v') inText = false;
+    },
+    text(text) {
+      if (inText) row[at] += decodeXstring(text);
+    },
+  });
+  return rows;
+}
+
 describe('template workbook (C6-F1, F2, F3)', () => {
   it('has a Read me sheet and the eight tabs with exactly the spec columns', async () => {
     const report = templateReport(DATE);
@@ -73,48 +101,34 @@ describe('template workbook (C6-F1, F2, F3)', () => {
     expect(report.sheets.find((s) => s.name === 'Ideas')!.header).toContain('explanation');
   });
 
-  it('imports with no problems except that it has no content yet', async () => {
+  it('imports untouched, with no problems except that it has no ideas yet (C6-E1)', async () => {
     const ref = await xlsxExport.write(templateReport(DATE));
     expect(ref.name).toBe('curriculum-pack-template-2026-10-22.xlsx');
     const result = await reimport(ref);
-    // Every tab and column is recognised. The only errors are the three required
-    // Course values, which are blank; the empty tabs (no ideas yet) are info.
-    expect(result.issues.filter((i) => i.severity === 'error').map((e) => e.column)).toEqual([
+    // The required Course values carry the spec's examples; every other cell is blank.
+    expect(result.ok).toBe(true);
+    expect(result.issues.filter((i) => i.severity !== 'info')).toEqual([]);
+    expect(result.issues.find((i) => i.tab === 'Ideas')?.code).toBe('tab_default');
+    expect(result.pack!.ideas).toEqual([]);
+    expect(result.pack!.course).toMatchObject({
+      subject: 'Science',
+      topic: 'The water cycle',
+      grade: '6',
+      framework: null,
+      map_objective: null,
+    });
+    expect(result.mapping.filter((m) => m.tab === 'Ideas').map((m) => m.column)).toEqual(
+      PACK_SPEC.find((t) => t.tab === 'Ideas')!.cols.map((c) => c.name),
+    );
+    const course = templateReport(DATE).sheets.find((s) => s.name === 'Course')!;
+    expect(course.rows.filter((r) => r[1] !== null).map((r) => r[0])).toEqual([
       'subject',
       'topic',
       'grade',
     ]);
-    expect(result.issues.filter((i) => i.severity === 'warning')).toEqual([]);
-    expect(result.issues.find((i) => i.tab === 'Ideas')?.code).toBe('tab_default');
-    expect(result.mapping.filter((m) => m.tab === 'Ideas').map((m) => m.column)).toEqual(
-      PACK_SPEC.find((t) => t.tab === 'Ideas')!.cols.map((c) => c.name),
-    );
-
-    // Filling in just those three values gives a pack that imports.
-    const report = templateReport(DATE);
-    const course = report.sheets.find((s) => s.name === 'Course')!;
-    const filled = {
-      ...report,
-      sheets: report.sheets.map((s) =>
-        s === course
-          ? {
-              ...s,
-              rows: s.rows.map((r) =>
-                r[0] === 'subject'
-                  ? ['subject', 'Science']
-                  : r[0] === 'topic'
-                    ? ['topic', 'Rocks']
-                    : r[0] === 'grade'
-                      ? ['grade', '5']
-                      : r,
-              ),
-            }
-          : s,
-      ),
-    };
-    const ok = await reimport(await xlsxExport.write(filled));
-    expect(ok.ok).toBe(true);
-    expect(ok.pack!.ideas).toEqual([]);
+    const csv = await reimport(await csvExport.write(templateReport(DATE)));
+    expect(csv.ok).toBe(true);
+    expect(csv.issues.filter((i) => i.severity !== 'info')).toEqual([]);
   });
 
   it('the sample template has the prototype sample rows', async () => {
@@ -202,10 +216,12 @@ describe('template workbook (C6-F1, F2, F3)', () => {
           c.req ? 'Yes' : 'No',
           c.missing,
           expect.any(String),
-          c.note || null,
+          spec.tab === 'Course' && c.req ? expect.stringContaining('example') : c.note || null,
         ]);
       }
     }
+    const subject = readMe.rows.find((r) => r[0] === 'Course' && r[1] === 'subject')!;
+    expect(subject[6]).toBe('The blank template has the example "Science" here; replace it.');
   });
 
   it('as CSV, is a zip of one file per tab that imports the same', async () => {
@@ -438,14 +454,43 @@ describe('formats (C6-F7, F8, U1, U2)', () => {
     expect(again.pack!.ideas[0]!.title).toBe('Évaporation – café');
   });
 
-  it('drops characters XML cannot hold, so the workbook still opens', async () => {
+  it('writes characters XML cannot hold as _xHHHH_ escapes that read back (C6-E2)', async () => {
     const pack = structuredClone(await fixturePack());
-    pack.ideas[0]!.title = 'Bell\u0007 <b>&amp; \uD800 sound';
+    pack.ideas[0]!.notes = 'bell\u0007tail';
+    pack.ideas[1]!.notes = 'Bell\u0007 <b>&amp; \uD800 \uFFFF sound';
+    pack.ideas[2]!.notes = 'a literal _x0041_ and _x005F_ stay as typed';
     const ref = await xlsxExport.write(packReport(pack, DATE));
     const sheet = unzip(ref.bytes).get('xl/worksheets/sheet3.xml')!;
-    expect(sheet).toContain('Bell &lt;b&gt;&amp;amp;  sound');
+    expect(sheet).toContain('bell_x0007_tail');
+    expect(sheet).toContain('a literal _x005F_x0041_ and _x005F_x005F_ stay as typed');
     const again = await reimport(ref);
-    expect(again.pack!.ideas[0]!.title).toBe('Bell <b>&amp;  sound');
+    expect(again.pack!.ideas.slice(0, 3).map((i) => i.notes)).toEqual(
+      pack.ideas.slice(0, 3).map((i) => i.notes),
+    );
+    expect(again.pack).toEqual(pack);
+  });
+
+  it('CSV keeps control characters, and refuses a broken character it cannot store', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.ideas[0]!.notes = 'bell\u0007tail';
+    expect((await reimport(await csvExport.write(packReport(pack, DATE)))).pack).toEqual(pack);
+    pack.ideas[1]!.notes = 'half \uD800 an emoji';
+    await expect(csvExport.write(packReport(pack, DATE))).rejects.toMatchObject({
+      name: 'ExportRefused',
+      at: { sheet: 'Ideas', row: 3, column: 'notes' },
+    });
+  });
+
+  it('refuses a cell longer than a spreadsheet can hold, rather than cutting it', async () => {
+    const report: ExportPayload = {
+      report: 'pack',
+      fileStem: 'x',
+      sheets: [{ name: 'Long', header: ['text'], rows: [['y'.repeat(MAX_CELL_TEXT + 1)]] }],
+    };
+    for (const target of [csvExport, xlsxExport]) {
+      await expect(target.write(report)).rejects.toThrow(ExportRefused);
+      await expect(target.write(report)).rejects.toThrow(/Long, row 2, text has 32,768 characters/);
+    }
   });
 
   it('file names use the topic and date, with safe characters only', () => {
@@ -478,6 +523,97 @@ describe('Atlas-drafted rows (C6-F9)', () => {
       PACK_SPEC.find((t) => t.tab === 'Assessment')!.cols.map((c) => c.name),
       ['1', 'evap', 'Where does a puddle go?', 'heat, vapour'],
     ]);
+  });
+});
+
+describe('lists (C6-E3)', () => {
+  it('refuses a list item holding a comma or semicolon, naming the cell', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.assessment[0]!.key_points = ['liquid, gas', 'heat'];
+    expect(() => packReport(pack, DATE)).toThrow(
+      /^Assessment, row 2, key_points: the item "liquid, gas" has a comma or semicolon/,
+    );
+    try {
+      packReport(pack, DATE);
+    } catch (e) {
+      expect((e as ExportRefused).at).toEqual({
+        sheet: 'Assessment',
+        row: 2,
+        column: 'key_points',
+      });
+    }
+    pack.assessment[0]!.key_points = ['liquid; gas'];
+    expect(() => packReport(pack, DATE)).toThrow(ExportRefused);
+    expect(() =>
+      assessmentDraftsReport('x', [
+        { unit: 1, idea_id: 'evap', question: 'q', key_points: ['a,b'] },
+      ]),
+    ).toThrow(ExportRefused);
+  });
+
+  it('round-trips list items that need no separator', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.assessment[0]!.key_points = ['liquid to gas', 'heat (from the Sun)', 'vapour rises'];
+    for (const target of [csvExport, xlsxExport]) {
+      expect((await reimport(await target.write(packReport(pack, DATE)))).pack).toEqual(pack);
+    }
+  });
+});
+
+describe('long report lists (C6-E2)', () => {
+  async function widePack() {
+    const pack = structuredClone(await fixturePack());
+    const base = pack.ideas[0]!;
+    pack.ideas = Array.from({ length: 500 }, (_, i) => ({
+      ...base,
+      idea_id: `idea-${i}`,
+      title: `${String(i).padStart(3, '0')} ${'x'.repeat(120)}`,
+      standard_codes: ['CODE-1'],
+      requires: [],
+    }));
+    pack.links = [];
+    pack.assessment = [];
+    return pack;
+  }
+
+  it('alignment: every title and id survives, continued on later rows', async () => {
+    const pack = await widePack();
+    const report = alignmentReport(pack, DATE);
+    const rows = report.sheets[0]!.rows.filter((r) => r[0] === 'CODE-1');
+    expect(rows.length).toBeGreaterThan(1);
+    expect(rows[0]![1]).toBe(500);
+    expect(rows.slice(1).every((r) => r[1] === null)).toBe(true);
+    for (const target of [csvExport, xlsxExport]) {
+      const ref = await target.write(report);
+      const cells = target.kind === 'csv' ? csvRows(ref).slice(1) : xlsxCells(ref, 1).slice(1);
+      const code1 = cells.filter((r) => r[0] === 'CODE-1');
+      for (const r of code1) {
+        expect(String(r[2]).length).toBeLessThanOrEqual(MAX_CELL_TEXT);
+      }
+      expect(code1.flatMap((r) => String(r[2]).split('; '))).toEqual(
+        pack.ideas.map((i) => i.title),
+      );
+      expect(code1.flatMap((r) => String(r[3]).split(', '))).toEqual(
+        pack.ideas.map((i) => i.idea_id),
+      );
+    }
+  });
+
+  it('data checks: every affected idea survives, continued on later rows', async () => {
+    const pack = await widePack();
+    const issue: DataCheckIssue = {
+      kind: 'media',
+      level: 'info',
+      message: 'Many ideas have no media.',
+      items: pack.ideas.map((i) => i.idea_id),
+      fix: { tab: 'Ideas', column: 'media_url' },
+    };
+    const rows = dataCheckReport(pack, [issue], DATE).sheets[0]!.rows;
+    expect(rows.length).toBeGreaterThan(1);
+    expect(rows[0]![2]).toBe('Many ideas have no media.');
+    expect(rows.slice(1).every((r) => r[2] === '(continued)' && r[0] === 'Info')).toBe(true);
+    expect(rows.flatMap((r) => String(r[3]).split('; '))).toEqual(pack.ideas.map((i) => i.title));
+    await expect(xlsxExport.write(dataCheckReport(pack, [issue], DATE))).resolves.toBeTruthy();
   });
 });
 

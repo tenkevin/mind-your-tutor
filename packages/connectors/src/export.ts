@@ -3,7 +3,8 @@ import { writeZip } from './zip-write.js';
 
 // Export targets (ARCHITECTURE.md §7, decision D4): a report is built as plain
 // sheets of cells (reports.ts), and a target writes it as a file to download.
-// Nothing an export writes is ever run as a formula: CSV cells that a spreadsheet
+// Nothing is cut short or dropped: a cell that can't be written as it is refuses
+// the export with ExportRefused, saying where. Nothing an export writes is ever run as a formula: CSV cells that a spreadsheet
 // would read as one get a leading apostrophe, and XLSX cells are always typed
 // values, never formulas, with text that looks like one marked as text.
 
@@ -44,6 +45,43 @@ export interface FileRef {
 
 export type ExportFormat = 'csv' | 'xlsx';
 
+/**
+ * An export that can't be written without changing what it says. Nothing is ever
+ * cut short or dropped silently: the export stops and says what to fix, and where.
+ */
+export class ExportRefused extends Error {
+  constructor(
+    message: string,
+    readonly at: { sheet: string; row?: number; column?: string } | null = null,
+  ) {
+    super(message);
+    this.name = 'ExportRefused';
+  }
+}
+
+/** Excel's limit on the text in one cell; Excel also cuts a longer CSV cell here. */
+export const MAX_CELL_TEXT = 32_767;
+
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/** Where a cell is, as a teacher reads it: "Ideas, row 4, title". */
+function where(sheet: ExportSheet, r: number, c: number) {
+  const column = sheet.header[c] ?? columnName(c);
+  return { sheet: sheet.name, row: r + 1, column, text: `${sheet.name}, row ${r + 1}, ${column}` };
+}
+
+/** Refuses a cell no spreadsheet could hold as it is. */
+function checkCell(sheet: ExportSheet, r: number, c: number, text: string) {
+  if (text.length > MAX_CELL_TEXT) {
+    const at = where(sheet, r, c);
+    throw new ExportRefused(
+      `${at.text} has ${text.length.toLocaleString('en')} characters, more than the ` +
+        `${MAX_CELL_TEXT.toLocaleString('en')} a spreadsheet cell can hold, so the export stopped. Shorten it, then export again.`,
+      at,
+    );
+  }
+}
+
 /** Writes a report as a file (ARCHITECTURE.md §7). */
 export interface ExportTarget {
   kind: ExportFormat;
@@ -54,16 +92,26 @@ export interface ExportTarget {
 
 const BOM = '﻿';
 
-function csvCell(cell: ExportCell): string {
+function csvCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): string {
   if (cell === null) return '';
   let text = String(cell);
+  checkCell(sheet, r, c, text);
+  if (LONE_SURROGATE.test(text)) {
+    const at = where(sheet, r, c);
+    throw new ExportRefused(
+      `${at.text} has a broken character (half of an emoji or symbol) that UTF-8 can't store, so the export stopped. Retype that text, or export as XLSX.`,
+      at,
+    );
+  }
   if (typeof cell === 'string' && needsFormulaEscape(text)) text = `'${text}`;
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 /** One sheet as CSV text: UTF-8 with a byte order mark, so Excel reads accents correctly. */
 export function sheetToCsv(sheet: ExportSheet): string {
-  const lines = [sheet.header, ...sheet.rows].map((row) => row.map(csvCell).join(','));
+  const lines = [sheet.header, ...sheet.rows].map((row, r) =>
+    row.map((cell, c) => csvCell(sheet, r, c, cell)).join(','),
+  );
   return BOM + lines.join('\r\n') + '\r\n';
 }
 
@@ -72,47 +120,49 @@ const encode = (text: string) => new TextEncoder().encode(text);
 /** One sheet becomes a .csv file; a report with several sheets becomes a .zip of CSVs. */
 export const csvExport: ExportTarget = {
   kind: 'csv',
-  write(report) {
-    const [only] = report.sheets;
-    if (report.sheets.length === 1 && only) {
-      return Promise.resolve({
-        name: `${report.fileStem}.csv`,
-        contentType: 'text/csv; charset=utf-8',
-        bytes: encode(sheetToCsv(only)),
-      });
-    }
-    const bytes = writeZip(
-      report.sheets.map((sheet) => ({
-        name: `${sheet.name}.csv`,
-        data: encode(sheetToCsv(sheet)),
-      })),
-    );
-    return Promise.resolve({
-      name: `${report.fileStem}.zip`,
-      contentType: 'application/zip',
-      bytes,
-    });
-  },
+  // A refused export rejects the promise rather than throwing.
+  write: (report) => Promise.resolve().then(() => writeCsv(report)),
 };
+
+function writeCsv(report: ExportPayload): FileRef {
+  const [only] = report.sheets;
+  if (report.sheets.length === 1 && only) {
+    return {
+      name: `${report.fileStem}.csv`,
+      contentType: 'text/csv; charset=utf-8',
+      bytes: encode(sheetToCsv(only)),
+    };
+  }
+  const bytes = writeZip(
+    report.sheets.map((sheet) => ({ name: `${sheet.name}.csv`, data: encode(sheetToCsv(sheet)) })),
+  );
+  return { name: `${report.fileStem}.zip`, contentType: 'application/zip', bytes };
+}
 
 // ---- XLSX ------------------------------------------------------------------
 
-// Characters XML 1.0 can't hold at all; dropped rather than written.
-const XML_INVALID =
-  // eslint-disable-next-line no-control-regex
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
-
 const xml = (text: string) =>
   text
-    .replace(XML_INVALID, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/\r/g, '&#13;');
 
-/** Excel's limit on the text in one cell. */
-const MAX_CELL_TEXT = 32_767;
+// Characters an XML file can't hold. Excel writes them as _xHHHH_ (one UTF-16 unit
+// each), and the XLSX reader decodes them (xml.ts `decodeXstring`); text that
+// already looks like an escape has its "_" escaped as _x005F_, as Excel does.
+const XML_UNSAFE =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+const hex4 = (code: number) => code.toString(16).toUpperCase().padStart(4, '0');
+
+/** Text as an OOXML string (ST_Xstring), so every character reads back as it was. */
+export function encodeXstring(text: string): string {
+  return text
+    .replace(/_(x[0-9A-Fa-f]{4}_)/g, '_x005F_$1')
+    .replace(XML_UNSAFE, (ch) => `_x${hex4(ch.charCodeAt(0))}_`);
+}
 
 // Cell styles in styles.xml: 0 plain, 1 header (bold), 2 text marked as text
 // (Excel's "quote prefix"), so it stays text even when the cell is edited.
@@ -129,16 +179,19 @@ function columnName(index: number): string {
   return out;
 }
 
-function xlsxCell(ref: string, cell: ExportCell, header: boolean): string {
+function xlsxCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): string {
+  const ref = `${columnName(c)}${r + 1}`;
+  const header = r === 0;
   if (cell === null || cell === '') return header ? `<c r="${ref}" s="${STYLE_HEADER}"/>` : '';
   if (typeof cell === 'number' && Number.isFinite(cell)) {
     return `<c r="${ref}"${header ? ` s="${STYLE_HEADER}"` : ''}><v>${cell}</v></c>`;
   }
-  const text = String(cell).slice(0, MAX_CELL_TEXT);
+  const text = String(cell);
+  checkCell(sheet, r, c, text);
   const style = header ? STYLE_HEADER : needsFormulaEscape(text) ? STYLE_TEXT : 0;
   return (
     `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}>` +
-    `<is><t xml:space="preserve">${xml(text)}</t></is></c>`
+    `<is><t xml:space="preserve">${xml(encodeXstring(text))}</t></is></c>`
   );
 }
 
@@ -165,7 +218,7 @@ function worksheet(sheet: ExportSheet): string {
   }
   parts.push('<sheetData>');
   rows.forEach((row, r) => {
-    const cells = row.map((cell, c) => xlsxCell(`${columnName(c)}${r + 1}`, cell, r === 0));
+    const cells = row.map((cell, c) => xlsxCell(sheet, r, c, cell));
     parts.push(`<row r="${r + 1}">${cells.join('')}</row>`);
   });
   parts.push('</sheetData></worksheet>');
@@ -273,13 +326,12 @@ export function writeWorkbook(sheets: readonly ExportSheet[]): Uint8Array {
 
 export const xlsxExport: ExportTarget = {
   kind: 'xlsx',
-  write(report) {
-    return Promise.resolve({
+  write: (report) =>
+    Promise.resolve().then(() => ({
       name: `${report.fileStem}.xlsx`,
       contentType: XLSX_TYPE,
       bytes: writeWorkbook(report.sheets),
-    });
-  },
+    })),
 };
 
 export const EXPORT_TARGETS: Readonly<Record<ExportFormat, ExportTarget>> = {

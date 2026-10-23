@@ -7,7 +7,13 @@ import {
   type Pack,
   type TabSpec,
 } from '@ideamap/contracts';
-import type { ExportCell, ExportPayload, ExportSheet } from './export.js';
+import {
+  ExportRefused,
+  MAX_CELL_TEXT,
+  type ExportCell,
+  type ExportPayload,
+  type ExportSheet,
+} from './export.js';
 
 // The reports a teacher downloads (ARCHITECTURE.md §7): the blank or sample
 // template workbook, a pack as a workbook, the data-check report, the standards
@@ -130,13 +136,41 @@ const SAMPLES: Record<TabSpec['tab'], Record<string, string>[]> = {
   Library: [{ title: 'Water cycle unit plan', file_url: 'unit-plan.pdf', use_for: 'agent' }],
 };
 
-/** A pack value as a sheet cell: lists joined with commas, empty as blank. */
-function packCell(value: unknown): ExportCell {
+/**
+ * A pack value as a sheet cell: lists joined with ", ", empty as blank. The importer
+ * splits list cells on commas and semicolons, so an item holding either would come
+ * back as two; that export is refused, naming the cell, rather than changed.
+ */
+function packCell(
+  value: unknown,
+  at: () => { sheet: string; row: number; column: string },
+): ExportCell {
   if (value === null || value === undefined) return null;
-  if (Array.isArray(value)) return value.map(String).join(', ');
+  if (Array.isArray(value)) {
+    const items = value.map(String);
+    const bad = items.find((item) => /[,;]/.test(item));
+    if (bad !== undefined) {
+      const where = at();
+      throw new ExportRefused(
+        `${where.sheet}, row ${where.row}, ${where.column}: the item "${bad}" has a comma or semicolon, ` +
+          `which separate items in a spreadsheet list, so it would come back as more than one item. ` +
+          `The export stopped; reword that item without them, then export again.`,
+        where,
+      );
+    }
+    return items.join(', ');
+  }
   if (typeof value === 'number') return value;
   return String(value as string);
 }
+
+/**
+ * The blank template's Course values. Subject, topic and grade are required, so the
+ * template carries the spec's examples, marked in the Read me, and imports as it is.
+ */
+const BLANK_COURSE: Record<string, string> = Object.fromEntries(
+  ['subject', 'topic', 'grade'].map((name) => [name, SAMPLES.Course[0]![name]!]),
+);
 
 /** One tab as a sheet with exactly the spec's columns, in spec order. */
 function tabSheet(spec: TabSpec, rows: readonly Record<string, unknown>[]): ExportSheet {
@@ -145,14 +179,21 @@ function tabSheet(spec: TabSpec, rows: readonly Record<string, unknown>[]): Expo
     return {
       name: spec.tab,
       header: ['key', 'value'],
-      rows: spec.cols.map((c) => [c.name, packCell(row?.[c.name])]),
+      rows: spec.cols.map((c, i) => [
+        c.name,
+        packCell(row?.[c.name], () => ({ sheet: spec.tab, row: i + 2, column: c.name })),
+      ]),
       widths: [16, 60],
     };
   }
   return {
     name: spec.tab,
     header: spec.cols.map((c) => c.name),
-    rows: rows.map((row) => spec.cols.map((c) => packCell(row[c.name]))),
+    rows: rows.map((row, r) =>
+      spec.cols.map((c) =>
+        packCell(row[c.name], () => ({ sheet: spec.tab, row: r + 2, column: c.name })),
+      ),
+    ),
     widths: spec.cols.map((c) => widthOf(c.name)),
   };
 }
@@ -173,7 +214,14 @@ function readMeSheet(): ExportSheet {
         c.req ? 'Yes' : 'No',
         c.missing,
         EDITED_IN[c.edit],
-        c.note || null,
+        [
+          c.note,
+          spec.tab === 'Course' && c.name in BLANK_COURSE
+            ? `The blank template has the example "${BLANK_COURSE[c.name]}" here; replace it.`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ') || null,
       ]),
     ]),
     widths: [12, 18, 30, 10, 40, 18, 60],
@@ -182,7 +230,8 @@ function readMeSheet(): ExportSheet {
 
 /**
  * The Curriculum Pack template: a "Read me" sheet, then the eight tabs with the
- * spec's columns. `sample` fills each tab with the prototype's sample rows.
+ * spec's columns. `sample` fills each tab with the prototype's sample rows; the blank
+ * template has only the required Course values, as examples.
  */
 export function templateReport(options: ReportOptions & { sample?: boolean } = {}): ExportPayload {
   const sample = options.sample ?? false;
@@ -191,7 +240,9 @@ export function templateReport(options: ReportOptions & { sample?: boolean } = {
     fileStem: `curriculum-pack-template${sample ? '-sample' : ''}-${dateOf(options)}`,
     sheets: [
       readMeSheet(),
-      ...PACK_SPEC.map((spec) => tabSheet(spec, sample ? SAMPLES[spec.tab] : [])),
+      ...PACK_SPEC.map((spec) =>
+        tabSheet(spec, sample ? SAMPLES[spec.tab] : spec.tab === 'Course' ? [BLANK_COURSE] : []),
+      ),
     ],
   };
 }
@@ -232,9 +283,59 @@ function namer(pack: ReportPack) {
   };
 }
 
+/** Room left in a cell for the joined list; the rest of the limit is headroom. */
+const LIST_BUDGET = MAX_CELL_TEXT - 767;
+
+/**
+ * Joins a list into cells for several columns at once (titles and ids, say), starting
+ * a new group before any cell would pass the spreadsheet limit, so nothing is cut.
+ */
+function joinInGroups<T>(
+  items: readonly T[],
+  columns: readonly { text: (item: T) => string; sep: string }[],
+): string[][] {
+  const groups: string[][] = [];
+  let current: string[] | null = null;
+  for (const item of items) {
+    const texts = columns.map((c) => c.text(item));
+    const fits =
+      current !== null &&
+      texts.every((t, i) => current![i]!.length + columns[i]!.sep.length + t.length <= LIST_BUDGET);
+    if (current !== null && fits) {
+      current = current.map((joined, i) => joined + columns[i]!.sep + texts[i]);
+      groups[groups.length - 1] = current;
+    } else {
+      current = texts;
+      groups.push(current);
+    }
+  }
+  return groups;
+}
+
+/**
+ * One report row, with its lists continued on the rows below when they don't fit in
+ * one cell. `first` fills the row's other cells; continuation rows repeat `repeat`.
+ */
+function rowsWithLists(
+  first: readonly ExportCell[],
+  repeat: readonly ExportCell[],
+  lists: readonly { at: number; groups: string[][] }[],
+): ExportCell[][] {
+  const count = Math.max(1, ...lists.map((l) => l.groups.length));
+  return Array.from({ length: count }, (_, n) => {
+    const row = [...(n === 0 ? first : repeat)];
+    for (const list of lists) {
+      const group = list.groups[n];
+      group?.forEach((text, i) => (row[list.at + i] = text || null));
+    }
+    return row;
+  });
+}
+
 /**
  * The data-check report: one row per issue, errors first, then warnings, then info,
- * with the ideas affected by title and the tab and column to fix.
+ * with the ideas affected by title and the tab and column to fix. A long list of
+ * ideas continues on the rows below, marked "(continued)".
  */
 export function dataCheckReport(
   pack: ReportPack,
@@ -261,20 +362,26 @@ export function dataCheckReport(
           'Tab to fix',
           'Column to fix',
         ],
-        rows: sorted.map((issue) => {
+        rows: sorted.flatMap((issue) => {
           const units = issue.fix.tab === 'Units';
-          const affected = issue.items.map((item) =>
-            units && /^\d+$/.test(item) ? name.unit(Number(item)) : name.idea(item),
+          const fix = [issue.fix.tab, (issue.fix.columns ?? [issue.fix.column]).join(', ')];
+          return rowsWithLists(
+            [LEVEL_NAME[issue.level], issue.kind, issue.message, null, null, ...fix],
+            [LEVEL_NAME[issue.level], issue.kind, '(continued)', null, null, ...fix],
+            [
+              {
+                at: 3,
+                groups: joinInGroups(issue.items, [
+                  {
+                    text: (item) =>
+                      units && /^\d+$/.test(item) ? name.unit(Number(item)) : name.idea(item),
+                    sep: '; ',
+                  },
+                  { text: (item) => item, sep: ', ' },
+                ]),
+              },
+            ],
           );
-          return [
-            LEVEL_NAME[issue.level],
-            issue.kind,
-            issue.message,
-            affected.join('; ') || null,
-            issue.items.join(', ') || null,
-            issue.fix.tab,
-            (issue.fix.columns ?? [issue.fix.column]).join(', '),
-          ];
         }),
         widths: [10, 22, 80, 40, 24, 14, 18],
       },
@@ -290,6 +397,8 @@ const byCode = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
  * The standards alignment report: for each standards code, the ideas and units that
  * cover it (a unit covers a code it lists, or that one of its ideas lists), then the
  * ideas with no codes. The Course framework labels it ("Custom" when there's none).
+ * When a code's ideas or units don't fit in one cell, they continue on the rows
+ * below, which repeat the code; the number of ideas is on its first row.
  */
 export function alignmentReport(pack: ReportPack, options: ReportOptions = {}): ExportPayload {
   const framework = pack.course.framework?.trim() || 'Custom';
@@ -310,30 +419,29 @@ export function alignmentReport(pack: ReportPack, options: ReportOptions = {}): 
     }
   }
   const uncoded = pack.ideas.filter((idea) => idea.standard_codes.length === 0);
-  const rows: ExportCell[][] = [...codes.keys()].sort(byCode.compare).map((code) => {
-    const { ideas, units } = codes.get(code)!;
-    return [
-      code,
-      ideas.length,
-      ideas.map((i) => i.title).join('; ') || null,
-      ideas.map((i) => i.idea_id).join(', ') || null,
-      [...units]
-        .sort((a, b) => a - b)
-        .map(name.unit)
-        .join('; ') || null,
-    ];
-  });
+  const ideaColumns = [
+    { text: (i: Pack['ideas'][number]) => i.title, sep: '; ' },
+    { text: (i: Pack['ideas'][number]) => i.idea_id, sep: ', ' },
+  ];
+  const unitGroups = (units: Iterable<number>) =>
+    joinInGroups(
+      [...units].sort((a, b) => a - b),
+      [{ text: name.unit, sep: '; ' }],
+    );
+  const line = (label: string, ideas: Pack['ideas'], units: Iterable<number>) =>
+    rowsWithLists(
+      [label, ideas.length, null, null, null],
+      [label, null, null, null, null],
+      [
+        { at: 2, groups: joinInGroups(ideas, ideaColumns) },
+        { at: 4, groups: unitGroups(units) },
+      ],
+    );
+  const rows: ExportCell[][] = [...codes.keys()]
+    .sort(byCode.compare)
+    .flatMap((code) => line(code, codes.get(code)!.ideas, codes.get(code)!.units));
   if (uncoded.length > 0) {
-    rows.push([
-      'No standards code',
-      uncoded.length,
-      uncoded.map((i) => i.title).join('; '),
-      uncoded.map((i) => i.idea_id).join(', '),
-      [...new Set(uncoded.map((i) => i.unit))]
-        .sort((a, b) => a - b)
-        .map(name.unit)
-        .join('; '),
-    ]);
+    rows.push(...line('No standards code', uncoded, new Set(uncoded.map((i) => i.unit))));
   }
   return {
     report: 'alignment',
