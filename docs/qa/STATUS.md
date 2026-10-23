@@ -23,8 +23,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 - Coordinator: Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`; owns claims, criteria, routing, integration checks and merges.
 - Independent QA coordinator: Codex thread `01a165ed-292f-7d71-8826-a8193dd72a3e`; owns independent evidence and new immutable reports, not implementation or task-state changes.
-- C1cx1 builder: local agent `/root/c1_memory_fix`, worktree `/home/kevin/coordinator-worktrees/c1cx1`; updates the existing `task/C1-import` branch.
-- F2cx1 integration is complete; its builder has finished the separate T1 criteria draft. [T1 criteria](T1.md) are published before the task is claimable.
+- F1d builder: local agent `/root/c1_memory_fix`, worktree `/home/kevin/coordinator-worktrees/f1d`; corrects existing PR #16. Its prior C1cx1 work is complete.
+- C2cx5 builder: local agent `/root/f2_ci_fix`, worktree `/home/kevin/coordinator-worktrees/c2cx5`. Its prior F2 synchronization and [T1 criteria](T1.md) work are complete.
 
 ## Pending design clarification
 

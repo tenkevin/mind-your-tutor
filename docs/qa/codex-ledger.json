@@ -179,6 +179,29 @@
       ],
       "errors": [],
       "suggestions": "PASS recorded in reports/F4b.md; remaining F4-E2 stays F4cx1. Populated downgrade preflight/forward-fix documentation routed to F4cx1-U2."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-C1cx1-review-0ef9072.md",
+      "commit": "10e951c51ef82e77c9597366c8353bdecd231763",
+      "date": "2026-10-23",
+      "reviews": [
+        "C1",
+        "C1cx1"
+      ],
+      "errors": [],
+      "suggestions": "Independent integrated PASS closes C1-E1 at merged649f46a; saved reports/C1.md and C1cx1.md. Header-limit consistency -> C9-F13; retain bounded historical/data-cell regressions and existing C9 URL routing."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F1d-review-5b8e926.md",
+      "commit": "10e951c51ef82e77c9597366c8353bdecd231763",
+      "date": "2026-10-23",
+      "reviews": [
+        "F1d"
+      ],
+      "errors": [
+        "F1d-E1 -> same unmerged F1d PR16 for correction and independent rerun; no duplicate task"
+      ],
+      "suggestions": "Ambient-form coverage and same-suite recovery remain F1d regression scope; other tracker limitations remain existing CXB/M1/M3 routing."
     }
   ]
 }
