@@ -249,9 +249,9 @@
       ],
       "done_when": "Uploading a file runs a pg-boss job that stores a draft CurriculumVersion with derived data and issues",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c4",
+      "updated": "2026-10-23"
     },
     {
       "id": "C5",
@@ -276,9 +276,9 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c6",
+      "updated": "2026-10-23"
     },
     {
       "id": "C7",
