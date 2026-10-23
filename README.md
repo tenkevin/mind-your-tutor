@@ -42,6 +42,14 @@ pnpm db:migrate       # apply every migration
 pnpm db:reset         # drop everything and migrate again
 ```
 
+### Sign-in
+
+```
+pnpm dev:auth         # mock identity provider, seeded users for every role, and the API
+```
+
+Then start an app (`pnpm --filter @ideamap/teacher dev`) and sign in. `apps/api/README.md` lists the sample users. Settings are environment variables only; `.env.example` lists their names.
+
 The database tests in `pnpm test` run when `DATABASE_URL` is set (for example `postgres://postgres:postgres@localhost:5433/postgres`) and are skipped otherwise; CI always runs them.
 
 Run one workspace with `pnpm --filter @ideamap/<name> <script>`, for example `pnpm --filter @ideamap/teacher dev`. Workspaces live under `apps/` and `packages/`, as laid out in `docs/ARCHITECTURE.md` §4. Shared dependency versions are in the `catalog` in `pnpm-workspace.yaml`. CI (`.github/workflows/ci.yml`) runs install, lint, format check, typecheck, test and build, then the migrations, against a Postgres 16 service with pgvector, on every push and pull request to `idea-map`.

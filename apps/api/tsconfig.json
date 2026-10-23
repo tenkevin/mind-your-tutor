@@ -1,4 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Typecheck and tests read the workspace packages from source, so they don't need
+    // a build first; the build itself (tsconfig.build.json) uses the built packages.
+    "paths": {
+      "@ideamap/contracts": ["../../packages/contracts/src/index.ts"],
+      "@ideamap/connectors": ["../../packages/connectors/src/index.ts"],
+      "@ideamap/db": ["../../packages/db/src/index.ts"],
+      "@ideamap/db/testing": ["../../packages/db/src/test/harness.ts"]
+    }
+  },
   "include": ["src"]
 }

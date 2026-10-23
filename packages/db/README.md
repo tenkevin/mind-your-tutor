@@ -52,6 +52,7 @@ run; add a new one.
 | 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot` |
 | 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
 | 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                   |
+| 0012 auth          | `sso_tenant` (provider tenant → org), `auth_session`, `app.sso_tenant_org()`, `class.roster_source_id`; SSO provider ids become slugs (F5)    |
 
 ## Roles and row-level security
 
