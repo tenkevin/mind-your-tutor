@@ -58,6 +58,35 @@ describe('@ideamap/ai', () => {
     });
   });
 
+  it('inherits built-in defaults for null fields while keeping supplied overrides', () => {
+    const peerTemplate = BUILT_IN_PERSONAS[1]!.prompt_template;
+    const inherited = resolveEffectivePersonas([
+      { persona_id: 'peer', name: null, role: null, prompt_template: null, tone: 'calm' },
+    ]);
+    expect(inherited[1]).toMatchObject({
+      name: 'Milo',
+      role: 'Virtual classmate',
+      prompt_template: peerTemplate,
+      tone: 'calm',
+    });
+
+    const explicit = resolveEffectivePersonas([
+      {
+        persona_id: 'peer',
+        name: null,
+        role: null,
+        prompt_template: 'Custom peer prompt for {name}.',
+        tone: 'socratic',
+      },
+    ]);
+    expect(explicit[1]).toMatchObject({
+      name: 'Milo',
+      role: 'Virtual classmate',
+      prompt_template: 'Custom peer prompt for {name}.',
+      tone: 'socratic',
+    });
+  });
+
   it('ignores prototype-sensitive ids without changing the built-ins', () => {
     expect(PersonaSchema.safeParse({ persona_id: '__proto__', name: 'Injected' }).success).toBe(
       false,

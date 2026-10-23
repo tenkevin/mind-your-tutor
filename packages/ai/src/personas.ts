@@ -12,8 +12,9 @@ export interface PersonaDefinition {
 }
 
 /** A persona row may supply the full pack values or a partial class override. */
-export type PersonaOverride = Partial<Omit<PersonaDefinition, 'persona_id'>> & {
+export type PersonaOverride = Partial<Omit<PersonaDefinition, 'persona_id' | 'name'>> & {
   persona_id: PersonaId | string;
+  name?: string | null;
 };
 
 /** Canonical built-ins. Keep prompt text synchronized with project/curriculum.js. */
@@ -78,7 +79,7 @@ export function resolveEffectivePersonas(
       const next = { ...current };
       for (const field of OVERRIDE_FIELDS) {
         const value = override[field];
-        if (value !== undefined) Object.assign(next, { [field]: value });
+        if (value !== undefined && value !== null) Object.assign(next, { [field]: value });
       }
       effective.set(id, next);
     }
