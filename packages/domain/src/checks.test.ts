@@ -197,18 +197,15 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
   });
 
   it('parses a version with the largest valid C8 issue group in under 50 ms', () => {
-    const specs = chain(5000, false);
+    const specs = chain(10_000, false);
     specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
-    const checked = pack(specs);
-    const parsed = parsePack({ ...sample(), ...checked });
-    if (!parsed.ok) throw new Error('large test pack should satisfy the pack schema');
-    const checks = checkPack(parsed.value);
+    const checks = checkPack(pack(specs));
     const input = {
       id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
       curriculum_id: '0f8fad5b-d9cb-469f-a165-70867728950e',
       number: 2,
       status: 'draft',
-      pack: parsed.value,
+      pack: sample(),
       derived: null,
       issues: checks,
       source: versionSource,
@@ -220,7 +217,9 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
     const version = CurriculumVersionSchema.parse(input);
     const elapsed = performance.now() - start;
 
-    expect(version.issues[1]!.items).toHaveLength(4999);
+    const largeIssue = version.issues[1];
+    if (largeIssue?.origin !== 'data_check') throw new Error('expected a stored data-check issue');
+    expect(largeIssue.items).toHaveLength(9999);
     expect(elapsed).toBeLessThan(50);
   });
 });

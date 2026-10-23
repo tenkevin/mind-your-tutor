@@ -82,7 +82,11 @@ export interface CurriculumVersionTable {
   status: ColumnType<VersionStatus, VersionStatus | undefined, VersionStatus>;
   pack: Json<Pack>;
   derived: NullableJson<VersionDerived>;
-  issues: ColumnType<VersionIssue[], JsonText<VersionIssue[]> | undefined, JsonText<VersionIssue[]>>;
+  issues: ColumnType<
+    VersionIssue[],
+    JsonText<VersionIssue[]> | undefined,
+    JsonText<VersionIssue[]>
+  >;
   source: Json<VersionSource>;
   created_by: string | null;
   created_at: CreatedAt;

@@ -67,7 +67,7 @@ export const VersionIssueSchema = z.preprocess((value: unknown) => {
     return {
       ...issue,
       origin: 'import',
-      level: issue.level ?? issue.severity,
+      level: issue.severity,
     };
   }
   return value;

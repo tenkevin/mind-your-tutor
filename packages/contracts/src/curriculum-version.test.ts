@@ -103,6 +103,17 @@ describe('CurriculumVersion follows §5 (F3-F9)', () => {
     const stored = VersionIssuesSchema.parse([importerIssue]);
 
     expect(stored).toEqual([{ ...importerIssue, origin: 'import', level: 'info' }]);
+
+    const inconsistent = VersionIssuesSchema.parse([
+      {
+        ...importerIssue,
+        severity: 'error',
+        effect: 'blocks_import',
+        origin: 'import',
+        level: 'info',
+      },
+    ]);
+    expect(inconsistent[0]).toMatchObject({ severity: 'error', level: 'error' });
   });
 
   it('blocks published versions on error-level checks but allows warning and info checks', () => {
