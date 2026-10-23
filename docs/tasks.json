@@ -66,9 +66,9 @@
       ],
       "done_when": "The bypasses in docs/qa/reports/F1b.md Found during testing items 1-4 are closed by lint or by a runtime guard test that runs in CI",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f1c",
-      "updated": "2026-10-22"
+      "updated": "2026-10-23"
     },
     {
       "id": "F2",
@@ -129,7 +129,7 @@
       ],
       "done_when": "Findings 1, 2 and 4 in docs/qa/reports/F4.md fixed by a new migration with database tests: no cross-org writes or probing via interaction_event_key, class_library_setting class-scoped (D11), app role TEMP revoked",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f4b",
       "updated": "2026-10-23"
     },
@@ -153,9 +153,9 @@
       ],
       "done_when": "Codex F4-E2 and the rest of F4-E1 (docs/qa/codex/Codex-F4-database.md): guard_class_pin and every remaining trigger/guard/definer function schema-qualify relations or pin search_path with pg_temp last and fail closed; a test enumerates all functions. F4b (migration 0011) already fixes record_interaction_event_keys() and revokes TEMP; keep those tests",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "codex-f4cx1",
+      "updated": "2026-10-23"
     },
     {
       "id": "F5",
@@ -369,7 +369,8 @@
       "deps": [
         "M1",
         "C3",
-        "F1c"
+        "F1c",
+        "F1d"
       ],
       "done_when": "apply() in packages/tracker is pure with no clock, randomness or network; replaying the same events always gives identical progress, metrics and signals, covered by property tests",
       "placeholder": true,
@@ -727,8 +728,21 @@
       ],
       "done_when": "Existing C1 PR safely refuses long-cell and duplicate-tab archives without process death; independent C1cx1 QA passes",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "codex-c1cx1",
+      "updated": "2026-10-23"
+    },
+    {
+      "id": "F1d",
+      "title": "Close independent QA ambient-global tracker determinism gap",
+      "size": 1,
+      "deps": [
+        "F1c"
+      ],
+      "done_when": "F1c QA finding1: production ambient declarations cannot hide banned globals, process access is guarded, existing determinism regressions and performance budgets pass",
+      "placeholder": false,
+      "status": "doing",
+      "owner": "codex-f1d",
       "updated": "2026-10-23"
     }
   ]

@@ -37,3 +37,4 @@ Note: F4b (PR #12, migration 0011) already makes `app.record_interaction_event_k
 | Id | Weight | Check | Steps | Pass bar |
 |---|---|---|---|---|
 | F4cx1-U1 | must | Rule written down | Read `packages/db/README.md` | States the rule: qualify relations and pin `search_path` in every function, and points to the enumerating test |
+| F4cx1-U2 | should | Populated rollback guidance (F4b QA suggestion) | Read the DB runbook for migration 0011 downgrade and same-id events across organizations | Document the uniqueness preflight or a forward-fix policy that preserves append-only history; do not promise that an empty-database down/up test proves populated rollback safety |
