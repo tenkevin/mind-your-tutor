@@ -332,13 +332,15 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | COPPA (students under 13) | School-authorised consent model; collect only name, school email and roster ids; no ads, no profiling |
 | FERPA | District is the data owner; signed data processing agreement; export and delete on request |
 | State laws (e.g. SOPIPA) | No sale or secondary use; vendor list published |
-| AI vendors | Use a zero-retention, no-training agreement with the model provider; send no student names to the model (pseudonymous ids) |
-| Fairness and research | D16 audits by school and district, with the race audit run by the district (D23); research on de-identified data only, under a district agreement (D25); tracing opt-out (D24) |
+| AI vendors | Use a zero-retention, no-training agreement with the model provider; send no student names to the model (pseudonymous ids). Student text is anonymised on the device first (D26), with a server backstop; teacher corrections are labelled examples, never training data (D15) |
+| Fairness and research | D16 audits by school and district, with the race audit run by the district (D23); research on de-identified data only, under a district agreement, with opt-in parental consent for identifiable or beyond-education use of under-13s (D25); tracing opt-out (D24) |
+| Learning traces | Learning events only (D19); raw events kept while the student is enrolled in the district, deleted on unenrolment and FERPA request; anonymous aggregates with small groups suppressed (D22). No IP address, device or location |
+| AI memory | Long-term memory holds only learning facts and up to five approved-category interests (D28); kept while enrolled; the student can view, delete or turn it off and the teacher can view and delete it for the class (D29); covered by F6 export and delete |
 | AI transcripts | Stored redacted, retention configurable per district (default 90 days), visible to the class teacher |
 | Access | Roles: admin, author, teacher, student. Teachers see only their classes. Every config change and publish is an `AuditEvent` |
 | Sign-in | Google Workspace for Education, Clever, ClassLink SSO; rostering by OneRoster CSV import (import-only, matching D4) |
-| Security | TLS everywhere, encryption at rest, per-org row-level security in Postgres |
-| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; read-aloud for K–2 later; CAST UDL 3.0 for student-facing features (D17) |
+| Security | TLS everywhere, encryption at rest with AES-256-GCM (never Blowfish, D18), per-org row-level security in Postgres |
+| Accessibility | WCAG 2.1 AA for both apps, except the design-system colour pairs accepted in D10; CAST UDL 3.0 for student-facing features, including read-aloud and spoken input in the browser (D17, task S5) |
 
 ## 11. Teacher Settings page: how each section maps
 
