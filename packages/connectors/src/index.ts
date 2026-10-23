@@ -22,3 +22,28 @@ export {
 export { needsFormulaEscape, similarity } from './mapping.js';
 export { matchTab, looseName } from './tabs.js';
 export { serialToIsoDate, dateToIsoDate } from './dates.js';
+export {
+  csvExport,
+  xlsxExport,
+  EXPORT_TARGETS,
+  REPORT_KINDS,
+  sheetToCsv,
+  writeWorkbook,
+  type ExportCell,
+  type ExportFormat,
+  type ExportPayload,
+  type ExportSheet,
+  type ExportTarget,
+  type FileRef,
+  type ReportKind,
+} from './export.js';
+export {
+  alignmentReport,
+  assessmentDraftsReport,
+  dataCheckReport,
+  fileSlug,
+  packReport,
+  templateReport,
+  type ReportOptions,
+  type ReportPack,
+} from './reports.js';

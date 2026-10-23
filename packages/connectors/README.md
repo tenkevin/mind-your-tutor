@@ -9,3 +9,17 @@ The hostile archive regressions must run in a resource-bounded container after `
 ```sh
 docker run --network none --read-only --memory 768m --memory-swap 768m --cpus 1 --pids-limit 64 --ulimit core=0 --rm -v "$PWD":/repo:ro -w /repo/packages/connectors node:22.22.0-bookworm timeout 45s node scripts/c1cx1-bounded.mjs
 ```
+
+## Exports (C6)
+
+`reports.ts` builds each download as plain sheets, and an `ExportTarget` (`export.ts`, ARCHITECTURE.md §7) writes it: `xlsxExport` as a workbook, `csvExport` as one UTF-8 CSV with a byte order mark (or a zip of CSVs, one per tab, when a report has several sheets).
+
+| Builder                               | File (example)                                                                                                                                                                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `templateReport({ sample })`          | `curriculum-pack-template-2026-10-22.xlsx`: a "Read me" sheet with every column's type, whether it's required and what happens when it's missing, then the eight tabs with the spec's columns (and the prototype's sample rows when `sample` is true) |
+| `packReport(pack)`                    | `water-cycle-pack-2026-10-22.xlsx`: a parsed pack as the eight tabs; importing it again gives the same pack                                                                                                                                           |
+| `dataCheckReport(pack, issues)`       | `water-cycle-data-checks-2026-10-22.csv`: one row per C2 data check, errors first, with ideas by title and the tab and column to fix                                                                                                                  |
+| `alignmentReport(pack)`               | `water-cycle-alignment-2026-10-22.xlsx`: per standards code, the ideas and units that cover it, then the ideas with no code, labelled with the Course framework                                                                                       |
+| `assessmentDraftsReport(topic, rows)` | `water-cycle-assessment-drafts-2026-10-22.csv`: Atlas-drafted rows with exactly the Assessment columns                                                                                                                                                |
+
+Nothing exported runs as a formula. A CSV cell that `needsFormulaEscape` gets a leading apostrophe; XLSX cells are always typed values (never formulas), and formula-like text is written as text with Excel's quote prefix, so it reads back unchanged. Exports take curriculum data only.
