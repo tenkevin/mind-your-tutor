@@ -23,6 +23,12 @@ import {
 // sent, from the queue as it is now: a newer autosave of the same form, or a write to
 // another URL, stays kept (and is sent by the same replay). Only one replay runs at a
 // time; a second call shares the first.
+//
+// Save state (T1): the header's "Saving…" / "Saved" reads `saveState()`. It is
+// `saving` while a write or a replay is waiting on the server, `unsaved` while a kept
+// write is waiting to be retried or the last write to some URL failed, and `saved`
+// only once every write has been accepted. A write never reads as saved before the
+// server's response says so.
 
 const PENDING_KEY = 'ideamap.pendingWrites';
 
@@ -86,6 +92,8 @@ export interface ReplayResult {
   pending: number;
 }
 
+export type SaveState = 'saving' | 'saved' | 'unsaved';
+
 export interface SessionClient {
   me: MeResponse | null;
   load(): Promise<MeResponse | null>;
@@ -95,6 +103,10 @@ export interface SessionClient {
    * Overlapping calls share one replay.
    */
   replayPendingWrites(): Promise<ReplayResult>;
+  /** Whether this user's writes have all reached the server (T1). */
+  saveState(): SaveState;
+  /** Call `listener` whenever `saveState()` may have changed; returns an unsubscribe. */
+  subscribe(listener: () => void): () => void;
   signOut(): Promise<void>;
 }
 
@@ -121,6 +133,20 @@ export function createSessionClient(deps: {
   };
 
   let replaying: Promise<ReplayResult> | null = null;
+  let inFlight = 0;
+  /** `method url` of writes whose latest attempt failed and wasn't kept to retry. */
+  const failed = new Set<string>();
+  const listeners = new Set<() => void>();
+  let state: SaveState = 'saved';
+  const changed = () => {
+    const me = client.me;
+    const kept = me ? readPending(deps.store).some((w) => w.userId === me.user.id) : false;
+    const next: SaveState =
+      inFlight > 0 || replaying ? 'saving' : kept || failed.size > 0 ? 'unsaved' : 'saved';
+    if (next === state) return;
+    state = next;
+    for (const listener of [...listeners]) listener();
+  };
   const replay = async (): Promise<ReplayResult> => {
     const me = client.me;
     if (!me) return { saved: 0, pending: readPending(deps.store).length };
@@ -140,6 +166,8 @@ export function createSessionClient(deps: {
       const next = readPending(deps.store).find((w) => mine(w) && !tried.has(w.rev));
       if (!next) break;
       tried.add(next.rev);
+      // A replayed write supersedes an earlier failure of the same write.
+      failed.delete(`${next.method} ${next.url}`);
       let res: Response;
       try {
         res = await request(next.method, next.url, next.body);
@@ -156,6 +184,7 @@ export function createSessionClient(deps: {
         readPending(deps.store).filter((w) => w.rev !== next.rev),
       );
       saved++;
+      changed();
     }
     return { saved, pending: readPending(deps.store).filter(mine).length };
   };
@@ -165,24 +194,52 @@ export function createSessionClient(deps: {
     async load() {
       const res = await deps.fetch('/api/me', { credentials: 'same-origin' });
       client.me = res.ok ? MeResponseSchema.parse(await res.json()) : null;
+      changed();
       return client.me;
     },
     async send(method, url, body) {
-      const res = await request(method, url, body);
-      if (res.status === 401) {
-        if (client.me) stashWrite(deps.store, { userId: client.me.user.id, method, url, body });
-        throw toSignIn();
+      const key = `${method} ${url}`;
+      inFlight++;
+      changed();
+      try {
+        let res: Response;
+        try {
+          res = await request(method, url, body);
+        } catch (error) {
+          failed.add(key);
+          throw error;
+        }
+        if (res.status === 401) {
+          if (client.me) stashWrite(deps.store, { userId: client.me.user.id, method, url, body });
+          throw toSignIn();
+        }
+        if (res.ok) failed.delete(key);
+        else failed.add(key);
+        return res;
+      } finally {
+        inFlight--;
+        changed();
       }
-      return res;
     },
     replayPendingWrites() {
-      replaying ??= replay().finally(() => {
-        replaying = null;
-      });
+      if (!replaying) {
+        replaying = replay().finally(() => {
+          replaying = null;
+          changed();
+        });
+        changed();
+      }
       return replaying;
     },
+    saveState: () => state,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     async signOut() {
-      await client.send('POST', '/auth/sign-out');
+      // Signing out isn't a save, so it isn't tracked, and it is never kept to replay: a
+      // 401 means the session has already ended, which is what was asked for.
+      await request('POST', '/auth/sign-out', undefined);
       client.me = null;
       deps.store.removeItem(PENDING_KEY);
       deps.go('/sign-in');

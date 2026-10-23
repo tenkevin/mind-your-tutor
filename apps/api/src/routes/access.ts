@@ -4,10 +4,12 @@ import {
   RoleChangeRequestSchema,
   RosterImportRequestSchema,
   type ClassConfig,
+  type ClassHeaderResponse,
 } from '@ideamap/contracts';
 import { parseOneRoster, RosterError } from '@ideamap/connectors';
 import { json } from '@ideamap/db';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { audit } from '../db.js';
 import { ALL_ROLES, type PolicyDeps } from '../policy.js';
 import { importRoster } from '../roster.js';
@@ -74,6 +76,42 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
         .executeTakeFirst(),
     );
     return { config: row?.config ?? {}, updatedAt: row?.updated_at.toISOString() ?? null };
+  });
+
+  // The teacher console header (T1): staff only, and only for a class they may see.
+  app.get<ClassParams>('/api/classes/:classId/header', { config: classPolicy() }, async (req) => {
+    const classId = req.params.classId;
+    const header = await req.withOrg(async (trx) => {
+      const klass = await trx
+        .selectFrom('class as c')
+        .leftJoin('class_config as cc', 'cc.class_id', 'c.id')
+        .leftJoin('curriculum_defaults as d', 'd.curriculum_id', 'c.curriculum_id')
+        .select(['c.name', 'c.curriculum_id', 'cc.config as classConfig', 'd.config as defaults'])
+        .where('c.id', '=', classId)
+        .executeTakeFirstOrThrow();
+      // The published version if there is one, else the newest draft.
+      const version = await trx
+        .selectFrom('curriculum_version')
+        .select(['pack'])
+        .where('curriculum_id', '=', klass.curriculum_id)
+        .orderBy(sql`published_at is null`)
+        .orderBy('number', 'desc')
+        .limit(1)
+        .executeTakeFirst();
+      return { klass, course: version?.pack.course ?? null };
+    });
+    const { klass, course } = header;
+    const pick = (field: 'subject' | 'topic') =>
+      klass.classConfig?.course?.[field] ??
+      klass.defaults?.course?.[field] ??
+      course?.[field] ??
+      null;
+    return {
+      classId,
+      className: klass.name,
+      subject: pick('subject'),
+      topic: pick('topic'),
+    } satisfies ClassHeaderResponse;
   });
 
   app.put<ClassParams>(
