@@ -179,6 +179,59 @@
       ],
       "errors": [],
       "suggestions": "PASS recorded in reports/F4b.md; remaining F4-E2 stays F4cx1. Populated downgrade preflight/forward-fix documentation routed to F4cx1-U2."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-C1cx1-review-0ef9072.md",
+      "commit": "10e951c51ef82e77c9597366c8353bdecd231763",
+      "date": "2026-10-23",
+      "reviews": [
+        "C1",
+        "C1cx1"
+      ],
+      "errors": [],
+      "suggestions": "Independent integrated PASS closes C1-E1 at merged649f46a; saved reports/C1.md and C1cx1.md. Header-limit consistency -> C9-F13; retain bounded historical/data-cell regressions and existing C9 URL routing."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F1d-review-5b8e926.md",
+      "commit": "10e951c51ef82e77c9597366c8353bdecd231763",
+      "date": "2026-10-23",
+      "reviews": [
+        "F1d"
+      ],
+      "errors": [
+        "F1d-E1 -> same unmerged F1d PR16 for correction and independent rerun; no duplicate task"
+      ],
+      "suggestions": "Ambient-form coverage and same-suite recovery remain F1d regression scope; other tracker limitations remain existing CXB/M1/M3 routing."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F1d-review-0dd326d.md",
+      "commit": "58b6c0f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F1d"
+      ],
+      "errors": [],
+      "suggestions": "F1d-E1 corrected; independent integrated PASS retained. PR16 remains unmerged at user C9-only stopping boundary; future merge needs current-base sync/exact CI. Preserve ambient-form and same-suite cleanup regressions."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx1-review-3e97696.md",
+      "commit": "58b6c0f",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx1"
+      ],
+      "errors": [],
+      "suggestions": "UNVERIFIED due unavailable blocked dynamic coverage, not a new implementation error; existing F4-E1/E2 ownership remains F4cx1. Comment/inventory/rollback documentation suggestions -> CXB; no blocked-test retry/reroute."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C9-review-2ae52d4.md",
+      "commit": "852f6e5",
+      "date": "2026-10-23",
+      "reviews": [
+        "C9"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS under documented paired performance method; historical C2 comparison remains unverified. Header blank-cell consistency, reproducible benchmarks and persona-info message polish -> CXB. Merge only after final base synchronization, exact CI and unchanged task paths; stop after verified C9 completion."
     }
   ]
 }

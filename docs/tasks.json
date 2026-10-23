@@ -153,7 +153,7 @@
       ],
       "done_when": "Codex F4-E2 and the rest of F4-E1 (docs/qa/codex/Codex-F4-database.md): guard_class_pin and every remaining trigger/guard/definer function schema-qualify relations or pin search_path with pg_temp last and fail closed; a test enumerates all functions. F4b (migration 0011) already fixes record_interaction_event_keys() and revokes TEMP; keep those tests",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "codex-f4cx1",
       "updated": "2026-10-23"
     },
@@ -193,9 +193,9 @@
       ],
       "done_when": "fixtures/water-cycle imports from the eight CSVs, water-cycle.xlsx and pack.json into identical parsed packs using the column mapping",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c1",
-      "updated": "2026-10-22"
+      "updated": "2026-10-23"
     },
     {
       "id": "C2",
@@ -219,7 +219,7 @@
       ],
       "done_when": "Codex C2-E5 (docs/qa/codex/Codex-C2-checks.md): CurriculumVersion stores parse and data-check issues without loss; publish rule blocks on error-level data checks; one shared issue type in contracts",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "codex-c2cx5",
       "updated": "2026-10-23"
     },
@@ -318,9 +318,9 @@
       ],
       "done_when": "Contracts accept empty Units.objective and Assessment.question; C1 imports them without skipping or blocking; C2 flags them as warnings; built-in personas live only in packages/ai's registry and a pack with no Personas tab stores none; open questions 6 and 7 from C1 are removed from ARCHITECTURE.md",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "done",
+      "owner": "codex-c9",
+      "updated": "2026-10-23"
     },
     {
       "id": "CXB",
@@ -728,7 +728,7 @@
       ],
       "done_when": "Existing C1 PR safely refuses long-cell and duplicate-tab archives without process death; independent C1cx1 QA passes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "codex-c1cx1",
       "updated": "2026-10-23"
     },
