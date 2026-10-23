@@ -300,14 +300,15 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 | Section in the design | Reads | Writes |
 |---|---|---|
 | Header: subject · topic, save state, Preview as student | effective config | — |
-| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`, draft version issues | starts an `ImportJob` |
+| Curriculum data: source, Re-sync, pipeline steps, data checks | latest `ImportJob`; the draft version's import and data-check issues (C2, grouped by cause) | starts an `ImportJob` |
 | Draft and publish (new, required by D2) | draft vs published diff | publish to selected classes |
 | Course details | effective config, with origin per field | class override, or curriculum default for authors |
-| AI personas & prompts | persona templates, variable list | template versions; **Test** calls the gateway |
+| AI personas & prompts | built-in personas from the `packages/ai` registry (D13), then pack overrides, then class overrides; variable list | class template overrides; **Test** calls the gateway |
 | Schedule | units from published version | due dates (class) |
 | Card classification | ideas, auto rarity from layout | rarity overrides |
 | From the spreadsheet (read-only tabs, column mapping) | version body | column mapping (applies on next import) |
-| Atlas panel and knowledge sources | library docs, app guide | library uploads; chat goes through the gateway |
+| Atlas panel and knowledge sources | shared library docs, with this class's `use_for` per doc, plus this class's uploads (D11); app guide | per-class `use_for` (agent, tutor, both, off); class uploads; chat goes through the gateway |
+| Drafts to approve (new, D9 and D12) | AI-drafted idea explanations, unit objectives and assessment questions waiting for approval | approve, edit or reject; approved text is stored per curriculum |
 
 The "Re-sync" button in the prototype becomes **Import new version**, and a new **Publish** step sits beside it.
 
@@ -320,3 +321,5 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 5. Hosting region and provider (affects the data processing agreement).
 6. **Required columns whose spec says the import carries on (C1):** `Units.objective` ("Flagged in data checks") and `Assessment.question` ("Placeholder; Atlas can draft") are required in the F3 schemas, so a row without them can't be stored as is. C1 skips an Assessment row with no question (with a warning), but blocks the import when a unit has no objective, since skipping a unit would orphan its ideas. Should the schemas allow these to be empty, so the data checks (C2) flag them instead?
 7. **Where the built-in personas live (C1):** a pack with no Personas tab gets Ms. Ivy, Milo and Atlas from `BUILT_IN_PERSONAS` in `packages/connectors` (copied from the prototype). Once `packages/ai` has its persona registry (§9), should the list move there, and should a pack store the built-ins or leave `personas` empty to mean "use the built-ins"?
+8. **Embedding model and width (F4):** `chunk.embedding` is `vector(1024)` (Voyage-sized) so it can carry an HNSW index, which needs a fixed width. Changing models means a migration that re-creates the column and re-indexes the library. Which embedding model do we use?
+9. **Deleting a student on request vs append-only events (F4):** FERPA's "delete on request" (§10) conflicts with an append-only `interaction_event` that refuses `DELETE` for every role, and with the foreign keys from events to `app_user`. Typed text already lives apart and can be deleted (§8.2). Proposal for M1 or F6: an owner-only procedure that removes one student's events, generated views and AI outputs (the only path that bypasses the append-only trigger), recorded as an `AuditEvent`.

@@ -1,4 +1,152 @@
 {
   "note": "Codex review files the coordinator has processed. The coordinator adds an entry for each new Codex-* file found on idea-map. Agents never edit or delete Codex-* files. See docs/qa/README.md, External review (Codex).",
-  "processed": []
+  "processed": [
+    {
+      "file": "docs/qa/codex/Codex-QA-summary-2026-10-22.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [],
+      "errors": [],
+      "suggestions": "index only"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4-database.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4"
+      ],
+      "errors": [
+        "F4cx1"
+      ],
+      "suggestions": "TEMP and CRUD probes -> F4cx1 should; CXB"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4-integration-1523878.md",
+      "commit": "c4230d9",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4",
+        "C3",
+        "F3"
+      ],
+      "errors": [
+        "F4cx3"
+      ],
+      "suggestions": "shared fixtures -> F4cx3 criteria"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F2-ui.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "F2"
+      ],
+      "errors": [
+        "F2cx1"
+      ],
+      "suggestions": "D10 wording -> F2cx1 should; cross-browser, chunk name -> CXB (T1)"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C3-derivation.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "C3"
+      ],
+      "errors": [
+        "C8 (C3-E1 resolved; C3-E2 sent back)"
+      ],
+      "suggestions": "C3-S1 map-scoped wording, C3-S2 seed -> C8"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C2-checks.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "C2"
+      ],
+      "errors": [
+        "C8 (C2-E1..E3 resolved; C2-E4 sent back)",
+        "C2cx5"
+      ],
+      "suggestions": "C2-S1..S3 -> C8"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F3-contracts.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "F3"
+      ],
+      "errors": [],
+      "suggestions": "F3-S1,S3,S4,S5 -> C9 should; F3-S2 -> CXB (T3)"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-import.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "C1"
+      ],
+      "errors": [],
+      "suggestions": "URL credentials -> C9-S3; independent audit of new head -> qa-c1 (running)"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F1c-tracker.md",
+      "commit": "1523878",
+      "date": "2026-10-23",
+      "reviews": [
+        "F1c"
+      ],
+      "errors": [],
+      "suggestions": "F1c-S1 transitive I/O -> CXB (M1/M3); F1c-S2 -> merge process (integration gate)"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C8-quality-1e6a55c.md",
+      "commit": "f6ac8d4",
+      "date": "2026-10-23",
+      "reviews": [
+        "C8"
+      ],
+      "errors": [
+        "C8 run 1 FAIL: C8-F2, C8-F6, C8-U2 sent back"
+      ],
+      "suggestions": "C3-S1 wording, Ideas.objective spec alignment -> C8"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-followup-9ce1018.md",
+      "commit": "30486c6",
+      "reviews": [
+        "C1"
+      ],
+      "errors": [],
+      "suggestions": "Existing C2-E5 -> C2cx5; URL credentials -> C9-S3. Scoped PASS superseded by C1-S2 reconciliation.",
+      "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F2-integration-1523878.md",
+      "commit": "30486c6",
+      "reviews": [
+        "F2"
+      ],
+      "errors": [
+        "F2cx1 (existing F2-E1 revalidated)"
+      ],
+      "suggestions": "Cross-browser -> CXB/T1; reference-page favicon is non-blocking and deferred to T1 asset review.",
+      "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-S2-reconciliation-9ce1018.md",
+      "commit": "639bd26",
+      "reviews": [
+        "C1"
+      ],
+      "errors": [
+        "C1cx1 (single C1-E1 covering both archive variants; fix on existing PR #8)"
+      ],
+      "suggestions": "Regression/evidence scope -> C1cx1 criteria. Existing C2-E5 and F3-S5 routing retained; unverified observations are not new findings.",
+      "date": "2026-10-23"
+    }
+  ]
 }
