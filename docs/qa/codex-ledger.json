@@ -157,6 +157,28 @@
       ],
       "errors": [],
       "suggestions": "Existing F4-E3 correction independently passes; carried forward after task-path equality and exact-head CI. Postmerge F5 passed at3f4d845; record docs/qa/reports/F4cx3.md."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C8-review-4098239.md",
+      "commit": "4208e935dbc5275b94160ad1fd577889a0b3976c",
+      "date": "2026-10-23",
+      "reviews": [
+        "C8"
+      ],
+      "errors": [
+        "Existing C2-E5 remains owned by C2cx5; no new C8 error"
+      ],
+      "suggestions": "PASS recorded in reports/C8.md; semantic/map-scope regressions and timing isolation routed to CXB. Failed first timing run retained."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4b-review-252f5fa.md",
+      "commit": "4208e935dbc5275b94160ad1fd577889a0b3976c",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4b"
+      ],
+      "errors": [],
+      "suggestions": "PASS recorded in reports/F4b.md; remaining F4-E2 stays F4cx1. Populated downgrade preflight/forward-fix documentation routed to F4cx1-U2."
     }
   ]
 }
