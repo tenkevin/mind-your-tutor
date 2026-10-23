@@ -67,8 +67,8 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 |---|---|
 | Done (QA PASS) | F1, F1b, F2, F3, F4, C2, C3, F4cx3, F4b, F1c, C8, C1cx1, C1 |
 | Correction in review | F1d PR #16 enum correction pushed at `0dd326d`; refreshed CI/review pending |
-| Correction building | F1d PR #16 returned to codex-f1d after independent ambient-enum lint FAIL; C2cx5 building with codex-c2cx5 |
-| Newly unlocked correction | C2cx5 claimed by codex-c2cx5 after C8 integration PASS |
+| Correction in review | F1d PR #16 corrected and independent re-review active; C2cx5 PR #18 builder complete, CI/review pending |
+| Auth integration | F5 PR #15 synchronization underway by `/root/f4_guard_fix`, verified base only; independent QA pending |
 | QA blocked | #13 F2cx1 review launch blocked; #17 F4cx1 dynamic shadow-table coverage blocked by the original automated security-filter restriction. Neither has independent all-must PASS |
 | Other PRs | #15 F5; #16 F1d; #17 F4cx1 |
 | Existing claim to reconcile | F6 remains claimed in the task ledger; its earlier Claude session status is unavailable here |
