@@ -4,7 +4,7 @@
 
 **21 of 59 done** · 0 ready · 0 in progress · 6 in review · 31 blocked · 1 need a spec
 
-Critical path: F1 → F3 → F4 → F5 → M2 → S1 → S2 → S4 → L1 (up to 19 weeks)
+Critical path: F1 → F3 → F4 → F5 → A1 → A2 → A9 → M6 → A10 → L1 (up to 20 weeks)
 
 ## Ready to start
 
@@ -54,8 +54,8 @@ _Nothing is ready. Everything left is claimed or waiting._
 | X2 | Cloudinary media provider | L1 |
 | A7 | Anonymous layer: on-device entity blur and server backstop | A1 |
 | A8 | Dual memory: conversation history and long-term learning summary | A7, F6 |
-| A9 | Explained feedback, Challenge this and teacher review queue | A2, M2 |
-| A10 | Pre-send feedback safeguards | A9, A5 |
+| A9 | Explained feedback, Challenge this and teacher review queue | A2, M2, A7, S5 |
+| A10 | Pre-send feedback safeguards | A9, A5, M6 |
 | M6 | Fairness audits: school and district monitoring, district-run sampled audit | M3, A9, F6 |
 | M7 | De-identified research export | M3, F6 |
 
@@ -187,7 +187,7 @@ flowchart LR
   F3 --> M1
   M1 --> M2
   F4 --> M2
-  F5 ==> M2
+  F5 --> M2
   F4b --> M2
   M1 --> M3
   C3 --> M3
@@ -213,9 +213,9 @@ flowchart LR
   A1 --> T7
   T2 --> T8
   C5 --> T8
-  F5 --> A1
+  F5 ==> A1
   F6 --> A1
-  A1 --> A2
+  A1 ==> A2
   A1 --> A3
   C4 --> A3
   F4b --> A3
@@ -226,16 +226,16 @@ flowchart LR
   A1 --> A6
   C4 --> A6
   T2 --> A6
-  M2 ==> S1
+  M2 --> S1
   M3 --> S1
-  S1 ==> S2
+  S1 --> S2
   C5 --> S2
   F2 --> S2
   M4 --> S2
   S5 --> S2
   S2 --> S3
   T4 --> S3
-  S2 ==> S4
+  S2 --> S4
   A2 --> S4
   A7 --> S4
   A8 --> S4
@@ -246,7 +246,7 @@ flowchart LR
   A4 --> L1
   A5 --> L1
   S3 --> L1
-  S4 ==> L1
+  S4 --> L1
   C6 --> L1
   C7 --> L1
   M5 --> L1
@@ -259,7 +259,7 @@ flowchart LR
   C2cx5 --> L1
   A7 --> L1
   A9 --> L1
-  A10 --> L1
+  A10 ==> L1
   M6 --> L1
   S5 --> L1
   C1 --> X1
@@ -272,12 +272,15 @@ flowchart LR
   F5 --> A7
   A7 --> A8
   F6 --> A8
-  A2 --> A9
+  A2 ==> A9
   M2 --> A9
+  A7 --> A9
+  S5 --> A9
   A9 --> A10
   A5 --> A10
+  M6 ==> A10
   M3 --> M6
-  A9 --> M6
+  A9 ==> M6
   F6 --> M6
   M3 --> M7
   F6 --> M7
