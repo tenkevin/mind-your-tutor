@@ -6,6 +6,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
+**Stop boundary:** user requested “After C9, stop.” C9 is the final task to complete through independent QA and verified merge. Finish current F1d review/F5 integration to handoff only; do not start new C2cx5/F5 reviews or follow-on implementation.
+
 | Task / PR | Evidence and state | Next action / owner |
 |---|---|---|
 | F4cx3 / #14 | Merged at `3f4d845`; independent premerge PASS and actual merge CI/plan both green. Saved [completion report](reports/F4cx3.md). | Complete; coordinator marked done. |

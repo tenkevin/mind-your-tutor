@@ -113,6 +113,8 @@ For each open PR: `mergeable_state`, CI on the head, `compare/idea-map...<head>`
 
 ## 8. What's next, in priority order
 
+**User stop boundary:** finish C9 through independent QA, merge and actual integration checks, then stop coordination. Start no further tasks. Existing F5 integration and F1d review may finish to a documented handoff; C2cx5/F5 new QA assignments are deferred. Never treat blocked PR #13/#17 as approved.
+
 1. Correct F1d-F1 ambient-enum lint coverage on existing PR #16, then obtain fresh independent QA. C1/C1cx1 are complete.
 2. Keep F4cx1 PR #17 unverified: required dynamic tests repeat earlier security-filter-blocked probes. Do not retry or reroute those actions. Preserve permitted source evidence and continue unrelated corrections.
 3. #13 F2cx1 remains unverified after its review launch was blocked. Continue F1d, C2cx5, and #15 F5 under the one-merge-per-pass integration gate; do not bypass the blocked review. Continue independent fixes while PR #13 remains blocked.
