@@ -35,7 +35,8 @@ export function sourceName(name: string): string {
 function detectZip(bytes: Uint8Array, label: string): Detected {
   let zip: ZipReader;
   try {
-    // Only the directory is read here; nothing is unpacked.
+    // Only the directory is read here; the connector enforces the byte budget
+    // before reading the entries it needs.
     zip = ZipReader.open(bytes, { remaining: 0, total: 0 }, Number.MAX_SAFE_INTEGER);
   } catch (cause) {
     return { kind: 'refused', message: `${label}: ${(cause as Error).message}` };

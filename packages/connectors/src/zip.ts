@@ -51,13 +51,17 @@ function unsafeName(name: string): boolean {
 
 export class ZipReader {
   readonly entries: ReadonlyMap<string, ZipEntry>;
+  /** Every central-directory entry, including repeated names. */
+  readonly allEntries: readonly ZipEntry[];
 
   private constructor(
     private readonly bytes: Uint8Array,
     entries: Map<string, ZipEntry>,
+    allEntries: ZipEntry[],
     private readonly budget: UnpackBudget,
   ) {
     this.entries = entries;
+    this.allEntries = allEntries;
   }
 
   static open(bytes: Uint8Array, budget: UnpackBudget, maxEntries: number): ZipReader {
@@ -85,6 +89,7 @@ export class ZipReader {
     }
     if (cdOffset + cdSize > eocd) throw broken();
     const entries = new Map<string, ZipEntry>();
+    const allEntries: ZipEntry[] = [];
     const decoder = new TextDecoder('utf-8');
     let at = cdOffset;
     for (let n = 0; n < count; n++) {
@@ -109,10 +114,11 @@ export class ZipReader {
         localOffset: view.getUint32(at + 42, true),
         encrypted: (flags & 0x1) !== 0,
       };
+      allEntries.push(entry);
       if (!entries.has(name)) entries.set(name, entry);
       at += 46 + nameLength + extraLength + commentLength;
     }
-    return new ZipReader(bytes, entries, budget);
+    return new ZipReader(bytes, entries, allEntries, budget);
   }
 
   /** Finds an entry by name, ignoring case and a leading "/". */
@@ -125,6 +131,19 @@ export class ZipReader {
       if (entry.name.toLowerCase() === lower) return entry;
     }
     return undefined;
+  }
+
+  /** Checks the declared output of parts this connector intends to read. */
+  preflightDeclared(entries: readonly ZipEntry[]): void {
+    let declaredTotal = 0;
+    for (const entry of entries) {
+      if (entry.size > this.budget.remaining - declaredTotal) {
+        throw new FileRefused(
+          `The zip unpacks to more than ${megabytes(this.budget.total)} based on its declared sizes; the most an import can unpack is ${megabytes(this.budget.total)}.`,
+        );
+      }
+      declaredTotal += entry.size;
+    }
   }
 
   /** Unpacks one entry, charging its size to the shared budget. */

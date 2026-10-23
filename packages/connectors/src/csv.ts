@@ -2,7 +2,7 @@ import { detect, readUpload, sourceName } from './detect.js';
 import { DEFAULT_LIMITS, FileRefused, warning, type ImportLimits } from './issues.js';
 import { matchTab } from './tabs.js';
 import type { ImportConnector, ParseContext, RawSheet, RawTabs } from './types.js';
-import { ZipReader } from './zip.js';
+import { ZipReader, type ZipEntry } from './zip.js';
 
 export interface CsvGrid {
   rows: string[][];
@@ -35,24 +35,63 @@ function delimiterOf(text: string): string {
 
 /**
  * Reads RFC 4180 CSV: quoted cells, doubled quotes, CRLF or LF line ends.
- * Stops with `FileRefused` once more than `maxRows` records follow the header.
+ * Stops once the row, column, header or cell limit is exceeded. Fields are
+ * sliced from the decoded input so a long value is not built character by character.
  */
 export function parseCsv(
   text: string,
   maxRows: number,
   maxColumns: number,
   label: string,
+  limits: { maxCellChars?: number; maxHeaderChars?: number } = {},
 ): CsvGrid {
   const delimiter = delimiterOf(text);
   const grid: CsvGrid = { rows: [], rowNumbers: [], unclosedQuoteAt: null };
+  const maxCellChars = limits.maxCellChars ?? 256_000;
+  const maxHeaderChars = limits.maxHeaderChars ?? 1_024;
   let row: string[] = [];
-  let field = '';
   let quoted = false;
   let record = 1;
   let quoteOpenedAt = 0;
-  const endRow = () => {
-    row.push(field);
-    field = '';
+  let fieldStart = 0;
+  let fieldContentStart = 0;
+  let fieldQuoted = false;
+  let fieldEscaped = false;
+  let fieldClosedAt: number | null = null;
+  let fieldLength = 0;
+
+  const limitFor = (recordNumber: number) => (recordNumber === 1 ? maxHeaderChars : maxCellChars);
+  const refuseLongField = (recordNumber: number) => {
+    const header = recordNumber === 1;
+    const limit = limitFor(recordNumber);
+    throw new FileRefused(
+      `${label} has a ${header ? 'header' : 'cell'} longer than ${limit.toLocaleString('en')} characters; the most a CSV ${header ? 'header' : 'cell'} can have is ${limit.toLocaleString('en')}.`,
+    );
+  };
+  const addFieldCharacter = () => {
+    fieldLength++;
+    if (fieldLength > limitFor(record)) refuseLongField(record);
+  };
+  const finishField = (end: number) => {
+    if (!fieldQuoted) return text.slice(fieldStart, end);
+    const contentEnd = fieldClosedAt ?? end;
+    let value = text.slice(fieldContentStart, contentEnd);
+    if (fieldEscaped) value = value.replace(/""/g, '"');
+    if (fieldClosedAt !== null && fieldClosedAt + 1 < end) {
+      value += text.slice(fieldClosedAt + 1, end);
+    }
+    return value;
+  };
+  const resetField = (nextStart: number) => {
+    fieldStart = nextStart;
+    fieldContentStart = nextStart;
+    fieldQuoted = false;
+    fieldEscaped = false;
+    fieldClosedAt = null;
+    fieldLength = 0;
+  };
+  const addRow = (end: number, nextStart: number) => {
+    row.push(finishField(end));
     if (row.length > maxColumns) {
       throw new FileRefused(
         `${label} has more than ${maxColumns} columns; the most a tab can have is ${maxColumns}.`,
@@ -62,34 +101,48 @@ export function parseCsv(
     grid.rowNumbers.push(record);
     row = [];
     record++;
+    resetField(nextStart);
     if (grid.rows.length > maxRows + 1) {
       throw new FileRefused(
         `${label} has more than ${maxRows.toLocaleString('en')} rows; the most a tab can have is ${maxRows.toLocaleString('en')}.`,
       );
     }
   };
+
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]!;
     if (quoted) {
       if (ch === '"') {
         if (text[i + 1] === '"') {
-          field += '"';
+          fieldEscaped = true;
+          addFieldCharacter();
           i++;
-        } else quoted = false;
-      } else field += ch;
-    } else if (ch === '"' && field === '') {
+        } else {
+          quoted = false;
+          fieldClosedAt = i;
+        }
+      } else addFieldCharacter();
+    } else if (ch === '"' && i === fieldStart) {
       quoted = true;
       quoteOpenedAt = record;
+      fieldQuoted = true;
+      fieldContentStart = i + 1;
     } else if (ch === delimiter) {
-      row.push(field);
-      field = '';
+      row.push(finishField(i));
+      if (row.length > maxColumns) {
+        throw new FileRefused(
+          `${label} has more than ${maxColumns} columns; the most a tab can have is ${maxColumns}.`,
+        );
+      }
+      resetField(i + 1);
     } else if (ch === '\n' || ch === '\r') {
+      const end = i;
       if (ch === '\r' && text[i + 1] === '\n') i++;
-      endRow();
-    } else field += ch;
+      addRow(end, i + 1);
+    } else addFieldCharacter();
   }
   if (quoted) grid.unclosedQuoteAt = quoteOpenedAt;
-  if (field !== '' || row.length > 0 || quoted) endRow();
+  if (fieldStart < text.length || row.length > 0 || quoted) addRow(text.length, text.length);
   return grid;
 }
 
@@ -104,7 +157,10 @@ export function csvSheet(
   if (tab === null) {
     return { sheet: { tab, source, grid: [], rowNumbers: [] }, issues };
   }
-  const grid = parseCsv(text, limits.maxRowsPerTab, limits.maxColumns, source);
+  const grid = parseCsv(text, limits.maxRowsPerTab, limits.maxColumns, source, {
+    maxCellChars: limits.maxCsvCellChars,
+    maxHeaderChars: limits.maxCsvHeaderChars,
+  });
   if (grid.unclosedQuoteAt !== null) {
     issues.push(
       warning({
@@ -125,7 +181,44 @@ const isCsvName = (name: string) => /\.(csv|tsv|txt)$/i.test(name);
 function readCsvZip(bytes: Uint8Array, file: string, context: ParseContext): RawTabs {
   const zip = ZipReader.open(bytes, context.budget, context.limits.maxZipEntries);
   const out: RawTabs = { kind: 'csv', sheets: [], issues: [] };
-  for (const entry of zip.entries.values()) {
+  const candidates = zip.allEntries.filter((entry) => {
+    const base = entry.name.split('/').pop() ?? '';
+    return (
+      !entry.name.endsWith('/') &&
+      !entry.unsafe &&
+      !base.startsWith('.') &&
+      !entry.name.startsWith('__MACOSX/') &&
+      isCsvName(base) &&
+      matchTab(base) !== null
+    );
+  });
+  zip.preflightDeclared(candidates);
+  const firstByTab = new Map<NonNullable<ReturnType<typeof matchTab>>, ZipEntry>();
+  const duplicateTabs = new Set<NonNullable<ReturnType<typeof matchTab>>>();
+  for (const entry of candidates) {
+    const tab = matchTab(entry.name.split('/').pop() ?? '');
+    if (tab === null) continue;
+    if (firstByTab.has(tab)) duplicateTabs.add(tab);
+    else firstByTab.set(tab, entry);
+  }
+  if (duplicateTabs.size > 0) {
+    // Report duplicates to importPack without touching any entry payload. This
+    // lets its normal tab_duplicate issue explain the affected source files.
+    for (const entry of candidates) {
+      const base = entry.name.split('/').pop() ?? '';
+      const tab = matchTab(base);
+      if (tab !== null) {
+        out.sheets.push({
+          tab,
+          source: `${file} › ${entry.name}`,
+          grid: [],
+          rowNumbers: [],
+        });
+      }
+    }
+    return out;
+  }
+  for (const entry of zip.allEntries) {
     const base = entry.name.split('/').pop() ?? '';
     if (entry.name.endsWith('/') || base.startsWith('.') || entry.name.startsWith('__MACOSX/'))
       continue;

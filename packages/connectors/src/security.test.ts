@@ -86,6 +86,30 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
     expect(ms).toBeLessThan(2000);
   }, 30_000);
 
+  it('preflights aggregate declared ZIP output before reading any entry', async () => {
+    const archive = zip([
+      { name: 'Ideas.csv', data: 'h', claimedSize: 60 * 1024 * 1024 },
+      { name: 'Units.csv', data: 'h', claimedSize: 60 * 1024 * 1024 },
+    ]);
+    const { result, ms } = await timed(() => importPack(file('declared.zip', archive)));
+    expect(refusal(result)).toMatch(/zip unpacks to more than 100 MB based on its declared sizes/);
+    expect(ms).toBeLessThan(2000);
+  });
+
+  it('detects many duplicate canonical tabs before checking their payloads', async () => {
+    const archive = zip(
+      Array.from({ length: 100 }, (_, i) => ({
+        name: `part${i}/Ideas.csv`,
+        data: Buffer.alloc(1024),
+      })),
+    );
+    const { result, ms } = await timed(() => importPack(file('duplicates.zip', archive)));
+    expect(result.ok).toBe(false);
+    expect(result.issues.filter((issue) => issue.code === 'tab_duplicate')).toHaveLength(99);
+    expect(result.issues.some((issue) => issue.code === 'file_refused')).toBe(false);
+    expect(ms).toBeLessThan(2000);
+  });
+
   it('an XLSX with 1,000,000 rows', async () => {
     const rows = Array.from(
       { length: 1_000_000 },

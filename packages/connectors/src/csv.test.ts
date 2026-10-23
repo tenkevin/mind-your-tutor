@@ -32,6 +32,21 @@ describe('parseCsv', () => {
     );
   });
 
+  it('bounds headers and quoted or unquoted data cells before keeping their text', () => {
+    expect(() =>
+      parseCsv(`${'h'.repeat(5)}\n`, 100, 10, 'Ideas.csv', { maxHeaderChars: 4 }),
+    ).toThrow(/Ideas\.csv has a header longer than 4 characters/);
+    expect(() => parseCsv('h\n123456\n', 100, 10, 'Ideas.csv', { maxCellChars: 5 })).toThrow(
+      /Ideas\.csv has a cell longer than 5 characters/,
+    );
+    expect(() => parseCsv('h\n"123456"\n', 100, 10, 'Ideas.csv', { maxCellChars: 5 })).toThrow(
+      /Ideas\.csv has a cell longer than 5 characters/,
+    );
+    expect(parseCsv('h\n"ab""cd"\n', 100, 10, 'Ideas.csv', { maxCellChars: 5 }).rows[1]).toEqual([
+      'ab"cd',
+    ]);
+  });
+
   it('an unclosed quote in an upload is a warning on its row', async () => {
     const ideas = `${fixtureText('Ideas.csv').trimEnd()}\nbroken,"Broken,Process,1\n`;
     const r = await importPack(

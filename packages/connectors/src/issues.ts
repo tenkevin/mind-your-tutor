@@ -17,6 +17,10 @@ export interface ImportLimits {
   maxRowsPerTab: number;
   /** Most columns read from one tab. */
   maxColumns: number;
+  /** Most decoded characters in one CSV data cell. */
+  maxCsvCellChars: number;
+  /** Most decoded characters in one CSV header. */
+  maxCsvHeaderChars: number;
   /** Most files in one upload, and most entries in one zip. */
   maxFiles: number;
   maxZipEntries: number;
@@ -27,6 +31,8 @@ export const DEFAULT_LIMITS: Readonly<ImportLimits> = Object.freeze({
   maxUnpackedBytes: 100 * 1024 * 1024,
   maxRowsPerTab: 50_000,
   maxColumns: 200,
+  maxCsvCellChars: 256_000,
+  maxCsvHeaderChars: 1_024,
   maxFiles: 20,
   maxZipEntries: 2_000,
 });
