@@ -287,9 +287,14 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       created_by: teacherId,
     })
     .execute();
-  await db
+  const exportJob = await db
     .insertInto('export_job')
     .values({ org_id: orgId, kind: 'class_progress', class_id: classId, created_by: teacherId })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('export_subject')
+    .values({ org_id: orgId, export_job_id: exportJob.id, student_id: studentId })
     .execute();
   await db
     .insertInto('audit_event')
