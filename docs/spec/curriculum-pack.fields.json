@@ -86,9 +86,9 @@
       {
         "name": "objective",
         "type": "text",
-        "req": true,
+        "req": false,
         "edit": "sheet",
-        "missing": "Flagged in data checks",
+        "missing": "Flagged in data checks; Atlas can draft one",
         "example": "Describe how heat from the Sun…",
         "note": ""
       },
@@ -330,9 +330,9 @@
       {
         "name": "question",
         "type": "text",
-        "req": true,
+        "req": false,
         "edit": "sheet",
-        "missing": "Placeholder; Atlas can draft",
+        "missing": "Atlas can draft one; the empty question is never asked",
         "example": "Why does a puddle disappear on a sunny day?",
         "note": ""
       },
@@ -364,7 +364,7 @@
       {
         "name": "name",
         "type": "text",
-        "req": true,
+        "req": false,
         "edit": "both",
         "missing": "Built-in default",
         "example": "Ms. Ivy",
