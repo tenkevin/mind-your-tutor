@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CurriculumVersionSchema, VERSION_STATUSES, parsePack } from './index.js';
+import {
+  CurriculumVersionSchema,
+  ImportIssueSchema,
+  VERSION_STATUSES,
+  VersionIssuesSchema,
+  parsePack,
+} from './index.js';
 import { readPackJson } from './testing/fixtures.js';
 
 const source = {
@@ -56,7 +62,110 @@ describe('CurriculumVersion follows §5 (F3-F9)', () => {
     expect(version.status).toBe('draft');
     expect(version.pack).toEqual(parsePack(readPackJson()).value);
     expect(version.issues).toHaveLength(1);
+    expect(version.issues[0]).toMatchObject({ origin: 'import', level: 'error' });
     expect(version.source.column_mapping).toHaveLength(1);
+  });
+
+  it('stores import and data-check issues as one lossless typed collection', () => {
+    const checkIssue = {
+      kind: 'prereq',
+      level: 'error',
+      message: 'Groundwater requires "aquifer".',
+      items: ['ground'],
+      fix: { tab: 'Ideas', column: 'requires' },
+    } as const;
+    const issues = [draft.issues[0]!, checkIssue];
+    const version = CurriculumVersionSchema.parse({ ...draft, issues });
+
+    expect(version.issues).toEqual([
+      { ...draft.issues[0], origin: 'import', level: 'error' },
+      { ...checkIssue, origin: 'data_check' },
+    ]);
+    expect(CurriculumVersionSchema.parse(JSON.parse(JSON.stringify(version))).issues).toEqual(
+      version.issues,
+    );
+  });
+
+  it('preserves C1 importer metadata, including informational issues', () => {
+    const importerIssue = ImportIssueSchema.parse({
+      severity: 'info',
+      effect: 'none',
+      code: 'formula',
+      source: 'Ideas.csv',
+      tab: 'Ideas',
+      row: 3,
+      column: 'idea_id',
+      value: '=SUM(A1:A2)',
+      fallback: null,
+      message: 'The saved value was read; the formula was not run.',
+      suggestion: null,
+    });
+    const stored = VersionIssuesSchema.parse([importerIssue]);
+
+    expect(stored).toEqual([{ ...importerIssue, origin: 'import', level: 'info' }]);
+
+    const inconsistent = VersionIssuesSchema.parse([
+      {
+        ...importerIssue,
+        severity: 'error',
+        effect: 'blocks_import',
+        origin: 'import',
+        level: 'info',
+      },
+    ]);
+    expect(inconsistent[0]).toMatchObject({ severity: 'error', level: 'error' });
+  });
+
+  it('blocks published versions on error-level checks but allows warning and info checks', () => {
+    const publish = (issues: unknown[]) =>
+      CurriculumVersionSchema.safeParse({
+        ...draft,
+        status: 'published',
+        issues,
+        published_at: '2026-10-22T10:00:00Z',
+      }).success;
+    const dataCheck = {
+      kind: 'prereq',
+      level: 'error',
+      message: 'Groundwater requires "aquifer".',
+      items: ['ground'],
+      fix: { tab: 'Ideas', column: 'requires' },
+    };
+    const warning = { ...dataCheck, kind: 'codes', level: 'warning' };
+    const info = { ...dataCheck, kind: 'media', level: 'info' };
+    const importWarning = {
+      severity: 'warning',
+      effect: 'none',
+      tab: 'Ideas',
+      row: 19,
+      column: 'media_url',
+      value: null,
+      fallback: null,
+      message: 'No media.',
+    };
+
+    expect(publish([dataCheck])).toBe(false);
+    expect(publish([warning, info])).toBe(true);
+    expect(publish([draft.issues[0]])).toBe(false);
+    expect(publish([importWarning])).toBe(true);
+  });
+
+  it('keeps the serialized issue field below 1 MB and rejects overflow', () => {
+    const grouped = {
+      kind: 'blocked',
+      level: 'warning',
+      message: '10,000 ideas may never unlock.',
+      items: Array.from({ length: 10_000 }, (_, i) => `idea-${i}`),
+      fix: { tab: 'Ideas', column: 'requires' },
+    };
+    const stored = VersionIssuesSchema.parse([grouped]);
+    expect(new TextEncoder().encode(JSON.stringify(stored)).byteLength).toBeLessThan(1_000_000);
+
+    const tooLarge = {
+      ...grouped,
+      items: Array.from({ length: 15_000 }, () => 'i'.repeat(64)),
+    };
+    expect(VersionIssuesSchema.safeParse([tooLarge]).success).toBe(false);
   });
 
   it('parses a published version with derived data', () => {
