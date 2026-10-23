@@ -219,7 +219,7 @@
       ],
       "done_when": "Codex C2-E5 (docs/qa/codex/Codex-C2-checks.md): CurriculumVersion stores parse and data-check issues without loss; publish rule blocks on error-level data checks; one shared issue type in contracts",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "codex-c2cx5",
       "updated": "2026-10-23"
     },
