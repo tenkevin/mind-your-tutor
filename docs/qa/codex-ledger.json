@@ -352,6 +352,26 @@
       ],
       "errors": [],
       "suggestions": "F6-E1/E2/E3 corrected on head b52d29e (head-only). Integration blocked: conflicts with C4; inventory/schema must include import_job.steps and idempotency_key; migration renumber. S1 class-export producers take the privacy lock before snapshotting identifying data -> future export-producer criteria via CXB. S2 retention scheduler bootstrap already in CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-70542ef.md",
+      "commit": "25b4084",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [],
+      "suggestions": "F5 criteria PASS on the integrated tree; the excluded function_binding/full-suite gate was closed by the coordinator (reports/F5.md). Merged ab906a1. No new suggestions."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F6-review-d498f5c.md",
+      "commit": "25b4084",
+      "date": "2026-10-23",
+      "reviews": [
+        "F6"
+      ],
+      "errors": [],
+      "suggestions": "F6 checks PASS with C4. Full-suite gate UNVERIFIED (function_binding excluded). F5 has landed: agent-f6 is moving the privacy routes into F5's policy registry and refreshing the combined inventory and export/delete coverage; QA re-runs Monday. S1/S2 already in CXB."
     }
   ]
 }
