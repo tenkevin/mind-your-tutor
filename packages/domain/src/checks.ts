@@ -29,6 +29,7 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     items: string[],
     tab: TabName,
     column: string | readonly [string, ...string[]],
+    draftable = false,
   ) =>
     out.push({
       kind,
@@ -39,6 +40,7 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
         typeof column === 'string'
           ? { tab, column }
           : { tab, column: column[0], columns: [...column] },
+      ...(draftable ? { draftable: true } : {}),
     });
 
   // The first row with an idea_id wins; duplicates are reported below.
@@ -292,6 +294,18 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
       );
       continue;
     }
+    if (!item.question?.trim()) {
+      add(
+        'assessment_question',
+        'warning',
+        `The Assessment question for ${subject.title} in unit ${item.unit} is empty; Atlas can draft one. Add it in Assessment → question.`,
+        [item.idea_id],
+        'Assessment',
+        'question',
+        true,
+      );
+      continue;
+    }
     const set = asked.get(item.unit) ?? new Set<string>();
     set.add(item.idea_id);
     asked.set(item.unit, set);
@@ -332,7 +346,6 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
 
   // Missing objectives. Ideas.objective is optional in the field spec (the tutor writes
   // one from links), so this is a warning that the teacher hasn't set one, not an error.
-  // Units.objective is the required one, and the pack parser enforces it.
   const noObjective = [...ideas.values()].filter((i) => !i.objective?.trim());
   if (noObjective.length > 0) {
     const n = noObjective.length;
@@ -345,6 +358,19 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
       noObjective.map((i) => i.idea_id),
       'Ideas',
       'objective',
+    );
+  }
+
+  for (const unit of pack.units) {
+    if (unit.objective?.trim()) continue;
+    add(
+      'unit_objective',
+      'warning',
+      `Unit ${unit.unit} (${unit.name}) has no objective; Atlas can draft one. Add it in Units → objective.`,
+      [String(unit.unit)],
+      'Units',
+      'objective',
+      true,
     );
   }
 

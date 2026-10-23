@@ -47,6 +47,22 @@ describe('parseCsv', () => {
     ]);
   });
 
+  it('caps the first nonblank logical header and does not treat headerless Course values as headers', async () => {
+    expect(() =>
+      parseCsv(`\n\n${'h'.repeat(5)}\n`, 100, 10, 'Ideas.csv', { maxHeaderChars: 4 }),
+    ).toThrow(/Ideas\.csv has a header longer than 4 characters/);
+
+    const files = TABS.map((tab) => {
+      let text = fixtureText(`${tab}.csv`);
+      if (tab === 'Course') text = text.replace('key,value\n', '');
+      if (tab === 'Units') text = `\n\n${text}`;
+      return file(`${tab}.csv`, text);
+    });
+    const result = await importPack(files);
+    expect(result.ok).toBe(true);
+    expect(result.pack!.course.subject).toBe('Science');
+  });
+
   it('an unclosed quote in an upload is a warning on its row', async () => {
     const ideas = `${fixtureText('Ideas.csv').trimEnd()}\nbroken,"Broken,Process,1\n`;
     const r = await importPack(

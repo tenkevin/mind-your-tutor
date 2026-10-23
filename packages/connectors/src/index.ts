@@ -22,4 +22,3 @@ export {
 export { needsFormulaEscape, similarity } from './mapping.js';
 export { matchTab, looseName } from './tabs.js';
 export { serialToIsoDate, dateToIsoDate } from './dates.js';
-export { BUILT_IN_PERSONAS } from './personas.js';
