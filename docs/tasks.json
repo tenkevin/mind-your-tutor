@@ -166,7 +166,7 @@
       ],
       "done_when": "Teachers and students sign in with SSO; every API route checks role and org",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f5",
       "updated": "2026-10-23"
     },
