@@ -12,8 +12,8 @@ Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task ca
 
 | ID | Task | Phase | Size | QA |
 |---|---|---|---|---|
-| M1 | Tracker event catalogue and schemas | Tracker & map generation | ≤1 wk | **needs criteria** |
-| S5 | UDL 3.0 baseline for the student app | Student app hooks | 1–2 wks | **needs criteria** |
+| M1 | Tracker event catalogue and schemas | Tracker & map generation | ≤1 wk | [criteria](qa/M1.md) |
+| S5 | UDL 3.0 baseline for the student app | Student app hooks | 1–2 wks | [criteria](qa/S5.md) |
 
 - **M1 done when:** Every §8.2 event type (D19) has a zod schema with its educational level in packages/tracker or packages/contracts. Unknown types and forbidden fields (IP, device, location, free text) are rejected
 - **S5 done when:** Per D17: shared student-app components give multiple means of representation (text, read-aloud, visual), action and expression (typed or spoken answers and challenges) and engagement (choice of mission and pacing); a UDL 3.0 checklist is added to the QA README for every student-facing task
