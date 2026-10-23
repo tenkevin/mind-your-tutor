@@ -1,6 +1,7 @@
 import type {
   ClassConfig,
   ExplanationSource,
+  ImportStep,
   Pack,
   PersonaId,
   VersionDerived,
@@ -287,6 +288,8 @@ export interface ImportJobTable {
   started_at: NullableTimestamp;
   finished_at: NullableTimestamp;
   updated_at: CreatedAt;
+  steps: ColumnType<ImportStep[], JsonText<ImportStep[]> | undefined, JsonText<ImportStep[]>>;
+  idempotency_key: string | null;
 }
 
 export interface ExportJobTable {
@@ -551,6 +554,8 @@ export const COLUMNS = {
     'started_at',
     'finished_at',
     'updated_at',
+    'steps',
+    'idempotency_key',
   ],
   export_job: [
     'id',
