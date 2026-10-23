@@ -232,6 +232,38 @@
       ],
       "errors": [],
       "suggestions": "All-must PASS under documented paired performance method; historical C2 comparison remains unverified. Header blank-cell consistency, reproducible benchmarks and persona-info message polish -> CXB. Completed at merge73feaab after unchanged task-path verification, exact-head CI and actual merge CI; completion report saved as reports/C9.md. Coordinator stopped after C9; no follow-on work authorized."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C2cx5-review-7dd6511.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "C2cx5"
+      ],
+      "errors": [],
+      "suggestions": "All-must PASS on 7dd6511 (counts as QA). Row-field resolution of checker issue ids -> T2 criteria via CXB. Carried to 19e5389 (idea-map merge only, empty task-path diff)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F5-review-dc3c902.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "F5"
+      ],
+      "errors": [
+        "F5-E1 (F5-U3 FAIL) -> F5 build agent on PR #15; saved as reports/F5-run1.md; no new task (F5 still open)"
+      ],
+      "suggestions": "S1 folded into the F5-E1 fix (multi-URL transient replay regressions). S2 per-process callback used-state/limiter storage before multi-process deploy -> CXB (deployment/L1 criteria)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx1-review-733c823.md",
+      "commit": "4536e0c",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx1"
+      ],
+      "errors": [],
+      "suggestions": "UNVERIFIED again: dynamic shadow-table probes excluded by the reviewer's own restriction; no defect found. Suggestions (0012 comment, inventory scope, forward-only runbook) already in CXB from 3e97696. Merge blocked pending user decision on independent runtime evidence."
     }
   ]
 }
