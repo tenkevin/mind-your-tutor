@@ -6,7 +6,14 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
-**Stopped after C9:** user boundary reached. C9 has independent PASS and verified merge `73feaab`; actual merge build/plan green. All builders and independent QA are idle. Do not start new work or reviews until the user resumes.
+**Resumed 2026-10-23 03:00 UTC.** Since resume:
+- F1d #16 merged `d040362` (independent PASS on 0dd326d, carried through idea-map-only merges).
+- C2cx5 #18 merged `1e0e348` (Codex PASS on 7dd6511; reports/C2cx5.md).
+- F5 #15: Codex FAIL F5-U3 / F5-E1 (replay drops unsaved edits; reports/F5-run1.md), sent to agent-f5 (session_01AYeTudGSKkBJvcQNYGhdaK, currently waiting on a user permission prompt).
+- F4cx1 #17: still UNVERIFIED (shadow-table probes not run by the reviewer); merge blocked, decision with the user.
+- F2cx1 #13: QA waived by the user; merges once synced and CI green.
+- Started: C4 (session_01P6h1XLCiwhqAA3bZfrZ1vc), C6 (session_01LLC8sn3PT6WN32yeD5MBbG); F6 asked to resume (session_013Z7VfQwMGUwAwFob4Ra6U1).
+The table below is the pre-resume snapshot.
 
 | Task / PR | Evidence and state | Next action / owner |
 |---|---|---|
