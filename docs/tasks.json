@@ -144,9 +144,9 @@
       ],
       "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-f6",
+      "updated": "2026-10-23"
     },
     {
       "id": "C1",
