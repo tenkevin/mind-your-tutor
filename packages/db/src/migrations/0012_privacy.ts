@@ -1,5 +1,5 @@
 import { sql, type Kysely } from 'kysely';
-import { APP_ROLE, RETENTION_ROLE } from './helpers.js';
+import { APP_ROLE, dropTables, grantApp, RETENTION_ROLE, tenantTable } from './helpers.js';
 
 // Privacy baseline (ARCHITECTURE.md §8.2, §8.6 item 4, §10, D9, D11; task F6).
 // The data inventory in docs/privacy/data-inventory.md describes every column.
@@ -15,7 +15,9 @@ import { APP_ROLE, RETENTION_ROLE } from './helpers.js';
 //    skipped by a code path that forgets to audit.
 // 4. audit_event also refuses TRUNCATE, and gains class and curriculum columns so a
 //    class's history can be listed.
-// 5. A `student_record` export kind for FERPA export requests.
+// 5. A `student_record` export kind for FERPA export requests, and `export_subject`:
+//    which students each export file holds, so deleting a student finds every file
+//    that names them, whatever classes they are in by then.
 //
 // Every function pins search_path to pg_catalog, pg_temp and names tables by schema, so
 // a temporary table can't stand in for a real one.
@@ -124,6 +126,25 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       'student_record'))
   `.execute(db);
 
+  // Which students an export file holds (a student record, a class progress report).
+  // Written with the export, kept after the file expires; ids only.
+  await sql`ALTER TABLE export_job ADD CONSTRAINT export_job_org_id_id_key UNIQUE (org_id, id)`.execute(
+    db,
+  );
+  await sql`
+    CREATE TABLE export_subject (
+      export_job_id uuid NOT NULL,
+      student_id uuid NOT NULL,
+      org_id uuid NOT NULL,
+      PRIMARY KEY (export_job_id, student_id),
+      FOREIGN KEY (org_id, export_job_id) REFERENCES export_job (org_id, id),
+      FOREIGN KEY (org_id, student_id) REFERENCES app_user (org_id, id)
+    )
+  `.execute(db);
+  await sql`CREATE INDEX export_subject_student ON export_subject (student_id)`.execute(db);
+  await tenantTable(db, 'export_subject');
+  await grantApp(db, 'export_subject', ['SELECT', 'INSERT']);
+
   // 4. Audit columns. before and after hold only what changed, with secrets redacted.
   await sql`
     ALTER TABLE audit_event
@@ -163,7 +184,11 @@ export async function up(db: Kysely<unknown>): Promise<void> {
           WHEN 'object' THEN
             RETURN coalesce((
               SELECT jsonb_object_agg(k, CASE
-                WHEN k ~* ${sql.lit(SECRET_KEY_PATTERN)} THEN '"[redacted]"'::jsonb
+                -- The audit trigger flattens nested keys into paths such as
+                -- config.token, so the last segment is checked too.
+                WHEN k ~* ${sql.lit(SECRET_KEY_PATTERN)}
+                  OR regexp_replace(k, '^.*[.]', '') ~* ${sql.lit(SECRET_KEY_PATTERN)}
+                  THEN '"[redacted]"'::jsonb
                 ELSE app.redact_secrets(v) END)
               FROM jsonb_each(value) AS e(k, v)), '{}'::jsonb);
           WHEN 'array' THEN
@@ -422,6 +447,8 @@ export async function down(db: Kysely<unknown>): Promise<void> {
       DROP COLUMN before, DROP COLUMN after
   `.execute(db);
 
+  await dropTables(db, ['export_subject']);
+  await sql`ALTER TABLE export_job DROP CONSTRAINT export_job_org_id_id_key`.execute(db);
   await sql`ALTER TABLE export_job DROP CONSTRAINT export_job_kind_check`.execute(db);
   await sql`
     ALTER TABLE export_job ADD CONSTRAINT export_job_kind_check CHECK (kind IN (

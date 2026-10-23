@@ -5,14 +5,17 @@ import { ClassConfigSchema, type ClassConfig } from '@ideamap/contracts';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { actAs, json, withOrg, type Db } from './client.js';
-import { DirectoryExportStore } from './export-store.js';
+import { DirectoryExportStore, type ExportStore } from './export-store.js';
 import { SECRET_KEY_PATTERN } from './migrations/0012_privacy.js';
 import { APP_ROLE, RETENTION_ROLE } from './migrations/helpers.js';
 import {
   classHistory,
   deleteStudent,
   exportStudent,
+  isSecretKey,
   PrivacyError,
+  RECORD_OMITS,
+  recordExportSubjects,
   redactSecrets,
   REMOVED_STUDENT_NAME,
   REMOVED_TEXT,
@@ -741,3 +744,331 @@ describe.skipIf(!hasDatabase)('retention settings and role (F6-F2)', () => {
     ).toBe(PG.insufficientPrivilege);
   });
 });
+
+describe.skipIf(!hasDatabase)('audit redaction of flattened paths (QA F6-E2)', () => {
+  let t: TestDatabase;
+  let app: Db;
+  let a: Org;
+  beforeAll(async () => {
+    t = await freshDatabase();
+    a = await seedWithAdmin(t.db, 'a');
+    app = await t.loginAs(APP_ROLE);
+  });
+  afterAll(async () => {
+    await t?.drop();
+  });
+
+  const SECRET = 'synthetic-token-value';
+  const withToken = (n: number) =>
+    json({ course: { pass_mark: n }, token: SECRET, input_tokens: 5 } as unknown as ClassConfig);
+
+  it('redacts a config token on insert, update and delete, keeping token counts', async () => {
+    const asAdmin = <T>(fn: Parameters<typeof withOrg<T>>[2]) =>
+      withOrg(app, a.orgId, async (trx) => {
+        await actAs(trx, a.adminId);
+        return fn(trx);
+      });
+    await asAdmin((trx) =>
+      trx.deleteFrom('class_config').where('class_id', '=', a.classId).execute(),
+    );
+    await asAdmin((trx) =>
+      trx
+        .insertInto('class_config')
+        .values({ org_id: a.orgId, class_id: a.classId, config: withToken(60) })
+        .execute(),
+    );
+    // Old and new token values differ, so the token itself is a changed field.
+    await asAdmin((trx) =>
+      trx
+        .updateTable('class_config')
+        .set({
+          config: json({
+            course: { pass_mark: 61 },
+            token: `${SECRET}-2`,
+            input_tokens: 6,
+          } as unknown as ClassConfig),
+        })
+        .where('class_id', '=', a.classId)
+        .execute(),
+    );
+    await asAdmin((trx) =>
+      trx.deleteFrom('class_config').where('class_id', '=', a.classId).execute(),
+    );
+
+    const rows = await t.db
+      .selectFrom('audit_event')
+      .selectAll()
+      .where('target_type', '=', 'class_config')
+      .where('actor_id', '=', a.adminId)
+      .orderBy('at')
+      .orderBy('id')
+      .execute();
+    expect(rows.map((r) => r.action)).toEqual([
+      'class_config.deleted',
+      'class_config.created',
+      'class_config.updated',
+      'class_config.deleted',
+    ]);
+    expect(JSON.stringify(rows)).not.toContain(SECRET);
+    const [, created, updated, deleted] = rows;
+    expect(created!.after).toMatchObject({ config: { token: '[redacted]', input_tokens: 5 } });
+    expect(updated!.detail.changed).toEqual([
+      'config.course',
+      'config.input_tokens',
+      'config.token',
+    ]);
+    expect(updated!.before).toMatchObject({
+      'config.token': '[redacted]',
+      'config.input_tokens': 5,
+    });
+    expect(updated!.after).toMatchObject({
+      'config.token': '[redacted]',
+      'config.input_tokens': 6,
+    });
+    expect(deleted!.before).toMatchObject({ config: { token: '[redacted]', input_tokens: 6 } });
+  });
+
+  it('redacts trigger-shaped paths the same way in SQL and TypeScript', async () => {
+    const shaped = {
+      'config.token': SECRET,
+      'config.input_tokens': 5,
+      'config.output_tokens': 6,
+      'config.connector': { client_secret: SECRET, refresh_token: SECRET, kind: 'drive' },
+      'config.personas': [{ persona_id: 'tutor', prompt_template: 'Hi {name}.' }],
+      token: SECRET,
+      'source.api_key': SECRET,
+      tokens_used: 3,
+    };
+    const { rows } = await sql<{ v: unknown }>`
+      SELECT app.redact_secrets(${JSON.stringify(shaped)}::jsonb) AS v
+    `.execute(t.db);
+    expect(rows[0]!.v).toEqual(redactSecrets(shaped));
+    expect(JSON.stringify(rows[0]!.v)).not.toContain(SECRET);
+    expect(rows[0]!.v).toMatchObject({
+      'config.input_tokens': 5,
+      'config.output_tokens': 6,
+      tokens_used: 3,
+      'config.connector': { kind: 'drive' },
+    });
+    expect(isSecretKey('config.token')).toBe(true);
+    expect(isSecretKey('config.input_tokens')).toBe(false);
+  });
+});
+
+describe.skipIf(!hasDatabase)('student export covers every stored field (QA F6-E3)', () => {
+  let t: TestDatabase;
+  let app: Db;
+  let a: Org;
+  let dir: string;
+  beforeAll(async () => {
+    t = await freshDatabase();
+    a = await seedWithAdmin(t.db, 'a');
+    await t.db
+      .updateTable('ai_interaction')
+      .set({ input_tokens: 123, output_tokens: 456, redacted_at: new Date('2026-10-01T00:00:00Z') })
+      .where('user_id', '=', a.studentId)
+      .execute();
+    app = await t.loginAs(APP_ROLE);
+    dir = await mkdtemp(join(tmpdir(), 'ideamap-export-fields-'));
+  });
+  afterAll(async () => {
+    await t?.drop();
+    if (dir) await rm(dir, { recursive: true, force: true });
+  });
+
+  it('exports every column of every section except the listed omissions', async () => {
+    const result = await exportStudent(
+      app,
+      { orgId: a.orgId, actorId: a.adminId, studentId: a.studentId },
+      new DirectoryExportStore(dir),
+    );
+    const record = JSON.parse(result.body) as StudentRecord;
+    const sources: Record<keyof typeof RECORD_OMITS, string> = {
+      student: 'app_user',
+      enrollments: 'enrollment',
+      interaction_events: 'interaction_event',
+      interaction_text: 'interaction_text',
+      generated_map_views: 'generated_map_view',
+      ai_outputs: 'ai_output',
+      ai_interactions: 'ai_interaction',
+      progress_snapshots: 'progress_snapshot',
+    };
+    for (const [section, table] of Object.entries(sources) as [
+      keyof typeof RECORD_OMITS,
+      string,
+    ][]) {
+      const { rows } = await sql<{ column_name: string }>`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = ${table}
+      `.execute(t.db);
+      const expected = rows
+        .map((r) => r.column_name)
+        .filter((c) => !(RECORD_OMITS[section] as readonly string[]).includes(c))
+        .sort();
+      const value = record[section];
+      const first = Array.isArray(value) ? value[0] : value;
+      expect(first, section).toBeDefined();
+      const keys = Object.keys(first!).filter((k) => k !== 'class_name');
+      expect(keys.sort(), section).toEqual(expected);
+    }
+    expect(record.ai_interactions.find((r) => r.input_tokens === 123)).toMatchObject({
+      input_tokens: 123,
+      output_tokens: 456,
+      redacted_at: '2026-10-01T00:00:00.000Z',
+    });
+  });
+});
+
+describe.skipIf(!hasDatabase)(
+  'deleting a student removes every export holding them (QA F6-E1)',
+  () => {
+    let t: TestDatabase;
+    let app: Db;
+    let a: Org;
+    let b: Org;
+    let dir: string;
+    let store: DirectoryExportStore;
+
+    beforeAll(async () => {
+      t = await freshDatabase();
+      a = await seedWithAdmin(t.db, 'a');
+      b = await seedWithAdmin(t.db, 'b');
+      app = await t.loginAs(APP_ROLE);
+      dir = await mkdtemp(join(tmpdir(), 'ideamap-export-history-'));
+      store = new DirectoryExportStore(dir);
+    });
+    afterAll(async () => {
+      await t?.drop();
+      if (dir) await rm(dir, { recursive: true, force: true });
+    });
+
+    async function newStudent(org: Org, label: string) {
+      const user = await t.db
+        .insertInto('app_user')
+        .values({
+          org_id: org.orgId,
+          role: 'student',
+          name: `Pupil ${label}`,
+          email: `pupil-${label}@example.org`,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await t.db
+        .insertInto('enrollment')
+        .values({ org_id: org.orgId, class_id: org.classId, student_id: user.id })
+        .execute();
+      return user.id;
+    }
+
+    /** A class progress report naming `students`, made as the class's teacher. */
+    async function classReport(org: Org, label: string, students: string[] | null) {
+      return withOrg(app, org.orgId, async (trx) => {
+        await actAs(trx, org.teacherId);
+        const job = await trx
+          .insertInto('export_job')
+          .values({
+            org_id: org.orgId,
+            kind: 'class_progress',
+            class_id: org.classId,
+            status: 'succeeded',
+            created_by: org.teacherId,
+            finished_at: new Date(),
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        // null: an export whose contents were never recorded.
+        if (students) await recordExportSubjects(trx, org.orgId, job.id, students);
+        const names = await trx
+          .selectFrom('app_user')
+          .select(['name', 'email'])
+          .where('id', 'in', students ?? [org.studentId])
+          .execute();
+        const ref = `class-progress/${org.orgId}/${label}.json`;
+        await store.put(ref, JSON.stringify(names));
+        await trx
+          .updateTable('export_job')
+          .set({ result_ref: ref })
+          .where('id', '=', job.id)
+          .execute();
+        return { id: job.id, ref };
+      });
+    }
+
+    const refOf = async (id: string) =>
+      (
+        await t.db
+          .selectFrom('export_job')
+          .select('result_ref')
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow()
+      ).result_ref;
+    const exists = async (ref: string) =>
+      readFile(join(dir, ref), 'utf8').then(
+        () => true,
+        () => false,
+      );
+    const remove = (studentId: string, org = a) =>
+      deleteStudent(app, { orgId: org.orgId, actorId: org.adminId, studentId }, store);
+
+    it('removes a report naming a student who has since left the class', async () => {
+      const leaver = await newStudent(a, 'leaver');
+      const stayer = await newStudent(a, 'stayer');
+      const withLeaver = await classReport(a, 'with-leaver', [leaver, stayer]);
+      const withoutLeaver = await classReport(a, 'without-leaver', [stayer]);
+      const otherOrg = await classReport(b, 'org-b', [b.studentId]);
+
+      // The student leaves the class (or moves to another) before the deletion.
+      await t.db.deleteFrom('enrollment').where('student_id', '=', leaver).execute();
+
+      const result = await remove(leaver);
+      expect(result.exportFiles).toBe(1);
+      expect(await exists(withLeaver.ref)).toBe(false);
+      expect(await refOf(withLeaver.id)).toBeNull();
+      // Files that don't hold the student, and other orgs' files, are kept.
+      expect(await exists(withoutLeaver.ref)).toBe(true);
+      expect(await refOf(withoutLeaver.id)).toBe(withoutLeaver.ref);
+      expect(await exists(otherOrg.ref)).toBe(true);
+      expect(await refOf(otherOrg.id)).toBe(otherOrg.ref);
+
+      // Repeating the deletion finds nothing more and keeps the others.
+      expect((await remove(leaver)).exportFiles).toBe(0);
+      expect(await exists(withoutLeaver.ref)).toBe(true);
+    });
+
+    it('removes a student-naming report whose contents were never recorded', async () => {
+      const unknown = await classReport(a, 'unrecorded', null);
+      const pupil = await newStudent(a, 'unrecorded');
+      await t.db.deleteFrom('enrollment').where('student_id', '=', pupil).execute();
+      expect((await remove(pupil)).exportFiles).toBe(1);
+      expect(await exists(unknown.ref)).toBe(false);
+      expect(await refOf(unknown.id)).toBeNull();
+    });
+
+    it('never leaves a file naming a student when export and delete race', async () => {
+      /** Slow writes, so the delete arrives while the export is mid-write. */
+      const slow: ExportStore = {
+        put: async (key, body) => {
+          await new Promise((r) => setTimeout(r, 150));
+          await store.put(key, body);
+        },
+        remove: (key) => store.remove(key),
+      };
+      for (let round = 0; round < 4; round++) {
+        const label = `race-${round}`;
+        const pupil = await newStudent(a, label);
+        const request = { orgId: a.orgId, actorId: a.adminId, studentId: pupil };
+        const exporting = exportStudent(app, request, slow);
+        // Delete first on even rounds, export first on odd rounds.
+        if (round % 2 === 0) await new Promise((r) => setTimeout(r, 20));
+        const settled = await Promise.allSettled([exporting, deleteStudent(app, request, slow)]);
+        expect(settled.map((s) => s.status)).toEqual(['fulfilled', 'fulfilled']);
+        const files = await readdir(dir, { recursive: true });
+        for (const f of files.filter((name) => name.endsWith('.json'))) {
+          const content = await readFile(join(dir, f), 'utf8');
+          expect(content, f).not.toContain(`Pupil ${label}`);
+          expect(content, f).not.toContain(`pupil-${label}@example.org`);
+        }
+      }
+    });
+  },
+);

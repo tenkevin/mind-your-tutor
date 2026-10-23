@@ -187,5 +187,9 @@ to that login, `EXPORT_DIR` to the export directory), or daily with `scheduleRet
 `POST /privacy/students/:id/export` and `DELETE /privacy/students/:id`) work only for an
 admin of the student's organization. Delete removes the student's name, email, roster
 ids, typed text, AI transcripts, progress cache, enrollments and export files, and keeps
-their tracker events under the pseudonymous id. It is safe to repeat: after a backup
+their tracker events under the pseudonymous id. Any code that writes an export naming students (`class_progress`, `student_record`) must
+call `recordExportSubjects` in the job's transaction before writing the file: deletion
+removes every file listed for the student, whatever classes they're in by then, plus any
+such file with no subjects recorded. Export and delete hold a per-student lock
+(`lockStudents`), so a delete never misses an export still being written. It is safe to repeat: after a backup
 restore, run it again for every `student.deleted` audit row newer than the backup.

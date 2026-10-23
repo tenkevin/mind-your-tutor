@@ -170,7 +170,8 @@ The only places that hold what a student wrote, and what the AI said in a conver
 | `export_job.params` | What was exported; for a student record, the student's random id | Student record | Staff | As above | Length of the agreement | With the district |
 | `export_job.result_ref`, `export_job.error` | Where the export file is stored, and any error | No | System | As above | Cleared when the file is deleted | Retention job after `export_retention_days` (default 7); FERPA delete for that student's files |
 | `export_job.created_by` | Who asked for it | Staff | System | As above | Length of the agreement | With the district |
-| Export files (outside the database, at `result_ref`) | Student record exports hold the student's name, email and everything above; class progress exports list students by name | Identifying | System | The admin or teacher who asked | `export_retention_days` (default 7) | Retention job; a FERPA delete removes that student's record files and their classes' progress exports at once |
+| `export_subject.export_job_id`, `export_subject.student_id`, `export_subject.org_id` | Which students an export file holds, recorded when the export is made, so deleting a student finds every file that names them even after they leave the class. Ids only | Student record | System | Admins | Length of the agreement | With the district |
+| Export files (outside the database, at `result_ref`) | Student record exports hold the student's name, email and everything above; class progress exports list students by name | Identifying | System | The admin or teacher who asked | `export_retention_days` (default 7) | Retention job; a FERPA delete removes at once every file recorded in `export_subject` as holding the student, and any student-naming file whose contents were never recorded |
 
 ## Audit log
 

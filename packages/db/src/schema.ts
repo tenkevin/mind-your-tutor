@@ -319,6 +319,13 @@ export interface ExportJobTable {
   updated_at: CreatedAt;
 }
 
+/** Which students an export file holds (0012). */
+export interface ExportSubjectTable {
+  export_job_id: string;
+  student_id: string;
+  org_id: string;
+}
+
 export interface AuditEventTable {
   id: Generated<string>;
   org_id: string;
@@ -383,6 +390,7 @@ export interface Database {
   progress_snapshot: ProgressSnapshotTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
+  export_subject: ExportSubjectTable;
   audit_event: AuditEventTable;
   ai_interaction: AiInteractionTable;
 }
@@ -599,6 +607,7 @@ export const COLUMNS = {
     'finished_at',
     'updated_at',
   ],
+  export_subject: ['export_job_id', 'student_id', 'org_id'],
   audit_event: [
     'id',
     'org_id',

@@ -17,12 +17,20 @@ type Trx = Transaction<Database>;
 export const SECRET_KEY = new RegExp(SECRET_KEY_PATTERN, 'i');
 export const REDACTED = '[redacted]';
 
+/**
+ * Whether a key names a secret. Audit rows key changed fields by path (`config.token`),
+ * so the last segment of a dotted key is checked too, as the SQL does.
+ */
+export function isSecretKey(key: string): boolean {
+  return SECRET_KEY.test(key) || SECRET_KEY.test(key.slice(key.lastIndexOf('.') + 1));
+}
+
 /** A copy of `value` with every secret-looking key's value replaced by `[redacted]`. */
 export function redactSecrets(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactSecrets);
   if (value !== null && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, SECRET_KEY.test(k) ? REDACTED : redactSecrets(v)]),
+      Object.entries(value).map(([k, v]) => [k, isSecretKey(k) ? REDACTED : redactSecrets(v)]),
     );
   }
   return value;
@@ -230,6 +238,30 @@ export interface StudentRecord {
   progress_snapshots: Record<string, unknown>[];
 }
 
+/**
+ * Columns a student record leaves out, per section: the organization (stated once at
+ * the top) and the student's own id (the record is about them). Everything else
+ * stored about the student is exported; `privacy.test.ts` checks this list.
+ */
+export const RECORD_OMITS = {
+  student: ['org_id'],
+  enrollments: ['org_id', 'student_id'],
+  interaction_events: ['org_id', 'student_id'],
+  interaction_text: ['org_id', 'student_id'],
+  generated_map_views: ['org_id', 'student_id'],
+  ai_outputs: ['org_id', 'student_id'],
+  ai_interactions: ['org_id', 'user_id'],
+  progress_snapshots: ['org_id', 'student_id'],
+} as const;
+
+function omit<T extends object>(row: T, keys: readonly string[]): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).filter(([k]) => !keys.includes(k)));
+}
+
+function omitAll<T extends object>(rows: T[], keys: readonly string[]) {
+  return rows.map((r) => omit(r, keys));
+}
+
 /** Collect a student's record. Runs inside `withOrg` for the student's organization. */
 export async function collectStudentRecord(
   trx: Trx,
@@ -238,59 +270,50 @@ export async function collectStudentRecord(
 ): Promise<StudentRecord> {
   const student = await trx
     .selectFrom('app_user')
-    .select([
-      'id',
-      'role',
-      'name',
-      'email',
-      'sso_provider',
-      'sso_subject',
-      'roster_source_id',
-      'created_at',
-      'updated_at',
-    ])
+    .selectAll()
     .where('id', '=', studentId)
     .executeTakeFirstOrThrow();
   const enrollments = await trx
     .selectFrom('enrollment as e')
     .innerJoin('class as c', 'c.id', 'e.class_id')
-    .select(['e.class_id', 'c.name as class_name', 'e.created_at'])
+    .selectAll('e')
+    .select('c.name as class_name')
     .where('e.student_id', '=', studentId)
     .orderBy('e.created_at')
     .execute();
   const interaction_events = await trx
     .selectFrom('interaction_event')
-    .select(['id', 'class_id', 'version_id', 'seq', 'at', 'type', 'payload', 'recorded_at'])
+    .selectAll()
     .where('student_id', '=', studentId)
     .orderBy('seq')
     .execute();
   const interaction_text = await trx
     .selectFrom('interaction_text')
-    .select(['id', 'class_id', 'kind', 'body', 'redacted_at', 'created_at'])
+    .selectAll()
     .where('student_id', '=', studentId)
     .orderBy('created_at')
     .execute();
   const generated_map_views = await trx
     .selectFrom('generated_map_view')
-    .select(['id', 'class_id', 'version_id', 'generator', 'view', 'created_at'])
+    .selectAll()
     .where('student_id', '=', studentId)
     .orderBy('created_at')
     .execute();
   const ai_outputs = await trx
     .selectFrom('ai_output')
-    .select(['id', 'class_id', 'version_id', 'persona', 'kind', 'content', 'model', 'created_at'])
+    .selectAll()
     .where('student_id', '=', studentId)
     .orderBy('created_at')
     .execute();
   const ai_interactions = await trx
     .selectFrom('ai_interaction')
-    .select(['id', 'class_id', 'persona', 'model', 'request', 'response', 'flagged', 'created_at'])
+    .selectAll()
     .where('user_id', '=', studentId)
     .orderBy('created_at')
     .execute();
   const progress_snapshots = await trx
     .selectFrom('progress_snapshot')
-    .select(['class_id', 'rules_version', 'state', 'last_seq', 'updated_at'])
+    .selectAll()
     .where('student_id', '=', studentId)
     .execute();
   return {
@@ -298,15 +321,56 @@ export async function collectStudentRecord(
     version: 1,
     exported_at: new Date().toISOString(),
     org_id: orgId,
-    student,
-    enrollments,
-    interaction_events,
-    interaction_text,
-    generated_map_views,
-    ai_outputs,
-    ai_interactions,
-    progress_snapshots,
+    student: omit(student, RECORD_OMITS.student),
+    enrollments: omitAll(enrollments, RECORD_OMITS.enrollments),
+    interaction_events: omitAll(interaction_events, RECORD_OMITS.interaction_events),
+    interaction_text: omitAll(interaction_text, RECORD_OMITS.interaction_text),
+    generated_map_views: omitAll(generated_map_views, RECORD_OMITS.generated_map_views),
+    ai_outputs: omitAll(ai_outputs, RECORD_OMITS.ai_outputs),
+    ai_interactions: omitAll(ai_interactions, RECORD_OMITS.ai_interactions),
+    progress_snapshots: omitAll(progress_snapshots, RECORD_OMITS.progress_snapshots),
   };
+}
+
+/** Export kinds whose files can name students. */
+export const STUDENT_EXPORT_KINDS = ['student_record', 'class_progress'] as const;
+
+/**
+ * Hold each student's privacy lock until the transaction ends. Exporting and deleting
+ * a student take it, so a delete never misses an export still being written: it
+ * waits for the export to commit, then removes its file.
+ */
+export async function lockStudents(trx: Trx, studentIds: readonly string[]): Promise<void> {
+  for (const id of [...new Set(studentIds)].sort()) {
+    await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`student:${id}`}, 0))`.execute(trx);
+  }
+}
+
+/**
+ * Record which students an export file holds. Every export of a kind in
+ * `STUDENT_EXPORT_KINDS` must call this, in the transaction that creates the job and
+ * before writing the file: deleting a student removes every file listed for them.
+ * (A file of those kinds with no subjects recorded is removed by any student's
+ * deletion in its organization, since nothing proves the student isn't in it.)
+ */
+export async function recordExportSubjects(
+  trx: Trx,
+  orgId: string,
+  exportJobId: string,
+  studentIds: readonly string[],
+): Promise<void> {
+  await lockStudents(trx, studentIds);
+  if (studentIds.length === 0) return;
+  await trx
+    .insertInto('export_subject')
+    .values(
+      [...new Set(studentIds)].map((id) => ({
+        org_id: orgId,
+        export_job_id: exportJobId,
+        student_id: id,
+      })),
+    )
+    .execute();
 }
 
 export interface StudentExport {
@@ -333,6 +397,7 @@ export async function exportStudent(
     return await withOrg(db, request.orgId, async (trx) => {
       await authorize(trx, request);
       await actAs(trx, request.actorId);
+      await lockStudents(trx, [request.studentId]);
       const record = await collectStudentRecord(trx, request.orgId, request.studentId);
       const job = await trx
         .insertInto('export_job')
@@ -346,6 +411,7 @@ export async function exportStudent(
         })
         .returning('id')
         .executeTakeFirstOrThrow();
+      await recordExportSubjects(trx, request.orgId, job.id, [request.studentId]);
       const ref = `student-records/${request.orgId}/${job.id}.json`;
       const body = `${JSON.stringify(record, null, 2)}\n`;
       await store.put(ref, body);
@@ -382,7 +448,8 @@ export interface StudentDeletion {
  * FERPA delete. Removes the student's personal data and everything they typed, and
  * leaves their tracker events in place under their pseudonymous id (§8.2, §10):
  * the account keeps only its random id, role and organization, so nothing left
- * identifies them. Removes export files that could hold their name. Audited with the
+ * identifies them. Removes every export file that holds them (`export_subject`), and
+ * any student-naming file whose contents weren't recorded. Audited with the
  * pseudonymous id only. Safe to repeat.
  */
 export async function deleteStudent(
@@ -395,24 +462,37 @@ export async function deleteStudent(
     await authorize(trx, request);
     await actAs(trx, request.actorId);
 
-    // Export files first: this student's records, and class progress exports of
-    // their classes, which list students by name. Files are removed before the
-    // commit, so a failure leaves at worst a reference to a missing file.
-    const classIds = trx
-      .selectFrom('enrollment')
-      .select('class_id')
-      .where('student_id', '=', studentId);
+    // Wait for any export of this student still being written, and hold off new ones.
+    await lockStudents(trx, [studentId]);
+
+    // Export files first: every file recorded as holding this student, whatever
+    // classes they are in now, and any student-naming file whose contents were never
+    // recorded. Files are removed before the commit, so a failure leaves at worst a
+    // reference to a missing file.
     const exports = await trx
-      .selectFrom('export_job')
-      .select(['id', 'result_ref'])
-      .where('result_ref', 'is not', null)
+      .selectFrom('export_job as j')
+      .select(['j.id', 'j.result_ref'])
+      .where('j.result_ref', 'is not', null)
       .where((eb) =>
         eb.or([
+          eb.exists(
+            eb
+              .selectFrom('export_subject as s')
+              .select('s.student_id')
+              .whereRef('s.export_job_id', '=', 'j.id')
+              .where('s.student_id', '=', studentId),
+          ),
           eb.and([
-            eb('kind', '=', 'student_record'),
-            eb(sql`params ->> 'student_id'`, '=', studentId),
+            eb('j.kind', 'in', STUDENT_EXPORT_KINDS),
+            eb.not(
+              eb.exists(
+                eb
+                  .selectFrom('export_subject as s')
+                  .select('s.student_id')
+                  .whereRef('s.export_job_id', '=', 'j.id'),
+              ),
+            ),
           ]),
-          eb.and([eb('kind', '=', 'class_progress'), eb('class_id', 'in', classIds)]),
         ]),
       )
       .execute();
