@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { parsePack, type ClassConfig, type Pack, type VersionSource } from '@ideamap/contracts';
+import {
+  parsePack,
+  type ClassConfig,
+  type Pack,
+  type VersionDerived,
+  type VersionSource,
+} from '@ideamap/contracts';
 import { json, toVector, type Db } from '../client.js';
 import { EMBEDDING_DIMENSIONS } from '../migrations/0006_library.js';
 
@@ -20,6 +26,17 @@ export const SOURCE: VersionSource = {
   file_name: 'pack.json',
   checksum: 'a'.repeat(64),
   column_mapping: [],
+};
+
+/** A small valid `derived` value, for tests that store one. */
+export const DERIVED: VersionDerived = {
+  ranked_links: { max_links: 3, kept: [], hidden: [] },
+  layout: {
+    centre: 'rain',
+    rank: ['rain'],
+    positions: [{ idea_id: 'rain', ring: 0, angle: null, x: 0, y: 0 }],
+  },
+  quizzes: { seed: 1, quiz_length: 5, banks: [] },
 };
 
 let ulidCounter = 0;

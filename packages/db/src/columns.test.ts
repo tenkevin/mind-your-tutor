@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { json } from './client.js';
 import { COLUMNS, type Database } from './schema.js';
 import { freshDatabase, hasDatabase, type TestDatabase } from './test/harness.js';
-import { SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
+import { DERIVED, SOURCE, seedOrg, waterCyclePack } from './test/seed.js';
 import type { Selectable } from 'kysely';
 
 // F4-F9: the typed layer in schema.ts matches the live schema, and rows round-trip
@@ -92,15 +92,7 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
         curriculum_id: seeded.curriculumId,
         number: 3,
         pack: json(pack),
-        derived: json({
-          ranked_links: { max_links: 3, kept: [], hidden: [] },
-          layout: {
-            centre: 'rain',
-            rank: ['rain'],
-            positions: [{ idea_id: 'rain', ring: 0, angle: null, x: 0, y: 0 }],
-          },
-          quizzes: { seed: 1, quiz_length: 5, banks: [] },
-        }),
+        derived: json(DERIVED),
         issues: json([
           {
             severity: 'warning',
