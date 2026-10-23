@@ -92,7 +92,15 @@ describe.skipIf(!hasDatabase)('typed access (F4-F9)', () => {
         curriculum_id: seeded.curriculumId,
         number: 3,
         pack: json(pack),
-        derived: json({ layout: { centre: 'rain' } }),
+        derived: json({
+          ranked_links: { max_links: 3, kept: [], hidden: [] },
+          layout: {
+            centre: 'rain',
+            rank: ['rain'],
+            positions: [{ idea_id: 'rain', ring: 0, angle: null, x: 0, y: 0 }],
+          },
+          quizzes: { seed: 1, quiz_length: 5, banks: [] },
+        }),
         issues: json([
           {
             severity: 'warning',
