@@ -250,6 +250,7 @@ The rules that keep the tracker trustworthy:
 
 - `POST /events` takes batches. The server checks each event against its schema, sets `seq`, drops ids it has already recorded, and rejects events from a version the class isn't pinned to (with a grace period after a publish).
 - Events go into a Postgres table (`interaction_event`) split into monthly partitions. Generated map views and AI outputs are stored in their own tables, referenced by id. The client keeps an offline queue and resends it.
+- Replay and other hot-path reads should bound `recorded_at` (for example, from the time of the student's latest progress snapshot), so Postgres can skip old monthly partitions instead of probing every one.
 - Exporting to the education data standards xAPI or Caliper is possible later. It will be designed in, not built now.
 - Teacher views (M5) read the tracker: a timeline for each student, and a class heatmap of where students stall.
 

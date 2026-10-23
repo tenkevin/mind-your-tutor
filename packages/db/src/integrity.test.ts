@@ -5,6 +5,7 @@ import { json } from './client.js';
 import { errorCode, freshDatabase, hasDatabase, PG, type TestDatabase } from './test/harness.js';
 import {
   SOURCE,
+  derivedData,
   embedding,
   seedOrg,
   testUlid,
@@ -280,7 +281,7 @@ describe.skipIf(!hasDatabase)('version status (F4-F3)', () => {
     expect(
       await errorCode(() =>
         draft()
-          .set({ derived: json({ layout: {} }) })
+          .set({ derived: json(derivedData()) })
           .execute(),
       ),
     ).toBeNull();

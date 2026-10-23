@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { parsePack, type ClassConfig, type Pack, type VersionSource } from '@ideamap/contracts';
+import {
+  parsePack,
+  type ClassConfig,
+  type Pack,
+  type VersionDerived,
+  type VersionSource,
+} from '@ideamap/contracts';
 import { json, toVector, type Db } from '../client.js';
 import { EMBEDDING_DIMENSIONS } from '../migrations/0006_library.js';
 
@@ -40,6 +46,19 @@ export function embedding(seed: number): string {
   return toVector(
     Array.from({ length: EMBEDDING_DIMENSIONS }, (_, i) => Math.sin(seed * 31 + i) / 10),
   );
+}
+
+/** Derived data for a version, as packages/domain's `derive()` returns it. */
+export function derivedData(): VersionDerived {
+  return {
+    ranked_links: { max_links: 3, kept: [], hidden: [] },
+    layout: {
+      centre: 'rain',
+      rank: ['rain'],
+      positions: [{ idea_id: 'rain', ring: 0, angle: null, x: 0, y: 0 }],
+    },
+    quizzes: { seed: 1, quiz_length: 8, banks: [] },
+  };
 }
 
 export interface SeededOrg {
