@@ -741,7 +741,7 @@
       ],
       "done_when": "F1c QA finding1: production ambient declarations cannot hide banned globals, process access is guarded, existing determinism regressions and performance budgets pass",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "codex-f1d",
       "updated": "2026-10-23"
     }

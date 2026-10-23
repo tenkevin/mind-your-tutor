@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CurriculumVersionSchema,
+  ImportIssueSchema,
   VERSION_STATUSES,
   VersionIssuesSchema,
   parsePack,
@@ -83,6 +84,25 @@ describe('CurriculumVersion follows §5 (F3-F9)', () => {
     expect(CurriculumVersionSchema.parse(JSON.parse(JSON.stringify(version))).issues).toEqual(
       version.issues,
     );
+  });
+
+  it('preserves C1 importer metadata, including informational issues', () => {
+    const importerIssue = ImportIssueSchema.parse({
+      severity: 'info',
+      effect: 'none',
+      code: 'formula',
+      source: 'Ideas.csv',
+      tab: 'Ideas',
+      row: 3,
+      column: 'idea_id',
+      value: '=SUM(A1:A2)',
+      fallback: null,
+      message: 'The saved value was read; the formula was not run.',
+      suggestion: null,
+    });
+    const stored = VersionIssuesSchema.parse([importerIssue]);
+
+    expect(stored).toEqual([{ ...importerIssue, origin: 'import', level: 'info' }]);
   });
 
   it('blocks published versions on error-level checks but allows warning and info checks', () => {
