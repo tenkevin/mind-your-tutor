@@ -13,8 +13,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).
 
 **Needs independent QA, highest priority first:**
-1. **F6 #20.** agent-f6 is re-integrating with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
-2. **T1** (PR pending, agent-t1): the teacher shell; unlocks T2 and T3.
+1. **F6 #20 at `9583e75`.** Re-integrated with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
+2. **T1 #24 at `9089d2c`**: the teacher shell; unlocks T2 and T3.
 3. **C5 #23** at `6f43575`: first run; criteria in docs/qa/C5.md (D14 count).
 4. **C6 #21** at `750a50b`: re-run after the C6-E1/E2/E3 fixes; C6-F7 reconciled.
 
