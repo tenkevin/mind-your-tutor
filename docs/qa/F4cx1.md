@@ -6,6 +6,9 @@ Source: `docs/qa/codex/Codex-F4-database.md`, errors F4-E1 and F4-E2 (one root c
 > F4-E1 — High: a temporary `interaction_event_key` makes the trigger in `0008_tracker.ts` (unqualified reference, line 69) write to the temp table, so duplicate event ids and duplicate (student, seq) are accepted.
 > F4-E2 — High: an empty temporary `curriculum_version` makes `app.guard_class_pin()` (`0007_classes.ts`) read NULL, so a class can be pinned to a draft, against D2.
 
+
+Note: F4b (PR #12, migration 0011) already makes `app.record_interaction_event_keys()` SECURITY DEFINER with `search_path = pg_catalog, pg_temp` and schema-qualified tables, and revokes TEMP from the app role. F4cx1 covers what's left (`guard_class_pin` and every other function), and its tests must still pass with TEMP both revoked and granted (F4cx1-S1).
+
 ## Functional
 
 | Id | Weight | Check | Steps | Pass bar |

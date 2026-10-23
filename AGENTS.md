@@ -37,6 +37,7 @@ One coordinator session runs the swarm:
 - **QA:** when a PR is open and CI is green, it starts a separate QA agent session for that PR. The QA agent never wrote the code, and QA agents don't count towards the limit of 4.
 - **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
 - **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
+- **Integration gate:** a PR merges only when its head already contains the current `idea-map` head (GitHub compare shows it 0 commits behind) and CI is green on that exact head. Otherwise the agent merges `origin/idea-map` and pushes first. Merges happen one at a time, and after each one the coordinator checks `idea-map`'s CI. If it's red, all merging stops until an immediate fix task lands. (Added after F4 and C3, each green on its own, broke `idea-map` together: Codex F4-E3.)
 - **Never:** it doesn't merge to `main`, and it doesn't claim `placeholder` tasks.
 
 ## Conventions

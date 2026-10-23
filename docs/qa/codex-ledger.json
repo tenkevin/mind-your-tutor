@@ -113,6 +113,50 @@
         "C8 run 1 FAIL: C8-F2, C8-F6, C8-U2 sent back"
       ],
       "suggestions": "C3-S1 wording, Ideas.objective spec alignment -> C8"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-followup-9ce1018.md",
+      "commit": "30486c6",
+      "reviews": [
+        "C1"
+      ],
+      "errors": [],
+      "suggestions": "Existing C2-E5 -> C2cx5; URL credentials -> C9-S3. Scoped PASS superseded by C1-S2 reconciliation.",
+      "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F2-integration-1523878.md",
+      "commit": "30486c6",
+      "reviews": [
+        "F2"
+      ],
+      "errors": [
+        "F2cx1 (existing F2-E1 revalidated)"
+      ],
+      "suggestions": "Cross-browser -> CXB/T1; reference-page favicon is non-blocking and deferred to T1 asset review.",
+      "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-C1-S2-reconciliation-9ce1018.md",
+      "commit": "639bd26",
+      "reviews": [
+        "C1"
+      ],
+      "errors": [
+        "C1cx1 (single C1-E1 covering both archive variants; fix on existing PR #8)"
+      ],
+      "suggestions": "Regression/evidence scope -> C1cx1 criteria. Existing C2-E5 and F3-S5 routing retained; unverified observations are not new findings.",
+      "date": "2026-10-23"
+    },
+    {
+      "file": "docs/qa/codex/Codex-F4cx3-review-3641f00.md",
+      "commit": "24c38b3",
+      "date": "2026-10-23",
+      "reviews": [
+        "F4cx3"
+      ],
+      "errors": [],
+      "suggestions": "Existing F4-E3 correction independently passes; carried forward after task-path equality and exact-head CI. Postmerge F5 passed at3f4d845; record docs/qa/reports/F4cx3.md."
     }
   ]
 }
