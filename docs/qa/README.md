@@ -14,6 +14,8 @@ Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task 
 
 The QA agent may read the code to find weaknesses, but it judges against the criteria and the spec, never against what the code happens to do.
 
+QA also tests the PR **as it would land**. In a scratch checkout, merge the current `origin/idea-map` into the PR head, then run the root `pnpm typecheck` and the full test suite with a database (`DATABASE_URL` set) as well as the task's own checks. A failure that only appears after that merge is a FAIL. Green tests on the task branch alone don't prove the combined branch works.
+
 ## Criteria file format
 
 Four sections, always in this order: **Functional**, **Security**, **Performance**, **Usability**. Usability means the people who use the result: teachers and students for screens, developers for packages and tooling. A section can be marked not applicable only with a reason.
