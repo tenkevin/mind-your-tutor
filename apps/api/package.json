@@ -16,7 +16,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "fastify": "catalog:"
+    "fastify": "catalog:",
+    "@ideamap/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

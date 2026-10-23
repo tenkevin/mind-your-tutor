@@ -40,18 +40,19 @@ query builder, so one dependency covers both. Each migration is a TypeScript fil
 Pending migrations run in one transaction under a lock. Never edit a migration that has
 run; add a new one.
 
-| Migration          | Creates                                                                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0001 extensions    | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                  |
-| 0002 app role      | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                            |
-| 0003 job queue     | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                            |
-| 0004 tenancy       | `organization`, `app_user`                                                                                                                    |
-| 0005 curricula     | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                        |
-| 0006 library       | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                      |
-| 0007 classes       | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                              |
-| 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot` |
-| 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                   |
-| 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                   |
+| Migration          | Creates                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0001 extensions    | pgvector, the `app` schema, `app.current_org_id()`, shared trigger functions                                                                       |
+| 0002 app role      | `ideamap_app` (no superuser, no BYPASSRLS, no DDL)                                                                                                 |
+| 0003 job queue     | the pg-boss schema (`pgboss`), from pg-boss's own construction SQL                                                                                 |
+| 0004 tenancy       | `organization`, `app_user`                                                                                                                         |
+| 0005 curricula     | `curriculum`, `curriculum_version`, `curriculum_defaults`, `approved_explanation` (D9)                                                             |
+| 0006 library       | `library_doc`, `chunk` (with a `vector(1024)` embedding)                                                                                           |
+| 0007 classes       | `class` (with `pinned_version_id`), `class_config`, `enrollment`                                                                                   |
+| 0008 tracker       | `interaction_event` (monthly partitions), `interaction_event_key`, `interaction_text`, `generated_map_view`, `ai_output`, `progress_snapshot`      |
+| 0009 jobs, audit   | `import_job`, `export_job`, `audit_event`, `ai_interaction`                                                                                        |
+| 0010 class library | `class_library_setting` (per shared document: `use_for` or `off`), `class_library_doc`, `class_chunk` (D11)                                        |
+| 0012 privacy       | retention settings, the `ideamap_retention` role, audit triggers, audit `class_id`/`curriculum_id`/`before`/`after`, `student_record` exports (F6) |
 
 ## Roles and row-level security
 
@@ -108,3 +109,58 @@ partition key, so the event `id` and `(student_id, seq)` are kept unique by
 written with `json(value)`, which type-checks the value. `columns.test.ts` compares the
 types with the live schema and round-trips rows through the contract schemas. bigint
 columns are read as numbers; timestamps as `Date`.
+
+## Privacy: audit, retention, FERPA (F6)
+
+What every column holds, who sees it and how long it's kept is in
+[`docs/privacy/data-inventory.md`](../../docs/privacy/data-inventory.md).
+`inventory.test.ts` fails if a migration adds a column the inventory doesn't list.
+
+### Audit log
+
+Triggers write an `audit_event` row for every change to `organization`, `class`,
+`class_config`, `curriculum_defaults`, `approved_explanation` (D9), `class_library_setting`
+and `class_library_doc` (D11), and for every publish, archive or restore of a
+`curriculum_version`. `before` and `after` hold only what changed (a jsonb column is
+compared one level down, so a due date change reads `config.units`), and any key that
+looks like a secret is logged as `[redacted]`. Name the user acting with `actAs`:
+
+```ts
+await withOrg(db, orgId, async (trx) => {
+  await actAs(trx, userId); // recorded as the actor; must be in the same org
+  await trx
+    .updateTable('class_config')
+    .set({ config: json(next) })
+    .where('class_id', '=', id)
+    .execute();
+});
+```
+
+Without `actAs`, the row's own `updated_by` (or `approved_by`, `uploaded_by`) is used.
+`writeAudit` records actions no trigger sees, and `classHistory` lists a class's changes
+for Teacher Settings. The log refuses `UPDATE`, `DELETE` and `TRUNCATE` for every role.
+
+### Retention
+
+`organization.text_retention_days` and `ai_retention_days` (default 90, §10) and
+`export_retention_days` (default 7) are per organization. The worker's retention job
+(`apps/worker/src/retention.ts`) deletes what is past them, in batches, as the
+`ideamap_retention` role. That role can see and delete only rows that are already due,
+and can't read their text. Like the app role it is `NOLOGIN`; give the worker's login
+membership:
+
+```sql
+GRANT ideamap_retention TO ideamap_worker; -- the worker's login role
+```
+
+Run it once by hand with `pnpm --filter @ideamap/worker retention` (`DATABASE_URL` set
+to that login, `EXPORT_DIR` to the export directory), or daily with `scheduleRetention`.
+
+### FERPA export and delete
+
+`exportStudent` and `deleteStudent` (in `privacy.ts`, served by `apps/api` at
+`POST /privacy/students/:id/export` and `DELETE /privacy/students/:id`) work only for an
+admin of the student's organization. Delete removes the student's name, email, roster
+ids, typed text, AI transcripts, progress cache, enrollments and export files, and keeps
+their tracker events under the pseudonymous id. It is safe to repeat: after a backup
+restore, run it again for every `student.deleted` audit row newer than the backup.

@@ -12,6 +12,15 @@ export const ORG_SETTING = 'app.org_id';
 /** The session setting that carries the class for class-scoped tables (D11, from 0010). */
 export const CLASS_SETTING = 'app.class_id';
 
+/** The session setting that names the user the app acts for, for audit rows (from 0012). */
+export const ACTOR_SETTING = 'app.actor_id';
+
+/**
+ * The role the retention job runs as (from 0012). It sees and deletes only rows past
+ * their organization's retention period, and can't read their text.
+ */
+export const RETENTION_ROLE = 'ideamap_retention';
+
 type Db = Kysely<unknown>;
 
 /**

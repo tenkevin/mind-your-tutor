@@ -32,7 +32,8 @@ describe.skipIf(!hasDatabase)('row-level security per org (F4-S1)', () => {
   it('is enabled and forced on every tenant table', async () => {
     const { rows } = await sql<{ relname: string; on: boolean; forced: boolean; policies: number }>`
       SELECT c.relname, c.relrowsecurity AS on, c.relforcerowsecurity AS forced,
-        (SELECT count(*)::int FROM pg_policy p WHERE p.polrelid = c.oid) AS policies
+        -- Policies for every role; the retention role's own (0012) are tested in privacy.test.ts.
+        (SELECT count(*)::int FROM pg_policy p WHERE p.polrelid = c.oid AND p.polroles = '{0}') AS policies
       FROM pg_class c
       WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p')
         AND NOT c.relispartition AND c.relname NOT LIKE 'kysely_%'

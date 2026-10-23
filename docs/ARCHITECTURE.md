@@ -258,7 +258,7 @@ The rules that keep the tracker trustworthy:
 1. The final event catalogue and payload fields (M1).
 2. Exact definitions of each metric and signal in §8.3: thresholds for "stall" and "guessing", streak day boundaries, combo and XP maths.
 3. How teach-back verdicts and quiz retries count towards unit completion.
-4. Retention periods for typed text, event metadata, generated maps and AI outputs (feeds F6).
+4. Retention periods for typed text, event metadata, generated maps and AI outputs (feeds F6). F6 set the baseline in `docs/privacy/data-inventory.md`: typed text and AI transcripts 90 days by default, configurable per district; events, generated maps and AI outputs kept while the student's account exists and pseudonymised by a FERPA delete. M1 may revise these.
 
 ## 9. AI layer
 
@@ -319,4 +319,4 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 4. Default AI transcript retention period for the first district.
 5. Hosting region and provider (affects the data processing agreement).
 6. **Embedding model and width (F4):** `chunk.embedding` is `vector(1024)` (Voyage-sized) so it can carry an HNSW index, which needs a fixed width. Changing models means a migration that re-creates the column and re-indexes the library. Which embedding model do we use?
-7. **Deleting a student on request vs append-only events (F4):** FERPA's "delete on request" (§10) conflicts with an append-only `interaction_event` that refuses `DELETE` for every role, and with the foreign keys from events to `app_user`. Typed text already lives apart and can be deleted (§8.2). Proposal for M1 or F6: an owner-only procedure that removes one student's events, generated views and AI outputs (the only path that bypasses the append-only trigger), recorded as an `AuditEvent`.
+7. **Deleting a student on request vs append-only events (F4):** FERPA's "delete on request" (§10) conflicts with an append-only `interaction_event` that refuses `DELETE` for every role, and with the foreign keys from events to `app_user`. Typed text already lives apart and can be deleted (§8.2). Proposal for M1 or F6: an owner-only procedure that removes one student's events, generated views and AI outputs (the only path that bypasses the append-only trigger), recorded as an `AuditEvent`. **F6 took the other path:** a delete removes the student's name, email, roster ids, typed text and AI transcripts, and keeps events, map views and AI outputs under the pseudonymous id, which then leads to no one. Append-only stays absolute. If a district's DPA requires removing events too, the owner-only procedure above is still the way to add it.

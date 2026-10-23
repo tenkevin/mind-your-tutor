@@ -12,11 +12,17 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "retention": "node dist/cli.js retention"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@ideamap/db": "workspace:*",
+    "kysely": "0.29.7",
+    "pg-boss": "12.38.0"
   }
 }

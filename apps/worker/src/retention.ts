@@ -1,0 +1,164 @@
+import { RETENTION_ROLE, type Db, type ExportStore } from '@ideamap/db';
+import { sql, type Transaction } from 'kysely';
+import type { Database } from '@ideamap/db';
+
+// The retention job (ARCHITECTURE.md §10; task F6). Deletes typed student text and AI
+// transcripts once they are past their organization's retention period, and removes
+// expired export files. Periods are per organization (organization.*_retention_days);
+// the data inventory (docs/privacy/data-inventory.md) lists them.
+//
+// It runs as `ideamap_retention`, which can see and delete only rows that are already
+// due and can't read their text, so a bug here can't delete anything early. Tracker
+// events are out of its reach: events refer to text by id and a missing text resolves
+// to a "removed" marker (§8.2), so replay is unaffected.
+//
+// Work happens in small batches, each its own transaction: an interrupted run loses
+// at most one uncommitted batch, and running again carries on. Row locks only, so
+// inserts keep working while it runs.
+
+export const RETENTION_QUEUE = 'privacy-retention';
+/** Daily at 03:17 UTC. */
+export const RETENTION_CRON = '17 3 * * *';
+export const DEFAULT_BATCH_SIZE = 5000;
+
+export interface RetentionOptions {
+  /** Rows per transaction. */
+  batchSize?: number;
+  /** Removes expired export files; without one, export files are left for a later run. */
+  store?: ExportStore;
+  /** Checked between batches; an aborted run stops cleanly after the current batch. */
+  signal?: AbortSignal;
+  /** Called after each committed batch. */
+  onBatch?: (batch: { kind: RetentionKind; orgId: string; rows: number }) => void;
+}
+
+export type RetentionKind = 'interaction_text' | 'ai_interaction' | 'export_files';
+
+export interface RetentionResult {
+  interaction_text: number;
+  ai_interaction: number;
+  export_files: number;
+  /** True when the signal stopped the run before it finished. */
+  aborted: boolean;
+}
+
+/** Run `fn` in a transaction as the retention role. The login must be a member of it. */
+function asRetention<T>(db: Db, fn: (trx: Transaction<Database>) => Promise<T>): Promise<T> {
+  return db.transaction().execute(async (trx) => {
+    await sql`SET LOCAL ROLE ${sql.id(RETENTION_ROLE)}`.execute(trx);
+    return fn(trx);
+  });
+}
+
+const CUTOFF_KIND = { interaction_text: 'text', ai_interaction: 'ai' } as const;
+
+export async function runRetention(
+  db: Db,
+  options: RetentionOptions = {},
+): Promise<RetentionResult> {
+  const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new RangeError('batchSize must be a positive integer');
+  }
+  const result: RetentionResult = {
+    interaction_text: 0,
+    ai_interaction: 0,
+    export_files: 0,
+    aborted: false,
+  };
+  const stopped = () => {
+    if (options.signal?.aborted) result.aborted = true;
+    return result.aborted;
+  };
+
+  // The retention role sees every organization's id and periods, nothing else.
+  const orgs = await asRetention(db, (trx) =>
+    trx.selectFrom('organization').select('id').orderBy('id').execute(),
+  );
+
+  for (const table of ['interaction_text', 'ai_interaction'] as const) {
+    for (const { id: orgId } of orgs) {
+      for (;;) {
+        if (stopped()) return result;
+        // The policy shows only due rows; the explicit cutoff lets the
+        // (org_id, created_at) index find them.
+        const deleted = await asRetention(db, async (trx) => {
+          const r = await sql`
+            DELETE FROM ${sql.table(table)} WHERE id IN (
+              SELECT id FROM ${sql.table(table)}
+              WHERE org_id = ${orgId}
+                AND created_at < app.retention_cutoff(${orgId}, ${CUTOFF_KIND[table]})
+              ORDER BY created_at
+              LIMIT ${batchSize})
+          `.execute(trx);
+          return Number(r.numAffectedRows ?? 0);
+        });
+        if (deleted > 0) {
+          result[table] += deleted;
+          options.onBatch?.({ kind: table, orgId, rows: deleted });
+        }
+        if (deleted < batchSize) break;
+      }
+    }
+  }
+
+  const store = options.store;
+  if (store) {
+    for (;;) {
+      if (stopped()) return result;
+      // The file goes first, then its reference, in one transaction: an interrupted
+      // batch leaves references to files that are gone, which the next run clears.
+      const removed = await asRetention(db, async (trx) => {
+        const due = await trx
+          .selectFrom('export_job')
+          .select(['id', 'org_id', 'result_ref'])
+          .where('result_ref', 'is not', null)
+          .orderBy('created_at')
+          .limit(batchSize)
+          .execute();
+        for (const job of due) await store.remove(job.result_ref!);
+        if (due.length > 0) {
+          await trx
+            .updateTable('export_job')
+            .set({ result_ref: null })
+            .where(
+              'id',
+              'in',
+              due.map((j) => j.id),
+            )
+            .execute();
+        }
+        return due.length;
+      });
+      if (removed > 0) {
+        result.export_files += removed;
+        options.onBatch?.({ kind: 'export_files', orgId: '*', rows: removed });
+      }
+      if (removed < batchSize) break;
+    }
+  }
+  return result;
+}
+
+/** The parts of PgBoss the schedule needs. */
+export interface RetentionQueue {
+  createQueue(name: string): Promise<void>;
+  schedule(
+    name: string,
+    cron: string,
+    data?: object | null,
+    options?: { tz?: string },
+  ): Promise<void>;
+  work(name: string, handler: () => Promise<unknown>): Promise<string>;
+}
+
+/** Run the retention job daily through pg-boss. Rerunning after a failure is safe. */
+export async function scheduleRetention(
+  boss: RetentionQueue,
+  run: () => Promise<RetentionResult>,
+  cron: string = RETENTION_CRON,
+): Promise<void> {
+  await boss.createQueue(RETENTION_QUEUE);
+  await boss.schedule(RETENTION_QUEUE, cron, null, { tz: 'UTC' });
+  await boss.work(RETENTION_QUEUE, run);
+}

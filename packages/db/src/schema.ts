@@ -38,7 +38,12 @@ export type ClassUseFor = UseFor | 'off';
 export type IndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 export type ExportKind =
-  'template' | 'data_checks' | 'standards_alignment' | 'drafted_rows' | 'class_progress';
+  | 'template'
+  | 'data_checks'
+  | 'standards_alignment'
+  | 'drafted_rows'
+  | 'class_progress'
+  | 'student_record';
 export type TextKind = 'chat' | 'teachback' | 'transcript';
 /** A column-mapping entry, as in VersionSource. */
 export type ColumnMapping = VersionSource['column_mapping'];
@@ -46,9 +51,14 @@ export type ColumnMapping = VersionSource['column_mapping'];
 export interface OrganizationTable {
   id: Generated<string>;
   name: string;
+  /** Days typed student text is kept (§10; default 90). */
   text_retention_days: Generated<number>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** Days AI transcripts are kept (§10; default 90, from 0012). */
+  ai_retention_days: Generated<number>;
+  /** Days export files are kept (default 7, from 0012). */
+  export_retention_days: Generated<number>;
 }
 
 export interface AppUserTable {
@@ -314,6 +324,20 @@ export interface AuditEventTable {
   target_id: string | null;
   detail: ColumnType<Record<string, unknown>, JsonText<Record<string, unknown>> | undefined, never>;
   at: CreatedAt;
+  /** The class the change belongs to, for a class's history (0012). */
+  class_id: string | null;
+  curriculum_id: string | null;
+  /** Only what changed, with secrets redacted. Null for a create (before) or a delete (after). */
+  before: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
+  after: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
 }
 
 export interface AiInteractionTable {
@@ -366,7 +390,15 @@ export type TableName = keyof Database;
  * here must be added there too; `columns.test.ts` compares this with the live schema.
  */
 export const COLUMNS = {
-  organization: ['id', 'name', 'text_retention_days', 'created_at', 'updated_at'],
+  organization: [
+    'id',
+    'name',
+    'text_retention_days',
+    'created_at',
+    'updated_at',
+    'ai_retention_days',
+    'export_retention_days',
+  ],
   app_user: [
     'id',
     'org_id',
@@ -563,7 +595,20 @@ export const COLUMNS = {
     'finished_at',
     'updated_at',
   ],
-  audit_event: ['id', 'org_id', 'actor_id', 'action', 'target_type', 'target_id', 'detail', 'at'],
+  audit_event: [
+    'id',
+    'org_id',
+    'actor_id',
+    'action',
+    'target_type',
+    'target_id',
+    'detail',
+    'at',
+    'class_id',
+    'curriculum_id',
+    'before',
+    'after',
+  ],
   ai_interaction: [
     'id',
     'org_id',

@@ -1,6 +1,6 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
 import pg from 'pg';
-import { CLASS_SETTING, ORG_SETTING } from './migrations/helpers.js';
+import { ACTOR_SETTING, CLASS_SETTING, ORG_SETTING } from './migrations/helpers.js';
 import type { Database, JsonText } from './schema.js';
 
 export type Db = Kysely<Database>;
@@ -22,7 +22,16 @@ const types = {
 };
 
 export function createPool(connectionString: string, config: pg.PoolConfig = {}): pg.Pool {
-  return new pg.Pool({ connectionString, types, ...config });
+  const pool = new pg.Pool({ connectionString, types, ...config });
+  // A connection can end under us (a server restart, a killed backend). The query in
+  // flight fails and the pool replaces the connection; without these listeners the
+  // 'error' event would crash the process instead.
+  const lost = (error: Error) => {
+    console.warn(`database connection lost: ${error.message}`);
+  };
+  pool.on('error', lost);
+  pool.on('connect', (client) => client.on('error', lost));
+  return pool;
 }
 
 export function createDb(connectionString: string, config: pg.PoolConfig = {}): Db {
@@ -72,4 +81,13 @@ export function withClass<T>(
     await sql`SELECT set_config(${CLASS_SETTING}, ${classId}, true)`.execute(trx);
     return fn(trx);
   });
+}
+
+/**
+ * Name the user the transaction acts for. Audit rows written by triggers (0012) and
+ * by `writeAudit` record them as the actor. Call inside `withOrg`: the user must
+ * belong to that organization, or the audited write fails.
+ */
+export async function actAs(trx: Transaction<Database>, actorId: string): Promise<void> {
+  await sql`SELECT set_config(${ACTOR_SETTING}, ${actorId}, true)`.execute(trx);
 }
