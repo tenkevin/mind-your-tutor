@@ -105,9 +105,22 @@
       ],
       "done_when": "Migrations create every entity in ARCHITECTURE.md section 5 and run in CI",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f4",
-      "updated": "2026-10-22"
+      "updated": "2026-10-23"
+    },
+    {
+      "id": "F4b",
+      "title": "Close F4 QA findings: event-key ledger isolation, class-scoped library settings",
+      "size": 1,
+      "deps": [
+        "F4"
+      ],
+      "done_when": "Findings 1, 2 and 4 in docs/qa/reports/F4.md fixed by a new migration with database tests: no cross-org writes or probing via interaction_event_key, class_library_setting class-scoped (D11), app role TEMP revoked",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
     },
     {
       "id": "F5",
@@ -279,7 +292,8 @@
       "deps": [
         "M1",
         "F4",
-        "F5"
+        "F5",
+        "F4b"
       ],
       "done_when": "POST /events validates, sets seq, drops duplicate ids and writes partitioned rows; typed text goes to InteractionText; events stream continuously from the client with an offline queue",
       "placeholder": true,
@@ -475,9 +489,10 @@
       "size": 2,
       "deps": [
         "A1",
-        "C4"
+        "C4",
+        "F4b"
       ],
-      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings",
+      "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings. Vector search always filters by curriculum (and class for uploads) or uses hnsw.iterative_scan, so row-level security never returns fewer than k results (F4 QA finding 3)",
       "placeholder": false,
       "status": "todo",
       "owner": null,
