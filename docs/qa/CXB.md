@@ -17,3 +17,6 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 | Codex-C9-review-2ae52d4.md | Polish the missing-Personas info into two sentences; existing meaning is correct | Future importer usability criteria |
 | Codex-C2cx5-review-7dd6511.md | Checker issues name affected ids and fix columns but not source rows; a UI may resolve ids to imported rows | T2 criteria |
 | Codex-F5-review-dc3c902.md S2 | Auth callback used-state and failed-callback limiter are per process (`apps/api/src/routes/auth.ts:57`, `:118`, `limiter.ts`); share or document before multi-process deployment | Deployment / L1 criteria |
+| Codex-F6-review-0412b2c.md | Retention job is registered (`scheduleRetention`) but no deployed worker bootstraps it; verify a real daily run | Deployment / L1 criteria |
+| Codex-F6-review-0412b2c.md | F5, F4cx1 and F6 each add a `0012` migration: renumber and re-run the inventory on the combined schema; separate branch PASSes don't prove the combination | Coordinator, at each of those merges |
+| Codex-F6-review-0412b2c.md | Backup expiry and operator procedures are documented, not tested | Deployment / L1 criteria |
