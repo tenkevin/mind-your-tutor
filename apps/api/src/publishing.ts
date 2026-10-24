@@ -20,7 +20,7 @@ import {
   type StudentsReceiving,
   type VersionIssue,
 } from '@ideamap/contracts';
-import { json, type Database, type UserRole } from '@ideamap/db';
+import { actAs, json, type Database, type UserRole } from '@ideamap/db';
 import { diffPacks } from '@ideamap/domain';
 import type { Caller, OrgScope } from '@ideamap/worker';
 import type { Selectable, Transaction } from 'kysely';
@@ -339,6 +339,8 @@ export async function publish(
   const sortedIds = [...classIds].sort();
 
   return deps.scope(caller.orgId, async (trx) => {
+    // F6's audit triggers record the caller as the actor of the pin and status changes.
+    await actAs(trx, caller.userId);
     const version = await loadVersion(trx, versionId);
     // One publish at a time per curriculum: locking it orders concurrent publishes
     // and makes the idempotency check below race-free.
@@ -429,6 +431,7 @@ export async function publish(
         action: PUBLISH_ACTION,
         target_type: 'curriculum_version',
         target_id: version.id,
+        curriculum_id: version.curriculum_id,
         detail: json({
           curriculum_id: version.curriculum_id,
           version_number: version.number,
@@ -456,6 +459,7 @@ export async function repin(
   uuid(classId, NO_CLASS);
   const { version_id: versionId } = body(RepinRequestSchema, request);
   return deps.scope(caller.orgId, async (trx) => {
+    await actAs(trx, caller.userId);
     const cls = await trx
       .selectFrom('class')
       .select(['id', 'curriculum_id', 'pinned_version_id', 'teacher_id'])
@@ -495,6 +499,8 @@ export async function repin(
           action: REPIN_ACTION,
           target_type: 'class',
           target_id: cls.id,
+          class_id: cls.id,
+          curriculum_id: cls.curriculum_id,
           detail: json({ curriculum_id: cls.curriculum_id, classes: [move] }),
         })
         .execute();

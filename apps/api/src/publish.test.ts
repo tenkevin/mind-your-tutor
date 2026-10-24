@@ -99,7 +99,16 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
+  /** C5's own audit records (F6's triggers also log the row changes underneath). */
   const audits = () =>
+    t.db
+      .selectFrom('audit_event')
+      .selectAll()
+      .where('action', 'in', ['curriculum_version.publish', 'class.repin'])
+      .orderBy('at')
+      .orderBy('id')
+      .execute();
+  const allAudits = () =>
     t.db.selectFrom('audit_event').selectAll().orderBy('at').orderBy('id').execute();
 
   const call = (
@@ -385,7 +394,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   it('C5-F8: all or nothing when a class fails part-way, or is missing', async () => {
     const versionC = await draft(a, a.curriculumId, packB());
     const before = await pins();
-    const auditCount = (await audits()).length;
+    const auditCount = (await allAudits()).length;
     // Make the update of class 2 fail inside the publish's transaction.
     await sql`
       CREATE FUNCTION public.fail_for_class() RETURNS trigger LANGUAGE plpgsql
@@ -414,7 +423,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(missing.statusCode).toBe(403);
     expect(await pins()).toEqual(before);
     expect((await version(versionC)).status).toBe('draft');
-    expect((await audits()).length).toBe(auditCount);
+    expect((await allAudits()).length).toBe(auditCount);
   });
 
   it('C5-F8: a repeated Idempotency-Key is a no-op with the same result and one audit record', async () => {
@@ -428,6 +437,19 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(await pins()).toEqual(pinned);
     const records = (await audits()).filter((e) => e.target_id === versionD);
     expect(records).toHaveLength(1);
+    // F6's trigger logged the publish and the two pins once, as this caller.
+    const rows = (await allAudits()).filter(
+      (e) =>
+        e.target_id === versionD ||
+        (e.after as { pinned_version_id?: string } | null)?.pinned_version_id === versionD,
+    );
+    expect(rows.map((e) => e.action).sort()).toEqual([
+      'class.updated',
+      'class.updated',
+      'curriculum_version.publish',
+      'version.published',
+    ]);
+    expect(rows.every((e) => e.actor_id === a.teacher.userId)).toBe(true);
     // The key itself isn't stored.
     expect(JSON.stringify(records[0]!.detail)).not.toContain('publish-d');
 
@@ -600,7 +622,12 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
         classes: [{ class_id: ids.c1, from_version_id: versionB, to_version_id: versionA }],
       },
     });
-    const text = JSON.stringify(events);
+    // With the pin and status rows F6's triggers wrote underneath.
+    const underneath = (await allAudits()).filter(
+      (e) => e.action === 'class.updated' || e.action.startsWith('version.'),
+    );
+    expect(underneath.length).toBeGreaterThan(0);
+    const text = JSON.stringify([...events, ...underneath]);
     expect(text).not.toMatch(/Test (student|teacher|admin)/);
     for (const n of [1, 2, 3, 4, 5]) expect(text).not.toContain(ids[`s${n}`]);
   });

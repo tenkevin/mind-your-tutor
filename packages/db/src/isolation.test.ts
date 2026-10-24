@@ -307,16 +307,20 @@ describe.skipIf(!hasDatabase)("the app role's privileges (F4b-S1)", () => {
     expect(code).toBe(PG.insufficientPrivilege);
   });
 
-  it('may execute only the functions its policies call, in the app schema', async () => {
+  it('may execute only the functions its policies and audit triggers call, in the app schema', async () => {
     const { rows } = await sql<{ fn: string }>`
       SELECT p.oid::regprocedure::text AS fn FROM pg_proc p
       WHERE p.pronamespace = 'app'::regnamespace
         AND has_function_privilege(${APP_ROLE}, p.oid, 'EXECUTE')
       ORDER BY 1
     `.execute(t.db);
+    // The audit triggers (F6) run as the caller and call current_actor_id and
+    // redact_secrets.
     expect(rows.map((r) => r.fn)).toEqual([
+      'app.current_actor_id()',
       'app.current_class_id()',
       'app.current_org_id()',
+      'app.redact_secrets(jsonb)',
       'app.sso_tenant_org(text,text)',
     ]);
   });

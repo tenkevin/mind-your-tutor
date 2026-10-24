@@ -40,7 +40,12 @@ export type ClassUseFor = UseFor | 'off';
 export type IndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 export type ExportKind =
-  'template' | 'data_checks' | 'standards_alignment' | 'drafted_rows' | 'class_progress';
+  | 'template'
+  | 'data_checks'
+  | 'standards_alignment'
+  | 'drafted_rows'
+  | 'class_progress'
+  | 'student_record';
 export type TextKind = 'chat' | 'teachback' | 'transcript';
 /** A column-mapping entry, as in VersionSource. */
 export type ColumnMapping = VersionSource['column_mapping'];
@@ -48,9 +53,16 @@ export type ColumnMapping = VersionSource['column_mapping'];
 export interface OrganizationTable {
   id: Generated<string>;
   name: string;
+  /** Days typed student text is kept (§10; default 90). */
   text_retention_days: Generated<number>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** Days AI transcripts are kept (§10; default 90, from 0015). */
+  ai_retention_days: Generated<number>;
+  /** Days export files are kept (default 7, from 0015). */
+  export_retention_days: Generated<number>;
+  /** Days sign-in sessions are kept after expiry or revocation (default 30, from 0015). */
+  session_retention_days: Generated<number>;
 }
 
 export interface AppUserTable {
@@ -315,6 +327,13 @@ export interface ExportJobTable {
   updated_at: CreatedAt;
 }
 
+/** Which students an export file holds (0015). */
+export interface ExportSubjectTable {
+  export_job_id: string;
+  student_id: string;
+  org_id: string;
+}
+
 export interface AuditEventTable {
   id: Generated<string>;
   org_id: string;
@@ -324,6 +343,20 @@ export interface AuditEventTable {
   target_id: string | null;
   detail: ColumnType<Record<string, unknown>, JsonText<Record<string, unknown>> | undefined, never>;
   at: CreatedAt;
+  /** The class the change belongs to, for a class's history (0015). */
+  class_id: string | null;
+  curriculum_id: string | null;
+  /** Only what changed, with secrets redacted. Null for a create (before) or a delete (after). */
+  before: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
+  after: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
 }
 
 export interface AiInteractionTable {
@@ -386,6 +419,7 @@ export interface Database {
   progress_snapshot: ProgressSnapshotTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
+  export_subject: ExportSubjectTable;
   audit_event: AuditEventTable;
   ai_interaction: AiInteractionTable;
   sso_tenant: SsoTenantTable;
@@ -399,7 +433,16 @@ export type TableName = keyof Database;
  * here must be added there too; `columns.test.ts` compares this with the live schema.
  */
 export const COLUMNS = {
-  organization: ['id', 'name', 'text_retention_days', 'created_at', 'updated_at'],
+  organization: [
+    'id',
+    'name',
+    'text_retention_days',
+    'created_at',
+    'updated_at',
+    'ai_retention_days',
+    'export_retention_days',
+    'session_retention_days',
+  ],
   app_user: [
     'id',
     'org_id',
@@ -599,7 +642,21 @@ export const COLUMNS = {
     'finished_at',
     'updated_at',
   ],
-  audit_event: ['id', 'org_id', 'actor_id', 'action', 'target_type', 'target_id', 'detail', 'at'],
+  export_subject: ['export_job_id', 'student_id', 'org_id'],
+  audit_event: [
+    'id',
+    'org_id',
+    'actor_id',
+    'action',
+    'target_type',
+    'target_id',
+    'detail',
+    'at',
+    'class_id',
+    'curriculum_id',
+    'before',
+    'after',
+  ],
   ai_interaction: [
     'id',
     'org_id',
