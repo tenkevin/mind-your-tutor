@@ -1,6 +1,8 @@
 import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
+import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
+import { createBoss, ensureQueues, orgScope } from '@ideamap/worker';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { loadConfig, type AuthConfig } from './config.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
@@ -56,16 +58,19 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   accessRoutes(app, deps);
   const { imports } = options;
   if (imports) {
-    // Its own scope, for the upload body parser and error handler. The policy hooks
-    // above still apply; the caller is the signed-in session.
-    app.register(async (scope) =>
-      importRoutes(scope, {
-        deps: imports.deps,
-        authenticate: (req) =>
-          req.session
-            ? { orgId: req.session.orgId, userId: req.session.userId, role: req.session.role }
-            : null,
-      }),
+    // Its own scope, for the upload body parser and error handler, under /api like the
+    // other app routes (the apps proxy /api). The policy hooks above still apply; the
+    // caller is the signed-in session.
+    app.register(
+      async (scope) =>
+        importRoutes(scope, {
+          deps: imports.deps,
+          authenticate: (req) =>
+            req.session
+              ? { orgId: req.session.orgId, userId: req.session.userId, role: req.session.role }
+              : null,
+        }),
+      { prefix: '/api' },
     );
   }
 
@@ -84,17 +89,60 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   return app;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const config = loadConfig();
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL must be set.');
+/**
+ * C4's imports for a running API: jobs go to pg-boss in the same database (its schema
+ * comes from migration 0003), uploads to a directory the worker reads too.
+ */
+export async function startImports(
+  db: Db,
+  databaseUrl: string,
+  uploadDir: string,
+): Promise<{ imports: NonNullable<ServerOptions['imports']>; stop: () => Promise<void> }> {
+  // The API only sends jobs; the worker supervises the queues.
+  const boss = createBoss(databaseUrl, { supervise: false });
+  boss.on('error', (error) => console.error(error));
+  await boss.start();
+  await ensureQueues(boss);
+  return {
+    imports: { deps: { scope: orgScope(db), boss, store: new FileObjectStore(uploadDir) } },
+    stop: () => boss.stop({ graceful: true }),
+  };
+}
+
+/**
+ * The API as deployed (T2-F8): sign-in, every app route, C4's imports and, with
+ * EXPORT_DIR, F6's privacy routes. Needs DATABASE_URL, UPLOAD_DIR and F5's settings.
+ */
+export async function startServer(
+  env: Record<string, string | undefined> = process.env,
+  options: { logger?: boolean } = {},
+): Promise<{ app: FastifyInstance; close: () => Promise<void> }> {
+  const config = loadConfig(env);
+  const url = env.DATABASE_URL;
+  const uploads = env.UPLOAD_DIR;
+  if (!url || !uploads) throw new Error('Set DATABASE_URL and UPLOAD_DIR.');
+  const db = createDb(url);
+  const { imports, stop } = await startImports(db, url, uploads);
   // FERPA export files go to EXPORT_DIR; without it the privacy routes are left out.
-  const exportDir = process.env.EXPORT_DIR;
+  const exportDir = env.EXPORT_DIR;
   const app = buildServer({
-    db: createDb(url),
+    db,
     config,
-    logger: true,
+    logger: options.logger ?? true,
+    imports,
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
   });
+  return {
+    app,
+    close: async () => {
+      await app.close();
+      await stop();
+      await db.destroy();
+    },
+  };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { app } = await startServer();
   await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' });
 }

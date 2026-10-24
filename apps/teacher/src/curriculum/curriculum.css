@@ -1,0 +1,316 @@
+/* Teacher Settings → Curriculum data (T2), after the sec-source section of
+   project/Teacher Settings.dc.html. Every value is a Nocturne token, or the
+   prototype's own size where Nocturne has no token for it.
+
+   Text pairs (D10: 4.5:1, no new exceptions): neutral-100 and -200 on surface,
+   bg and accent-900 are 11.9–17.1:1; neutral-400 on surface 8.2:1, on bg 9.4:1,
+   on accent-900 8.0:1; accent-200 and -300 on bg 11.6–14.2:1. The step cards'
+   borders are decorative: each step says its status in words and with an icon
+   shape (circle, spinner, check, cross), so colour is never the only signal. */
+
+.cdata {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+.cdata p {
+  margin: 0;
+}
+.cdata-strong {
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.cdata-muted {
+  font-size: 12px;
+  color: var(--color-neutral-400);
+}
+
+.cdata-problem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent-600);
+  background: var(--color-accent-900);
+  color: var(--color-neutral-100);
+  font-size: 13px;
+}
+.cdata-problem svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-accent-200);
+}
+
+/* The source card. */
+.cdata-source {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.cdata-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.cdata-source-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-900);
+  border: 1px solid var(--color-accent-600);
+  color: var(--color-accent-200);
+}
+.cdata-source-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.cdata-source-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+.cdata-source-name {
+  font: 500 15px var(--font-heading);
+  overflow-wrap: anywhere;
+}
+.cdata-source-meta {
+  font-size: 12px;
+  color: var(--color-neutral-400);
+}
+.cdata-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cdata-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cdata-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdata-tabs li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: var(--color-bg);
+  font-size: 12px;
+  color: var(--color-neutral-200);
+}
+.cdata-tabs svg {
+  color: var(--color-accent-300);
+}
+.cdata-tab-rows {
+  color: var(--color-neutral-400);
+}
+
+/* Pipeline steps. */
+.cdata-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cdata-eyebrow {
+  margin: 0;
+  font: 400 11px var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-400);
+}
+.cdata-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdata-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-800);
+  background: var(--color-bg);
+}
+.cdata-step[data-status='running'] {
+  border-color: var(--color-accent-600);
+  background: var(--color-accent-900);
+}
+.cdata-step-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.cdata-step-name svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-neutral-400);
+}
+.cdata-step[data-status='done'] .cdata-step-name svg,
+.cdata-step[data-status='running'] .cdata-step-name svg {
+  color: var(--color-accent-300);
+}
+.cdata-step[data-status='failed'] .cdata-step-name svg {
+  color: var(--color-accent-200);
+}
+.cdata-step-sub {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-neutral-400);
+}
+
+/* Failure, publish state and data checks. */
+.cdata-failure,
+.cdata-publish {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  font-size: 13px;
+  color: var(--color-neutral-200);
+}
+.cdata-failure,
+.cdata-publish[data-state='blocked'] {
+  border: 1px solid var(--color-accent-600);
+  background: var(--color-accent-900);
+}
+.cdata-failure > svg,
+.cdata-publish > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--color-accent-300);
+}
+.cdata-failure > svg,
+.cdata-publish[data-state='blocked'] > svg {
+  color: var(--color-accent-200);
+}
+.cdata-failure-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cdata-problems {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--color-neutral-200);
+  overflow-wrap: anywhere;
+}
+
+.cdata-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cdata-checks-h {
+  margin: 0;
+  font: 400 12px var(--font-body);
+  color: var(--color-neutral-400);
+}
+.cdata-groups,
+.cdata-folded {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdata-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.cdata-group > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+.cdata-group[data-level='error'] > svg {
+  color: var(--color-accent-200);
+}
+.cdata-group[data-level='warning'] > svg {
+  color: var(--color-accent-300);
+}
+.cdata-group[data-level='info'] > svg {
+  color: var(--color-neutral-300);
+}
+.cdata-group-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cdata-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.cdata-level {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-300);
+}
+.cdata-issue-text {
+  font-size: 13px;
+  color: var(--color-neutral-100);
+  overflow-wrap: anywhere;
+}
+.cdata-at {
+  color: var(--color-neutral-400);
+}
+.cdata-items {
+  font-size: 11px;
+  color: var(--color-neutral-400);
+  overflow-wrap: anywhere;
+}
+.cdata-more summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-accent-300);
+}
+.cdata-more[open] summary {
+  margin-bottom: 4px;
+}

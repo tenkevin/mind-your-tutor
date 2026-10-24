@@ -46,7 +46,11 @@ const ROUTE_URLS = [
 ];
 
 /** C4's routes, registered when the server is given import deps. */
-const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+const IMPORT_ROUTE_URLS = [
+  '/api/curricula/:curriculumId/imports',
+  '/api/curricula/:curriculumId/imports/latest',
+  '/api/imports/:jobId',
+];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
@@ -104,10 +108,15 @@ describe('C4 import routes join the registry (F5-F4)', () => {
     expect(imports.map((r) => r.url).sort()).toEqual([...IMPORT_ROUTE_URLS].sort());
     await app.close();
     expect(imports.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
-      'GET /imports/:jobId',
-      'POST /curricula/:curriculumId/imports',
+      'GET /api/curricula/:curriculumId/imports/latest',
+      'GET /api/imports/:jobId',
+      'POST /api/curricula/:curriculumId/imports',
     ]);
     expect(imports.map((r) => r.policy)).toEqual([
+      {
+        roles: ['admin', 'author', 'teacher'],
+        scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+      },
       {
         roles: ['admin', 'author', 'teacher'],
         scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
@@ -165,7 +174,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     };
     const started = await as(api, who.admin)(
       'POST',
-      `/curricula/${api.sample.curricula.a}/imports`,
+      `/api/curricula/${api.sample.curricula.a}/imports`,
       PACK,
       UPLOAD,
     );
@@ -250,13 +259,18 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         },
       },
       {
-        route: '/curricula/:curriculumId/imports',
+        route: '/api/curricula/:curriculumId/imports',
         method: 'POST',
-        url: `/curricula/${curricula.a}/imports`,
+        url: `/api/curricula/${curricula.a}/imports`,
         body: PACK,
         headers: UPLOAD,
       },
-      { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
+      {
+        route: '/api/curricula/:curriculumId/imports/latest',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/imports/latest`,
+      },
+      { route: '/api/imports/:jobId', method: 'GET', url: `/api/imports/${jobId}` },
       // F6: aimed at another student of org A, so deleting them leaves the sweep's
       // student session alone.
       {
@@ -329,8 +343,10 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // A teacher reads the defaults of a curriculum they teach (A2 also uses curriculum A).
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
     // C4: staff in the curriculum's org may import into it and read its jobs.
-    'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
-    'GET /imports/:jobId': ['admin', 'otherClassTeacher'],
+    'POST /api/curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
+    'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
+    // T2: the same staff read the Curriculum data section.
+    'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {

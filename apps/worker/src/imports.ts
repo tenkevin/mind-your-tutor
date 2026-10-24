@@ -1,13 +1,17 @@
 import { createHash } from 'node:crypto';
 import {
   canPublishIssues,
+  CurriculumDataResponseSchema,
+  groupVersionIssues,
   IdempotencyKeySchema,
   ImportJobPayloadSchema,
   ImportJobViewSchema,
   pendingSteps,
   QUEUES,
+  TAB_NAMES,
   VersionIssuesSchema,
   VersionSourceSchema,
+  type CurriculumDataResponse,
   type ImportFailure,
   type ImportIssue,
   type ImportJobView,
@@ -15,6 +19,7 @@ import {
   type ImportStepName,
   type LibraryIndexPayload,
   type Pack,
+  type TabName,
   type VersionSource,
 } from '@ideamap/contracts';
 import {
@@ -265,6 +270,105 @@ export async function getImportJob(
     : null;
   if (!job) throw new ImportRequestError(404, 'There is no such import.');
   return job;
+}
+
+/**
+ * Teacher Settings → Curriculum data (T2): the newest import job and the newest
+ * version, with its issues grouped by cause. A curriculum the caller's org can't see
+ * is refused like one that doesn't exist.
+ */
+export async function getCurriculumData(
+  deps: Pick<ImportDeps, 'scope'>,
+  caller: Caller,
+  curriculumId: string,
+): Promise<CurriculumDataResponse> {
+  mayImport(caller);
+  const data = Uuid.safeParse(curriculumId).success
+    ? await deps.scope(caller.orgId, async (trx) => {
+        const curriculum = await trx
+          .selectFrom('curriculum')
+          .select('id')
+          .where('id', '=', curriculumId)
+          .executeTakeFirst();
+        if (!curriculum) return null;
+        const latest = await trx
+          .selectFrom('import_job')
+          .select(['id', 'source', 'version_id', 'created_at'])
+          .where('curriculum_id', '=', curriculumId)
+          .orderBy('created_at', 'desc')
+          .orderBy('id', 'desc')
+          .limit(1)
+          .executeTakeFirst();
+        const version = await trx
+          .selectFrom('curriculum_version')
+          .select(['id', 'number', 'status', 'issues', 'pack', 'source', 'created_at'])
+          .where('curriculum_id', '=', curriculumId)
+          .orderBy('number', 'desc')
+          .limit(1)
+          .executeTakeFirst();
+        // "Unchanged since last import": the same bytes as the version before this job.
+        let unchanged = false;
+        if (latest) {
+          let before = trx
+            .selectFrom('curriculum_version')
+            .select(sql<string>`source->>'checksum'`.as('checksum'))
+            .where('curriculum_id', '=', curriculumId)
+            .where('created_at', '<', latest.created_at);
+          if (latest.version_id) before = before.where('id', '!=', latest.version_id);
+          const previous = await before.orderBy('number', 'desc').limit(1).executeTakeFirst();
+          unchanged = previous?.checksum === latest.source.checksum;
+        }
+        return {
+          job: latest ? await loadView(trx, latest.id) : null,
+          unchanged,
+          version,
+        };
+      })
+    : null;
+  if (!data) throw new ImportRequestError(404, 'There is no such curriculum.');
+  const { version } = data;
+  return CurriculumDataResponseSchema.parse({
+    job: data.job,
+    unchanged: data.unchanged,
+    version: version
+      ? {
+          id: version.id,
+          number: version.number,
+          status: version.status,
+          can_publish: canPublishIssues(version.issues),
+          created_at: version.created_at.toISOString(),
+          source: {
+            kind: version.source.kind,
+            file_name: version.source.file_name,
+            checksum: version.source.checksum,
+          },
+          tabs: TAB_NAMES.map((tab) => ({ tab, rows: tabRows(version.pack, tab) })),
+          groups: groupVersionIssues(version.issues),
+        }
+      : null,
+  });
+}
+
+/** Rows in one tab of a pack, as the sheet has them (Course is key/value rows). */
+function tabRows(pack: Pack, tab: TabName): number {
+  switch (tab) {
+    case 'Course':
+      return Object.values(pack.course).filter((v) => v !== null && v !== undefined).length;
+    case 'Units':
+      return pack.units.length;
+    case 'Ideas':
+      return pack.ideas.length;
+    case 'Links':
+      return pack.links.length;
+    case 'Categories':
+      return pack.categories.length;
+    case 'Assessment':
+      return pack.assessment.length;
+    case 'Personas':
+      return pack.personas.length;
+    case 'Library':
+      return pack.library.length;
+  }
 }
 
 // ---------------------------------------------------------------------------
