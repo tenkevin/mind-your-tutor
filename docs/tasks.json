@@ -276,9 +276,9 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c6",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "C7",
@@ -354,9 +354,9 @@
       ],
       "done_when": "Every §8.2 event type (D19) has a zod schema with its educational level in packages/tracker or packages/contracts. Unknown types and forbidden fields (IP, device, location, free text) are rejected",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-m1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "M2",
@@ -370,9 +370,9 @@
       ],
       "done_when": "POST /events validates against M1, sets seq and level, drops duplicate ids, rejects unpinned versions and non-catalogue types, and writes partitioned rows; typed text goes to InteractionText anonymised (D26); the client batches with an offline queue; D22 retention and D24 opt-out flags are honoured",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-m2",
+      "updated": "2026-10-24"
     },
     {
       "id": "M3",
