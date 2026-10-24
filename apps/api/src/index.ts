@@ -1,7 +1,11 @@
 import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
-import Fastify, { type FastifyInstance, type FastifyRequest, type FastifyServerOptions } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyRequest,
+  type FastifyServerOptions,
+} from 'fastify';
 import { anthropicProvider } from './ai/anthropic.js';
 import { loadAiConfig } from './ai/config.js';
 import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
