@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { CSRF_HEADER } from '@ideamap/contracts';
+import type { ExportStore } from '@ideamap/db';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
+import { STUDENT_PRIVACY_POLICY } from './privacy.js';
 import {
   as,
   fromApp,
@@ -33,6 +35,7 @@ const ROUTE_URLS = [
   '/api/me',
   '/api/session',
   '/api/classes',
+  '/api/classes/:classId/header',
   '/api/classes/:classId/config',
   '/api/classes/:classId/roster',
   '/api/classes/:classId/library',
@@ -44,6 +47,13 @@ const ROUTE_URLS = [
 
 /** C4's routes, registered when the server is given import deps. */
 const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+/** F6's FERPA routes, registered when the server is given an export store. */
+const PRIVACY_ROUTE_URLS = [
+  '/api/privacy/students/:studentId/export',
+  '/api/privacy/students/:studentId',
+];
+/** An export store that keeps nothing, for sweeps that only check access. */
+const NO_FILES: ExportStore = { put: async () => {}, remove: async () => {} };
 const PACK = readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url));
 const UPLOAD = { 'content-type': 'application/octet-stream', 'x-file-name': 'pack.json' };
 
@@ -110,6 +120,30 @@ describe('C4 import routes join the registry (F5-F4)', () => {
   });
 });
 
+describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
+  it('declares an admin-only policy for the student in the caller org', async () => {
+    const app = buildServer({
+      db: undefined as never,
+      config: offlineConfig,
+      privacy: { store: NO_FILES },
+    });
+    await app.ready();
+    const privacy = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    expect(privacy.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
+      'DELETE /api/privacy/students/:studentId',
+      'POST /api/privacy/students/:studentId/export',
+    ]);
+    for (const route of privacy) {
+      expect(route.policy).toEqual(STUDENT_PRIVACY_POLICY);
+      expect(route.policy).toEqual({
+        roles: ['admin'],
+        scope: { kind: 'user', param: 'studentId' },
+      });
+    }
+  });
+});
+
 describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let api: TestApi;
   let who: Record<
@@ -118,8 +152,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   >;
   let jobId = '';
   beforeAll(async () => {
-    // With C4's import routes registered, so the sweep covers them too.
-    api = await startApi({}, { imports: true });
+    // With C4's import routes and F6's privacy routes registered, so the sweep covers
+    // them too.
+    api = await startApi({}, { imports: true, privacy: NO_FILES });
     const { users, orgs } = api.sample;
     who = {
       admin: await sessionFor(api, users['admin-a'], orgs.a),
@@ -143,7 +178,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
 
   /** Concrete requests for each protected route, aimed at org A's class A1. */
   function requests(): {
-    method: 'GET' | 'POST' | 'PUT';
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
     url: string;
     body?: unknown;
     headers?: Record<string, string>;
@@ -154,6 +189,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       { route: '/api/me', method: 'GET', url: '/api/me' },
       { route: '/api/session', method: 'GET', url: '/api/session' },
       { route: '/api/classes', method: 'GET', url: '/api/classes' },
+      {
+        route: '/api/classes/:classId/header',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/header`,
+      },
       {
         route: '/api/classes/:classId/config',
         method: 'GET',
@@ -217,6 +257,18 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         headers: UPLOAD,
       },
       { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
+      // F6: aimed at another student of org A, so deleting them leaves the sweep's
+      // student session alone.
+      {
+        route: '/api/privacy/students/:studentId/export',
+        method: 'POST',
+        url: `/api/privacy/students/${users['student-a2']}/export`,
+      },
+      {
+        route: '/api/privacy/students/:studentId',
+        method: 'DELETE',
+        url: `/api/privacy/students/${users['student-a2']}`,
+      },
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -225,7 +277,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   it('covers every protected route', () => {
     const covered = new Set(requests().map((r) => r.route));
     expect(covered).toEqual(
-      new Set([...ROUTE_URLS.filter((u) => !PUBLIC.has(u)), ...IMPORT_ROUTE_URLS]),
+      new Set([
+        ...ROUTE_URLS.filter((u) => !PUBLIC.has(u)),
+        ...IMPORT_ROUTE_URLS,
+        ...PRIVACY_ROUTE_URLS,
+      ]),
     );
   });
 

@@ -179,7 +179,7 @@
       ],
       "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f6",
       "updated": "2026-10-23"
     },
@@ -429,9 +429,9 @@
       ],
       "done_when": "Teacher app shell with header, section nav and the Saving and Saved indicator, behind sign-in",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-t1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "T2",
@@ -540,9 +540,9 @@
       ],
       "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-a1",
+      "updated": "2026-10-24"
     },
     {
       "id": "A2",
@@ -799,7 +799,9 @@
       "size": 2,
       "deps": [
         "A2",
-        "M2"
+        "M2",
+        "A7",
+        "S5"
       ],
       "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded",
       "placeholder": false,
@@ -813,7 +815,8 @@
       "size": 2,
       "deps": [
         "A9",
-        "A5"
+        "A5",
+        "M6"
       ],
       "done_when": "Per D16: before any feedback reaches a student, rubric grounding, a separate verifier, and a tone and reading-level check run; low confidence or verifier disagreement routes it to the teacher; a question whose audit drifts past threshold switches to teacher review automatically",
       "placeholder": false,
@@ -859,7 +862,7 @@
       ],
       "done_when": "Per D17: shared student-app components give multiple means of representation (text, read-aloud, visual), action and expression (typed or spoken answers and challenges) and engagement (choice of mission and pacing); a UDL 3.0 checklist is added to the QA README for every student-facing task",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-s5",
       "updated": "2026-10-23"
     }

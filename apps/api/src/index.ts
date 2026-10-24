@@ -1,10 +1,11 @@
 import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
-import { createDb, type Db } from '@ideamap/db';
+import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { loadConfig, type AuthConfig } from './config.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
+import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
 import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
 import { authRoutes } from './routes/auth.js';
@@ -13,6 +14,7 @@ import { deriveKeys } from './tokens.js';
 export { loadConfig, type AuthConfig } from './config.js';
 export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
 export type { IdentityProvider } from './providers.js';
+export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
 
 export interface ServerOptions {
   db: Db;
@@ -24,6 +26,8 @@ export interface ServerOptions {
   logger?: boolean;
   /** Curriculum imports (C4); left out, the routes aren't registered. */
   imports?: Pick<ImportRoutesOptions, 'deps'>;
+  /** FERPA student export and delete (F6); left out, the routes aren't registered. */
+  privacy?: PrivacyRoutes;
 }
 
 export function buildServer(options: ServerOptions): FastifyInstance {
@@ -65,6 +69,9 @@ export function buildServer(options: ServerOptions): FastifyInstance {
     );
   }
 
+  // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).
+  if (options.privacy) privacyRoutes(app, options.privacy);
+
   // Fixed bodies, so unknown paths and internal errors aren't echoed back.
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
   app.setErrorHandler((error: { statusCode?: number }, req, reply) => {
@@ -81,6 +88,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const config = loadConfig();
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL must be set.');
-  const app = buildServer({ db: createDb(url), config, logger: true });
+  // FERPA export files go to EXPORT_DIR; without it the privacy routes are left out.
+  const exportDir = process.env.EXPORT_DIR;
+  const app = buildServer({
+    db: createDb(url),
+    config,
+    logger: true,
+    privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
+  });
   await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' });
 }

@@ -87,22 +87,101 @@ function render() {
   lines.push('', '## Done', '');
   lines.push(group('done').length ? group('done').map(t => `- ${t.id} ${t.title}${t.owner ? ' (' + t.owner + ')' : ''}`).join('\n') : '_Nothing done yet._');
 
-  lines.push('', '## Dependency map', '', 'Arrows point from a task to the tasks it unblocks. Thick arrows are the critical path. The letter in each ID is its phase: ' + data.phases.map(p => `${p.id} ${p.name}`).join(', ') + '.', '', '```mermaid', 'flowchart LR');
-  data.tasks.forEach(t => lines.push(`  ${t.id}["${t.id} · ${t.title.replace(/"/g, "'")}"]`));
-  data.tasks.forEach(t => t.deps.forEach(d => {
-    const onCrit = critSet.has(d) && critSet.has(t.id) && crit.path.indexOf(t.id) === crit.path.indexOf(d) + 1;
-    lines.push(`  ${d} ${onCrit ? '==>' : '-->'} ${t.id}`);
-  }));
-  lines.push('  classDef todo fill:#232532,stroke:#75798c,color:#e9e9ed');
-  lines.push('  classDef ready fill:#1d3329,stroke:#6fcf97,color:#e9e9ed');
-  lines.push('  classDef doing fill:#2b2741,stroke:#9184d9,color:#e9e9ed,stroke-width:2px');
-  lines.push('  classDef review fill:#3a2f1b,stroke:#e6b45c,color:#e9e9ed,stroke-width:2px');
-  lines.push('  classDef done fill:#1d3329,stroke:#6fcf97,color:#9397ab,stroke-dasharray:3 3');
-  lines.push('  classDef spec fill:#161826,stroke:#968ae0,color:#b2b6ca,stroke-dasharray:6 4');
-  const cls = t => (t.status === 'todo' ? (t.placeholder ? 'spec' : isReady(t) ? 'ready' : 'todo') : t.status);
-  STATUSES.concat('ready', 'spec').forEach(c => { const ids = data.tasks.filter(t => cls(t) === c).map(t => t.id); if (ids.length) lines.push(`  class ${ids.join(',')} ${c}`); });
-  lines.push('```', '', 'Key: green = ready, purple = in progress, amber = review, green dashed = done, grey = blocked, purple dashed = needs a spec.', '');
+  lines.push('', '## Dependency map', '', mapIntro(crit), '', '```mermaid', ...mapLines(crit, critSet), '```', '', MAP_KEY, '');
   return lines.join('\n');
+}
+
+// ---- Dependency map (drawing only; tasks.json is unchanged) ----
+// Lanes group open work by what it delivers, in priority order. Done tasks collapse into one node,
+// implied edges are dropped (transitive reduction over open tasks), and each task shows its slack:
+// how many weeks it can slip before the pilot does. Zero slack is the critical path.
+const LANES = [
+  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'M6', 'M7']],
+  ['tracker', 'Tracker and insight', ['M1', 'M2', 'M3', 'M4', 'M5']],
+  ['curriculum', 'Curriculum and publishing', ['F6', 'C5', 'C6', 'C7']],
+  ['teacher', 'Teacher console', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'A3', 'A4', 'A6']],
+  ['student', 'Student app', ['S5', 'S1', 'S2', 'S3', 'S4']],
+  ['launch', 'Pilot', ['L1']],
+  ['later', 'After the pilot', ['X1', 'X2']],
+];
+const PILOT = 'L1';
+const MAP_KEY = 'Key: red border = critical path (no slack); green = ready; purple = in progress; amber = in review; grey = waiting. The number under each task is its slack: weeks it can slip before the pilot does. Done work is collapsed into one box, and arrows already implied by another path are left out of the drawing (tasks.json keeps every dependency).';
+
+function slack() {
+  const ef = {}, ls = {};
+  const finish = id => ef[id] ?? (ef[id] = byId[id].size + Math.max(0, ...byId[id].deps.map(finish)));
+  data.tasks.forEach(t => finish(t.id));
+  // Slack is measured against the pilot; work that only follows the pilot has none to report.
+  const end = ef[PILOT];
+  const feeds = new Set(), up = id => { if (feeds.has(id)) return; feeds.add(id); byId[id].deps.forEach(up); };
+  up(PILOT);
+  const lf = {};
+  const latest = id => lf[id] ?? (lf[id] = Math.min(end, ...(dependents[id] || []).filter(c => feeds.has(c)).map(c => latest(c) - byId[c].size)));
+  return Object.fromEntries(data.tasks.map(t => [t.id, feeds.has(t.id) ? latest(t.id) - ef[t.id] : null]));
+}
+
+function openEdges() {
+  const open = new Set(data.tasks.filter(t => t.status !== 'done' && !t.placeholder).map(t => t.id));
+  const edges = [];
+  data.tasks.forEach(t => { if (open.has(t.id)) t.deps.forEach(d => { if (open.has(d)) edges.push([d, t.id]); }); });
+  const out = {};
+  edges.forEach(([a, b]) => (out[a] ||= []).push(b));
+  const reach = (from, to, skip) => {
+    const seen = new Set(), st = [from];
+    while (st.length) { const x = st.pop(); for (const y of out[x] || []) { if (x === from && y === skip) continue; if (y === to) return true; if (!seen.has(y)) { seen.add(y); st.push(y); } } }
+    return false;
+  };
+  return { open, edges: edges.filter(([a, b]) => !reach(a, b, b)) };
+}
+
+function mapIntro(crit) {
+  return `Open work only, grouped by what it delivers and ordered by priority. Critical path: ${crit.path.filter(id => byId[id].status !== 'done').join(' → ')} (about ${crit.weeks} weeks end to end). A rendered snapshot is in \`docs/plan-map.png\`.`;
+}
+
+function mapLines(crit, critSet) {
+  const sl = slack(), { open, edges } = openEdges();
+  const done = data.tasks.filter(t => t.status === 'done');
+  const cls = t => (t.status === 'todo' ? (t.placeholder ? 'spec' : isReady(t) ? 'ready' : 'todo') : t.status);
+  const label = t => `${t.id} · ${t.title.replace(/"/g, "'")}<br/><small>${sl[t.id] === null ? 'after the pilot' : sl[t.id] === 0 ? 'critical' : '+' + sl[t.id] + ' wk slack'}</small>`;
+  const L = ['flowchart LR', `  DONE(["Done: ${done.length} tasks<br/><small>${done.map(t => t.id).join(' ')}</small>"])`];
+  const placed = new Set();
+  LANES.forEach(([key, name, ids]) => {
+    const here = ids.filter(id => open.has(id));
+    if (!here.length) return;
+    L.push(`  subgraph ${key}["${name}"]`, '    direction LR');
+    here.forEach(id => { placed.add(id); L.push(`    ${id}["${label(byId[id])}"]`); });
+    L.push('  end');
+  });
+  const rest = [...open].filter(id => !placed.has(id));
+  if (rest.length) { L.push('  subgraph other["Other"]'); rest.forEach(id => L.push(`    ${id}["${label(byId[id])}"]`)); L.push('  end'); }
+  const roots = [...open].filter(id => !byId[id].deps.some(d => open.has(d)) && byId[id].status !== 'done');
+  roots.forEach(id => L.push(`  DONE -.-> ${id}`));
+  // Non-critical edges into the pilot collapse into one arrow per lane.
+  const laneOf = id => (LANES.find(([, , ids]) => ids.includes(id)) || ['other'])[0];
+  const laneToPilot = new Set();
+  edges.forEach(([a, b]) => {
+    if (b === PILOT && sl[a] !== 0 && laneOf(a) !== laneOf(PILOT)) { laneToPilot.add(laneOf(a)); return; }
+    L.push(`  ${a} ${sl[a] === 0 && sl[b] === 0 ? '==>' : '-->'} ${b}`);
+  });
+  laneToPilot.forEach(k => L.push(`  ${k} --> ${PILOT}`));
+  // Arrows: light grey by default, critical-path arrows red and thick.
+  const arrows = L.filter(x => / (-->|==>|-\.->) /.test(x));
+  L.push('  linkStyle default stroke:#8b8fa3,stroke-width:1.3px');
+  const critIdx = arrows.map((x, i) => (x.includes('==>') ? i : -1)).filter(i => i >= 0);
+  if (critIdx.length) L.push(`  linkStyle ${critIdx.join(',')} stroke:#e5484d,stroke-width:3px`);
+  LANES.forEach(([key]) => L.push(`  style ${key} fill:#161826,stroke:#3a3d52,color:#b2b6ca`));
+  L.push('  classDef todo fill:#232532,stroke:#75798c,color:#e9e9ed');
+  L.push('  classDef ready fill:#1d3329,stroke:#6fcf97,color:#e9e9ed');
+  L.push('  classDef doing fill:#2b2741,stroke:#9184d9,color:#e9e9ed,stroke-width:2px');
+  L.push('  classDef review fill:#3a2f1b,stroke:#e6b45c,color:#e9e9ed,stroke-width:2px');
+  L.push('  classDef spec fill:#161826,stroke:#968ae0,color:#b2b6ca,stroke-dasharray:6 4');
+  L.push('  classDef done fill:#1d3329,stroke:#6fcf97,color:#9397ab,stroke-dasharray:3 3');
+  L.push('  classDef crit stroke:#e5484d,stroke-width:3px');
+  ['todo', 'ready', 'doing', 'review', 'spec'].forEach(c => { const ids = [...open].filter(id => cls(byId[id]) === c); if (ids.length) L.push(`  class ${ids.join(',')} ${c}`); });
+  L.push('  class DONE done');
+  const crits = [...open].filter(id => sl[id] === 0);
+  if (crits.length) L.push(`  class ${crits.join(',')} crit`);
+  return L;
 }
 
 function save() {

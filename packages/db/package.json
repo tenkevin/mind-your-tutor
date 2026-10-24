@@ -10,7 +10,7 @@
       "default": "./dist/index.js"
     },
     "./testing": {
-      "@ideamap/source": "./src/test/harness.ts"
+      "@ideamap/source": "./src/test/index.ts"
     }
   },
   "scripts": {
