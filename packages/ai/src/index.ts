@@ -7,3 +7,5 @@ export type {
   PersonaOverride,
   PersonaTone,
 } from './personas.js';
+export { backstopText, totalMisses, BLURRED } from './backstop.js';
+export type { BackstopMisses, BackstopResult } from './backstop.js';

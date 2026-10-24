@@ -1,14 +1,18 @@
+import { TracingOptOutRequestSchema } from '@ideamap/contracts';
 import {
   deleteStudentIn,
   exportStudentIn,
   PrivacyError,
+  setTracingOptOutIn,
+  unenrolStudentIn,
   type ExportStore,
   type StudentRequest,
 } from '@ideamap/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { RoutePolicy } from './policy.js';
 
-// FERPA export and delete for one student (ARCHITECTURE.md §10; task F6). Only an
+// FERPA export and delete for one student (ARCHITECTURE.md §10; task F6), and since
+// M2 the student leaving the district (D22) and the tracing opt-out (D24). Only an
 // admin of the student's organization may call these (F6-S1). The route policy checks
 // the signed-in session's role, read from the database, and that the student is in
 // the caller's org; the privacy functions check both again inside the transaction.
@@ -68,6 +72,40 @@ export function privacyRoutes(app: FastifyInstance, options: PrivacyRoutes): voi
       try {
         const deleted = await deleteStudentIn(req.withOrg, studentRequest(req), options.store);
         return await reply.code(200).send({ deleted });
+      } catch (error) {
+        return refused(error, reply);
+      }
+    },
+  );
+
+  // D22: the student has left the district. Their raw events go, with everything a
+  // FERPA delete removes.
+  app.post<StudentParams>(
+    '/api/privacy/students/:studentId/unenrol',
+    { config: { policy: STUDENT_PRIVACY_POLICY } },
+    async (req, reply) => {
+      try {
+        const deleted = await unenrolStudentIn(req.withOrg, studentRequest(req), options.store);
+        return await reply.code(200).send({ deleted });
+      } catch (error) {
+        return refused(error, reply);
+      }
+    },
+  );
+
+  // D24: opt the student out of tracing (for the district or a family), or back in.
+  app.put<StudentParams>(
+    '/api/privacy/students/:studentId/tracing',
+    { config: { policy: STUDENT_PRIVACY_POLICY } },
+    async (req, reply) => {
+      const body = TracingOptOutRequestSchema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: 'Invalid request' });
+      try {
+        const optedOut = await setTracingOptOutIn(req.withOrg, {
+          ...studentRequest(req),
+          optedOut: body.data.optedOut,
+        });
+        return await reply.code(200).send({ optedOut });
       } catch (error) {
         return refused(error, reply);
       }

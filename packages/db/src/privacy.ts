@@ -460,21 +460,28 @@ export async function exportStudentIn(
 }
 
 export interface StudentDeletion {
+  /** Raw tracker events (D22), with the map views and AI outputs they point to. */
+  interactionEvents: number;
+  generatedMapViews: number;
+  aiOutputs: number;
   interactionText: number;
   aiInteractions: number;
   progressSnapshots: number;
   enrollments: number;
   authSessions: number;
   exportFiles: number;
+  /** The D24 opt-out row, if they had one. */
+  tracingOptOut: number;
 }
 
 /**
- * FERPA delete. Removes the student's personal data and everything they typed, and
- * leaves their tracker events in place under their pseudonymous id (§8.2, §10):
- * the account keeps only its random id, role and organization, so nothing left
+ * FERPA delete. Removes the student's personal data, everything they typed, and their
+ * raw tracker events with the map views and AI outputs those point to (D22, §8.5).
+ * The account keeps only its random id, role and organization, so nothing left
  * identifies them. Removes every export file that holds them (`export_subject`), and
  * any student-naming file whose contents weren't recorded, and signs them out
- * everywhere. Audited with the pseudonymous id only. Safe to repeat.
+ * everywhere. Anonymous class aggregates are separate and stay. Audited with the
+ * pseudonymous id only. Safe to repeat.
  */
 export function deleteStudent(
   db: Db,
@@ -485,10 +492,40 @@ export function deleteStudent(
 }
 
 /** As `deleteStudent`, in a transaction the caller provides (the API's `req.withOrg`). */
-export async function deleteStudentIn(
+export function deleteStudentIn(
   run: OrgRun,
   request: StudentRequest,
   store: ExportStore,
+): Promise<StudentDeletion> {
+  return removeStudentIn(run, request, store, 'student.deleted');
+}
+
+/**
+ * The student has left the district (D22): their raw events are deleted, with
+ * everything a FERPA delete removes. Audited as `student.unenrolled`.
+ */
+export function unenrolStudent(
+  db: Db,
+  request: StudentRequest,
+  store: ExportStore,
+): Promise<StudentDeletion> {
+  return unenrolStudentIn((fn) => withOrg(db, request.orgId, fn), request, store);
+}
+
+/** As `unenrolStudent`, in a transaction the caller provides. */
+export function unenrolStudentIn(
+  run: OrgRun,
+  request: StudentRequest,
+  store: ExportStore,
+): Promise<StudentDeletion> {
+  return removeStudentIn(run, request, store, 'student.unenrolled');
+}
+
+async function removeStudentIn(
+  run: OrgRun,
+  request: StudentRequest,
+  store: ExportStore,
+  action: 'student.deleted' | 'student.unenrolled',
 ): Promise<StudentDeletion> {
   const { orgId, studentId } = request;
   return run(async (trx) => {
@@ -543,7 +580,16 @@ export async function deleteStudentIn(
     }
 
     const count = (r: { numDeletedRows: bigint }) => Number(r.numDeletedRows);
+    // The only way past the tracker tables' append-only trigger (0016). It checks
+    // again that the actor is an admin of this organization.
+    const { rows } = await sql<{ purged: Record<string, number> }>`
+      SELECT app.purge_student_events(${studentId}::uuid) AS purged
+    `.execute(trx);
+    const purged = rows[0]!.purged;
     const result: StudentDeletion = {
+      interactionEvents: Number(purged.interactionEvents),
+      generatedMapViews: Number(purged.generatedMapViews),
+      aiOutputs: Number(purged.aiOutputs),
       interactionText: count(
         await trx
           .deleteFrom('interaction_text')
@@ -567,6 +613,12 @@ export async function deleteStudentIn(
         await trx.deleteFrom('auth_session').where('user_id', '=', studentId).executeTakeFirst(),
       ),
       exportFiles: exports.length,
+      tracingOptOut: count(
+        await trx
+          .deleteFrom('tracing_opt_out')
+          .where('student_id', '=', studentId)
+          .executeTakeFirst(),
+      ),
     };
     await trx
       .updateTable('app_user')
@@ -580,11 +632,58 @@ export async function deleteStudentIn(
       .where('id', '=', studentId)
       .execute();
     await writeAudit(trx, orgId, {
-      action: 'student.deleted',
+      action,
       targetType: 'student',
       targetId: studentId,
       after: { ...result },
     });
     return result;
+  });
+}
+
+// ---------------------------------------------------------------------------------
+// Tracing opt-out (D24)
+
+export interface OptOutRequest extends StudentRequest {
+  optedOut: boolean;
+}
+
+/**
+ * Opt a student out of tracing, or back in. Only an admin of the student's
+ * organization records it, for the district or for a family. The student keeps using
+ * the app and keeps their mastery; events stored while they are opted out carry
+ * `tracing_opted_out`, which D16 audits, aggregates and D25 research leave out.
+ * Audited. Returns whether the student is now opted out.
+ */
+export function setTracingOptOut(db: Db, request: OptOutRequest): Promise<boolean> {
+  return setTracingOptOutIn((fn) => withOrg(db, request.orgId, fn), request);
+}
+
+/** As `setTracingOptOut`, in a transaction the caller provides. */
+export function setTracingOptOutIn(run: OrgRun, request: OptOutRequest): Promise<boolean> {
+  const { orgId, actorId, studentId, optedOut } = request;
+  return run(async (trx) => {
+    await authorize(trx, request);
+    await actAs(trx, actorId);
+    const changed = optedOut
+      ? await trx
+          .insertInto('tracing_opt_out')
+          .values({ org_id: orgId, student_id: studentId, set_by: actorId })
+          .onConflict((oc) => oc.column('student_id').doNothing())
+          .returning('student_id')
+          .execute()
+      : await trx
+          .deleteFrom('tracing_opt_out')
+          .where('student_id', '=', studentId)
+          .returning('student_id')
+          .execute();
+    if (changed.length > 0) {
+      await writeAudit(trx, orgId, {
+        action: optedOut ? 'student.tracing_opted_out' : 'student.tracing_opted_in',
+        targetType: 'student',
+        targetId: studentId,
+      });
+    }
+    return optedOut;
   });
 }

@@ -1,8 +1,9 @@
 import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import { loadConfig, type AuthConfig } from './config.js';
+import { eventRoutes, type EventRoutesOptions } from './events.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
 import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
@@ -15,6 +16,7 @@ export { loadConfig, type AuthConfig } from './config.js';
 export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
 export type { IdentityProvider } from './providers.js';
 export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
+export { EVENTS_POLICY, VERSION_GRACE_MS, type EventRoutesOptions } from './events.js';
 
 export interface ServerOptions {
   db: Db;
@@ -23,11 +25,14 @@ export interface ServerOptions {
   providers?: Map<string, IdentityProvider>;
   /** The clock, for session limits; tests move it forward. */
   now?: () => Date;
-  logger?: boolean;
+  /** Fastify's logger: on, off, or its options (tests pass a stream to read the logs). */
+  logger?: FastifyServerOptions['logger'];
   /** Curriculum imports (C4); left out, the routes aren't registered. */
   imports?: Pick<ImportRoutesOptions, 'deps'>;
   /** FERPA student export and delete (F6); left out, the routes aren't registered. */
   privacy?: PrivacyRoutes;
+  /** Event ingest settings (M2). */
+  events?: EventRoutesOptions;
 }
 
 export function buildServer(options: ServerOptions): FastifyInstance {
@@ -54,6 +59,8 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
+  // Students' learning events (M2).
+  eventRoutes(app, deps, options.events);
   const { imports } = options;
   if (imports) {
     // Its own scope, for the upload body parser and error handler. The policy hooks

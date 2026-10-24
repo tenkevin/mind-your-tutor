@@ -101,6 +101,9 @@ importers:
       '@fastify/cookie':
         specifier: 11.1.3
         version: 11.1.3
+      '@ideamap/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@ideamap/connectors':
         specifier: workspace:*
         version: link:../../packages/connectors

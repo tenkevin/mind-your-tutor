@@ -30,6 +30,8 @@ const ENTITIES = {
   ExportJob: 'export_job',
   AuditEvent: 'audit_event',
   AiInteraction: 'ai_interaction',
+  'Tracing opt-out (D24)': 'tracing_opt_out',
+  'Privacy miss (D26)': 'privacy_miss',
 } as const;
 
 async function tables(t: TestDatabase): Promise<string[]> {

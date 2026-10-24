@@ -46,7 +46,7 @@ export type ExportKind =
   | 'drafted_rows'
   | 'class_progress'
   | 'student_record';
-export type TextKind = 'chat' | 'teachback' | 'transcript';
+export type TextKind = 'chat' | 'teachback' | 'transcript' | 'challenge';
 /** A column-mapping entry, as in VersionSource. */
 export type ColumnMapping = VersionSource['column_mapping'];
 
@@ -235,6 +235,10 @@ export interface InteractionEventTable {
   type: string;
   payload: ColumnType<unknown, JsonText<unknown> | undefined, never>;
   recorded_at: CreatedAt;
+  /** Generated from `type` (M2): participating, teaching or other (§8.2). */
+  level: ColumnType<'participating' | 'teaching' | 'other', never, never>;
+  /** D24: the student was opted out of tracing when the event was stored. */
+  tracing_opted_out: ColumnType<boolean, boolean | undefined, never>;
 }
 
 export interface InteractionEventKeyTable {
@@ -396,6 +400,26 @@ export interface AuthSessionTable {
   revoked_at: NullableTimestamp;
 }
 
+/** D24: a student the district opted out of tracing; removed when they opt back in. */
+export interface TracingOptOutTable {
+  student_id: string;
+  org_id: string;
+  opted_out_at: CreatedAt;
+  set_by: string | null;
+}
+
+/** D26: typed text in which the server backstop found what the device should have removed. */
+export interface PrivacyMissTable {
+  id: Generated<string>;
+  org_id: string;
+  class_id: string;
+  source: 'event_ingest';
+  names: number;
+  emails: number;
+  phones: number;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   organization: OrganizationTable;
   app_user: AppUserTable;
@@ -417,6 +441,8 @@ export interface Database {
   generated_map_view: GeneratedMapViewTable;
   ai_output: AiOutputTable;
   progress_snapshot: ProgressSnapshotTable;
+  tracing_opt_out: TracingOptOutTable;
+  privacy_miss: PrivacyMissTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
   export_subject: ExportSubjectTable;
@@ -568,6 +594,8 @@ export const COLUMNS = {
     'type',
     'payload',
     'recorded_at',
+    'level',
+    'tracing_opted_out',
   ],
   interaction_event_key: ['id', 'org_id', 'student_id', 'seq', 'recorded_at'],
   interaction_text: [
@@ -684,6 +712,8 @@ export const COLUMNS = {
     'expires_at',
     'revoked_at',
   ],
+  tracing_opt_out: ['student_id', 'org_id', 'opted_out_at', 'set_by'],
+  privacy_miss: ['id', 'org_id', 'class_id', 'source', 'names', 'emails', 'phones', 'created_at'],
 } as const satisfies { [T in TableName]: readonly (keyof Database[T] & string)[] };
 
 /** Tables whose rows belong to one organization, with row-level security forced. */

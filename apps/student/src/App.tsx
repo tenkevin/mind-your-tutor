@@ -7,6 +7,7 @@ import {
 } from '@ideamap/contracts';
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
+import { TrackerProvider } from './tracker/TrackerProvider';
 
 // The session lives in an HttpOnly cookie; the app only asks /api/me who is signed in.
 
@@ -55,9 +56,11 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     );
   }
   return (
-    <main style={{ padding: 'var(--space-6)' }}>
-      <h1>Idea Map · Student</h1>
-      <p>Hi, {view.me.user.name}.</p>
-    </main>
+    <TrackerProvider me={view.me}>
+      <main style={{ padding: 'var(--space-6)' }}>
+        <h1>Idea Map · Student</h1>
+        <p>Hi, {view.me.user.name}.</p>
+      </main>
+    </TrackerProvider>
   );
 }

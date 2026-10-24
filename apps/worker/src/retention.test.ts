@@ -50,7 +50,7 @@ async function seedAged(db: Db, org: SeededOrg): Promise<Map<number, string>> {
         org_id: org.orgId,
         class_id: org.classId,
         student_id: org.studentId,
-        kind: 'chat',
+        kind: 'teachback',
         body: `Typed ${days} days ago`,
         created_at,
       })
@@ -79,8 +79,8 @@ async function seedAged(db: Db, org: SeededOrg): Promise<Map<number, string>> {
         version_id: version.pinned_version_id!,
         seq: ++seq,
         at: new Date(),
-        type: 'chat.turn',
-        payload: json({ persona: 'tutor', text_ref: text.id }),
+        type: 'teachback.done',
+        payload: json({ unitId: 1, textRef: text.id }),
       })
       .execute();
   }
@@ -219,10 +219,10 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
       const events = await trx
         .selectFrom('interaction_event')
         .select('payload')
-        .where('type', '=', 'chat.turn')
+        .where('type', '=', 'teachback.done')
         .orderBy('seq')
         .execute();
-      const ids = events.map((e) => (e.payload as { text_ref: string }).text_ref);
+      const ids = events.map((e) => (e.payload as { textRef: string }).textRef);
       return resolveTexts(trx, ids);
     });
     expect(refs.get(textsA.get(91)!)).toEqual(REMOVED_TEXT);

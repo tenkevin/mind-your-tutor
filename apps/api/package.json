@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",
+    "@ideamap/ai": "workspace:*",
     "@ideamap/connectors": "workspace:*",
     "@ideamap/contracts": "workspace:*",
     "@ideamap/db": "workspace:*",
