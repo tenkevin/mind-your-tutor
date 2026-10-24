@@ -66,3 +66,9 @@ The builder withdrew its unsubstantiated C2 6.12ms-versus-9.3ms comparison. Inde
 ## Resume contract
 
 Follow `AGENTS.md` stop/resume protocol. A future explicit resume requires live branch/CI checks, reconciliation of F6 ownership, and current-base synchronization of parked PRs before any merge. Ready/dependent tasks and historical claims are not active assignments. Routine updates remain document-first; the QA coordinator is idle and should receive a startup message only for an authorized concrete review.
+
+## Policy update (user, 2026-10-24)
+
+- **Claude QA pauses after the current runs.** Independent Claude QA finishes on A1 (#28), T2 (#27) and T3 (#29). No new Claude QA sessions after that. From Monday, Codex reviews PRs and merged work; a Codex file reviewing a PR's current head is its QA report for the integration gate. PRs opened before then (M2 #30, M3) wait for Codex.
+- **Cheaper models for new sessions.** Builders use Sonnet for everyday implementation. Haiku is for high-volume, classification, triage and fast sub-agent work. Sessions already running keep their model until they finish.
+- **Question 13 settled as D30:** feedback teaching events carry the acting teacher's pseudonymous id, used so each teacher's labelled examples weigh equally. Built in A9 (criteria A9-F7, A9-F8, A9-S4).

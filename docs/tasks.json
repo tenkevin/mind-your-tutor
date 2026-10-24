@@ -803,7 +803,7 @@
         "A7",
         "S5"
       ],
-      "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded",
+      "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded; per D30, feedback.ruled and teacher.feedback.approved/edited carry the acting teacher's pseudonymous id, and example retrieval weighs each teacher's contributions equally",
       "placeholder": false,
       "status": "todo",
       "owner": null,

@@ -48,7 +48,7 @@ One coordinator session runs the swarm:
 
 ## Decisions and architecture updates
 
-Resolve routine implementation and integration choices using the settled architecture and task criteria. Do not reopen D1–D29. For a genuinely new product/design decision, record the question in architecture §12, ask the user and continue only independent work within the authorized scope. When a decision is settled, update the relevant architecture section and decision record before dependent implementation; remove only the resolved question by subject and preserve unrelated questions. Status, CI outcomes and parked work belong in the handoff/QA documents, not new architecture decisions. C9 implemented existing D12/D13; the C5 count question is settled as D14.
+Resolve routine implementation and integration choices using the settled architecture and task criteria. Do not reopen D1–D30. For a genuinely new product/design decision, record the question in architecture §12, ask the user and continue only independent work within the authorized scope. When a decision is settled, update the relevant architecture section and decision record before dependent implementation; remove only the resolved question by subject and preserve unrelated questions. Status, CI outcomes and parked work belong in the handoff/QA documents, not new architecture decisions. C9 implemented existing D12/D13; the C5 count question is settled as D14.
 
 On completion or handoff, publish task status, immutable-report references, exact reviewed/base/merged heads, actual CI evidence, pending checks, deferred suggestions, parked branches and worker state. Record whether schedules were actually stopped; do not claim control of inaccessible sessions or schedules.
 
@@ -73,7 +73,7 @@ Until F1 lands, these are the defaults it must set up. After F1, the repo config
 
 ## Rules
 
-- **Tracing follows the user's decisions (gate `MD`, cleared 2026-10-23).** Build tracker, memory, feedback and audit features exactly to ARCHITECTURE D15–D29 and §8 spec v1. Changing what is traced (D19), inferred (D20), shown (D21) or kept (D22), or what memory holds (D28), is a user decision: stop and ask the coordinator, never extend it on your own.
+- **Tracing follows the user's decisions (gate `MD`, cleared 2026-10-23).** Build tracker, memory, feedback and audit features exactly to ARCHITECTURE D15–D30 and §8 spec v1. Changing what is traced (D19), inferred (D20), shown (D21) or kept (D22), or what memory holds (D28), is a user decision: stop and ask the coordinator, never extend it on your own.
 
 - Never edit, move or delete a file whose name starts with `Codex-`. Those are an external reviewer's findings (docs/qa/README.md, External review). Tasks named `<ID>cx<n>` fix Codex errors and take priority.
 
