@@ -314,6 +314,39 @@ describe.skipIf(!hasDatabase)('course details (T3)', () => {
     ]);
   });
 
+  it('writes one row for the first save where no config row exists yet (QA run 1)', async () => {
+    await api.t.db.deleteFrom('class_config').where('class_id', '=', classB).execute();
+    await api.t.db
+      .deleteFrom('curriculum_defaults')
+      .where('curriculum_id', '=', curriculum)
+      .execute();
+    const since = new Date();
+    expect((await put(who.teacherB, 'topic', 'First', classB)).statusCode).toBe(200);
+    const res = await as(api, who.author)('PUT', `/api/curricula/${curriculum}/course/grade`, {
+      value: '6',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const rows = await api.t.db
+      .selectFrom('audit_event')
+      .select(['action', 'actor_id', 'detail'])
+      .where('at', '>=', since)
+      .where('target_type', 'in', ['class_config', 'curriculum_defaults'])
+      .orderBy('at')
+      .execute();
+    expect(rows).toEqual([
+      {
+        action: 'class_config.updated',
+        actor_id: who.teacherB.userId,
+        detail: { changed: ['config.course.topic'] },
+      },
+      {
+        action: 'curriculum_defaults.updated',
+        actor_id: who.author.userId,
+        detail: { changed: ['config.course.grade'] },
+      },
+    ]);
+  });
+
   it('loads the section in one request, under 200 ms server-side (T3-P1)', async () => {
     await details(who.teacherA);
     const times: number[] = [];

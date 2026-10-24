@@ -166,7 +166,9 @@ describe.skipIf(!hasDatabase)('audit field paths (0016)', () => {
       'class_config.created',
       'class_config.deleted',
     ]);
-    expect(rows.find((r) => r.action === 'class_config.created')!.after).toMatchObject({ config: { course: { topic: 'Kept' }, token: '[redacted]' } });
+    expect(rows.find((r) => r.action === 'class_config.created')!.after).toMatchObject({
+      config: { course: { topic: 'Kept' }, token: '[redacted]' },
+    });
     expect(JSON.stringify(rows)).not.toMatch(/LEAK/);
   });
 });

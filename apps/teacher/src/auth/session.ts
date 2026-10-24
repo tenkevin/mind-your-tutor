@@ -28,7 +28,8 @@ import {
 // `saving` while a write or a replay is waiting on the server, `unsaved` while a kept
 // write is waiting to be retried or the last write to some URL failed, and `saved`
 // only once every write has been accepted. A write never reads as saved before the
-// server's response says so.
+// server's response says so. An accepted write to a URL clears earlier failures of any
+// method to that URL: it is the latest state of that resource.
 
 const PENDING_KEY = 'ideamap.pendingWrites';
 
@@ -213,8 +214,11 @@ export function createSessionClient(deps: {
           if (client.me) stashWrite(deps.store, { userId: client.me.user.id, method, url, body });
           throw toSignIn();
         }
-        if (res.ok) failed.delete(key);
-        else failed.add(key);
+        if (res.ok) {
+          // An accepted write supersedes any failed write to the same URL: a reset
+          // (DELETE) after a refused edit (PUT) leaves nothing unsaved (T3 QA run 1).
+          for (const m of ['POST', 'PUT', 'DELETE']) failed.delete(`${m} ${url}`);
+        } else failed.add(key);
         return res;
       } finally {
         inFlight--;
