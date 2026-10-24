@@ -43,6 +43,7 @@ export async function startApi(
   overrides: Record<string, string> = {},
   options: {
     imports?: boolean;
+    publish?: boolean;
     privacy?: ExportStore;
     /** The AI gateway, with a mock provider (A1). */
     ai?: AiGatewayOptions;
@@ -80,11 +81,20 @@ export async function startApi(
         },
       }
     : undefined;
+  // C5's publish routes.
+  const publish = options.publish
+    ? {
+        deps: {
+          scope: <T>(orgId: string, fn: (trx: Trx) => Promise<T>) => scoped(t.db, { orgId }, fn),
+        },
+      }
+    : undefined;
   const app = buildServer({
     db: t.db,
     config,
     now: () => new Date(Date.now() + offset),
     imports,
+    publish,
     privacy: options.privacy ? { store: options.privacy } : undefined,
     ai: options.ai,
     logger: options.log ? { level: 'info', stream: options.log } : false,

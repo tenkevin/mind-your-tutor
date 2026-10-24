@@ -38,6 +38,7 @@ Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `
 | D27 | Interests stay specific; identifiers don't | Within a conversation, interests are sent specifically (for example "Real Madrid", "a cat called Luna"), so the model can make examples that connect to the student. Names of people and places, contact details and school identifiers are always replaced (D26). Long-term memory (D28) generalises interests to an approved category list (user, 2026-10-23) |
 | D28 | Dual memory: short-term conversation, long-term learning summary | Short-term memory is the current conversation, already anonymised. Long-term entity summaries may hold misconceptions, what helped, preferred pace, and up to five interests from the approved category list. They never hold feelings or mood history, family, health, friendships, personality traits, or anything from an A2-flagged conversation. Memory is never used for D20 inferences, D16 audits or D25 research, and never shared across classes (user, 2026-10-23) |
 | D29 | Memory lasts while enrolled, and can be seen and deleted | Long-term memory lasts while the student is enrolled, matching D22, and is deleted when they leave or on a FERPA request. The student can see "what Ms. Ivy remembers about me", delete any item and turn memory off. Their teacher can view and delete memory for their class (user, 2026-10-23) |
+| D30 | Feedback teaching events name the teacher, pseudonymously | `feedback.ruled`, `teacher.feedback.approved` and `teacher.feedback.edited` carry the acting teacher's pseudonymous id (never a name or email). It is extra information, not a core field: it lets D15's labelled examples weigh each teacher's contributions equally, so a teacher who rules or edits often does not outweigh one who gives a single strong example. Teacher ids are never shown to students (user, 2026-10-24) |
 
 ## 2. The core split
 
@@ -190,7 +191,7 @@ Exports: blank template workbook, data-check report, standards alignment report 
 
 ## 8. Interaction tracker and map generation
 
-> **Spec v1 (2026-10-23), from decisions D15–D29.** Gate `MD` was cleared by the user on 2026-10-23. Any change to *what* is traced (D19), inferred (D20), shown (D21) or kept (D22) is a user decision and must not be made by an agent.
+> **Spec v1 (2026-10-23), from decisions D15–D30.** Gate `MD` was cleared by the user on 2026-10-23. Any change to *what* is traced (D19), inferred (D20), shown (D21) or kept (D22) is a user decision and must not be made by an agent.
 
 Two parts with opposite rules:
 
@@ -243,8 +244,8 @@ type InteractionEvent = {
 | `teachback.judged` | other | unitId, verdict (pass, retry), keyPointsHit, aiOutputId |
 | `feedback.shown` | participating | feedbackId, source (ai, teacher), reasonRef (D15) |
 | `feedback.challenged` | participating | feedbackId, textRef |
-| `feedback.ruled` | teaching | feedbackId, ruling (upheld, overturned, edited), by teacher |
-| `teacher.feedback.approved` / `teacher.feedback.edited` | teaching | feedbackId (D15 summative review) |
+| `feedback.ruled` | teaching | feedbackId, ruling (upheld, overturned, edited), teacherPseudonymId (D30) |
+| `teacher.feedback.approved` / `teacher.feedback.edited` | teaching | feedbackId, teacherPseudonymId (D30) (D15 summative review) |
 | `mission.completed` | participating | missionId (unit with a due date, T4) |
 | `map.shown` | other | mapViewId (§8.4) |
 | `ai.output_shown` | other | aiOutputId (§8.4) |
@@ -373,4 +374,3 @@ The "Re-sync" button in the prototype becomes **Import new version**, and a new 
 10. **Provider tenant claims (F5):** sign-in maps a provider's tenant claim to an org via `sso_tenant`: Google `hd`, Clever `district`, ClassLink `tenant_id`. The Clever and ClassLink claim names are unverified until open question 3 picks the providers; each is a setting (`IDEAMAP_SSO_<ID>_TENANT_CLAIM`).
 11. ~~Education data mining and tracing (gate MD)~~ **Settled as D15–D29; gate cleared by the user on 2026-10-23.** §8 is spec v1.
 12. **Privacy module and dual memory.** Settled as D26–D29. Still open: check the design against the SoulSpeak paper once the user shares it; on-device NER model choice and its accuracy on children's writing (nicknames, misspellings); whether the device may receive a class roster for name matching, which would expose classmates' names to every student device.
-13. **Who ruled or approved feedback (M1).** §8.2 lists `feedback.ruled` as "feedbackId, ruling, by teacher", and `teacher.feedback.approved` / `edited` as feedbackId only. M1 reads "by teacher" as the event's `teaching` level, not a field, so no teacher id is recorded in any event; the event's `studentId` is the student the feedback was for. Should these teaching events also carry the acting teacher's pseudonymous id (D19 change, the user's call)?
