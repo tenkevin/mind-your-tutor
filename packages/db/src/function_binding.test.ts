@@ -18,14 +18,19 @@ import type { Database } from './schema.js';
 // configured server's shared/developer/QA databases.
 
 const APP_FUNCTION_INVENTORY = [
+  'app.audit_row_change()',
+  'app.audit_version_status()',
   'app.create_interaction_event_partition(date)',
+  'app.current_actor_id()',
   'app.current_class_id()',
   'app.current_org_id()',
   'app.ensure_interaction_event_partitions(integer)',
   'app.guard_class_pin()',
   'app.guard_curriculum_version()',
   'app.record_interaction_event_keys()',
+  'app.redact_secrets(jsonb)',
   'app.refuse_change()',
+  'app.retention_cutoff(uuid,text)',
   'app.sso_tenant_org(text,text)',
   'app.touch_updated_at()',
 ];
@@ -264,6 +269,8 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
       expect(fn.config, fn.signature).toEqual(['search_path=pg_catalog, pg_temp']);
     }
     expect(rows.filter((fn) => fn.trigger_function).map((fn) => fn.signature)).toEqual([
+      'app.audit_row_change()',
+      'app.audit_version_status()',
       'app.guard_class_pin()',
       'app.guard_curriculum_version()',
       'app.record_interaction_event_keys()',
@@ -288,5 +295,9 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
     expect(source.get('app.ensure_interaction_event_partitions(integer)')).toContain(
       'pg_catalog.generate_series',
     );
+    // F6's audit and retention functions.
+    expect(source.get('app.audit_row_change()')).toContain('INSERT INTO public.audit_event');
+    expect(source.get('app.audit_version_status()')).toContain('INSERT INTO public.audit_event');
+    expect(source.get('app.retention_cutoff(uuid,text)')).toContain('FROM public.organization');
   });
 });

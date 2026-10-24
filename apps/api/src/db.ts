@@ -1,4 +1,12 @@
-import { APP_ROLE, CLASS_SETTING, ORG_SETTING, json, type Database, type Db } from '@ideamap/db';
+import {
+  ACTOR_SETTING,
+  APP_ROLE,
+  CLASS_SETTING,
+  ORG_SETTING,
+  json,
+  type Database,
+  type Db,
+} from '@ideamap/db';
 import { sql, type Transaction } from 'kysely';
 
 export type Trx = Transaction<Database>;
@@ -8,6 +16,8 @@ export interface Scope {
   orgId: string | null;
   /** Also show this class's uploads (D11). */
   classId?: string | null;
+  /** The signed-in user, recorded as the actor on audit rows the triggers write (F6). */
+  actorId?: string | null;
 }
 
 /**
@@ -22,7 +32,8 @@ export function scoped<T>(db: Db, scope: Scope, fn: (trx: Trx) => Promise<T>): P
     await sql`
       SELECT set_config('role', ${APP_ROLE}, true),
         set_config(${ORG_SETTING}, ${scope.orgId ?? ''}, true),
-        set_config(${CLASS_SETTING}, ${scope.classId ?? ''}, true)
+        set_config(${CLASS_SETTING}, ${scope.classId ?? ''}, true),
+        set_config(${ACTOR_SETTING}, ${scope.actorId ?? ''}, true)
     `.execute(trx);
     return fn(trx);
   });

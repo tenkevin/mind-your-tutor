@@ -204,6 +204,7 @@ export function registerPolicies(app: FastifyInstance, deps: PolicyDeps): void {
 
     const classId = policy.scope.kind === 'class' ? params[policy.scope.param] : null;
     req.session = session;
-    req.withOrg = (fn) => scoped(deps.db, { orgId: session.orgId, classId }, fn);
+    req.withOrg = (fn) =>
+      scoped(deps.db, { orgId: session.orgId, classId, actorId: session.userId }, fn);
   });
 }

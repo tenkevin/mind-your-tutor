@@ -179,7 +179,7 @@
       ],
       "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f6",
       "updated": "2026-10-23"
     },
@@ -540,9 +540,9 @@
       ],
       "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-a1",
+      "updated": "2026-10-24"
     },
     {
       "id": "A2",

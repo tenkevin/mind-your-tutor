@@ -32,6 +32,12 @@ export interface TestDatabase {
   db: Db;
   /** Milliseconds the migrations took. */
   migrateMs: number;
+  /**
+   * A connection that logs in as a new role whose only privileges come from being a
+   * member of `role` (the app role, the retention role): exactly what a deployment
+   * gets. Dropped with the database.
+   */
+  loginAs(role: string): Promise<Db>;
   drop(): Promise<void>;
 }
 
@@ -45,10 +51,26 @@ export async function freshDatabase(options: { migrate?: boolean } = {}): Promis
   const url = urlFor(name);
   const db = createDb(url, { max: 4 });
   let migrateMs = 0;
+  const logins: { role: string; db: Db }[] = [];
+  const loginAs = async (role: string) => {
+    const login = `${name}_${logins.length}`;
+    const password = randomBytes(12).toString('hex');
+    await sql`CREATE ROLE ${sql.id(login)} LOGIN PASSWORD ${sql.lit(password)} IN ROLE ${sql.id(role)}`.execute(
+      db,
+    );
+    const url = new URL(urlFor(name));
+    url.username = login;
+    url.password = password;
+    const loginDb = createDb(url.toString(), { max: 4 });
+    logins.push({ role: login, db: loginDb });
+    return loginDb;
+  };
   const drop = async () => {
+    for (const l of logins) await l.db.destroy();
     await db.destroy();
     const again = createDb(adminUrl!, { max: 1 });
     await sql`DROP DATABASE IF EXISTS ${sql.id(name)} WITH (FORCE)`.execute(again);
+    for (const l of logins) await sql`DROP ROLE IF EXISTS ${sql.id(l.role)}`.execute(again);
     await again.destroy();
   };
   if (options.migrate !== false) {
@@ -62,7 +84,7 @@ export async function freshDatabase(options: { migrate?: boolean } = {}): Promis
     migrateMs = performance.now() - started;
   }
 
-  return { name, url, db, migrateMs, drop };
+  return { name, url, db, migrateMs, loginAs, drop };
 }
 
 /**

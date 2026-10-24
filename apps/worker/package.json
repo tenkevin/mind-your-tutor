@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "retention": "node dist/cli.js retention"
   },
   "dependencies": {
     "@ideamap/connectors": "workspace:*",
