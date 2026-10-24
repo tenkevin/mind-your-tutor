@@ -457,7 +457,7 @@
       ],
       "done_when": "Course details edit class overrides and show whether each value comes from the curriculum or the class",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t3",
       "updated": "2026-10-24"
     },
