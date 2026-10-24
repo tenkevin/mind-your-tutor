@@ -20,6 +20,7 @@
     "@ideamap/connectors": "workspace:*",
     "@ideamap/contracts": "workspace:*",
     "@ideamap/db": "workspace:*",
+    "@ideamap/domain": "workspace:*",
     "@ideamap/worker": "workspace:*",
     "fastify": "catalog:",
     "jose": "6.2.13",

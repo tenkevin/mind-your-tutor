@@ -31,8 +31,8 @@ export type ScopeRule =
   | { kind: 'curriculum'; param: string; edit: boolean }
   /** One user in the caller's org, named by a route param. */
   | { kind: 'user'; param: string }
-  /** One row of this table that row-level security shows the caller's org (C4 imports). */
-  | { kind: 'visible'; table: 'curriculum' | 'import_job'; param: string };
+  /** One row of this table that row-level security shows the caller's org (C4, C5). */
+  | { kind: 'visible'; table: 'curriculum' | 'import_job' | 'curriculum_version'; param: string };
 
 export type RoutePolicy =
   { public: true; reason: string } | { public?: false; roles: readonly Role[]; scope: ScopeRule };
@@ -127,10 +127,11 @@ async function inScope(
       return Boolean(teaches);
     }
     case 'visible': {
-      const row =
-        scope.table === 'curriculum'
-          ? await trx.selectFrom('curriculum').select('id').where('id', '=', id).executeTakeFirst()
-          : await trx.selectFrom('import_job').select('id').where('id', '=', id).executeTakeFirst();
+      const row = await trx
+        .selectFrom(scope.table)
+        .select('id')
+        .where('id', '=', id)
+        .executeTakeFirst();
       return Boolean(row);
     }
     case 'user': {
