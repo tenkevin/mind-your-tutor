@@ -369,6 +369,53 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
     expect((await ask(w.who.teacher, 'agent')).statusCode).toBe(200);
   });
 
+  it("blurs a student named in the class's template or topic before the provider (A1-F6, QA run 1)", async () => {
+    const named = 'Sam Student (sam.student@district-a.example.org, roster-student-a1)';
+    const put = await as(w.api, w.who.teacher)(
+      'PUT',
+      `/api/classes/${w.api.sample.classes.a1}/config`,
+      {
+        course: { topic: `${named} and the water cycle` },
+        personas: [
+          { persona_id: 'tutor', prompt_template: `You are {name}, tutoring ${named} on {topic}.` },
+        ],
+      },
+    );
+    expect(put.statusCode, put.body).toBe(200);
+    try {
+      const res = await ask(w.who.student);
+      expect(res.statusCode, res.body).toBe(200);
+      const sent = w.model.requests[0]!;
+      expect(sent.system).toBe(
+        'You are Ms. Ivy, tutoring Person A ([email], [id]) on Person A ([email], [id]) and the water cycle.',
+      );
+      const row = await w.api.t.db
+        .selectFrom('ai_interaction')
+        .select(['request'])
+        .where('id', '=', res.json().interactionId)
+        .executeTakeFirstOrThrow();
+      for (const s of ['Sam', 'sam.student@district-a.example.org', 'roster-student-a1']) {
+        expect(JSON.stringify(sent), s).not.toContain(s);
+        expect(JSON.stringify(row.request), s).not.toContain(s);
+      }
+      expect(row.request).toMatchObject({ system: sent.system, privacy_misses: 6 });
+    } finally {
+      await setClassConfig(w.api, {});
+    }
+  });
+
+  it('spends no quota on a refused call', async () => {
+    await setClassConfig(w.api, { personas: [{ persona_id: 'tutor', audience: 'Teachers' }] });
+    try {
+      for (let i = 0; i < 5; i++) expect((await ask(w.who.student)).statusCode).toBe(403);
+    } finally {
+      await setClassConfig(w.api, {});
+    }
+    // The student's 3 calls and the class's 5 are all still there.
+    for (let i = 0; i < 3; i++) expect((await ask(w.who.student)).statusCode).toBe(200);
+    expect((await ask(w.who.student)).statusCode).toBe(429);
+  });
+
   it('refuses a student a persona the class pointed at teachers', async () => {
     await setClassConfig(w.api, { personas: [{ persona_id: 'peer', audience: 'Teachers' }] });
     try {

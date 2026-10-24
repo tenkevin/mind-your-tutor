@@ -102,20 +102,24 @@ The student app's client is `apps/student/src/ai.ts`.
 **What happens on each call** (`src/ai/gateway.ts`):
 
 1. The route policy checks the caller; the body is parsed strictly.
-2. One call is taken from the student's and the class's limits.
-3. The persona comes from `@ideamap/ai`'s registry (D13), with the pack's Personas tab and
-   the curriculum defaults, then the class's overrides, on top. Its template is filled
-   with `fill(cfg, persona)` from the class's effective subject, topic and grade (§6).
-   Unknown `{variables}` stay as written.
-4. The identifier backstop (`patternBackstop` in `@ideamap/ai`) blurs the student's text:
-   emails become `[email]`, phone numbers `[phone]`, the roster and sign-in ids of
-   people in the class `[id]`, and their names `Person A`, `Person B`, … (a name part only
-   when capitalised). Each replacement is a privacy miss (D26). A7 adds on-device blurring
-   and a fuller backstop behind the same `IdentifierBackstop` interface; pass it as
-   `backstop` in the gateway options.
-5. The provider gets the filled prompt, the blurred turns and a pseudonymous user id (an
-   HMAC of the user, keyed from the session secret). No names, emails or roster ids.
-6. The transcript is stored blurred in `ai_interaction` (system prompt, turns, reply or
+2. The persona comes from `@ideamap/ai`'s registry (D13), with the pack's Personas tab and
+   the curriculum defaults, then the class's overrides, on top. A student may call it
+   only if its audience is Students; a class with no published curriculum gets a 409.
+3. One call is taken from the student's and the class's limits. Refused calls (401, 403, 409) take none; a call the provider then fails does count.
+4. The template is filled with `fill(cfg, persona)` from the class's effective subject,
+   topic and grade (§6). Unknown `{variables}` stay as written.
+5. The identifier backstop (`patternBackstop` in `@ideamap/ai`) blurs the filled prompt
+   and every turn, in one pass so labels match. A teacher's template or topic can name
+   a student too. Emails become `[email]`, phone numbers `[phone]`, the roster and
+   sign-in ids of people in the class (its students and teacher, and the caller) `[id]`,
+   and their names `Person A`, `Person B`, …. Each replacement is a privacy miss (D26).
+   What it doesn't catch yet: a single name part written in lower case ("sam"), and
+   people outside the class. A7 adds on-device blurring and a fuller backstop behind
+   the same `IdentifierBackstop` interface; pass it as `backstop` in the gateway
+   options.
+6. The provider gets the blurred prompt, the blurred turns and a pseudonymous user id (an
+   HMAC of the user, keyed from the session secret), never a user id, roster id or email.
+7. The transcript is stored blurred in `ai_interaction` (system prompt, turns, reply or
    failure kind, token counts, privacy misses). F6's retention job (default 90 days),
    student export and student delete already cover that table. Calls are not audited one
    by one; persona and config changes are, by F6's triggers.

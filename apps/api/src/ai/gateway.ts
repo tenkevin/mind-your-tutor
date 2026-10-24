@@ -37,10 +37,12 @@ import {
 //
 // 1. checks access (the route's F5 policy) and the request shape: only the conversation,
 //    never a prompt, persona or variables (A1-F3);
-// 2. takes one call from the student's and the class's rate limits (A1-F4);
-// 3. resolves the persona from packages/ai's registry with the pack's and the class's
-//    overrides (D13), and fills its template from the class's effective config (§6);
-// 4. runs the identifier backstop over the student's text (D26; A7 adds to it);
+// 2. resolves the persona from packages/ai's registry with the pack's and the class's
+//    overrides (D13), and checks the persona's audience;
+// 3. takes one call from the student's and the class's rate limits (A1-F4);
+// 4. fills the template from the class's effective config (§6), and runs the
+//    identifier backstop over the filled prompt and the student's text (D26; A7 adds
+//    to it);
 // 5. calls the provider with a pseudonymous user id and a timeout;
 // 6. stores the redacted transcript in ai_interaction, which F6's retention, export and
 //    delete already cover, and answers with the reply or a plain error.
@@ -228,13 +230,6 @@ export function aiRoutes(
     const session = req.session!;
     const { classId } = req.params;
 
-    const limited = limiter.take(session.userId, classId);
-    if (limited) {
-      req.log.info({ persona: personaId, limit: 'rate' }, 'ai call rate limited');
-      reply.header('retry-after', String(limited.retryAfter));
-      return fail(reply, 429, 'rate_limited', AI_RATE_LIMIT_MESSAGE);
-    }
-
     let context: CallContext;
     try {
       context = await req.withOrg((trx) => loadContext(trx, classId, personaId, session.userId));
@@ -247,19 +242,30 @@ export function aiRoutes(
       return reply.code(403).send({ error: 'Forbidden' });
     }
 
-    const system = fill(context.course, context.persona);
+    // Only a call that may go ahead takes quota; a refused one (403, 409) doesn't.
+    const limited = limiter.take(session.userId, classId);
+    if (limited) {
+      req.log.info({ persona: personaId, limit: 'rate' }, 'ai call rate limited');
+      reply.header('retry-after', String(limited.retryAfter));
+      return fail(reply, 429, 'rate_limited', AI_RATE_LIMIT_MESSAGE);
+    }
+
     // Earlier turns as the client holds them, then this turn; a provider conversation
     // starts with the user, so leading assistant turns are dropped.
     const turns = [...parsed.data.history, { role: 'student' as const, text: parsed.data.message }];
     const first = turns.findIndex((t) => t.role === 'student');
     const kept = turns.slice(first);
+    // The filled prompt goes through the backstop too: a teacher's template, topic or
+    // subject can name a student (A1-F6). One call, so labels match across the prompt
+    // and the turns.
     const blurred = backstop.blur(
-      kept.map((t) => t.text),
+      [fill(context.course, context.persona), ...kept.map((t) => t.text)],
       { names: context.names, identifiers: context.identifiers },
     );
+    const [system, ...texts] = blurred.texts as [string, ...string[]];
     const messages: ModelTurn[] = kept.map((t, i) => ({
       role: t.role === 'student' ? 'user' : 'assistant',
-      content: blurred.texts[i]!,
+      content: texts[i]!,
     }));
 
     let result: ModelReply | null = null;
