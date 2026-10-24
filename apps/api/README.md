@@ -58,7 +58,11 @@ session cookie on `http://localhost`.
   `IDEAMAP_APP_ORIGINS` and the `x-csrf-token` header from `/api/me`.
 - **Brute force:** 20 failed callbacks per IP per minute (configurable), then 429.
 - **Audit:** sign-in, sign-out, role changes, config changes and roster imports write
-  `audit_event` rows.
+  `audit_event` rows. A class config or curriculum default save writes exactly one row,
+  from the database trigger (0015, field paths from 0016): `class_config.updated` or
+  `curriculum_defaults.updated`, with the actor, the class or curriculum, each changed
+  field as a path (`config.course.topic`) and its before and after values. The routes
+  write no summary row of their own (T3; the convention docs/qa/CXB.md asked for).
 
 ## Route policies
 
@@ -70,6 +74,21 @@ D3), or one user in the org. The check runs before every handler: signed out is 
 wrong role, class or org is 403. Handlers reach the database only through
 `req.withOrg`, which sets the org (and class) for row-level security and switches to the
 `ideamap_app` role. `src/policy.test.ts` calls every route as each kind of caller.
+
+## Course details (T3)
+
+`GET /api/classes/:classId/course` returns the class's effective subject, topic, grade,
+standards framework and whole-map objective, each with its origin (`curriculum` or
+`class`, ARCHITECTURE.md §6), the curriculum's value, the reading level the grade sets,
+and whether the caller may edit the curriculum defaults. `PUT …/course/:field` with
+`{ "value": … }` overrides one field for the class; `DELETE …/course/:field` removes the
+override (reset to curriculum). The class's teacher or an admin may call them. The
+curriculum's author or an admin edits its defaults the same way under
+`/api/curricula/:curriculumId/course`; its teachers may read it. A curriculum value is
+the author's default, else the Course tab of the version the class uses (pinned, else
+published, else newest). Refusals are 400 with `{ error, field }`, `error` a plain
+sentence. Each write changes one key in SQL, so fields saved together never overwrite
+each other.
 
 ## Roster import
 

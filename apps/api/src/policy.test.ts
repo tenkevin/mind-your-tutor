@@ -41,6 +41,10 @@ const ROUTE_URLS = [
   '/api/classes/:classId/library',
   '/api/classes/:classId/library/:libraryDocId',
   '/api/curricula/:curriculumId/defaults',
+  '/api/classes/:classId/course',
+  '/api/classes/:classId/course/:field',
+  '/api/curricula/:curriculumId/course',
+  '/api/curricula/:curriculumId/course/:field',
   '/api/users/:userId/role',
   '/api/roster/import',
 ];
@@ -232,6 +236,39 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/curricula/${curricula.a}/defaults`,
         body: { course: { grade: '6' } },
       },
+      // T3: Course details.
+      {
+        route: '/api/classes/:classId/course',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/course`,
+      },
+      {
+        route: '/api/classes/:classId/course/:field',
+        method: 'PUT',
+        url: `/api/classes/${classes.a1}/course/topic`,
+        body: { value: 'The water cycle' },
+      },
+      {
+        route: '/api/classes/:classId/course/:field',
+        method: 'DELETE',
+        url: `/api/classes/${classes.a1}/course/topic`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/course',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/course`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/course/:field',
+        method: 'PUT',
+        url: `/api/curricula/${curricula.a}/course/grade`,
+        body: { value: '6' },
+      },
+      {
+        route: '/api/curricula/:curriculumId/course/:field',
+        method: 'DELETE',
+        url: `/api/curricula/${curricula.a}/course/framework`,
+      },
       {
         route: '/api/users/:userId/role',
         method: 'PUT',
@@ -328,6 +365,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     ],
     // A teacher reads the defaults of a curriculum they teach (A2 also uses curriculum A).
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
+    'GET /api/curricula/:curriculumId/course': ['admin', 'otherClassTeacher'],
     // C4: staff in the curriculum's org may import into it and read its jobs.
     'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
     'GET /imports/:jobId': ['admin', 'otherClassTeacher'],

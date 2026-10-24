@@ -142,6 +142,12 @@
   gap: 4px;
   scroll-margin-top: 16px;
 }
+.tshell-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
 .tshell-section h2 {
   margin: 0;
   font: var(--font-heading-weight) 20px var(--font-heading);

@@ -9,6 +9,7 @@ import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
 import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
 import { authRoutes } from './routes/auth.js';
+import { courseRoutes } from './routes/course.js';
 import { deriveKeys } from './tokens.js';
 
 export { loadConfig, type AuthConfig } from './config.js';
@@ -54,6 +55,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
+  courseRoutes(app);
   const { imports } = options;
   if (imports) {
     // Its own scope, for the upload body parser and error handler. The policy hooks

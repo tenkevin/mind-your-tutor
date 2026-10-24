@@ -94,7 +94,9 @@ describe('Shell section nav (T1-F3)', () => {
     for (const s of SECTIONS) {
       expect(html).toContain(`href="#${s.id}"`);
       expect(html).toMatch(
-        new RegExp(`<section id="${s.id}"[^>]*aria-labelledby="${s.id}-h"><h2 id="${s.id}-h">`),
+        new RegExp(
+          `<section id="${s.id}"[^>]*aria-labelledby="${s.id}-h"><div class="tshell-heading"><h2 id="${s.id}-h">`,
+        ),
       );
       expect(html).toContain(`>${s.heading.replace('&', '&amp;')}</h2>`);
     }

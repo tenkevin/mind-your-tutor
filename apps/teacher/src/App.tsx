@@ -14,6 +14,8 @@ import {
   type SessionClient,
 } from './auth/session';
 import { SignIn } from './auth/SignIn';
+import { CourseDetails } from './course/CourseDetails';
+import { createCourseForm, type CourseForm, type FormState } from './course/form';
 import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
 import { sectionFor } from './shell/sections';
 
@@ -42,17 +44,19 @@ function browserClient(): SessionClient {
 
 const here = () => `${location.pathname}${location.search}${location.hash}`;
 
+/** A GET from the API; signed out, it goes to sign in and back here. */
+async function get(url: string): Promise<unknown> {
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (res.status === 401) {
+    location.assign(signInPath(here()));
+    throw new SignedOut();
+  }
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  return res.json() as Promise<unknown>;
+}
+
 /** The class the header shows: `?class=<id>` if it's one of theirs, else their first. */
 async function loadHeader(wanted: string | null): Promise<HeaderState> {
-  const get = async (url: string) => {
-    const res = await fetch(url, { credentials: 'same-origin' });
-    if (res.status === 401) {
-      location.assign(signInPath(here()));
-      throw new SignedOut();
-    }
-    if (!res.ok) throw new Error(`${url}: ${res.status}`);
-    return res.json() as Promise<unknown>;
-  };
   const { classes } = ClassesResponseSchema.parse(await get('/api/classes'));
   const klass = classes.find((c) => c.id === wanted) ?? classes[0];
   if (!klass) return 'none';
@@ -76,6 +80,15 @@ const noClient = {
   subscribe: () => () => {},
   saveState: (): SaveState => 'saved',
 };
+const noForm = { subscribe: () => () => {}, getState: (): FormState | null => null };
+
+/** The header as Course details last saved it: subject and topic are effective values. */
+function withCourse(header: HeaderState, course: FormState | null): HeaderState {
+  if (typeof header !== 'object' || !course?.details) return header;
+  const value = (field: 'subject' | 'topic') =>
+    course.details!.fields.find((f) => f.field === field)?.value ?? null;
+  return { ...header, subject: value('subject'), topic: value('topic') };
+}
 
 export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   const client = useMemo(() => (typeof window === 'undefined' ? null : browserClient()), []);
@@ -89,6 +102,21 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   const saveState = useSyncExternalStore(saves.subscribe, saves.saveState, noClient.saveState);
   const hash = useHash();
   const [header, setHeader] = useState<HeaderState>('loading');
+  /** Counts replays that saved something, so the sections read the saved values again. */
+  const [replayed, setReplayed] = useState(0);
+  const classId = typeof header === 'object' ? header.classId : null;
+  const course = useMemo<CourseForm | null>(
+    () => (client && classId ? createCourseForm({ classId, client, get }) : null),
+    [client, classId],
+  );
+  const courseState = useSyncExternalStore(
+    course?.subscribe ?? noForm.subscribe,
+    course?.getState ?? noForm.getState,
+    noForm.getState,
+  );
+  useEffect(() => {
+    if (course && replayed > 0) void course.load();
+  }, [course, replayed]);
 
   useEffect(() => {
     if (!client) return;
@@ -110,10 +138,13 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
           setView({ kind: 'not-staff', me });
           return;
         }
-        // Edits refused when the session ran out are sent now (F5-U3). Any the server
-        // doesn't accept stay kept, and the shell offers to try again.
-        const { pending } = await client.replayPendingWrites();
+        // Edits refused when the session ran out are sent now (F5-U3). The shell shows
+        // at once, reading Saving… while they go (T3-U4); any the server doesn't
+        // accept stay kept, and the shell offers to try again.
+        setView({ kind: 'signed-in', me, pending: 0 });
+        const { pending, saved } = await client.replayPendingWrites();
         setView({ kind: 'signed-in', me, pending });
+        if (saved > 0) setReplayed((n) => n + 1);
       })
       .catch((error: unknown) => {
         // SignedOut is already on its way to the sign-in page, edits kept.
@@ -146,7 +177,10 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     setRetrying(true);
     client
       .replayPendingWrites()
-      .then(({ pending }) => setView({ kind: 'signed-in', me, pending }))
+      .then(({ pending, saved }) => {
+        setView({ kind: 'signed-in', me, pending });
+        if (saved > 0) setReplayed((n) => n + 1);
+      })
       .catch(() => {})
       .finally(() => setRetrying(false));
   };
@@ -170,7 +204,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   return (
     <Shell
       me={view.me}
-      header={header}
+      header={withCourse(header, courseState)}
       saveState={saveState}
       current={sectionFor(hash)?.id ?? null}
       studentUrl={STUDENT_URL}
@@ -178,6 +212,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       retrying={retrying}
       onRetry={retry}
       onSignOut={signOut}
+      content={course ? { 'sec-course': <CourseDetails form={course} /> } : {}}
     />
   );
 }
