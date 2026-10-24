@@ -1,7 +1,9 @@
 import nodeCrypto from 'node:crypto';
 import { syncBuiltinESMExports } from 'node:module';
 import nodeTimers from 'node:timers';
+import type { InteractionEvent } from '@ideamap/contracts';
 import { describe, expect, it, vi } from 'vitest';
+import { apply as applyOf, initialState as initialStateOf, type TrackerConfig } from './index.js';
 
 // Runtime backstop for the tracker determinism lint (ARCHITECTURE.md §8.1).
 // Lint can't see every way to reach the clock, randomness or I/O (computed
@@ -17,31 +19,146 @@ type Tracker = typeof import('./index.js');
 type Sample = { value: true } | { calls: unknown[][] };
 
 // Shaped like InteractionEvent (ARCHITECTURE.md §8.2). Times are fixed strings.
+const envelope = (seq: number, at: string) => ({
+  id: `01J00000000000000000000${String(seq).padStart(3, '0')}`,
+  studentId: '00000000-0000-4000-8000-000000000001',
+  classId: '00000000-0000-4000-8000-0000000000c1',
+  versionId: '00000000-0000-4000-8000-0000000000a1',
+  seq,
+  at,
+});
+const ATTEMPT = '00000000-0000-4000-8000-00000000a001';
 const SAMPLE_EVENTS = [
   {
-    id: '01J0000000000000000000000A',
-    studentId: 's-1',
-    classId: 'c-1',
-    versionId: 'v-1',
-    seq: 1,
-    at: '2026-01-05T09:00:00.000Z',
-    type: 'session.started',
-    payload: {},
-  },
-  {
-    id: '01J0000000000000000000000B',
-    studentId: 's-1',
-    classId: 'c-1',
-    versionId: 'v-1',
-    seq: 2,
-    at: '2026-01-05T09:00:04.250Z',
+    ...envelope(1, '2026-01-05T09:00:00.000Z'),
     type: 'idea.opened',
+    level: 'participating',
     payload: { ideaId: 'evaporation' },
   },
+  {
+    ...envelope(2, '2026-01-05T09:00:30.000Z'),
+    type: 'hint.requested',
+    level: 'participating',
+    payload: { ideaId: 'evaporation' },
+  },
+  {
+    ...envelope(3, '2026-01-05T09:01:00.000Z'),
+    type: 'quiz.started',
+    level: 'participating',
+    payload: {
+      ideaId: 'evaporation',
+      attemptId: ATTEMPT,
+      questionIds: ['evaporation/category', 'evaporation/true/sun>evaporation'],
+    },
+  },
+  {
+    ...envelope(4, '2026-01-05T09:01:10.000Z'),
+    type: 'quiz.answered',
+    level: 'participating',
+    payload: {
+      attemptId: ATTEMPT,
+      questionId: 'evaporation/category',
+      choice: 0,
+      correct: true,
+      attemptNumber: 1,
+      secondsToAnswer: 10,
+    },
+  },
+  {
+    ...envelope(5, '2026-01-05T09:01:20.000Z'),
+    type: 'quiz.answered',
+    level: 'participating',
+    payload: {
+      attemptId: ATTEMPT,
+      questionId: 'evaporation/true/sun>evaporation',
+      choice: 1,
+      correct: false,
+      attemptNumber: 1,
+      secondsToAnswer: 5,
+    },
+  },
+  {
+    ...envelope(6, '2026-03-09T15:00:00.000Z'),
+    type: 'quiz.finished',
+    level: 'participating',
+    payload: { attemptId: ATTEMPT, score: 2, of: 2 },
+  },
+  {
+    ...envelope(7, '2026-03-09T15:01:00.000Z'),
+    type: 'review.link_rebuilt',
+    level: 'participating',
+    payload: { ideaId: 'evaporation', linkId: 'sun>evaporation' },
+  },
+  {
+    ...envelope(8, '2026-03-09T15:02:00.000Z'),
+    type: 'teachback.judged',
+    level: 'other',
+    payload: {
+      unitId: 1,
+      verdict: 'pass',
+      keyPointsHit: [0],
+      aiOutputId: '00000000-0000-4000-8000-00000000b001',
+    },
+  },
 ] as const;
+const SAMPLE_EVENTS_LIST = SAMPLE_EVENTS as unknown as InteractionEvent[];
+
+// A class in New York, so the guard also exercises the DST arithmetic.
+const SAMPLE_CONFIG: TrackerConfig = {
+  rulesVersion: 1,
+  timeZone: 'EST5EDT,M3.2.0,M11.1.0',
+  versions: {
+    '00000000-0000-4000-8000-0000000000a1': {
+      ideas: [
+        { id: 'sun', unit: 1, requires: [], rarity: 'Common' },
+        { id: 'evaporation', unit: 1, requires: [], rarity: 'Rare' },
+        { id: 'condensation', unit: 2, requires: ['evaporation'], rarity: 'Legendary' },
+      ],
+      units: [
+        { unit: 1, dueDate: null },
+        { unit: 2, dueDate: '2026-03-20' },
+      ],
+    },
+  },
+};
+const SAMPLE_STATE = (() => {
+  let state = initialStateOf(SAMPLE_CONFIG);
+  for (const event of SAMPLE_EVENTS_LIST) state = applyOf(SAMPLE_CONFIG, state, event);
+  return state;
+})();
 
 const SAMPLES = {
   packageName: { value: true },
+  DEFAULTS: { value: true },
+  RULES_VERSIONS: { value: true },
+  // A class: constructing it is covered by the config errors below.
+  TrackerConfigError: { calls: [] },
+  parseTimeZone: {
+    calls: [['EST5EDT,M3.2.0,M11.1.0'], ['AEST-10AEDT,M10.1.0,M4.1.0/3'], ['<+0530>-5:30']],
+  },
+  comboMultiplier: { calls: [[0], [2], [4], [6]] },
+  scorePercent: {
+    calls: [
+      [7, 10],
+      [5, 7],
+    ],
+  },
+  initialState: { calls: [[SAMPLE_CONFIG]] },
+  replay: {
+    calls: [
+      [SAMPLE_CONFIG, SAMPLE_EVENTS_LIST],
+      [SAMPLE_CONFIG, SAMPLE_EVENTS_LIST.slice(4), SAMPLE_STATE],
+    ],
+  },
+  apply: { calls: [[SAMPLE_CONFIG, SAMPLE_STATE, SAMPLE_EVENTS_LIST[0]]] },
+  xpLedger: { calls: [[SAMPLE_CONFIG, SAMPLE_EVENTS_LIST]] },
+  progress: {
+    calls: [
+      [SAMPLE_CONFIG, SAMPLE_STATE],
+      [SAMPLE_CONFIG, SAMPLE_STATE, '2026-03-30T12:00:00-04:00'],
+    ],
+  },
+  classDate: { calls: [[SAMPLE_CONFIG, '2026-03-09T03:30:00Z']] },
 } satisfies Record<keyof Tracker, Sample>;
 
 class NondeterminismError extends Error {
