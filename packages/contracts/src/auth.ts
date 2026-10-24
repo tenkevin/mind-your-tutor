@@ -78,6 +78,19 @@ export const ClassSummarySchema = z.object({
 });
 export const ClassesResponseSchema = z.object({ classes: z.array(ClassSummarySchema) });
 
+/**
+ * GET /api/classes/:classId/header: what the teacher console header shows (T1). Subject
+ * and topic are the class's values, else the curriculum's defaults, else the latest
+ * version's Course tab; null when the curriculum has no version yet.
+ */
+export const ClassHeaderResponseSchema = z.object({
+  classId: z.uuid(),
+  className: z.string(),
+  subject: z.string().nullable(),
+  topic: z.string().nullable(),
+});
+export type ClassHeaderResponse = z.infer<typeof ClassHeaderResponseSchema>;
+
 /** PUT /api/classes/:classId/library/:libraryDocId (D11). */
 export const ClassLibrarySettingRequestSchema = z.strictObject({
   use_for: z.enum([...USE_FOR, 'off']),

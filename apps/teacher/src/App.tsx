@@ -1,19 +1,35 @@
-import type { MeResponse, ProvidersResponse } from '@ideamap/contracts';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  ClassesResponseSchema,
+  ClassHeaderResponseSchema,
+  type MeResponse,
+  type ProvidersResponse,
+} from '@ideamap/contracts';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   createSessionClient,
   loadProviders,
   SignedOut,
   signInPath,
+  type SaveState,
   type SessionClient,
 } from './auth/session';
 import { SignIn } from './auth/SignIn';
+import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
+import { sectionFor } from './shell/sections';
+
+export { NotForStudents, Shell } from './shell/Shell';
 
 type View =
   | { kind: 'loading' }
   | { kind: 'sign-in'; providers: ProvidersResponse['providers'] | null }
   /** `pending`: edits kept from an expired session that still need saving (F5-U3). */
-  | { kind: 'signed-in'; me: MeResponse; pending: number };
+  | { kind: 'signed-in'; me: MeResponse; pending: number }
+  /** A student signed in to the teacher app: refused, with no teacher data (T1-S2). */
+  | { kind: 'not-staff'; me: MeResponse };
+
+/** Where "Preview as student" goes: the student app. Set VITE_STUDENT_APP_URL to deploy. */
+const STUDENT_URL: string =
+  (import.meta.env.VITE_STUDENT_APP_URL as string | undefined) || 'http://localhost:5174/';
 
 function browserClient(): SessionClient {
   return createSessionClient({
@@ -24,52 +40,42 @@ function browserClient(): SessionClient {
   });
 }
 
-/** The signed-in shell. Teacher Settings (T1) mounts here. */
-export function Shell({
-  me,
-  pending = 0,
-  retrying = false,
-  onRetry,
-  onSignOut,
-}: {
-  me: MeResponse;
-  pending?: number;
-  retrying?: boolean;
-  onRetry?: () => void;
-  onSignOut: () => void;
-}) {
-  return (
-    <>
-      <nav className="nav">
-        <span className="nav-brand">Idea Map · Teacher</span>
-        <span>
-          {me.user.name} · {me.org.name}
-        </span>
-        <button type="button" className="btn btn-ghost" onClick={onSignOut}>
-          Sign out
-        </button>
-      </nav>
-      <main style={{ padding: 'var(--space-6)' }}>
-        {pending > 0 && (
-          <p role="alert" className="card">
-            {pending === 1
-              ? "1 change from before you signed in hasn't been saved yet."
-              : `${pending} changes from before you signed in haven't been saved yet.`}{' '}
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onRetry}
-              disabled={retrying}
-            >
-              {retrying ? 'Saving…' : 'Try again'}
-            </button>
-          </p>
-        )}
-        <h1>Idea Map · Teacher</h1>
-      </main>
-    </>
+const here = () => `${location.pathname}${location.search}${location.hash}`;
+
+/** The class the header shows: `?class=<id>` if it's one of theirs, else their first. */
+async function loadHeader(wanted: string | null): Promise<HeaderState> {
+  const get = async (url: string) => {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (res.status === 401) {
+      location.assign(signInPath(here()));
+      throw new SignedOut();
+    }
+    if (!res.ok) throw new Error(`${url}: ${res.status}`);
+    return res.json() as Promise<unknown>;
+  };
+  const { classes } = ClassesResponseSchema.parse(await get('/api/classes'));
+  const klass = classes.find((c) => c.id === wanted) ?? classes[0];
+  if (!klass) return 'none';
+  return ClassHeaderResponseSchema.parse(
+    await get(`/api/classes/${encodeURIComponent(klass.id)}/header`),
   );
 }
+
+function useHash(): string {
+  return useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener('hashchange', onChange);
+      return () => window.removeEventListener('hashchange', onChange);
+    },
+    () => location.hash,
+    () => '',
+  );
+}
+
+const noClient = {
+  subscribe: () => () => {},
+  saveState: (): SaveState => 'saved',
+};
 
 export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   const client = useMemo(() => (typeof window === 'undefined' ? null : browserClient()), []);
@@ -79,6 +85,10 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       ? { kind: 'sign-in', providers: null }
       : initial,
   );
+  const saves = client ?? noClient;
+  const saveState = useSyncExternalStore(saves.subscribe, saves.saveState, noClient.saveState);
+  const hash = useHash();
+  const [header, setHeader] = useState<HeaderState>('loading');
 
   useEffect(() => {
     if (!client) return;
@@ -96,6 +106,10 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
           location.assign(signInPath(`${path}${location.search}${location.hash}`));
           return;
         }
+        if (me.user.role === 'student') {
+          setView({ kind: 'not-staff', me });
+          return;
+        }
         // Edits refused when the session ran out are sent now (F5-U3). Any the server
         // doesn't accept stay kept, and the shell offers to try again.
         const { pending } = await client.replayPendingWrites();
@@ -106,6 +120,24 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
         if (!(error instanceof SignedOut)) setView({ kind: 'sign-in', providers: [] });
       });
   }, [client]);
+
+  const signedIn = view.kind === 'signed-in';
+  useEffect(() => {
+    if (!signedIn) return;
+    // The sections render only now, so a fragment in the URL (say, back from sign-in)
+    // had nothing to scroll to on load.
+    const section = sectionFor(location.hash);
+    if (section) document.getElementById(section.id)?.scrollIntoView();
+    let live = true;
+    loadHeader(new URLSearchParams(location.search).get('class'))
+      .then((h) => live && setHeader(h))
+      .catch((error: unknown) => {
+        if (live && !(error instanceof SignedOut)) setHeader('none');
+      });
+    return () => {
+      live = false;
+    };
+  }, [signedIn]);
 
   const [retrying, setRetrying] = useState(false);
   const retry = () => {
@@ -118,6 +150,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       .catch(() => {})
       .finally(() => setRetrying(false));
   };
+  const signOut = () => void client?.signOut();
 
   if (view.kind === 'loading') return <h1>Idea Map · Teacher</h1>;
   if (view.kind === 'sign-in') {
@@ -131,13 +164,20 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       />
     );
   }
+  if (view.kind === 'not-staff') {
+    return <NotForStudents studentUrl={STUDENT_URL} onSignOut={signOut} />;
+  }
   return (
     <Shell
       me={view.me}
+      header={header}
+      saveState={saveState}
+      current={sectionFor(hash)?.id ?? null}
+      studentUrl={STUDENT_URL}
       pending={view.pending}
       retrying={retrying}
       onRetry={retry}
-      onSignOut={() => void client?.signOut()}
+      onSignOut={signOut}
     />
   );
 }
