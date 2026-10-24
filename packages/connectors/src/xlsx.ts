@@ -4,7 +4,7 @@ import { detect, readUpload } from './detect.js';
 import { FileRefused, warning } from './issues.js';
 import { matchTab } from './tabs.js';
 import type { ImportConnector, ParseContext, RawCell, RawSheet, RawTabs } from './types.js';
-import { decodeXml, walkXml } from './xml.js';
+import { decodeXml, decodeXstring, walkXml } from './xml.js';
 import { ZipReader } from './zip.js';
 
 // Reads an .xlsx workbook without any spreadsheet library. Formulas are never
@@ -80,7 +80,7 @@ function readSharedStrings(xml: string | null): string[] {
     },
     close(name) {
       if (name === 'si') {
-        strings.push(current ?? '');
+        strings.push(decodeXstring(current ?? ''));
         current = null;
       } else if (name === 'rPh') phonetic--;
       else if (name === 't') inText = false;
@@ -162,8 +162,8 @@ function readSheet(
   const endCell = () => {
     let cell: RawCell = null;
     if (type === 's') cell = value === '' ? null : (ctx.strings[Number(value)] ?? null);
-    else if (type === 'inlineStr') cell = inline;
-    else if (type === 'str') cell = value;
+    else if (type === 'inlineStr') cell = inline === null ? null : decodeXstring(inline);
+    else if (type === 'str') cell = decodeXstring(value);
     else if (type === 'b') cell = value === '' ? null : value === '1' ? 'TRUE' : 'FALSE';
     else if (type === 'e') cell = value;
     else if (type === 'd') cell = /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : value;
