@@ -60,11 +60,10 @@ describe('one server-side call path (A1-F1, A1-S1)', () => {
 });
 
 describe('one persona registry (A1-F8, D13)', () => {
-  it('holds built-in prompt text only in packages/ai', () => {
+  it('holds no copy of built-in prompt text in the API or the apps', () => {
     const snippets = BUILT_IN_PERSONAS.map((p) => p.prompt_template!.slice(0, 40));
-    const copies = WORKSPACES.filter((pkg) => pkg !== 'packages/ai')
+    const copies = WORKSPACES.filter((pkg) => pkg.startsWith('apps/'))
       .flatMap((pkg) => files(join(ROOT, pkg, 'src')))
-      // The C2 import tests check the fixture's persona rows, which copy the built-ins.
       .filter((file) => !/\.test\.tsx?$/.test(file))
       .filter((file) => {
         const text = readFileSync(file, 'utf8');
