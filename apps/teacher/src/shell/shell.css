@@ -1,0 +1,164 @@
+/* The teacher console shell (T1), after the header and section nav of
+   project/Teacher Settings.dc.html. Every value is a Nocturne token, or the
+   prototype's own size where Nocturne has no token for it.
+
+   One change from the prototype, for D10: the nav pills' border is neutral-600
+   (4.08:1 on --color-bg), not neutral-700 (2.69:1). A new UI boundary needs 3:1
+   and neutral-600 is the nearest step that passes. Every other pair here is the
+   prototype's and passes: text 8.75–14.5:1, focus ring 5.45:1. */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.tshell {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.tshell-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: var(--color-bg);
+  box-shadow: 0 1px 0 var(--color-divider);
+}
+/* Sticky only where it stays one row; at 200% zoom it would cover the page. */
+@media (min-width: 900px) {
+  .tshell-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .tshell-section {
+    scroll-margin-top: 72px;
+  }
+}
+
+.tshell-brand {
+  font: var(--font-heading-weight) 14px var(--font-heading);
+  white-space: nowrap;
+}
+.tshell-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--color-neutral-300);
+}
+.tshell-spacer {
+  flex: 1;
+}
+.tshell-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-neutral-400);
+  white-space: nowrap;
+}
+.tshell-spin {
+  animation: tshell-spin 1s linear infinite;
+}
+@keyframes tshell-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tshell-spin {
+    animation: none;
+  }
+}
+.tshell-nowrap {
+  white-space: nowrap;
+}
+.tshell-account {
+  min-width: 0;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.tshell-nav {
+  padding: 10px 22px;
+  box-shadow: 0 1px 0 var(--color-divider);
+}
+.tshell-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tshell-nav a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--color-neutral-600);
+  color: var(--color-neutral-200);
+  font: 500 12px var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tshell-nav a:hover,
+.tshell-nav a[aria-current='location'] {
+  border-color: var(--color-accent-500);
+  color: var(--color-accent-200);
+}
+
+.tshell-main {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  max-width: 1440px;
+  padding: 22px;
+}
+.tshell-notice {
+  margin: 0;
+  display: block;
+}
+.tshell-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scroll-margin-top: 16px;
+}
+.tshell-section h2 {
+  margin: 0;
+  font: var(--font-heading-weight) 20px var(--font-heading);
+}
+.tshell-summary {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 13px;
+  color: var(--color-neutral-400);
+}
+
+.tshell-refusal {
+  box-sizing: border-box;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+.tshell-refusal h1 {
+  font-size: 32px;
+}
