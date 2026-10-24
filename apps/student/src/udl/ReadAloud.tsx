@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSpeechServices, useVoicesVersion } from './context';
 import { Icon } from './icons';
 import { createReadAloud, splitWords, type ReadState } from './speech';
@@ -47,6 +47,7 @@ export function ReadAloud({
   const [slow, setSlow] = useState(false);
   // A new rate makes a new reader, and the old one stops as it goes.
   const r = useReadAloud(text, slow ? 0.75 : 1);
+  const toggle = useRef<HTMLButtonElement>(null);
 
   return (
     <div className={['udl-read', className].filter(Boolean).join(' ')}>
@@ -62,21 +63,37 @@ export function ReadAloud({
       </Tag>
       {r.available && (
         <div className="udl-row" role="group" aria-label="Read aloud">
-          {r.state === 'idle' ? (
-            <button type="button" className="btn btn-secondary udl-btn" onClick={r.play}>
-              <Icon name="speaker" /> {label}
-            </button>
-          ) : r.state === 'speaking' ? (
-            <button type="button" className="btn btn-secondary udl-btn" onClick={r.pause}>
-              <Icon name="pause" /> Pause
-            </button>
-          ) : (
-            <button type="button" className="btn btn-secondary udl-btn" onClick={r.resume}>
-              <Icon name="play" /> Keep going
-            </button>
-          )}
+          {/* One button that changes, so keyboard focus stays on it. */}
+          <button
+            ref={toggle}
+            type="button"
+            className="btn btn-secondary udl-btn"
+            onClick={r.state === 'idle' ? r.play : r.state === 'speaking' ? r.pause : r.resume}
+          >
+            {r.state === 'idle' ? (
+              <>
+                <Icon name="speaker" /> {label}
+              </>
+            ) : r.state === 'speaking' ? (
+              <>
+                <Icon name="pause" /> Pause
+              </>
+            ) : (
+              <>
+                <Icon name="play" /> Keep going
+              </>
+            )}
+          </button>
           {r.state !== 'idle' && (
-            <button type="button" className="btn btn-ghost udl-btn" onClick={r.stop}>
+            <button
+              type="button"
+              className="btn btn-ghost udl-btn"
+              onClick={() => {
+                r.stop();
+                // Stop goes away; hand focus back to the play button.
+                toggle.current?.focus();
+              }}
+            >
               <Icon name="stop" /> Stop
             </button>
           )}

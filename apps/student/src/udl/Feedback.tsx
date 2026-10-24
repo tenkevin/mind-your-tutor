@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ReadAloud } from './ReadAloud';
 import { SpeakOrType } from './SpeakOrType';
 
@@ -20,18 +20,24 @@ export function Feedback({
 }) {
   const [challenging, setChallenging] = useState(false);
   const [sent, setSent] = useState(false);
+  const status = useRef<HTMLParagraphElement>(null);
+  // The form goes away when sent; focus the message that replaces it.
+  useEffect(() => {
+    if (sent) status.current?.focus();
+  }, [sent]);
   return (
     <article className="udl-card" aria-label={`Feedback from ${from}`}>
       <p className="udl-hint">{from} says</p>
       <ReadAloud text={message} />
       <p className="udl-hint">Why</p>
       <ReadAloud text={reason} label="Read why" />
-      {sent ? (
-        <p className="udl-status" role="status">
-          Sent to your teacher. They will look at it.
-        </p>
-      ) : challenging ? (
+      {/* Always in the page, so the message is announced when it fills in. */}
+      <p className="udl-status" role="status" ref={status} tabIndex={-1}>
+        {sent ? 'Sent to your teacher. They will look at it.' : ''}
+      </p>
+      {sent ? null : challenging ? (
         <SpeakOrType
+          autoFocus
           label="What do you think is wrong? Your teacher will see this."
           sendLabel="Send to my teacher"
           onSend={(text) => {

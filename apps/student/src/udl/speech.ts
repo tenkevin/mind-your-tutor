@@ -228,19 +228,45 @@ export function createDictation(
   Ctor: RecognitionCtor,
   cb: DictationCallbacks,
   lang = 'en-US',
+  /** How long getting ready (the on-device language pack) may take. */
+  readyTimeoutMs = 20_000,
 ): Dictation {
   let rec: RecognitionLike | null = null;
+  // Each press of Talk is a turn; Stop or a new turn makes an older one stale.
+  let turn = 0;
+  let starting = false;
   const opts = { langs: [lang], processLocally: true };
+
+  const ready = async () => {
+    const a = Ctor.available ? await Ctor.available(opts) : 'unavailable';
+    if (a === 'available') return true;
+    if (a === 'unavailable' || !Ctor.install) return false;
+    return Ctor.install(opts);
+  };
 
   return {
     async start() {
-      if (rec) return;
+      if (rec || starting) return;
+      const mine = ++turn;
+      starting = true;
       cb.onState('starting');
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let ok: boolean;
       try {
-        const a = Ctor.available ? await Ctor.available(opts) : 'unavailable';
-        if (a === 'unavailable') throw new Error('not-on-device');
-        if (a !== 'available' && !(await Ctor.install?.(opts))) throw new Error('not-on-device');
+        ok = await Promise.race([
+          ready(),
+          new Promise<boolean>((resolve) => {
+            timer = setTimeout(() => resolve(false), readyTimeoutMs);
+          }),
+        ]);
       } catch {
+        ok = false;
+      } finally {
+        clearTimeout(timer);
+      }
+      if (mine !== turn) return; // stopped while getting ready
+      starting = false;
+      if (!ok) {
         cb.onState('error', 'not-on-device');
         return;
       }
@@ -277,7 +303,15 @@ export function createDictation(
       }
     },
     stop() {
-      rec?.stop();
+      if (rec) {
+        rec.stop();
+        return;
+      }
+      if (!starting) return;
+      // Still getting ready: cancel that turn.
+      starting = false;
+      turn++;
+      cb.onState('idle');
     },
   };
 }

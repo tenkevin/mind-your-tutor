@@ -12,20 +12,20 @@ const KEY = (k: string) => `ideamap.steps.${k}`;
 function load(key: string | undefined, count: number): { step: number; paused: boolean } {
   if (!key) return { step: 0, paused: false };
   try {
-    const raw = localStorage.getItem(KEY(key));
-    const n = raw === null ? NaN : Number(raw);
-    if (Number.isInteger(n) && n >= 0 && n < count) return { step: n, paused: n > 0 };
+    // "<step>" while working, "<step>p" on a break.
+    const m = /^(\d+)(p?)$/.exec(localStorage.getItem(KEY(key)) ?? '');
+    if (m && Number(m[1]) < count) return { step: Number(m[1]), paused: m[2] === 'p' };
   } catch {
     // Storage blocked: start at the beginning.
   }
   return { step: 0, paused: false };
 }
 
-function save(key: string | undefined, step: number | null) {
+function save(key: string | undefined, step: number | null, paused = false) {
   if (!key) return;
   try {
     if (step === null) localStorage.removeItem(KEY(key));
-    else localStorage.setItem(KEY(key), String(step));
+    else localStorage.setItem(KEY(key), `${step}${paused ? 'p' : ''}`);
   } catch {
     // Storage blocked: the place lasts until the page closes.
   }
@@ -62,7 +62,7 @@ export function StepFlow({
 
   const go = (next: number, pause = false) => {
     moved.current = true;
-    save(saveKey, next);
+    save(saveKey, next, pause);
     set({ step: next, paused: pause });
   };
 

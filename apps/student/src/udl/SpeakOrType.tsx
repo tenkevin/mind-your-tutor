@@ -21,15 +21,22 @@ export function SpeakOrType({
   placeholder,
   sendLabel = 'Send',
   multiline = true,
+  autoFocus = false,
   onSend,
 }: {
   label: string;
   placeholder?: string;
   sendLabel?: string;
   multiline?: boolean;
+  /** Focus the text box when it appears, e.g. after "Challenge this". */
+  autoFocus?: boolean;
   onSend(text: string): void;
 }) {
   const id = useId();
+  const noteId = useId();
+  const box = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
+  const talk = useRef<HTMLButtonElement>(null);
+  const startTalking = useRef<HTMLButtonElement>(null);
   const { recognition, lang } = useSpeechServices();
   const [text, setText] = useState('');
   const [canTalk, setCanTalk] = useState(false);
@@ -47,6 +54,14 @@ export function SpeakOrType({
       live = false;
     };
   }, [recognition, lang]);
+
+  useEffect(() => {
+    if (autoFocus) box.current?.focus();
+  }, [autoFocus]);
+  // The explanation opens with focus on Start talking, which it describes.
+  useEffect(() => {
+    if (asking) startTalking.current?.focus();
+  }, [asking]);
 
   // Made on the first press of Talk, so nothing touches the mic before that.
   const dictation = useRef<Dictation | null>(null);
@@ -81,6 +96,14 @@ export function SpeakOrType({
     dictation.current?.stop();
     onSend(t);
     setText('');
+    // Send turns disabled once the box is empty; keep focus in the box.
+    box.current?.focus();
+  };
+
+  // Close the explanation and put focus back on Talk.
+  const closeNote = () => {
+    setAsking(false);
+    talk.current?.focus();
   };
 
   const Field = multiline ? 'textarea' : 'input';
@@ -92,6 +115,7 @@ export function SpeakOrType({
         {label}
       </label>
       <Field
+        ref={box}
         id={id}
         className="input udl-input"
         value={text}
@@ -106,42 +130,42 @@ export function SpeakOrType({
         {...(multiline ? { rows: 3 } : {})}
       />
       {asking && (
-        <div className="udl-note" role="note">
-          <p>
+        <div className="udl-note" id={noteId} role="group" aria-label="Talk instead of typing">
+          <p id={`${noteId}-text`}>
             Talk instead of typing. Your words show up in the box so you can check them. Your voice
-            stays on this device: it is not recorded or sent.
+            stays on this device: it is not recorded or sent. The first time, your device may need a
+            moment to get ready. Your browser will ask if this page can use the microphone.
           </p>
-          <p>Your browser will ask if this page can use the microphone.</p>
           <div className="udl-row">
             <button
+              ref={startTalking}
               type="button"
               className="btn btn-primary udl-btn"
+              aria-describedby={`${noteId}-text`}
               onClick={() => {
-                setAsking(false);
+                closeNote();
                 setExplained(true);
                 listen();
               }}
             >
               <Icon name="mic" /> Start talking
             </button>
-            <button
-              type="button"
-              className="btn btn-ghost udl-btn"
-              onClick={() => setAsking(false)}
-            >
+            <button type="button" className="btn btn-ghost udl-btn" onClick={closeNote}>
               Not now
             </button>
           </div>
         </div>
       )}
       <div className="udl-row">
-        {canTalk && !asking && (
+        {canTalk && (
           <button
+            ref={talk}
             type="button"
             className={`btn udl-btn ${listening ? 'btn-primary' : 'btn-secondary'}`}
             aria-pressed={listening}
             onClick={() => {
               if (listening) dictation.current?.stop();
+              else if (asking) closeNote();
               else if (!explained) setAsking(true);
               else listen();
             }}
@@ -158,12 +182,15 @@ export function SpeakOrType({
           {sendLabel}
         </button>
       </div>
+      {/* Always in the page, even when empty, so its changes are announced. */}
       <p className="udl-status" role="status">
-        {state === 'listening'
-          ? "I'm listening. Press Stop talking when you're done."
-          : error
-            ? (ERRORS[error] ?? 'Something went wrong with listening. You can still type.')
-            : ''}
+        {state === 'starting'
+          ? 'Getting ready to listen…'
+          : state === 'listening'
+            ? "I'm listening. Press Stop talking when you're done."
+            : error
+              ? (ERRORS[error] ?? 'Something went wrong with listening. You can still type.')
+              : ''}
       </p>
     </div>
   );

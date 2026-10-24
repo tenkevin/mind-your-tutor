@@ -37,8 +37,9 @@
   font-size: 0.875em;
   color: var(--color-neutral-300);
 }
+/* Never display: none, so screen readers keep the live region. */
 .udl-status:empty {
-  display: none;
+  margin-top: calc(-1 * var(--space-3));
 }
 .udl-label {
   display: block;

@@ -217,6 +217,47 @@ describe('speech input (S5-F3, S5-S1, S5-S2)', () => {
     }
   });
 
+  it('Stop while getting ready cancels, and the mic is never opened', async () => {
+    const { Ctor, made } = fakeRecognition('downloadable');
+    let finish!: (ok: boolean) => void;
+    Ctor.install = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const states: string[] = [];
+    const d = createDictation(Ctor, { onText: () => {}, onState: (s) => states.push(s) });
+    const started = d.start();
+    await Promise.resolve();
+    d.stop();
+    finish(true);
+    await started;
+    expect(states).toEqual(['starting', 'idle']);
+    expect(made).toHaveLength(0);
+  });
+
+  it('gives up when getting ready takes too long', async () => {
+    const { Ctor, made } = fakeRecognition('downloadable');
+    Ctor.install = vi.fn(() => new Promise<boolean>(() => {}));
+    const states: [string, string?][] = [];
+    await createDictation(
+      Ctor,
+      { onText: () => {}, onState: (s, e) => states.push([s, e]) },
+      'en-US',
+      10,
+    ).start();
+    expect(states).toEqual([
+      ['starting', undefined],
+      ['error', 'not-on-device'],
+    ]);
+    expect(made).toHaveLength(0);
+  });
+
+  it('Stop with nothing running does nothing', () => {
+    const states: string[] = [];
+    createDictation(fakeRecognition('available').Ctor, {
+      onText: () => {},
+      onState: (s) => states.push(s),
+    }).stop();
+    expect(states).toEqual([]);
+  });
+
   it('reports a blocked microphone after the turn ends', async () => {
     const { Ctor, started } = fakeRecognition('available');
     const states: [string, string?][] = [];
