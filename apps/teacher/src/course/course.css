@@ -38,7 +38,7 @@
   padding-block: 0;
   font-size: 12px;
 }
-.course-objective {
+textarea.course-objective {
   min-height: 54px;
   resize: vertical;
   font-family: var(--font-body);
