@@ -7,6 +7,7 @@ import {
   signInPath,
   stashWrite,
   type KeyValue,
+  type SaveState,
 } from './session';
 
 // F5-U3: an expired session sends the teacher to sign in and back, and keeps their edits.
@@ -334,5 +335,129 @@ describe('session client (F5-U3)', () => {
       expect(server.waiting()).toBe(0);
       expect(readPending(store)).toEqual([]);
     });
+  });
+});
+
+describe('save state (T1-F4)', () => {
+  /** A server whose write responses wait until the test resolves them. */
+  function heldServer() {
+    const held: { url: string; resolve: (res: Response) => void; reject: () => void }[] = [];
+    const fetchFn = ((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/me') {
+        return Promise.resolve(new Response(JSON.stringify(me(TERRY)), { status: 200 }));
+      }
+      return new Promise<Response>((resolve, reject) => {
+        held.push({ url, resolve, reject: () => reject(new TypeError('Failed to fetch')) });
+      });
+    }) as typeof fetch;
+    return { held, fetchFn };
+  }
+  const started = async (fetchFn: typeof fetch, store = memoryStore()) => {
+    const client = createSessionClient({ fetch: fetchFn, store, here: () => '/', go: () => {} });
+    await client.load();
+    const seen: SaveState[] = [];
+    client.subscribe(() => seen.push(client.saveState()));
+    return { client, seen };
+  };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  it('reads Saving while a write waits, and Saved only once the server accepts it', async () => {
+    const { held, fetchFn } = heldServer();
+    const { client, seen } = await started(fetchFn);
+    expect(client.saveState()).toBe('saved');
+
+    const sent = client.send('PUT', '/api/classes/x/config', { course: {} });
+    expect(client.saveState()).toBe('saving');
+    await tick();
+    expect(client.saveState()).toBe('saving');
+
+    held[0]!.resolve(new Response('{}', { status: 200 }));
+    await sent;
+    expect(client.saveState()).toBe('saved');
+    // One change to Saving and one back: a screen reader hears each once.
+    expect(seen).toEqual(['saving', 'saved']);
+  });
+
+  it('stays Saving until every overlapping write is accepted', async () => {
+    const { held, fetchFn } = heldServer();
+    const { client } = await started(fetchFn);
+    const a = client.send('PUT', '/a', {});
+    const b = client.send('PUT', '/b', {});
+    held[0]!.resolve(new Response('{}', { status: 200 }));
+    await a;
+    expect(client.saveState()).toBe('saving');
+    held[1]!.resolve(new Response('{}', { status: 200 }));
+    await b;
+    expect(client.saveState()).toBe('saved');
+  });
+
+  it('never reads Saved after a refused or dropped write, until it saves', async () => {
+    const { held, fetchFn } = heldServer();
+    const { client } = await started(fetchFn);
+    const refused = client.send('PUT', '/a', {});
+    held[0]!.resolve(new Response('{}', { status: 500 }));
+    await refused;
+    expect(client.saveState()).toBe('unsaved');
+
+    const dropped = client.send('PUT', '/b', {});
+    held[1]!.reject();
+    await expect(dropped).rejects.toThrow();
+    expect(client.saveState()).toBe('unsaved');
+
+    const retryA = client.send('PUT', '/a', {});
+    held[2]!.resolve(new Response('{}', { status: 200 }));
+    await retryA;
+    expect(client.saveState()).toBe('unsaved'); // /b still hasn't saved
+    const retryB = client.send('PUT', '/b', {});
+    held[3]!.resolve(new Response('{}', { status: 200 }));
+    await retryB;
+    expect(client.saveState()).toBe('saved');
+  });
+
+  it('reads Saving during a replay of kept edits, then Saved', async () => {
+    const { held, fetchFn } = heldServer();
+    const store = memoryStore();
+    stashWrite(store, { userId: TERRY, method: 'PUT', url: '/a', body: {} });
+    const { client } = await started(fetchFn, store);
+    expect(client.saveState()).toBe('unsaved');
+
+    const replay = client.replayPendingWrites();
+    expect(client.saveState()).toBe('saving');
+    await tick();
+    held[0]!.resolve(new Response('{}', { status: 200 }));
+    expect(await replay).toEqual({ saved: 1, pending: 0 });
+    expect(client.saveState()).toBe('saved');
+  });
+
+  it('reads Unsaved while a kept edit still waits after a replay', async () => {
+    const { held, fetchFn } = heldServer();
+    const store = memoryStore();
+    stashWrite(store, { userId: TERRY, method: 'PUT', url: '/a', body: {} });
+    const { client } = await started(fetchFn, store);
+    const replay = client.replayPendingWrites();
+    await tick();
+    held[0]!.resolve(new Response('{}', { status: 503 }));
+    expect(await replay).toEqual({ saved: 0, pending: 1 });
+    expect(client.saveState()).toBe('unsaved');
+  });
+
+  it('ignores kept edits of another user on this tab', async () => {
+    const { fetchFn } = heldServer();
+    const store = memoryStore();
+    stashWrite(store, { userId: TESS, method: 'PUT', url: '/a', body: {} });
+    const { client } = await started(fetchFn, store);
+    expect(client.saveState()).toBe('saved');
+  });
+
+  it('does not count signing out as a save, or keep it to replay', async () => {
+    const { held, fetchFn } = heldServer();
+    const store = memoryStore();
+    const { client, seen } = await started(fetchFn, store);
+    const out = client.signOut();
+    held[0]!.resolve(new Response('{}', { status: 401 }));
+    await out;
+    expect(seen).toEqual([]);
+    expect(readPending(store)).toEqual([]);
   });
 });

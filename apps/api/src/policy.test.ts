@@ -37,6 +37,7 @@ const ROUTE_URLS = [
   '/api/me',
   '/api/session',
   '/api/classes',
+  '/api/classes/:classId/header',
   '/api/classes/:classId/config',
   '/api/classes/:classId/roster',
   '/api/classes/:classId/library',
@@ -229,6 +230,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       { route: '/api/me', method: 'GET', url: '/api/me' },
       { route: '/api/session', method: 'GET', url: '/api/session' },
       { route: '/api/classes', method: 'GET', url: '/api/classes' },
+      {
+        route: '/api/classes/:classId/header',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/header`,
+      },
       {
         route: '/api/classes/:classId/config',
         method: 'GET',
