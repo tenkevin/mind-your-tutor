@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream';
 import { BLURRED } from '@ideamap/ai/backstop';
 import { CSRF_HEADER, EventBatchResponseSchema, type EventBatchResponse } from '@ideamap/contracts';
-import { json, type ExportStore } from '@ideamap/db';
+import { createDb, json, type Db, type ExportStore } from '@ideamap/db';
 import { errorCode, hasDatabase, PG } from '@ideamap/db/testing';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -666,17 +666,27 @@ describe.skipIf(!hasDatabase)('nothing extra recorded (M2-S4, D19)', () => {
 
 describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
   let api: TestApi;
+  // The API as deployed: its own pool at pg's default size (10, as `createDb(url)` in
+  // index.ts), not the 4 connections the harness gives test files running in parallel.
+  let db: Db;
+  let server: ReturnType<typeof buildServer>;
   beforeAll(async () => {
     api = await startApi();
+    db = createDb(api.t.url);
+    server = buildServer({ db, config: api.config });
+    await server.ready();
   }, 120_000);
   afterAll(async () => {
+    await server?.close();
+    await db?.destroy();
     await api?.close();
   });
 
   it('sustains over 5,000 events/s from 30 classes × 30 students, p95 batch under 200 ms', async () => {
     const { orgs, curricula, users } = api.sample;
-    const db = api.t.db;
-    const version = await db
+    // Seeded as the owner, like the harness's sample.
+    const owner = api.t.db;
+    const version = await owner
       .selectFrom('curriculum_version')
       .select('id')
       .where('curriculum_id', '=', curricula.a)
@@ -684,7 +694,7 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
     // 30 classes of 30 students each, all on curriculum A.
     const students: { userId: string; classId: string }[] = [];
     for (let c = 0; c < 30; c++) {
-      const klass = await db
+      const klass = await owner
         .insertInto('class')
         .values({
           org_id: orgs.a,
@@ -695,7 +705,7 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         })
         .returning('id')
         .executeTakeFirstOrThrow();
-      const created = await db
+      const created = await owner
         .insertInto('app_user')
         .values(
           Array.from({ length: 30 }, (_, s) => ({
@@ -706,7 +716,7 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         )
         .returning('id')
         .execute();
-      await db
+      await owner
         .insertInto('enrollment')
         .values(created.map((u) => ({ org_id: orgs.a, class_id: klass.id, student_id: u.id })))
         .execute();
@@ -714,12 +724,12 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
     }
     const sessions = await Promise.all(students.map((s) => sessionFor(api, s.userId, orgs.a)));
 
-    // Each student sends one 25-event batch per 5 s tick (a busy quiz), arriving
-    // evenly across the tick. 900 students need 4,500 events/s; the load is paced at
-    // 5,500/s so the run must sustain more than the 5,000/s bar.
-    const PER_BATCH = 25;
+    // Each of the 900 students sends one batch every 5 s, arriving evenly across the
+    // tick: 180 batches/s. At 31 events a batch (a busy quiz) that offers 5,580
+    // events/s, so the run must sustain more than the 5,000/s bar.
+    const PER_BATCH = 31;
     const TICKS = 3;
-    const RATE = 5500 / PER_BATCH; // batches per second
+    const RATE = students.length / 5; // batches per second
     const batch = (classId: string) => ({
       events: Array.from({ length: PER_BATCH }, (_, i) => ({
         id: ulid(),
@@ -730,20 +740,32 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         payload: { ideaId: 'evaporation' },
       })),
     });
+    // The simulated clients' work (making and serialising batches) is done before the
+    // clock starts, so the run measures the server.
     const plan = Array.from({ length: TICKS }, () =>
-      students.map((s, i) => ({ s, who: sessions[i]! })),
+      students.map((s, i) => ({ who: sessions[i]!, body: JSON.stringify(batch(s.classId)) })),
     ).flat();
     const latencies: number[] = [];
     let events = 0;
     const started = performance.now();
     await Promise.all(
-      plan.map(async ({ s, who }, i) => {
+      plan.map(async ({ who, body }, i) => {
         const due = started + (i / RATE) * 1000;
         const wait = due - performance.now();
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-        const body = batch(s.classId);
         const t0 = performance.now();
-        const res = await as(api, who)('POST', '/events', body);
+        const res = await server.inject({
+          method: 'POST',
+          url: '/events',
+          headers: {
+            ...fromApp(),
+            origin: ORIGIN,
+            [CSRF_HEADER]: who.csrf,
+            'content-type': 'application/json',
+          },
+          cookies: { [SESSION_COOKIE]: who.cookie },
+          payload: body,
+        });
         latencies.push(performance.now() - t0);
         expect(res.statusCode).toBe(200);
         events += (res.json() as EventBatchResponse).accepted.length;

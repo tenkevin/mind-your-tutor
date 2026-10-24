@@ -9,7 +9,7 @@ import {
   type EventRejection,
   type EventText,
 } from '@ideamap/contracts';
-import { json, REMOVED_STUDENT_NAME } from '@ideamap/db';
+import { REMOVED_STUDENT_NAME } from '@ideamap/db';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import type { Trx } from './db.js';
@@ -127,26 +127,9 @@ async function ingest(
   ctx: IngestContext,
 ): Promise<Outcome> {
   const classIds = classIdsOf(raw);
-
+  const { enrolled, allowed, optedOut } = await batchContext(trx, classIds, ctx);
   // Enrolled in every class the batch names, or the whole batch is refused.
-  if (classIds.length > 0) {
-    const enrolled = await trx
-      .selectFrom('enrollment')
-      .select('class_id')
-      .where('student_id', '=', ctx.studentId)
-      .where('class_id', 'in', classIds)
-      .execute();
-    if (enrolled.length !== classIds.length) return { forbidden: true };
-  }
-
-  const allowed = await allowedVersions(trx, classIds, ctx);
-  const optedOut = Boolean(
-    await trx
-      .selectFrom('tracing_opt_out')
-      .select('student_id')
-      .where('student_id', '=', ctx.studentId)
-      .executeTakeFirst(),
-  );
+  if (!enrolled) return { forbidden: true };
 
   const rejected: EventRejection[] = [];
   const duplicates: string[] = [];
@@ -181,23 +164,20 @@ async function ingest(
     candidates.push({ index, event });
   });
 
-  // One batch per student at a time, so seq has no gaps and ids are checked once.
-  await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`events:${ctx.studentId}`}, 0))`.execute(
-    trx,
-  );
-
-  // 2. Ids already recorded: resends of this student's are dropped without error.
+  // 2. Ids already recorded: resends of this student's are dropped without error. The
+  // batch's lock (taken in batchContext) holds until commit, so this read and the seq
+  // below see every earlier batch of this student's.
+  let last = 0;
   if (candidates.length > 0) {
-    const known = await trx
-      .selectFrom('interaction_event_key')
-      .select(['id', 'student_id'])
-      .where(
-        'id',
-        'in',
-        candidates.map((c) => c.event.id),
-      )
-      .execute();
-    const owner = new Map(known.map((k) => [k.id, k.student_id]));
+    const ids = candidates.map((c) => c.event.id);
+    const { rows } = await sql<{ last: string | null; known: { id: string; student: string }[] }>`
+      SELECT
+        (SELECT max(k.seq) FROM interaction_event_key AS k WHERE k.student_id = ${ctx.studentId}) AS last,
+        (SELECT coalesce(json_agg(json_build_object('id', k.id, 'student', k.student_id)), '[]')
+           FROM interaction_event_key AS k WHERE k.id = ANY(${ids}::text[])) AS known
+    `.execute(trx);
+    last = Number(rows[0]?.last ?? 0);
+    const owner = new Map((rows[0]?.known ?? []).map((k) => [k.id, k.student]));
     candidates = candidates.filter(({ index, event }) => {
       const by = owner.get(event.id);
       if (by === undefined) return true;
@@ -214,68 +194,92 @@ async function ingest(
   // 4. Sequence numbers continue from this student's last one.
   const accepted: EventBatchResponse['accepted'] = [];
   if (candidates.length > 0) {
-    const last = await trx
-      .selectFrom('interaction_event_key')
-      .select((eb) => eb.fn.max('seq').as('seq'))
-      .where('student_id', '=', ctx.studentId)
-      .executeTakeFirst();
-    let seq = Number(last?.seq ?? 0);
+    let seq = last;
     const rows = candidates.map(({ event }) => {
       seq += 1;
       accepted.push({ id: event.id, seq });
       return {
         id: event.id,
-        org_id: ctx.orgId,
-        student_id: ctx.studentId,
         class_id: event.classId,
         version_id: event.versionId,
         seq,
         at: event.at,
         type: event.type,
-        payload: json(event.payload),
-        tracing_opted_out: optedOut,
+        payload: event.payload,
       };
     });
-    await trx.insertInto('interaction_event').values(rows).execute();
+    // One parameter for the whole batch: the hot path's cheapest insert (M2-P1).
+    await sql`
+      INSERT INTO interaction_event
+        (id, org_id, student_id, class_id, version_id, seq, at, type, payload, tracing_opted_out)
+      SELECT r.id, ${ctx.orgId}::uuid, ${ctx.studentId}::uuid, r.class_id, r.version_id, r.seq,
+        r.at, r.type, r.payload, ${optedOut}
+      FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS r(
+        id text, class_id uuid, version_id uuid, seq bigint, at timestamptz, type text,
+        payload jsonb)
+      ORDER BY r.seq
+    `.execute(trx);
   }
 
   rejected.sort((a, b) => a.index - b.index);
   return { forbidden: false, response: { accepted, duplicates, rejected } };
 }
 
+interface BatchContext {
+  /** The student is enrolled in every class the batch names. */
+  enrolled: boolean;
+  /**
+   * The versions each class accepts events from: its pinned version, and any version
+   * it was pinned to until a re-pin less than the grace period ago. Re-pins are read
+   * from the audit log, which a trigger writes for every change to a class (F6).
+   */
+  allowed: Map<string, Set<string>>;
+  /** D24: the student is opted out of tracing now. */
+  optedOut: boolean;
+}
+
 /**
- * The versions each class accepts events from: its pinned version, and any version
- * it was pinned to until a re-pin less than the grace period ago. Re-pins are read
- * from the audit log, which a trigger writes for every change to a class (F6).
+ * Take the student's batch lock and read everything the batch is judged against, in
+ * one statement: ingest is the hot path (M2-P1), so each round trip counts. The lock
+ * (one batch per student at a time, so seq has no gaps and ids are checked once)
+ * holds until the transaction ends.
  */
-async function allowedVersions(
+async function batchContext(
   trx: Trx,
   classIds: readonly string[],
   ctx: IngestContext,
-): Promise<Map<string, Set<string>>> {
-  const allowed = new Map<string, Set<string>>(classIds.map((id) => [id, new Set()]));
-  if (classIds.length === 0) return allowed;
-  const classes = await trx
-    .selectFrom('class')
-    .select(['id', 'pinned_version_id'])
-    .where('id', 'in', classIds)
-    .execute();
-  for (const c of classes) {
-    if (c.pinned_version_id) allowed.get(c.id)?.add(c.pinned_version_id);
-  }
+): Promise<BatchContext> {
   const since = new Date(ctx.now.getTime() - ctx.graceMs);
-  const repins = await trx
-    .selectFrom('audit_event')
-    .select(['class_id', sql<string | null>`before ->> 'pinned_version_id'`.as('version_id')])
-    .where('target_type', '=', 'class')
-    .where('class_id', 'in', classIds)
-    .where('at', '>', since)
-    .where(sql<boolean>`before ? 'pinned_version_id'`)
-    .execute();
-  for (const r of repins) {
-    if (r.class_id && r.version_id) allowed.get(r.class_id)?.add(r.version_id);
+  const { rows } = await sql<{
+    classes: { id: string; pinned: string | null; enrolled: boolean }[];
+    repins: { classId: string; versionId: string | null }[];
+    opted_out: boolean;
+  }>`
+    SELECT
+      pg_advisory_xact_lock(hashtextextended(${`events:${ctx.studentId}`}, 0)) AS locked,
+      (SELECT coalesce(json_agg(json_build_object(
+                'id', c.id, 'pinned', c.pinned_version_id, 'enrolled', e.student_id IS NOT NULL)), '[]')
+         FROM class AS c
+         LEFT JOIN enrollment AS e ON e.class_id = c.id AND e.student_id = ${ctx.studentId}
+         WHERE c.id = ANY(${classIds}::uuid[])) AS classes,
+      (SELECT coalesce(json_agg(json_build_object(
+                'classId', a.class_id, 'versionId', a.before ->> 'pinned_version_id')), '[]')
+         FROM audit_event AS a
+         WHERE a.target_type = 'class' AND a.class_id = ANY(${classIds}::uuid[])
+           AND a.at > ${since} AND a.before ? 'pinned_version_id') AS repins,
+      EXISTS (SELECT 1 FROM tracing_opt_out AS o WHERE o.student_id = ${ctx.studentId}) AS opted_out
+  `.execute(trx);
+  const row = rows[0]!;
+  const allowed = new Map<string, Set<string>>(classIds.map((id) => [id, new Set()]));
+  let enrolledIn = 0;
+  for (const c of row.classes) {
+    if (c.enrolled) enrolledIn++;
+    if (c.pinned) allowed.get(c.id)?.add(c.pinned);
   }
-  return allowed;
+  for (const r of row.repins) {
+    if (r.versionId) allowed.get(r.classId)?.add(r.versionId);
+  }
+  return { enrolled: enrolledIn === classIds.length, allowed, optedOut: row.opted_out };
 }
 
 async function storeTexts(
