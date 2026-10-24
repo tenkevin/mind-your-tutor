@@ -172,7 +172,8 @@ async function ingest(
     const ids = candidates.map((c) => c.event.id);
     const { rows } = await sql<{ last: string | null; known: { id: string; student: string }[] }>`
       SELECT
-        (SELECT max(k.seq) FROM interaction_event_key AS k WHERE k.student_id = ${ctx.studentId}) AS last,
+        (SELECT k.seq FROM interaction_event_key AS k WHERE k.student_id = ${ctx.studentId}
+           ORDER BY k.seq DESC LIMIT 1) AS last,
         (SELECT coalesce(json_agg(json_build_object('id', k.id, 'student', k.student_id)), '[]')
            FROM interaction_event_key AS k WHERE k.id = ANY(${ids}::text[])) AS known
     `.execute(trx);
@@ -217,7 +218,6 @@ async function ingest(
       FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS r(
         id text, class_id uuid, version_id uuid, seq bigint, at timestamptz, type text,
         payload jsonb)
-      ORDER BY r.seq
     `.execute(trx);
   }
 
@@ -257,6 +257,14 @@ async function batchContext(
   }>`
     SELECT
       pg_advisory_xact_lock(hashtextextended(${`events:${ctx.studentId}`}, 0)) AS locked,
+      -- For this transaction only. The tenant policy's org_id = current_org_id() matches
+      -- the ledger key's leading column (org_id, id). With statistics behind a
+      -- fast-growing table, the planner can find the student's last seq by reading
+      -- every key row in the organization, through a bitmap scan or a sort of that
+      -- index. With neither, the only plan left is one step down the student's own
+      -- (student_id, seq) index, however big the organization's history is.
+      set_config('enable_bitmapscan', 'off', true) AS no_bitmap,
+      set_config('enable_sort', 'off', true) AS no_sort,
       (SELECT coalesce(json_agg(json_build_object(
                 'id', c.id, 'pinned', c.pinned_version_id, 'enrolled', e.student_id IS NOT NULL)), '[]')
          FROM class AS c

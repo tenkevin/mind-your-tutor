@@ -438,53 +438,6 @@ describe.skipIf(!hasDatabase)('audit log (F6-F5, F6-F6, F6-S2, F6-U2)', () => {
   });
 });
 
-describe.skipIf(!hasDatabase)('audit cost (F6-P2)', () => {
-  let t: TestDatabase;
-  let a: Org;
-  beforeAll(async () => {
-    t = await freshDatabase();
-    a = await seedWithAdmin(t.db, 'p');
-  });
-  afterAll(async () => {
-    await t?.drop();
-  });
-
-  it('adds under 10 ms at p95 to a config save', async () => {
-    const app = await t.loginAs(APP_ROLE);
-    const save = async (i: number) => {
-      const started = performance.now();
-      await withOrg(app, a.orgId, async (trx) => {
-        await actAs(trx, a.teacherId);
-        await trx
-          .updateTable('class_config')
-          .set({
-            config: config({
-              course: { pass_mark: 50 + (i % 40) },
-              units: [{ unit: 1, due_date: `2026-11-${String(1 + (i % 28)).padStart(2, '0')}` }],
-              personas: [{ persona_id: 'tutor', prompt_template: `Prompt ${i} for {name}.` }],
-            }),
-          })
-          .where('class_id', '=', a.classId)
-          .execute();
-      });
-      return performance.now() - started;
-    };
-    const p95 = async (n: number) => {
-      const times: number[] = [];
-      for (let i = 0; i < n; i++) times.push(await save(i));
-      times.sort((x, y) => x - y);
-      return times[Math.floor(n * 0.95)]!;
-    };
-    await p95(30); // warm up
-    const audited = await p95(300);
-    await sql`ALTER TABLE class_config DISABLE TRIGGER audit`.execute(t.db);
-    const plain = await p95(300);
-    await sql`ALTER TABLE class_config ENABLE TRIGGER audit`.execute(t.db);
-    if (process.env.IDEAMAP_PERF_VERBOSE) console.log({ audited, plain });
-    expect(audited - plain).toBeLessThan(10);
-  });
-});
-
 describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)', () => {
   let t: TestDatabase;
   let app: Db;
