@@ -386,9 +386,9 @@
       ],
       "done_when": "packages/tracker implements §8.3 rulesVersion 1 (mastery, unlock, unit complete, XP and combo, streak, cards, 'may need help' with reasons) as pure deterministic rules with property tests, and computes nothing D20 forbids",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-m3",
+      "updated": "2026-10-24"
     },
     {
       "id": "M4",
