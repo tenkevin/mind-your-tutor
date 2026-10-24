@@ -3,7 +3,7 @@ import cookie from '@fastify/cookie';
 import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
 import { createBoss, ensureQueues, orgScope } from '@ideamap/worker';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { loadConfig, type AuthConfig } from './config.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
@@ -11,11 +11,23 @@ import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
 import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
 import { authRoutes } from './routes/auth.js';
+import { publishRoutes, type PublishRoutesOptions } from './publish.js';
 import { deriveKeys } from './tokens.js';
 
 export { loadConfig, type AuthConfig } from './config.js';
 export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
 export type { IdentityProvider } from './providers.js';
+export { publishRoutes, type PublishRoutesOptions } from './publish.js';
+export {
+  PublishRequestError,
+  blockingIssues,
+  getDiff,
+  previewPublish,
+  publish,
+  repin,
+  studentsReceiving,
+  type PublishDeps,
+} from './publishing.js';
 export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
 
 export interface ServerOptions {
@@ -28,6 +40,8 @@ export interface ServerOptions {
   logger?: boolean;
   /** Curriculum imports (C4); left out, the routes aren't registered. */
   imports?: Pick<ImportRoutesOptions, 'deps'>;
+  /** Diff, preview, publish and rollback (C5); left out, the routes aren't registered. */
+  publish?: Pick<PublishRoutesOptions, 'deps'>;
   /** FERPA student export and delete (F6); left out, the routes aren't registered. */
   privacy?: PrivacyRoutes;
 }
@@ -56,22 +70,24 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
-  const { imports } = options;
+  // The caller of C4's and C5's routes is the signed-in session.
+  const authenticate = (req: FastifyRequest) =>
+    req.session
+      ? { orgId: req.session.orgId, userId: req.session.userId, role: req.session.role }
+      : null;
+  const { imports, publish } = options;
   if (imports) {
     // Its own scope, for the upload body parser and error handler, under /api like the
-    // other app routes (the apps proxy /api). The policy hooks above still apply; the
-    // caller is the signed-in session.
-    app.register(
-      async (scope) =>
-        importRoutes(scope, {
-          deps: imports.deps,
-          authenticate: (req) =>
-            req.session
-              ? { orgId: req.session.orgId, userId: req.session.userId, role: req.session.role }
-              : null,
-        }),
-      { prefix: '/api' },
-    );
+    // other app routes (the apps proxy /api). The policy hooks above still apply.
+    app.register(async (scope) => importRoutes(scope, { deps: imports.deps, authenticate }), {
+      prefix: '/api',
+    });
+  }
+  if (publish) {
+    // Its own scope, for its error handler, also under /api; the policy hooks above apply.
+    app.register(async (scope) => publishRoutes(scope, { deps: publish.deps, authenticate }), {
+      prefix: '/api',
+    });
   }
 
   // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).
