@@ -113,6 +113,9 @@ importers:
       '@ideamap/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ideamap/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@ideamap/worker':
         specifier: workspace:*
         version: link:../worker

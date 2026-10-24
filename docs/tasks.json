@@ -262,9 +262,9 @@
       ],
       "done_when": "The API returns a draft vs published diff, and publishing moves the pinned version for the chosen classes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c5",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "C6",
@@ -386,9 +386,9 @@
       ],
       "done_when": "packages/tracker implements §8.3 rulesVersion 1 (mastery, unlock, unit complete, XP and combo, streak, cards, 'may need help' with reasons) as pure deterministic rules with property tests, and computes nothing D20 forbids",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-m3",
+      "updated": "2026-10-24"
     },
     {
       "id": "M4",
@@ -443,7 +443,7 @@
       ],
       "done_when": "Import, pipeline steps and data checks render from the API, matching the design",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t2",
       "updated": "2026-10-24"
     },
@@ -457,7 +457,7 @@
       ],
       "done_when": "Course details edit class overrides and show whether each value comes from the curriculum or the class",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t3",
       "updated": "2026-10-24"
     },
@@ -540,7 +540,7 @@
       ],
       "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a1",
       "updated": "2026-10-24"
     },
