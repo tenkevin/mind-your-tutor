@@ -540,7 +540,7 @@
       ],
       "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a1",
       "updated": "2026-10-24"
     },
