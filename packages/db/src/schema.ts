@@ -32,14 +32,20 @@ export type CreatedAt = ColumnType<Date, Date | string | undefined, Date | strin
 export type VectorText = string;
 
 export type UserRole = 'admin' | 'author' | 'teacher' | 'student';
-export type SsoProvider = 'google' | 'clever' | 'classlink';
+/** A configured SSO provider's id: `google`, `clever`, `classlink` or another slug (F5). */
+export type SsoProvider = string;
 export type UseFor = 'agent' | 'tutor' | 'both';
 /** A class's setting for a shared document (D11): a UseFor, or `off` to hide it. */
 export type ClassUseFor = UseFor | 'off';
 export type IndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 export type ExportKind =
-  'template' | 'data_checks' | 'standards_alignment' | 'drafted_rows' | 'class_progress';
+  | 'template'
+  | 'data_checks'
+  | 'standards_alignment'
+  | 'drafted_rows'
+  | 'class_progress'
+  | 'student_record';
 export type TextKind = 'chat' | 'teachback' | 'transcript';
 /** A column-mapping entry, as in VersionSource. */
 export type ColumnMapping = VersionSource['column_mapping'];
@@ -47,9 +53,16 @@ export type ColumnMapping = VersionSource['column_mapping'];
 export interface OrganizationTable {
   id: Generated<string>;
   name: string;
+  /** Days typed student text is kept (§10; default 90). */
   text_retention_days: Generated<number>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** Days AI transcripts are kept (§10; default 90, from 0015). */
+  ai_retention_days: Generated<number>;
+  /** Days export files are kept (default 7, from 0015). */
+  export_retention_days: Generated<number>;
+  /** Days sign-in sessions are kept after expiry or revocation (default 30, from 0015). */
+  session_retention_days: Generated<number>;
 }
 
 export interface AppUserTable {
@@ -191,6 +204,8 @@ export interface ClassTable {
   time_zone: Generated<string>;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** OneRoster sourcedId, set by a roster import (0014). */
+  roster_source_id: string | null;
 }
 
 export interface ClassConfigTable {
@@ -312,6 +327,13 @@ export interface ExportJobTable {
   updated_at: CreatedAt;
 }
 
+/** Which students an export file holds (0015). */
+export interface ExportSubjectTable {
+  export_job_id: string;
+  student_id: string;
+  org_id: string;
+}
+
 export interface AuditEventTable {
   id: Generated<string>;
   org_id: string;
@@ -321,6 +343,20 @@ export interface AuditEventTable {
   target_id: string | null;
   detail: ColumnType<Record<string, unknown>, JsonText<Record<string, unknown>> | undefined, never>;
   at: CreatedAt;
+  /** The class the change belongs to, for a class's history (0015). */
+  class_id: string | null;
+  curriculum_id: string | null;
+  /** Only what changed, with secrets redacted. Null for a create (before) or a delete (after). */
+  before: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
+  after: ColumnType<
+    Record<string, unknown> | null,
+    JsonText<Record<string, unknown>> | null | undefined,
+    never
+  >;
 }
 
 export interface AiInteractionTable {
@@ -337,6 +373,27 @@ export interface AiInteractionTable {
   output_tokens: number | null;
   redacted_at: NullableTimestamp;
   created_at: CreatedAt;
+}
+
+/** Maps a provider's tenant (domain, district) to an organization (0014, F5). */
+export interface SsoTenantTable {
+  provider: SsoProvider;
+  tenant: string;
+  org_id: string;
+  created_at: CreatedAt;
+}
+
+/** A signed-in session (0014, F5). Only the SHA-256 of the cookie token is kept. */
+export interface AuthSessionTable {
+  id: Generated<string>;
+  org_id: string;
+  user_id: string;
+  token_hash: Buffer;
+  provider: SsoProvider;
+  created_at: Timestamp;
+  last_seen_at: Timestamp;
+  expires_at: Timestamp;
+  revoked_at: NullableTimestamp;
 }
 
 export interface Database {
@@ -362,8 +419,11 @@ export interface Database {
   progress_snapshot: ProgressSnapshotTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
+  export_subject: ExportSubjectTable;
   audit_event: AuditEventTable;
   ai_interaction: AiInteractionTable;
+  sso_tenant: SsoTenantTable;
+  auth_session: AuthSessionTable;
 }
 
 export type TableName = keyof Database;
@@ -373,7 +433,16 @@ export type TableName = keyof Database;
  * here must be added there too; `columns.test.ts` compares this with the live schema.
  */
 export const COLUMNS = {
-  organization: ['id', 'name', 'text_retention_days', 'created_at', 'updated_at'],
+  organization: [
+    'id',
+    'name',
+    'text_retention_days',
+    'created_at',
+    'updated_at',
+    'ai_retention_days',
+    'export_retention_days',
+    'session_retention_days',
+  ],
   app_user: [
     'id',
     'org_id',
@@ -451,6 +520,7 @@ export const COLUMNS = {
     'time_zone',
     'created_at',
     'updated_at',
+    'roster_source_id',
   ],
   class_config: ['class_id', 'org_id', 'config', 'updated_by', 'updated_at'],
   enrollment: ['class_id', 'student_id', 'org_id', 'created_at'],
@@ -572,7 +642,21 @@ export const COLUMNS = {
     'finished_at',
     'updated_at',
   ],
-  audit_event: ['id', 'org_id', 'actor_id', 'action', 'target_type', 'target_id', 'detail', 'at'],
+  export_subject: ['export_job_id', 'student_id', 'org_id'],
+  audit_event: [
+    'id',
+    'org_id',
+    'actor_id',
+    'action',
+    'target_type',
+    'target_id',
+    'detail',
+    'at',
+    'class_id',
+    'curriculum_id',
+    'before',
+    'after',
+  ],
   ai_interaction: [
     'id',
     'org_id',
@@ -588,6 +672,18 @@ export const COLUMNS = {
     'redacted_at',
     'created_at',
   ],
+  sso_tenant: ['provider', 'tenant', 'org_id', 'created_at'],
+  auth_session: [
+    'id',
+    'org_id',
+    'user_id',
+    'token_hash',
+    'provider',
+    'created_at',
+    'last_seen_at',
+    'expires_at',
+    'revoked_at',
+  ],
 } as const satisfies { [T in TableName]: readonly (keyof Database[T] & string)[] };
 
 /** Tables whose rows belong to one organization, with row-level security forced. */
@@ -599,6 +695,9 @@ export const CLASS_SCOPED_TABLES = [
   'class_library_doc',
   'class_chunk',
 ] as const satisfies readonly TableName[];
+
+/** Tables with one extra policy beyond tenant isolation: the owner's lookup (0014). */
+export const OWNER_LOOKUP_TABLES = ['sso_tenant'] as const satisfies readonly TableName[];
 
 // Fails to compile if a `Database` column is missing from COLUMNS.
 type MissingColumns = {

@@ -23,6 +23,15 @@ export {
 export { needsFormulaEscape, similarity } from './mapping.js';
 export { matchTab, looseName } from './tabs.js';
 export { serialToIsoDate, dateToIsoDate } from './dates.js';
+export { parseCsv as parseOneRosterCsv, parseOneRoster, RosterError } from './oneroster.js';
+export type {
+  Roster,
+  RosterClass,
+  RosterEnrollment,
+  RosterRole,
+  RosterSkip,
+  RosterUser,
+} from './oneroster.js';
 export { screenUpload, sha256, type Screened } from './screen.js';
 export {
   FileObjectStore,
