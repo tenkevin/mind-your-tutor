@@ -443,9 +443,9 @@
       ],
       "done_when": "Import, pipeline steps and data checks render from the API, matching the design",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t2",
+      "updated": "2026-10-24"
     },
     {
       "id": "T3",
