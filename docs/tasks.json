@@ -443,7 +443,7 @@
       ],
       "done_when": "Import, pipeline steps and data checks render from the API, matching the design",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t2",
       "updated": "2026-10-24"
     },
