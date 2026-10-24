@@ -51,6 +51,13 @@ const ROUTE_URLS = [
 
 /** C4's routes, registered when the server is given import deps. */
 const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+/** C5's routes, registered when the server is given publish deps. */
+const PUBLISH_ROUTE_URLS = [
+  '/versions/:versionId/diff',
+  '/versions/:versionId/preview',
+  '/versions/:versionId/publish',
+  '/classes/:classId/pin',
+];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
@@ -124,6 +131,30 @@ describe('C4 import routes join the registry (F5-F4)', () => {
   });
 });
 
+describe('C5 publish routes join the registry (F5-F4)', () => {
+  it('declares a policy for each publish route: staff read diffs, teachers and admins publish', async () => {
+    const app = buildServer({
+      db: undefined as never,
+      config: offlineConfig,
+      publish: { deps: {} as never },
+    });
+    await app.ready();
+    const routes = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    const version = { kind: 'visible', table: 'curriculum_version', param: 'versionId' };
+    expect(routes.map((r) => [`${r.method} ${r.url}`, r.policy])).toEqual([
+      ['GET /versions/:versionId/diff', { roles: ['admin', 'author', 'teacher'], scope: version }],
+      ['POST /versions/:versionId/preview', { roles: ['admin', 'teacher'], scope: version }],
+      ['POST /versions/:versionId/publish', { roles: ['admin', 'teacher'], scope: version }],
+      [
+        'POST /classes/:classId/pin',
+        { roles: ['admin', 'teacher'], scope: { kind: 'class', param: 'classId' } },
+      ],
+    ]);
+    expect(routes.map((r) => r.url)).toEqual(PUBLISH_ROUTE_URLS);
+  });
+});
+
 describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
   it('declares an admin-only policy for the student in the caller org', async () => {
     const app = buildServer({
@@ -155,10 +186,18 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     Signed
   >;
   let jobId = '';
+  let versionId = '';
   beforeAll(async () => {
-    // With C4's import routes and F6's privacy routes registered, so the sweep covers
-    // them too.
-    api = await startApi({}, { imports: true, privacy: NO_FILES });
+    // With C4's import, C5's publish and F6's privacy routes registered, so the sweep
+    // covers them too.
+    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES });
+    versionId = (
+      await api.t.db
+        .selectFrom('curriculum_version')
+        .select('id')
+        .where('curriculum_id', '=', api.sample.curricula.a)
+        .executeTakeFirstOrThrow()
+    ).id;
     const { users, orgs } = api.sample;
     who = {
       admin: await sessionFor(api, users['admin-a'], orgs.a),
@@ -294,6 +333,29 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         headers: UPLOAD,
       },
       { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
+      {
+        route: '/versions/:versionId/diff',
+        method: 'GET',
+        url: `/versions/${versionId}/diff`,
+      },
+      {
+        route: '/versions/:versionId/preview',
+        method: 'POST',
+        url: `/versions/${versionId}/preview`,
+        body: { class_ids: [classes.a1] },
+      },
+      {
+        route: '/versions/:versionId/publish',
+        method: 'POST',
+        url: `/versions/${versionId}/publish`,
+        body: { class_ids: [classes.a1] },
+      },
+      {
+        route: '/classes/:classId/pin',
+        method: 'POST',
+        url: `/classes/${classes.a1}/pin`,
+        body: { version_id: versionId },
+      },
       // F6: aimed at another student of org A, so deleting them leaves the sweep's
       // student session alone.
       {
@@ -317,6 +379,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       new Set([
         ...ROUTE_URLS.filter((u) => !PUBLIC.has(u)),
         ...IMPORT_ROUTE_URLS,
+        ...PUBLISH_ROUTE_URLS,
         ...PRIVACY_ROUTE_URLS,
       ]),
     );
@@ -369,6 +432,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // C4: staff in the curriculum's org may import into it and read its jobs.
     'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
     'GET /imports/:jobId': ['admin', 'otherClassTeacher'],
+    // C5: staff of the org read a version's diff; publishing and rollback for class A1
+    // are its teacher's or an admin's (the default).
+    'GET /versions/:versionId/diff': ['admin', 'otherClassTeacher'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {
