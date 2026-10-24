@@ -32,6 +32,17 @@ export function decodeEntities(text: string): string {
   });
 }
 
+/**
+ * Decodes Excel's _xHHHH_ escapes in cell text (ST_Xstring), which stand for one
+ * UTF-16 unit each; _x005F_ is a literal "_". Exports write these (export.ts).
+ */
+export function decodeXstring(text: string): string {
+  if (!text.includes('_x')) return text;
+  return text.replace(/_x([0-9A-Fa-f]{4})_/g, (_, code: string) =>
+    String.fromCharCode(parseInt(code, 16)),
+  );
+}
+
 export function decodeXml(bytes: Uint8Array): string {
   if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes);
   if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes);

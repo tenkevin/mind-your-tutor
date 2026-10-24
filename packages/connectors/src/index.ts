@@ -40,3 +40,31 @@ export {
   uploadKey,
   type ObjectStore,
 } from './storage.js';
+export {
+  csvExport,
+  xlsxExport,
+  EXPORT_TARGETS,
+  ExportRefused,
+  MAX_CELL_TEXT,
+  encodeXstring,
+  REPORT_KINDS,
+  sheetToCsv,
+  writeWorkbook,
+  type ExportCell,
+  type ExportFormat,
+  type ExportPayload,
+  type ExportSheet,
+  type ExportTarget,
+  type FileRef,
+  type ReportKind,
+} from './export.js';
+export {
+  alignmentReport,
+  assessmentDraftsReport,
+  dataCheckReport,
+  fileSlug,
+  packReport,
+  templateReport,
+  type ReportOptions,
+  type ReportPack,
+} from './reports.js';

@@ -276,9 +276,9 @@
       ],
       "done_when": "Template workbook, data-check report and alignment report download as files",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c6",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "C7",
@@ -354,9 +354,9 @@
       ],
       "done_when": "Every §8.2 event type (D19) has a zod schema with its educational level in packages/tracker or packages/contracts. Unknown types and forbidden fields (IP, device, location, free text) are rejected",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-m1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "M2",
@@ -429,9 +429,9 @@
       ],
       "done_when": "Teacher app shell with header, section nav and the Saving and Saved indicator, behind sign-in",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-t1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     },
     {
       "id": "T2",
@@ -443,9 +443,9 @@
       ],
       "done_when": "Import, pipeline steps and data checks render from the API, matching the design",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t2",
+      "updated": "2026-10-24"
     },
     {
       "id": "T3",
@@ -457,9 +457,9 @@
       ],
       "done_when": "Course details edit class overrides and show whether each value comes from the curriculum or the class",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t3",
+      "updated": "2026-10-24"
     },
     {
       "id": "T4",
