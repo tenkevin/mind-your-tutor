@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ideamap/contracts": "workspace:*",
     "@ideamap/ui": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"

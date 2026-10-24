@@ -40,10 +40,10 @@ import { z } from 'zod';
 // None of this touches progress or interaction events: migrating progress across
 // versions is a tracker rule (C7). Every query acts for the caller's organization
 // through `scope` (F4 row-level security), so another organization's rows are never
-// visible, and an id from one is refused as not found.
+// visible, and an id from one is refused with 403, as F5's policies refuse it.
 //
-// Who may do what (F5 supplies the caller; these checks are the seam its roles plug
-// into): admins, authors and teachers of the organization may read a diff; only an
+// Who may do what (the routes' F5 policies check it first, and these checks repeat
+// it for each selected class): admins, authors and teachers of the organization may read a diff; only an
 // organization admin or the class's own teacher may preview for, publish to or
 // re-pin a class.
 
@@ -56,7 +56,7 @@ export interface PublishDeps {
 /** A request the API refuses, with the HTTP status and a message for the teacher. */
 export class PublishRequestError extends Error {
   constructor(
-    readonly status: 400 | 403 | 404 | 409 | 422,
+    readonly status: 400 | 403 | 409 | 422,
     message: string,
     readonly blocking?: BlockingIssue[],
   ) {
@@ -69,8 +69,11 @@ const REVIEW_ROLES: readonly UserRole[] = ['admin', 'author', 'teacher'];
 const PUBLISH_ROLES: readonly UserRole[] = ['admin', 'teacher'];
 const Uuid = z.uuid();
 
-const NO_VERSION = 'There is no such curriculum version.';
-const NO_CLASS = 'There is no such class.';
+// Like F5's policies, an id that can't be seen is refused the same way whether it is
+// missing, another organization's, or one the caller may not use, so nothing leaks.
+const NO_VERSION = 'You can’t use this curriculum version.';
+const NO_CLASS = 'You can only change the version of classes you teach.';
+const NOT_YOUR_CLASSES = 'You can only publish to classes you teach. Nothing was published.';
 
 function mayReview(caller: Caller): void {
   if (!REVIEW_ROLES.includes(caller.role)) {
@@ -88,7 +91,7 @@ function mayPublish(caller: Caller): void {
 }
 
 function uuid(id: string, notFound: string): string {
-  if (!Uuid.safeParse(id).success) throw new PublishRequestError(404, notFound);
+  if (!Uuid.safeParse(id).success) throw new PublishRequestError(403, notFound);
   return id;
 }
 
@@ -125,7 +128,7 @@ async function loadVersion(trx: Trx, versionId: string): Promise<VersionRow> {
     .select(['id', 'curriculum_id', 'number', 'status', 'published_at'])
     .where('id', '=', versionId)
     .executeTakeFirst();
-  if (!version) throw new PublishRequestError(404, NO_VERSION);
+  if (!version) throw new PublishRequestError(403, NO_VERSION);
   return version;
 }
 
@@ -161,7 +164,7 @@ async function diffFor(trx: Trx, version: VersionRow, againstId?: string): Promi
         .where('id', '=', uuid(againstId, NO_VERSION))
         .where('curriculum_id', '=', version.curriculum_id)
         .executeTakeFirst()) ?? null;
-    if (!base) throw new PublishRequestError(404, NO_VERSION);
+    if (!base) throw new PublishRequestError(403, NO_VERSION);
   }
   return DiffResponseSchema.parse({
     from_version: base && { id: base.id, number: base.number },
@@ -200,9 +203,9 @@ export function blockingIssues(issues: readonly VersionIssue[]): BlockingIssue[]
 }
 
 /**
- * The selected classes, locked when `lock` is set. Refuses ids that can't be seen
- * (another organization's, or missing) as not found, classes on another curriculum,
- * and classes the caller doesn't teach unless they are an admin.
+ * The selected classes, locked when `lock` is set. Refuses, in one way, ids that
+ * can't be seen (another organization's, or missing) and classes the caller doesn't
+ * teach unless they are an admin; then classes on another curriculum.
  */
 async function loadClasses(
   trx: Trx,
@@ -220,10 +223,10 @@ async function loadClasses(
   if (lock) query = query.forUpdate();
   const classes = await query.execute();
   if (classes.length !== classIds.length) {
-    throw new PublishRequestError(404, `${NO_CLASS} Nothing was published.`);
+    throw new PublishRequestError(403, NOT_YOUR_CLASSES);
   }
   if (caller.role !== 'admin' && classes.some((c) => c.teacher_id !== caller.userId)) {
-    throw new PublishRequestError(403, 'You can only publish to classes you teach.');
+    throw new PublishRequestError(403, NOT_YOUR_CLASSES);
   }
   if (classes.some((c) => c.curriculum_id !== version.curriculum_id)) {
     throw new PublishRequestError(
@@ -459,9 +462,9 @@ export async function repin(
       .where('id', '=', classId)
       .forUpdate()
       .executeTakeFirst();
-    if (!cls) throw new PublishRequestError(404, NO_CLASS);
+    if (!cls) throw new PublishRequestError(403, NO_CLASS);
     if (caller.role !== 'admin' && cls.teacher_id !== caller.userId) {
-      throw new PublishRequestError(403, 'You can only change the version of classes you teach.');
+      throw new PublishRequestError(403, NO_CLASS);
     }
     const version = await loadVersion(trx, versionId);
     if (version.curriculum_id !== cls.curriculum_id) {

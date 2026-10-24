@@ -14,11 +14,23 @@ import {
   type Org,
   type TestDatabase,
 } from '../../worker/src/testing/db.js';
+import { CSRF_HEADER } from '@ideamap/contracts';
+import { loadConfig } from './config.js';
 import { buildServer, studentsReceiving } from './index.js';
+import { SESSION_COOKIE } from './policy.js';
+import { createSession } from './sessions.js';
+import { csrfToken, deriveKeys, sessionCookieValue } from './tokens.js';
 
-// C5 over HTTP: diff, preview, publish and rollback (docs/qa/C5.md). Callers are
-// picked by a test header until F5's sign-in supplies them; the role checks run
-// through the same `authenticate` seam F5 will fill.
+// C5 over HTTP: diff, preview, publish and rollback (docs/qa/C5.md). Callers sign in
+// with F5 sessions: a test names one, and the request carries that caller's session
+// cookie and CSRF token. Ids the caller can't use get F5's uniform 403, whether they
+// are missing or another organization's.
+
+const ORIGIN = 'https://teacher.ideamap.test';
+const config = loadConfig({
+  IDEAMAP_APP_ORIGINS: ORIGIN,
+  IDEAMAP_SESSION_SECRET: 'test-only-session-secret-0123456789abcdef',
+});
 
 describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   let t: TestDatabase;
@@ -26,6 +38,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   let a: Org;
   let b: Org;
   const callers = new Map<string, Caller>();
+  const sessions = new Map<string, { cookie: string; csrf: string }>();
   const ids: Record<string, string> = {};
   let versionA: string;
   let versionB: string;
@@ -95,13 +108,22 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     url: string,
     payload?: unknown,
     headers: Record<string, string> = {},
-  ) =>
-    app.inject({
+  ) => {
+    const signed = sessions.get(as);
+    return app.inject({
       method,
       url,
-      headers: { 'x-test-user': as, ...headers },
+      headers: {
+        host: new URL(ORIGIN).host,
+        'x-forwarded-proto': 'https',
+        origin: ORIGIN,
+        ...(signed ? { [CSRF_HEADER]: signed.csrf } : {}),
+        ...headers,
+      },
+      cookies: signed ? { [SESSION_COOKIE]: signed.cookie } : {},
       ...(payload === undefined ? {} : { payload: payload as object }),
     });
+  };
   const publishTo = (as: string, versionId: string, classIds: string[], key?: string) =>
     call(
       as,
@@ -155,12 +177,20 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     await enroll(ids.c3, [ids.s5!]);
     await enroll(ids.bClass, [b.student.userId], b);
 
-    app = buildServer({
-      publish: {
-        deps: { scope: appScope(t.db) },
-        authenticate: (request) => callers.get(String(request.headers['x-test-user'])) ?? null,
-      },
-    });
+    const keys = deriveKeys(config.sessionSecret);
+    for (const [name, who] of callers) {
+      const { token } = await createSession(t.db, config, {
+        orgId: who.orgId,
+        userId: who.userId,
+        provider: 'google',
+        now: new Date(),
+      });
+      sessions.set(name, {
+        cookie: sessionCookieValue(who.orgId, token),
+        csrf: csrfToken(keys, token),
+      });
+    }
+    app = buildServer({ db: t.db, config, publish: { deps: { scope: appScope(t.db) } } });
   });
   afterAll(async () => {
     await app?.close();
@@ -305,7 +335,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(await count([ids.c2!])).toBe(2);
     expect(await count([])).toBe(0);
     // Another organization's class can't be selected at all.
-    expect((await preview('teacher', versionB, [ids.c1!, ids.bClass!])).statusCode).toBe(404);
+    expect((await preview('teacher', versionB, [ids.c1!, ids.bClass!])).statusCode).toBe(403);
   });
 
   it('C5-F4: publishing B to class 1 moves only class 1; A stays as it was', async () => {
@@ -381,7 +411,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect((await version(versionC)).status).toBe('draft');
 
     const missing = await publishTo('teacher', versionC, [ids.c1!, crypto.randomUUID()]);
-    expect(missing.statusCode).toBe(404);
+    expect(missing.statusCode).toBe(403);
     expect(await pins()).toEqual(before);
     expect((await version(versionC)).status).toBe('draft');
     expect((await audits()).length).toBe(auditCount);
@@ -460,8 +490,8 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       student: 403,
       author: 403,
       teacher2: 403,
-      'b-admin': 404,
-      'b-teacher': 404,
+      'b-admin': 403,
+      'b-teacher': 403,
     };
     for (const [who, status] of Object.entries(tries)) {
       const res = await publishTo(who, versionF, [ids.c1!]);
@@ -477,13 +507,13 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     // Diffs: staff of the organization can read; students and other orgs can't.
     expect((await call('nobody', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(401);
     expect((await call('student', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(403);
-    expect((await call('b-admin', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(404);
+    expect((await call('b-admin', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(403);
     expect((await call('author', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(200);
     // Rollback follows the same rule.
     const pin = (as: string) =>
       call(as, 'POST', `/classes/${ids.c1}/pin`, { version_id: versionA });
     expect((await pin('teacher2')).statusCode).toBe(403);
-    expect((await pin('b-admin')).statusCode).toBe(404);
+    expect((await pin('b-admin')).statusCode).toBe(403);
 
     // An org admin may publish to any class of the organization, the teacher to theirs.
     expect((await publishTo('admin', versionF, [ids.other!])).statusCode).toBe(201);
@@ -494,7 +524,12 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   it('C5-S2: a class and the version pinned to it must share organization and curriculum', async () => {
     const before = await pins();
     // Org A's version to org B's class: B's class can't be seen.
-    expect((await publishTo('teacher', versionA, [ids.bClass!])).statusCode).toBe(404);
+    const bClass = await publishTo('teacher', versionA, [ids.bClass!]);
+    expect(bClass.statusCode).toBe(403);
+    // The same answer as for a class that doesn't exist, so nothing leaks.
+    expect(bClass.json()).toEqual(
+      (await publishTo('teacher', versionA, [crypto.randomUUID()])).json(),
+    );
     // Curriculum X's version to a class on curriculum Y.
     const wrong = await publishTo('teacher', versionA, [ids.classY!]);
     expect(wrong.statusCode).toBe(422);

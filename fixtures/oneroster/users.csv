@@ -1,0 +1,8 @@
+sourcedId,status,dateLastModified,enabledUser,orgSourcedIds,role,username,userIds,givenName,familyName,middleName,identifier,email,sms,phone,agentSourcedIds,grades,password
+t-100,active,2026-09-01T00:00:00Z,true,sch-1,teacher,ada.teacher,,Ada,Teacher,,T100,ada.teacher@example.org,,555-0100,,,
+t-101,active,2026-09-01T00:00:00Z,true,sch-1,teacher,ben.teacher,,Ben,Teacher,,T101,Ben.Teacher@Example.org,,555-0101,,,
+s-200,active,2026-09-01T00:00:00Z,true,sch-1,student,cal.student,,Cal,Student,Q,S200,cal.student@example.org,555-0200,555-0200,p-1,06,hunter2
+s-201,active,2026-09-01T00:00:00Z,true,sch-1,student,dee.student,,Dee,Student,,S201,,,,,06,
+s-202,active,2026-09-01T00:00:00Z,true,sch-1,student,eli.student,,"Eli ""E""",Student,,S202,eli.student@example.org,,,,05,
+p-1,active,2026-09-01T00:00:00Z,true,sch-1,parent,pat.parent,,Pat,Parent,,P1,pat.parent@example.org,555-0300,,,,
+s-299,tobedeleted,2026-09-01T00:00:00Z,true,sch-1,student,old.student,,Old,Student,,S299,old.student@example.org,,,,06,

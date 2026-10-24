@@ -26,6 +26,7 @@ const APP_FUNCTION_INVENTORY = [
   'app.guard_curriculum_version()',
   'app.record_interaction_event_keys()',
   'app.refuse_change()',
+  'app.sso_tenant_org(text,text)',
   'app.touch_updated_at()',
 ];
 
@@ -271,11 +272,13 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
     ]);
     expect(rows.filter((fn) => fn.definer).map((fn) => fn.signature)).toEqual([
       'app.record_interaction_event_keys()',
+      'app.sso_tenant_org(text,text)',
     ]);
 
     const source = new Map(rows.map(({ signature, source: body }) => [signature, body]));
     expect(source.get('app.guard_class_pin()')).toContain('FROM public.curriculum_version');
     expect(source.get('app.record_interaction_event_keys()')).toContain('FROM public.app_user');
+    expect(source.get('app.sso_tenant_org(text,text)')).toContain('FROM public.sso_tenant');
     expect(source.get('app.record_interaction_event_keys()')).toContain(
       'INSERT INTO public.interaction_event_key',
     );

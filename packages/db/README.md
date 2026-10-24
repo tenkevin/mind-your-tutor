@@ -55,6 +55,7 @@ run; add a new one.
 | 0011 isolation        | event key ledger written only by its trigger function; class-scoped library settings; no TEMP for PUBLIC (F4 QA findings)                     |
 | 0012 function binding | Trusted `search_path` for every app function; schema-qualified relation access and a fail-closed class pin guard (F4cx1)                      |
 | 0013 import jobs      | `import_job.steps` (Teacher Settings pipeline progress) and `idempotency_key` (one job per repeated upload; C4)                               |
+| 0014 auth             | `sso_tenant` (provider tenant → org), `auth_session`, `app.sso_tenant_org()`, `class.roster_source_id`; SSO provider ids become slugs (F5)    |
 
 ## Roles and row-level security
 
