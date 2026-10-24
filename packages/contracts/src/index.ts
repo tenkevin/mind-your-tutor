@@ -19,4 +19,5 @@ export * from './explanation.js';
 export * from './data-checks.js';
 export * from './auth.js';
 export * from './import-job.js';
+export * from './publish.js';
 export * from './events.js';

@@ -40,7 +40,7 @@ export interface TestApi {
 
 export async function startApi(
   overrides: Record<string, string> = {},
-  options: { imports?: boolean; privacy?: ExportStore } = {},
+  options: { imports?: boolean; publish?: boolean; privacy?: ExportStore } = {},
 ): Promise<TestApi> {
   const t = await freshDatabase();
   const sample = await seedSample(t.db);
@@ -72,11 +72,20 @@ export async function startApi(
         },
       }
     : undefined;
+  // C5's publish routes.
+  const publish = options.publish
+    ? {
+        deps: {
+          scope: <T>(orgId: string, fn: (trx: Trx) => Promise<T>) => scoped(t.db, { orgId }, fn),
+        },
+      }
+    : undefined;
   const app = buildServer({
     db: t.db,
     config,
     now: () => new Date(Date.now() + offset),
     imports,
+    publish,
     privacy: options.privacy ? { store: options.privacy } : undefined,
   });
   await app.ready();
