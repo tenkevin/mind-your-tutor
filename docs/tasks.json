@@ -386,7 +386,7 @@
       ],
       "done_when": "packages/tracker implements §8.3 rulesVersion 1 (mastery, unlock, unit complete, XP and combo, streak, cards, 'may need help' with reasons) as pure deterministic rules with property tests, and computes nothing D20 forbids",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-m3",
       "updated": "2026-10-24"
     },
@@ -803,7 +803,7 @@
         "A7",
         "S5"
       ],
-      "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded",
+      "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded; per D30, feedback.ruled and teacher.feedback.approved/edited carry the acting teacher's pseudonymous id, and example retrieval weighs each teacher's contributions equally",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -862,9 +862,9 @@
       ],
       "done_when": "Per D17: shared student-app components give multiple means of representation (text, read-aloud, visual), action and expression (typed or spoken answers and challenges) and engagement (choice of mission and pacing); a UDL 3.0 checklist is added to the QA README for every student-facing task",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-s5",
-      "updated": "2026-10-23"
+      "updated": "2026-10-24"
     }
   ]
 }
