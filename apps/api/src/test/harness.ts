@@ -5,6 +5,7 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { expect } from 'vitest';
 import { MemoryObjectStore } from '@ideamap/connectors';
 import type { Sender } from '@ideamap/worker';
+import type { AiGatewayOptions } from '../ai/gateway.js';
 import { loadConfig, type AuthConfig } from '../config.js';
 import { scoped, type Trx } from '../db.js';
 import {
@@ -40,7 +41,14 @@ export interface TestApi {
 
 export async function startApi(
   overrides: Record<string, string> = {},
-  options: { imports?: boolean; privacy?: ExportStore } = {},
+  options: {
+    imports?: boolean;
+    privacy?: ExportStore;
+    /** The AI gateway, with a mock provider (A1). */
+    ai?: AiGatewayOptions;
+    /** Receives the API's JSON log lines. */
+    log?: { write(line: string): void };
+  } = {},
 ): Promise<TestApi> {
   const t = await freshDatabase();
   const sample = await seedSample(t.db);
@@ -78,6 +86,8 @@ export async function startApi(
     now: () => new Date(Date.now() + offset),
     imports,
     privacy: options.privacy ? { store: options.privacy } : undefined,
+    ai: options.ai,
+    logger: options.log ? { level: 'info', stream: options.log } : false,
   });
   await app.ready();
   return {
