@@ -157,10 +157,10 @@ export function parseTimeZone(source: string): TimeZoneRule {
   if (zoneName(c) === null) fail('expected a zone name of 3 or more letters, or <...>');
   const std = clock(c, 24);
   if (std === null || Number.isNaN(std)) return fail('expected a standard offset');
-  if (c.peek() === '') return { source, stdOffset: -std, dst: null };
+  if (c.peek() === '') return { source, stdOffset: 0 - std, dst: null };
   if (zoneName(c) === null) fail('expected a summer-time zone name');
   let dstWest = std - 3600;
-  if (c.peek() !== ',') {
+  if (c.peek() !== ',' && c.peek() !== '') {
     const given = clock(c, 24);
     if (given === null || Number.isNaN(given)) return fail('expected a summer-time offset');
     dstWest = given;
@@ -169,7 +169,7 @@ export function parseTimeZone(source: string): TimeZoneRule {
   const end = start && transition(c);
   if (!start || !end) return fail('expected ",start[/time],end[/time]" rules for summer time');
   if (c.peek() !== '') fail(`unexpected "${source.slice(c.i)}"`);
-  return { source, stdOffset: -std, dst: { offset: -dstWest, start, end } };
+  return { source, stdOffset: 0 - std, dst: { offset: 0 - dstWest, start, end } };
 }
 
 /** The local day number on which a date rule falls in `year`. */
