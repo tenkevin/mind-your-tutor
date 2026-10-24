@@ -457,9 +457,9 @@
       ],
       "done_when": "Course details edit class overrides and show whether each value comes from the curriculum or the class",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t3",
+      "updated": "2026-10-24"
     },
     {
       "id": "T4",
