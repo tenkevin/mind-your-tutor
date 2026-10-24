@@ -99,6 +99,7 @@ function SourceCard({
   const source = job?.source ?? version?.source ?? null;
   const when = job ? (job.finished_at ?? job.created_at) : version?.created_at;
   const steps = job?.steps ?? [];
+  const failed = job?.status === 'failed';
   return (
     <div className="cdata-source">
       <div className="cdata-source-row">
@@ -111,7 +112,7 @@ function SourceCard({
           </span>
           <span className="cdata-source-meta">
             {source
-              ? `${KIND_LABEL[source.kind]} · imported ${when ? formatTime(when) : ''}`
+              ? `${KIND_LABEL[source.kind]} · ${failed ? 'import failed' : busy(job) ? 'importing since' : 'imported'} ${when ? formatTime(when) : ''}`
               : 'Import the Curriculum Pack workbook, its CSV files or pack JSON.'}
           </span>
         </div>
@@ -146,7 +147,8 @@ function SourceCard({
           </button>
         </div>
       </div>
-      {version && (
+      {/* The tabs of the version shown below; not after a failed import (that file made none). */}
+      {version && !failed && !busy(job) && (
         <ul className="cdata-tabs" aria-label={`Tabs in version ${version.number}`}>
           {version.tabs.map((t) => (
             <li key={t.tab}>
@@ -283,24 +285,35 @@ function where(issue: GroupedIssue): string | null {
   return parts.length > 0 ? parts.join(', ') : null;
 }
 
-function Items({ items, tab }: { items: readonly string[]; tab: string }) {
-  if (items.length === 0) return null;
-  const noun = tab === 'Units' ? 'Units' : 'Ideas';
-  if (items.length <= SHOWN_ITEMS) {
+/** "ground (row 9)": an item with its sheet row, when the version records rows (T2-U3). */
+function itemLabels(issue: GroupedIssue): string[] {
+  return issue.items.map((item, i) => {
+    const at = issue.item_rows[i];
+    return at ? `${item} (row ${at.row})` : item;
+  });
+}
+
+function Items({ issue, tab }: { issue: GroupedIssue; tab: string }) {
+  if (issue.items.length === 0) return null;
+  // The tab the rows are in: unit numbers are Units rows; most ids are Ideas rows.
+  const located = issue.item_rows.find((r) => r !== null);
+  const noun = located?.tab ?? (tab === 'Units' ? 'Units' : 'Ideas');
+  const labels = itemLabels(issue);
+  if (labels.length <= SHOWN_ITEMS) {
     return (
       <p className="cdata-items">
-        {noun}: {items.join(', ')}
+        {noun}: {labels.join(', ')}
       </p>
     );
   }
   return (
     <div className="cdata-items">
       <p>
-        {noun}: {items.slice(0, SHOWN_ITEMS).join(', ')}…
+        {noun}: {labels.slice(0, SHOWN_ITEMS).join(', ')}…
       </p>
       <details className="cdata-more">
-        <summary>Show all {items.length.toLocaleString('en')}</summary>
-        <p>{items.join(', ')}</p>
+        <summary>Show all {labels.length.toLocaleString('en')}</summary>
+        <p>{labels.join(', ')}</p>
       </details>
     </div>
   );
@@ -314,7 +327,7 @@ function GroupIssue({ issue, tab }: { issue: GroupedIssue; tab: string }) {
         {at && <span className="cdata-at">{at}: </span>}
         {issue.message}
       </p>
-      <Items items={issue.items} tab={tab} />
+      <Items issue={issue} tab={tab} />
     </>
   );
 }
@@ -350,7 +363,7 @@ function Group({ group }: { group: IssueGroup }) {
         ))}
         {folded.length > 0 && (
           <details className="cdata-more">
-            <summary>Show {plural(folded.length, 'more')}</summary>
+            <summary>Show {folded.length.toLocaleString('en')} more</summary>
             <ul className="cdata-folded">
               {folded.map((issue, i) => (
                 <li key={i}>
@@ -408,6 +421,9 @@ export function CurriculumDataView({
   const job = data?.job ?? null;
   const version = data?.version ?? null;
   const locked = state.uploading || busy(job) || state.loading;
+  // A job that just succeeded, before its draft has loaded: the version is still the
+  // previous one, so its checks would be the wrong draft's.
+  const stale = job?.status === 'succeeded' && job.version?.id !== version?.id;
   return (
     <div className="cdata">
       {/* Each step change and the end of an import are read out once (T2-U2). */}
@@ -425,8 +441,9 @@ export function CurriculumDataView({
       {busy(job) && (
         <p className="cdata-muted">Data checks appear here when the import finishes.</p>
       )}
+      {stale && <p className="cdata-muted">Loading the new draft&apos;s data checks…</p>}
       {job?.status === 'failed' && <Failure job={job} earlier={version?.number ?? null} />}
-      {version && !busy(job) && job?.status !== 'failed' && (
+      {version && !busy(job) && job?.status !== 'failed' && !stale && (
         <Fragment>
           <PublishState version={version} />
           <DataChecks version={version} />

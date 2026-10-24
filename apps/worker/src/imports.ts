@@ -3,6 +3,7 @@ import {
   canPublishIssues,
   CurriculumDataResponseSchema,
   groupVersionIssues,
+  rowLocator,
   IdempotencyKeySchema,
   ImportJobPayloadSchema,
   ImportJobViewSchema,
@@ -343,7 +344,7 @@ export async function getCurriculumData(
             checksum: version.source.checksum,
           },
           tabs: TAB_NAMES.map((tab) => ({ tab, rows: tabRows(version.pack, tab) })),
-          groups: groupVersionIssues(version.issues),
+          groups: groupVersionIssues(version.issues, rowLocator(version.pack, version.source.rows)),
         }
       : null,
   });
@@ -537,6 +538,7 @@ export async function runImport(deps: RunDeps, data: unknown): Promise<RunOutcom
     ...source,
     kind: imported.kind ?? source.kind,
     column_mapping: imported.mapping,
+    rows: imported.rows,
   });
   const issues = VersionIssuesSchema.parse([...imported.issues, ...checks]);
   return finish(deps, orgId, jobId, steps, {

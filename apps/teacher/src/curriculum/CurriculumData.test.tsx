@@ -70,11 +70,12 @@ describe('Curriculum data section (T2)', () => {
     const groups = [...html.matchAll(/<li class="cdata-group" data-level="(\w+)">(.*?)<\/li>/g)];
     expect(groups.map((g) => g[1])).toEqual(['error', 'warning', 'info']);
     expect(text(groups[0]![2]!)).toContain('Error Unknown prerequisite Fix in Ideas → requires');
-    expect(text(groups[0]![2]!)).toContain('Ideas: ground');
+    // T2-U3: each id names its sheet row.
+    expect(text(groups[0]![2]!)).toContain('Ideas: ground (row 19)');
     expect(text(groups[1]![2]!)).toContain(
       'Warning Missing standard codes Fix in Ideas → standard_codes',
     );
-    expect(text(groups[1]![2]!)).toContain('Ideas: rain');
+    expect(text(groups[1]![2]!)).toContain('Ideas: rain (row 14)');
     expect(text(groups[2]![2]!)).toContain('Info Missing media Fix in Ideas → media_url');
   });
 
@@ -100,6 +101,7 @@ describe('Curriculum data section (T2)', () => {
         {
           message: 'Unit 1 (Water goes up) has no objective; Atlas can draft one.',
           items: ['1'],
+          item_rows: [],
           at: null,
         },
       ],
@@ -154,6 +156,10 @@ describe('Curriculum data section (T2)', () => {
     const earlier = render(state({ data: data({ job: failed }) }));
     expect(text(earlier)).toContain('Version 1, from an earlier import, is unchanged.');
     expect(earlier).not.toContain('cdata-group');
+    // The card names the failed file as failed, without the earlier version's tabs.
+    expect(text(earlier)).toContain('Excel workbook · import failed Oct 24, 10:00 AM');
+    expect(text(earlier)).not.toContain(' imported ');
+    expect(earlier).not.toContain('cdata-tabs');
   });
 
   it('T2-F6: an upload refused at the door is shown as an alert', () => {
@@ -176,12 +182,27 @@ describe('Curriculum data section (T2)', () => {
     expect(text(html)).toContain('Ideas 18');
   });
 
+  it('shows no checks from the previous draft while the new one loads', () => {
+    const next = job({
+      version: {
+        id: '8f8b8f7e-9f7c-4a40-9a5e-0d3c2b1a0f08',
+        number: 2,
+        status: 'draft',
+        can_publish: false,
+      },
+    });
+    const html = render(state({ data: data({ job: next }) }));
+    expect(html).not.toContain('cdata-group');
+    expect(html).not.toContain('cdata-publish');
+    expect(text(html)).toContain("Loading the new draft's data checks…");
+  });
+
   it('T2-S2: sheet text is shown as text, never as markup', () => {
     const evil = '<img src=x onerror="alert(1)"><script>alert(2)</script>';
     const base = data();
     const group: IssueGroup = {
       ...base.version!.groups[0]!,
-      issues: [{ message: `${evil} requires "aquifer".`, items: [evil], at: null }],
+      issues: [{ message: `${evil} requires "aquifer".`, items: [evil], item_rows: [], at: null }],
     };
     const html = render(
       state({
@@ -219,6 +240,7 @@ describe('Curriculum data section (T2)', () => {
         issues: ids.slice(0, 298).map((id) => ({
           message: `${id} has no links in the Links tab.`,
           items: [id],
+          item_rows: [],
           at: null,
         })),
       },
@@ -230,7 +252,7 @@ describe('Curriculum data section (T2)', () => {
         fix: { tab: 'Ideas', column: 'media_url' },
         blocks_publish: false,
         draftable: false,
-        issues: [{ message: '2000 ideas have no media_url.', items: ids, at: null }],
+        issues: [{ message: '2000 ideas have no media_url.', items: ids, item_rows: [], at: null }],
       },
       data().version!.groups[0]!,
     ];
@@ -240,7 +262,8 @@ describe('Curriculum data section (T2)', () => {
     const html = render(state({ data: big }));
     expect(performance.now() - start).toBeLessThan(1000);
     expect(text(html)).toContain('Data checks · 1 error, 298 warnings, 1 info');
-    expect(text(html)).toContain('Show 295 more');
+    expect(text(html)).toContain('Show 295 more ');
+    expect(html).not.toContain('mores');
     expect(text(html)).toContain('Show all 2,000');
   });
 

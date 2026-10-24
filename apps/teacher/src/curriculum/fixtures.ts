@@ -77,6 +77,7 @@ export const SAMPLE_GROUPS: IssueGroup[] = [
         message:
           'Groundwater requires "aquifer", which isn\'t an idea_id in Ideas. Fix it in Ideas → requires.',
         items: ['ground'],
+        item_rows: [{ tab: 'Ideas', row: 19 }],
         at: null,
       },
     ],
@@ -94,6 +95,7 @@ export const SAMPLE_GROUPS: IssueGroup[] = [
         message:
           '1 idea has no standard_codes, so it is missing from alignment reports: Rain. Add codes in Ideas → standard_codes.',
         items: ['rain'],
+        item_rows: [{ tab: 'Ideas', row: 14 }],
         at: null,
       },
     ],
@@ -122,6 +124,7 @@ export const SAMPLE_GROUPS: IssueGroup[] = [
           'lake',
           'river',
         ],
+        item_rows: [],
         at: null,
       },
     ],

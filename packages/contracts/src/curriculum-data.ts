@@ -4,7 +4,7 @@ import type { VersionIssue } from './curriculum-version.js';
 import { DATA_CHECK_KINDS, DATA_CHECK_LEVELS, type DataCheckKind } from './data-checks.js';
 import { IMPORT_ISSUE_CODES, type ImportIssueCode } from './import.js';
 import { ImportJobViewSchema } from './import-job.js';
-import { TAB_NAMES } from './spec.js';
+import { TAB_NAMES, type TabName } from './spec.js';
 
 // Teacher Settings → Curriculum data (ARCHITECTURE.md §11, task T2): the latest import
 // job, and the newest version's import and data-check issues grouped by cause, errors
@@ -65,6 +65,13 @@ export const GroupedIssueSchema = z.object({
   message: z.string(),
   /** The idea_ids or unit numbers it is about (data checks). */
   items: z.array(z.string()),
+  /**
+   * Where each item is in the sheet, in step with `items`: its tab and row, or null
+   * when the version doesn't record rows (T2-U3).
+   */
+  item_rows: z
+    .array(z.object({ tab: z.enum(TAB_NAMES), row: z.number().int().min(1) }).nullable())
+    .default([]),
   /** The cell, for import issues; null for data checks, which span rows. */
   at: IssueLocationSchema.nullable(),
 });
@@ -94,11 +101,56 @@ export type IssueGroup = z.infer<typeof IssueGroupSchema>;
 
 const LEVEL_ORDER = { error: 0, warning: 1, info: 2 } as const;
 
+/** The sheet tab and row of one data-check item (an idea_id or a unit number). */
+export type ItemLocator = (fixTab: TabName, item: string) => { tab: TabName; row: number } | null;
+
+type RowSource = {
+  ideas: readonly { idea_id: string }[];
+  units: readonly { unit: number }[];
+  assessment: readonly { idea_id: string }[];
+};
+
+/**
+ * Finds data-check items in the sheet from a version's pack and the sheet row of each
+ * pack item (`VersionSource.rows`). Unit items are Units rows; Assessment items are
+ * the idea's Assessment row, if it has one; every other item is the idea's Ideas row.
+ */
+export function rowLocator(
+  pack: RowSource,
+  rows: Partial<Record<TabName, readonly number[]>> | undefined,
+): ItemLocator {
+  if (!rows) return () => null;
+  const first = <T>(list: readonly T[], key: (t: T) => string) => {
+    const index = new Map<string, number>();
+    list.forEach((t, i) => {
+      if (!index.has(key(t))) index.set(key(t), i);
+    });
+    return index;
+  };
+  const ideas = first(pack.ideas, (i) => i.idea_id);
+  const units = first(pack.units, (u) => String(u.unit));
+  const assessment = first(pack.assessment, (a) => a.idea_id);
+  const at = (tab: TabName, index: number | undefined) => {
+    const row = index === undefined ? undefined : rows[tab]?.[index];
+    return row === undefined ? null : { tab, row };
+  };
+  return (fixTab, item) => {
+    if (fixTab === 'Units') return at('Units', units.get(item));
+    // An idea with no question yet has no Assessment row; its Ideas row names it.
+    if (fixTab === 'Assessment')
+      return at('Assessment', assessment.get(item)) ?? at('Ideas', ideas.get(item));
+    return at('Ideas', ideas.get(item));
+  };
+}
+
 /**
  * Groups a version's issues by cause (data-check kind or import code), level and fix
  * column; errors first, then warnings, then info, each in the order first found.
  */
-export function groupVersionIssues(issues: readonly VersionIssue[]): IssueGroup[] {
+export function groupVersionIssues(
+  issues: readonly VersionIssue[],
+  locate: ItemLocator = () => null,
+): IssueGroup[] {
   const groups = new Map<string, IssueGroup>();
   issues.forEach((issue) => {
     const blocks = !canPublishIssues([issue]);
@@ -120,7 +172,14 @@ export function groupVersionIssues(issues: readonly VersionIssue[]): IssueGroup[
         blocks_publish: blocks,
         draftable: issue.draftable === true,
       };
-      entry = { message: issue.message, items: issue.items, at: null };
+      const fixTab = issue.fix.tab;
+      const itemRows = issue.items.map((item) => locate(fixTab, item));
+      entry = {
+        message: issue.message,
+        items: issue.items,
+        item_rows: itemRows.some((r) => r !== null) ? itemRows : [],
+        at: null,
+      };
     } else {
       const code: ImportIssueCode = issue.code ?? (issue.tab ? 'cell' : 'pack');
       key = `i|${code}|${issue.severity}|${issue.tab ?? ''}|${issue.column ?? ''}|${blocks}`;
@@ -136,6 +195,7 @@ export function groupVersionIssues(issues: readonly VersionIssue[]): IssueGroup[
       entry = {
         message: issue.message,
         items: [],
+        item_rows: [],
         at: { tab: issue.tab, row: issue.row, column: issue.column },
       };
     }

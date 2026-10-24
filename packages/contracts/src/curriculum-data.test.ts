@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countIssues, groupVersionIssues } from './curriculum-data.js';
+import { countIssues, groupVersionIssues, rowLocator } from './curriculum-data.js';
 import { VersionIssuesSchema } from './curriculum-version.js';
 
 const noLinks = (id: string) => ({
@@ -93,5 +93,43 @@ describe('groupVersionIssues (T2-F3)', () => {
   it('is empty for a clean pack', () => {
     expect(groupVersionIssues([])).toEqual([]);
     expect(countIssues([])).toEqual({ error: 0, warning: 0, info: 0 });
+  });
+});
+
+describe('rowLocator (T2-U3)', () => {
+  const pack = {
+    ideas: [{ idea_id: 'a' }, { idea_id: 'b' }],
+    units: [{ unit: 1 }, { unit: 2 }],
+    assessment: [{ idea_id: 'b' }],
+  };
+  // A blank sheet row 3 was dropped, so b is row 4, not 3.
+  const rows = { Ideas: [2, 4], Units: [2, 3], Assessment: [5] };
+
+  it('finds ideas, units and assessment rows by sheet row, not pack order', () => {
+    const locate = rowLocator(pack, rows);
+    expect(locate('Ideas', 'b')).toEqual({ tab: 'Ideas', row: 4 });
+    expect(locate('Links', 'a')).toEqual({ tab: 'Ideas', row: 2 });
+    expect(locate('Units', '2')).toEqual({ tab: 'Units', row: 3 });
+    expect(locate('Assessment', 'b')).toEqual({ tab: 'Assessment', row: 5 });
+    // No question yet for a: its Ideas row names it.
+    expect(locate('Assessment', 'a')).toEqual({ tab: 'Ideas', row: 2 });
+    expect(locate('Ideas', 'aquifer')).toBeNull();
+  });
+
+  it('knows nothing for versions without rows', () => {
+    expect(rowLocator(pack, undefined)('Ideas', 'a')).toBeNull();
+    const [group] = groupVersionIssues(
+      VersionIssuesSchema.parse([noLinks('a')]),
+      rowLocator(pack, undefined),
+    );
+    expect(group!.issues[0]!.item_rows).toEqual([]);
+  });
+
+  it('puts rows beside the items when grouping', () => {
+    const [group] = groupVersionIssues(
+      VersionIssuesSchema.parse([noLinks('b')]),
+      rowLocator(pack, rows),
+    );
+    expect(group!.issues[0]!.item_rows).toEqual([{ tab: 'Ideas', row: 4 }]);
   });
 });

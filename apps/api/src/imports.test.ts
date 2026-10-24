@@ -280,6 +280,9 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
         ['info', 'media', { tab: 'Ideas', column: 'media_url' }, false, 11],
       ]);
       expect(version.groups[0]!.issues[0]!.items).toEqual(['ground']);
+      // T2-U3: ids resolve to their sheet rows in the workbook.
+      expect(version.groups[0]!.issues[0]!.item_rows).toEqual([{ tab: 'Ideas', row: 19 }]);
+      expect(version.groups[1]!.issues[0]!.item_rows).toEqual([{ tab: 'Ideas', row: 14 }]);
       expect(version.groups[1]!.issues[0]!.items).toEqual(['rain']);
     });
 
