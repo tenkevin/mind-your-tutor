@@ -6,13 +6,17 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Queue
 
+> **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D29 and the §8 spec v1 exactly; see AGENTS.md.
+
+**Update 2026-10-23 20:05 UTC (user-approved):** independent Claude QA sessions are now reviewing all six PRs (F6 #20, T1 #24, C5 #23, C6 #21, M1 #25, S5 #26), so merges can start this weekend under the normal gates. On Monday, Codex reviews the merged work; its errors become `<ID>cx<n>` fix tasks as before. Stacked builds wait until Monday's QA. Criteria now exist for every open task except X1 and X2 (after the pilot).
+
 ## Monday QA queue (as of 2026-10-23 17:00 UTC)
 
 Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).
 
 **Needs independent QA, highest priority first:**
-1. **F6 #20.** agent-f6 is re-integrating with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
-2. **T1** (PR pending, agent-t1): the teacher shell; unlocks T2 and T3.
+1. **F6 #20 at `9583e75`.** Re-integrated with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
+2. **T1 #24 at `9089d2c`**: the teacher shell; unlocks T2 and T3.
 3. **C5 #23** at `6f43575`: first run; criteria in docs/qa/C5.md (D14 count).
 4. **C6 #21** at `750a50b`: re-run after the C6-E1/E2/E3 fixes; C6-F7 reconciled.
 

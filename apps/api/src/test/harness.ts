@@ -1,4 +1,5 @@
 import { CSRF_HEADER, MeResponseSchema } from '@ideamap/contracts';
+import type { ExportStore } from '@ideamap/db';
 import { freshDatabase, type TestDatabase } from '@ideamap/db/testing';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { expect } from 'vitest';
@@ -39,7 +40,7 @@ export interface TestApi {
 
 export async function startApi(
   overrides: Record<string, string> = {},
-  options: { imports?: boolean } = {},
+  options: { imports?: boolean; privacy?: ExportStore } = {},
 ): Promise<TestApi> {
   const t = await freshDatabase();
   const sample = await seedSample(t.db);
@@ -76,6 +77,7 @@ export async function startApi(
     config,
     now: () => new Date(Date.now() + offset),
     imports,
+    privacy: options.privacy ? { store: options.privacy } : undefined,
   });
   await app.ready();
   return {

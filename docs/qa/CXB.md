@@ -26,3 +26,5 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 | Codex-C6-review-8cc23ab.md | When an export API exists, enforce org/class authorization before choosing the pack (C6-S2) | Routed to T2-S3 |
 | C6 criteria reconciliation | Open the template, pack, data-check and alignment exports in real Excel and Google Sheets (accents, frozen header, formula-like text shown as text) | Manual check by the user, L1 criteria |
 | Codex-F6-review-b52d29e.md S1 | Any class-export producer must take the student privacy lock **before** collecting identifying data, then record subjects and write in the same transaction | Next class-export producer criteria (T-tasks / M5) |
+| agent-f6 (PR #20, 9583e75) | A class config save writes both F5's summary audit row (`class_config.update`) and F6's field-level row (`class_config.updated`). Pick one convention | T3 criteria (config edits) |
+| Claude QA C5 run 1 (PR #23) | The idempotent repeat returns the original publish result even after the state has moved on; the DB guard still allows pinning an archived version (only the API refuses it) | T8 criteria / later hardening |

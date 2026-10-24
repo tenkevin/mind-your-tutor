@@ -179,7 +179,7 @@
       ],
       "done_when": "Data inventory doc, retention job and audit_event writes on config changes and publishes",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f6",
       "updated": "2026-10-23"
     },
@@ -334,17 +334,29 @@
       "updated": null
     },
     {
+      "id": "MD",
+      "title": "Decision gate: education data mining and interaction tracing (user)",
+      "size": 1,
+      "deps": [],
+      "done_when": "The user has settled, with the coordinator, the open decisions on what student interactions are traced and mined, why, for whom, how long they are kept, and what is inferred from them. They are recorded as D-numbered decisions in ARCHITECTURE §1 and written into §8 / §8.6. Only the user clears this gate (sets placeholder to false and marks it done); agents and the coordinator never do.",
+      "placeholder": false,
+      "status": "done",
+      "owner": "user",
+      "updated": "2026-10-23"
+    },
+    {
       "id": "M1",
       "title": "Tracker event catalogue and schemas",
       "size": 1,
       "deps": [
+        "MD",
         "F3"
       ],
-      "done_when": "Every event type in ARCHITECTURE.md section 8.2 has a zod schema in packages/tracker, and the open items in 8.6 are written up",
-      "placeholder": true,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "done_when": "Every §8.2 event type (D19) has a zod schema with its educational level in packages/tracker or packages/contracts. Unknown types and forbidden fields (IP, device, location, free text) are rejected",
+      "placeholder": false,
+      "status": "review",
+      "owner": "agent-m1",
+      "updated": "2026-10-23"
     },
     {
       "id": "M2",
@@ -356,8 +368,8 @@
         "F5",
         "F4b"
       ],
-      "done_when": "POST /events validates, sets seq, drops duplicate ids and writes partitioned rows; typed text goes to InteractionText; events stream continuously from the client with an offline queue",
-      "placeholder": true,
+      "done_when": "POST /events validates against M1, sets seq and level, drops duplicate ids, rejects unpinned versions and non-catalogue types, and writes partitioned rows; typed text goes to InteractionText anonymised (D26); the client batches with an offline queue; D22 retention and D24 opt-out flags are honoured",
+      "placeholder": false,
       "status": "todo",
       "owner": null,
       "updated": null
@@ -372,8 +384,8 @@
         "F1c",
         "F1d"
       ],
-      "done_when": "apply() in packages/tracker is pure with no clock, randomness or network; replaying the same events always gives identical progress, metrics and signals, covered by property tests",
-      "placeholder": true,
+      "done_when": "packages/tracker implements §8.3 rulesVersion 1 (mastery, unlock, unit complete, XP and combo, streak, cards, 'may need help' with reasons) as pure deterministic rules with property tests, and computes nothing D20 forbids",
+      "placeholder": false,
       "status": "todo",
       "owner": null,
       "updated": null
@@ -386,8 +398,8 @@
         "C3",
         "M3"
       ],
-      "done_when": "generateMap returns a MapView from the version, class config and tracker state; every view is stored and logged with a map.shown event; a check rejects any view that shows a locked idea as open",
-      "placeholder": true,
+      "done_when": "generateMap reads tracker state, stores each MapView with an id, records map.shown, and never shows a locked idea as open (§8.4)",
+      "placeholder": false,
       "status": "todo",
       "owner": null,
       "updated": null
@@ -401,8 +413,8 @@
         "M3",
         "T1"
       ],
-      "done_when": "A teacher can open any progress number or signal and see the events behind it, plus a class heatmap of stalls",
-      "placeholder": true,
+      "done_when": "Teacher views per §8.6 and D21: a per-student timeline, mastery, 'may need help' with its reason, challenges and a class heatmap, for the teacher's own classes only",
+      "placeholder": false,
       "status": "todo",
       "owner": null,
       "updated": null
@@ -417,7 +429,7 @@
       ],
       "done_when": "Teacher app shell with header, section nav and the Saving and Saved indicator, behind sign-in",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t1",
       "updated": "2026-10-23"
     },
@@ -625,7 +637,8 @@
         "S1",
         "C5",
         "F2",
-        "M4"
+        "M4",
+        "S5"
       ],
       "done_when": "The student explorer draws the MapView for the class's pinned version and sends interaction events",
       "placeholder": false,
@@ -653,7 +666,9 @@
       "size": 2,
       "deps": [
         "S2",
-        "A2"
+        "A2",
+        "A7",
+        "A8"
       ],
       "done_when": "Ms. Ivy and Milo chats call the gateway with safety on",
       "placeholder": false,
@@ -683,7 +698,12 @@
         "F4cx1",
         "F4cx3",
         "F2cx1",
-        "C2cx5"
+        "C2cx5",
+        "A7",
+        "A9",
+        "A10",
+        "M6",
+        "S5"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
@@ -743,6 +763,107 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-f1d",
+      "updated": "2026-10-23"
+    },
+    {
+      "id": "A7",
+      "title": "Anonymous layer: on-device entity blur and server backstop",
+      "size": 2,
+      "deps": [
+        "A1",
+        "F5"
+      ],
+      "done_when": "Per D26/D27: the app blurs people's names, places, contact and school identifiers into neutral labels on the device before any text leaves it (NER plus pattern rules), keeps the mapping on the device and re-fills replies; interests stay specific. The server backstop detects any identifier that got through, blurs it before the model call, counts a privacy miss and never stores raw text",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A8",
+      "title": "Dual memory: conversation history and long-term learning summary",
+      "size": 2,
+      "deps": [
+        "A7",
+        "F6"
+      ],
+      "done_when": "Per D28/D29: short-term memory is the anonymised conversation; long-term summaries hold only misconceptions, what helped, preferred pace and up to five interests from the approved category list; a student can view, delete and turn off memory and the teacher can view and delete it for the class; it lasts while enrolled, is covered by F6 export and delete, and is never used for D20 inferences, D16 audits or D25 research",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A9",
+      "title": "Explained feedback, Challenge this and teacher review queue",
+      "size": 2,
+      "deps": [
+        "A2",
+        "M2",
+        "A7",
+        "S5"
+      ],
+      "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "A10",
+      "title": "Pre-send feedback safeguards",
+      "size": 2,
+      "deps": [
+        "A9",
+        "A5",
+        "M6"
+      ],
+      "done_when": "Per D16: before any feedback reaches a student, rubric grounding, a separate verifier, and a tone and reading-level check run; low confidence or verifier disagreement routes it to the teacher; a question whose audit drifts past threshold switches to teacher review automatically",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M6",
+      "title": "Fairness audits: school and district monitoring, district-run sampled audit",
+      "size": 2,
+      "deps": [
+        "M3",
+        "A9",
+        "F6"
+      ],
+      "done_when": "Per D16/D23: demographic parity difference, disparate impact ratio (flag under 0.8) and teacher-agreement and challenge-upheld rates per question, compared across schools and districts, with groups under 10 suppressed and D24 opt-outs excluded; the sampled audit exports pseudonymous outcomes for the district to join and accepts aggregates back; Idea Map never stores race",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "M7",
+      "title": "De-identified research export",
+      "size": 1,
+      "deps": [
+        "M3",
+        "F6"
+      ],
+      "done_when": "Per D25: a de-identified export for a district research agreement, excluding D24 opt-outs, with small-group suppression and no identifiers or quasi-identifiers; identifiable or under-13 beyond-education use is refused without recorded parental opt-in consent",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "S5",
+      "title": "UDL 3.0 baseline for the student app",
+      "size": 2,
+      "deps": [
+        "F2"
+      ],
+      "done_when": "Per D17: shared student-app components give multiple means of representation (text, read-aloud, visual), action and expression (typed or spoken answers and challenges) and engagement (choice of mission and pacing); a UDL 3.0 checklist is added to the QA README for every student-facing task",
+      "placeholder": false,
+      "status": "review",
+      "owner": "agent-s5",
       "updated": "2026-10-23"
     }
   ]

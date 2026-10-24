@@ -88,3 +88,4 @@ async function main(): Promise<void> {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }
+export * from './retention.js';

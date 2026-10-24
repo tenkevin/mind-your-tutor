@@ -6,13 +6,15 @@ Snapshot: 2026-10-23. Verified integration commits `3f4d845` (#14), `fbb453d` (#
 
 **Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either. The work runs as a swarm: build agents per task, independent QA agents per PR, Codex as an outside reviewer, and one coordinator, which is you.
 
+> **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D29 and the §8 spec v1 exactly; see AGENTS.md.
+
 ## 1. Read in this order
 
 | # | File | Why | Time |
 |---|---|---|---|
 | 1 | this file | state, rules, gotchas | 5 min |
 | 2 | `AGENTS.md` | how work is claimed, built, QA'd and merged, including the integration gate | 3 min |
-| 3 | `docs/ARCHITECTURE.md` §1 (decisions D1–D14), §2, §7, §8 | settled design. Don't reopen D1–D14 | 10 min |
+| 3 | `docs/ARCHITECTURE.md` §1 (decisions D1–D29), §2, §7, §8 | settled design. Don't reopen D1–D29 | 10 min |
 | 4 | `docs/PLAN.md` | generated to-do list and dependency map | 2 min |
 | 5 | `docs/qa/README.md` | the QA gate and Codex routing | 3 min |
 
@@ -50,7 +52,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 5. **Fix tasks:** QA or Codex errors on merged work become `<ID>b` or `<ID>cx<n>` tasks, with must-only criteria. They start before other work and may exceed the 4-agent build limit by 2.
 6. **Suggestions** go into the next related task's criteria as should checks, or into `docs/qa/CXB.md`.
 7. Agents never edit `Codex-*` files, and never merge their own PRs. Never claim placeholder tasks (M1–M5, CXB).
-8. Ask the user only about genuinely new product or design decisions. Everything else follows D1–D14. Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
+8. Ask the user only about genuinely new product or design decisions. Everything else follows D1–D29. Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
 9. Enforce the stop/resume and handoff protocol in `AGENTS.md`. Documentation maintenance does not authorize restarting implementation or QA.
 
 ## 4. Gotchas (each one has bitten us)
