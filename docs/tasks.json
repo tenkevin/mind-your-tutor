@@ -884,9 +884,9 @@
       "deps": [],
       "done_when": "Codex C5-E2 (docs/qa/codex/Codex-C5-review-6f43575.md): 'apps/api/src/publishing.ts:339 reads the version before taking the curriculum lock', so two concurrent publishes of one draft to different classes return 201 and 500 and one class stays unpinned. The version state is re-read (or locked) after the curriculum lock; both publishes succeed with both class pins and the right audit rows; controlled concurrency tests cover distinct keys, no key and a shared key",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c5cx2",
+      "updated": "2026-10-27"
     },
     {
       "id": "C6cx1",
