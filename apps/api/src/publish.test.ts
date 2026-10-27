@@ -57,7 +57,9 @@ function versionReadGate(parties: number) {
       transformQuery({ node, queryId }: PluginTransformQueryArgs): RootOperationNode {
         const from = node.kind === 'SelectQueryNode' ? node.from?.froms[0] : undefined;
         const table =
-          from?.kind === 'TableNode' ? (from.table.identifier as { name: string }).name : '';
+          from?.kind === 'TableNode'
+            ? (from as unknown as { table: { identifier: { name: string } } }).table.identifier.name
+            : '';
         if (!held && table === 'curriculum_version') {
           held = true;
           watched.add(queryId);
