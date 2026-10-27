@@ -865,6 +865,39 @@
       "status": "done",
       "owner": "agent-s5",
       "updated": "2026-10-24"
+    },
+    {
+      "id": "C5cx1",
+      "title": "Fix Codex error C5-E1: assessment diff hides accepted questions and depends on row order",
+      "size": 1,
+      "deps": [],
+      "done_when": "Codex C5-E1 (docs/qa/codex/Codex-C5-review-6f43575.md): 'packages/domain/src/diff.ts:31 reduces Assessment rows to the first nonempty question for each idea' so an edit to a later accepted question is hidden and reordering unchanged rows invents a change. The diff compares all accepted assessment questions order-independently, following the checker's accepted/skipped-row rules, and shows every change; regressions cover edit, remove and reorder",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C5cx2",
+      "title": "Fix Codex error C5-E2: concurrent publishes cache stale draft status and one returns 500",
+      "size": 1,
+      "deps": [],
+      "done_when": "Codex C5-E2 (docs/qa/codex/Codex-C5-review-6f43575.md): 'apps/api/src/publishing.ts:339 reads the version before taking the curriculum lock', so two concurrent publishes of one draft to different classes return 201 and 500 and one class stays unpinned. The version state is re-read (or locked) after the curriculum lock; both publishes succeed with both class pins and the right audit rows; controlled concurrency tests cover distinct keys, no key and a shared key",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
+    },
+    {
+      "id": "C6cx1",
+      "title": "Fix Codex error C6-E4: lone carriage return changes when a CSV export opens in LibreOffice",
+      "size": 1,
+      "deps": [],
+      "done_when": "Codex C6-E4 (docs/qa/codex/Codex-C6-review-750a50b.md): a valid pack with notes 'one\\rtwo' exports to CSV and LibreOffice opens it as 'one\\ntwo', failing C6-F7. CSV export either preserves the raw carriage return in a representative application or refuses with a located, actionable message pointing the teacher to the lossless XLSX export; XLSX keeps preserving it",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": null
     }
   ]
 }

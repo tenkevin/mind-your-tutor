@@ -34,3 +34,5 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 | Claude QA A1 run 1 | AI rate limits are in memory per API process; with N replicas the effective limit is N×. Decide whether per-class limits must hold across replicas | Deployment / L1 criteria |
 | Claude QA A1 run 1 | The client receives the model's raw reply while the stored reply is blurred, so a model echo of a roster identifier reaches the student | A7 criteria |
 | Claude QA T3 run 1 ([report](reports/T3-run1.md)) | Field-level audit paths from dotted keys are ambiguous; authors who don't teach a class have no UI path to the defaults editor | Later T-task criteria |
+| Codex-C5-review-6f43575.md S2 | The default API executable starts `buildServer()` without the optional publish dependencies; wire publish (and imports) into the bootstrap | Deployment / T8 criteria |
+| Codex-C5-review-6f43575.md S3 | Keep the D14 label and count: all unique enrolled students in the selected classes, including those without progress or whose progress won't change | T8 criteria |
