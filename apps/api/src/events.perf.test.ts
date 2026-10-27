@@ -12,7 +12,8 @@ import { SESSION_COOKIE } from './policy.js';
 import { fromApp, ORIGIN, sessionFor, startApi, type TestApi } from './test/harness.js';
 
 // M2-P1: event ingest throughput. A timing test, so it runs in the `perf` project
-// (vitest.config.ts): after the other test files, one file at a time.
+// (vitest.config.ts): after the other test files, one file at a time. Two seconds of
+// the same load warm the API first and aren't measured.
 //
 // The API listens on a real port and a separate process (test/load-generator.mjs)
 // sends the load, so the generator's CPU work can't stall the API's event loop. Each
@@ -63,12 +64,17 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
   let db: Db;
   let server: ReturnType<typeof buildServer>;
   const serverMs: number[] = [];
+  /** When each batch finished, for a timeline of slow batches (IDEAMAP_PERF_OUT). */
+  const serverAt: number[] = [];
   beforeAll(async () => {
     api = await startApi();
     db = createDb(api.t.url, { max: Number(process.env.IDEAMAP_PERF_POOL ?? 10) });
     server = buildServer({ db, config: api.config });
     server.addHook('onResponse', async (req, reply) => {
-      if (req.url === '/events') serverMs.push(reply.elapsedTime);
+      if (req.url === '/events') {
+        serverMs.push(reply.elapsedTime);
+        serverAt.push(Date.now());
+      }
     });
     await server.listen({ host: '127.0.0.1', port: 0 });
   }, 120_000);
@@ -152,10 +158,22 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         })),
       ).flat(),
     };
+    // A deployed API is warm: its pool's connections are open and the code and
+    // database caches are loaded. Two seconds of the same load first, not measured.
+    const warmup = {
+      ...plan,
+      requests: students.slice(0, RATE * 2).map((s, i) => ({
+        headers: plan.requests[i]!.headers,
+        body: JSON.stringify(batch(s.classId)),
+      })),
+    };
     const dir = await mkdtemp(join(tmpdir(), 'ideamap-load-'));
     try {
+      await writeFile(join(dir, 'warmup.json'), JSON.stringify(warmup));
+      await runGenerator(join(dir, 'warmup.json'), join(dir, 'warmup-out.json'));
       await writeFile(join(dir, 'plan.json'), JSON.stringify(plan));
       serverMs.length = 0;
+      serverAt.length = 0;
       await runGenerator(join(dir, 'plan.json'), join(dir, 'out.json'));
       const out = JSON.parse(await readFile(join(dir, 'out.json'), 'utf8')) as {
         seconds: number;
@@ -171,6 +189,7 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         serverP95: p95(serverMs),
         serverMedian: median(serverMs),
         pool: Number(process.env.IDEAMAP_PERF_POOL ?? 10),
+        timeline: serverAt.map((at, i) => [at, Math.round(serverMs[i]!)]),
       };
       if (process.env.IDEAMAP_PERF_OUT) {
         await writeFile(process.env.IDEAMAP_PERF_OUT, JSON.stringify(summary));
