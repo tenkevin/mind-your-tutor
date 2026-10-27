@@ -273,7 +273,7 @@
         "C5"
       ],
       "errors": [],
-      "suggestions": "User decision recorded as D14 (ARCHITECTURE \u00a71, \u00a77; \u00a712 Q8 settled). Label and QA cases folded into docs/qa/C5.md (C5-F6, C5-U3)."
+      "suggestions": "User decision recorded as D14 (ARCHITECTURE §1, §7; §12 Q8 settled). Label and QA cases folded into docs/qa/C5.md (C5-F6, C5-U3)."
     },
     {
       "file": "docs/qa/codex/Codex-F6-E1-historical-exports-0412b2c.md",
@@ -372,6 +372,45 @@
       ],
       "errors": [],
       "suggestions": "F6 checks PASS with C4. Full-suite gate UNVERIFIED (function_binding excluded). F5 has landed: agent-f6 is moving the privacy routes into F5's policy registry and refreshing the combined inventory and export/delete coverage; QA re-runs Monday. S1/S2 already in CXB."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C5-review-6f43575.md",
+      "commit": "c3de500",
+      "date": "2026-10-27",
+      "reviews": [
+        "C5"
+      ],
+      "errors": [
+        "C5cx1",
+        "C5cx2"
+      ],
+      "suggestions": "Review of pre-merge head 6f43575, reconciled against merged source 956c515. S1 (all publish routes in the F5 sweep) already done in C5 run 2 and the T2 /api move. S2 (wire publish dependencies into the API bootstrap) -> CXB, deployment/T8. S3 (D14 count semantics) -> T8 criteria via CXB. Full-suite gate UNVERIFIED (function_binding excluded); coordinator runs it locally."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C6-review-750a50b.md",
+      "commit": "c3de500",
+      "date": "2026-10-27",
+      "reviews": [
+        "C6"
+      ],
+      "errors": [
+        "C6cx1"
+      ],
+      "suggestions": "Re-QA of 750a50b: C6-E1/E2/E3 fixes pass. Apostrophe reimport limitation and future export-route authorization already in CXB. Full-suite gate UNVERIFIED (function_binding excluded)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-A1-review-070cb66.md",
+      "commit": "0332471",
+      "date": "2026-10-27",
+      "reviews": [
+        "A1"
+      ],
+      "verdict": "PASS (scoped); A1-F9 UNVERIFIED pending coordinator full-suite run incl. function_binding",
+      "errors": [],
+      "suggestions": [
+        "A1-P2 streaming stays a should check (A1)",
+        "per-process limits and roster-name detection: already in CXB (A7 / deployment)"
+      ]
     }
   ]
 }
