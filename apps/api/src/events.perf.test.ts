@@ -214,10 +214,9 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         );
       }
       console.log(lines.join('\n'));
-      // On GitHub Actions the same text becomes an annotation on the run, which the
-      // checks API serves even where the job log can't be fetched.
-      if (process.env.GITHUB_ACTIONS) {
-        console.log(`::notice title=M2-P1 ingest::${lines.join('%0A')}`);
+      // For CI to publish as an annotation (the job log can't always be fetched).
+      if (process.env.IDEAMAP_PERF_REPORT) {
+        await writeFile(process.env.IDEAMAP_PERF_REPORT, lines.join('\n') + '\n');
       }
       expect(out.results.every((r) => r.status === 200)).toBe(true);
       expect(events).toBe(students.length * PER_BATCH * TICKS);

@@ -48,6 +48,17 @@ jobs:
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
+        env:
+          IDEAMAP_PERF_REPORT: ${{ runner.temp }}/m2-p1-report.txt
+      # Publish the M2-P1 summary and timeline as a run annotation.
+      - name: M2-P1 report
+        if: always()
+        run: |
+          f="$RUNNER_TEMP/m2-p1-report.txt"
+          if [ -f "$f" ]; then
+            cat "$f"
+            echo "::notice title=M2-P1 ingest::$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' "$f")"
+          fi
       - run: pnpm build
       # Migrate the job's database from empty, then again to show it's a no-op.
       - name: Migrations
