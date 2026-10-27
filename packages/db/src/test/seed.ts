@@ -326,6 +326,10 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
     .execute();
   await db.insertInto('tracing_opt_out').values({ org_id: orgId, student_id: studentId }).execute();
   await db
+    .insertInto('student_event_seq')
+    .values({ org_id: orgId, student_id: studentId, last_seq: 2 })
+    .execute();
+  await db
     .insertInto('privacy_miss')
     .values({
       org_id: orgId,

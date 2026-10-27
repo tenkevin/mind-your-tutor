@@ -408,6 +408,13 @@ export interface TracingOptOutTable {
   set_by: string | null;
 }
 
+/** Each student's last event seq, allocated a batch at a time by ingest (M2). */
+export interface StudentEventSeqTable {
+  student_id: string;
+  org_id: string;
+  last_seq: ColumnType<number, number, number>;
+}
+
 /** D26: typed text in which the server backstop found what the device should have removed. */
 export interface PrivacyMissTable {
   id: Generated<string>;
@@ -442,6 +449,7 @@ export interface Database {
   ai_output: AiOutputTable;
   progress_snapshot: ProgressSnapshotTable;
   tracing_opt_out: TracingOptOutTable;
+  student_event_seq: StudentEventSeqTable;
   privacy_miss: PrivacyMissTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
@@ -713,6 +721,7 @@ export const COLUMNS = {
     'revoked_at',
   ],
   tracing_opt_out: ['student_id', 'org_id', 'opted_out_at', 'set_by'],
+  student_event_seq: ['student_id', 'org_id', 'last_seq'],
   privacy_miss: ['id', 'org_id', 'class_id', 'source', 'names', 'emails', 'phones', 'created_at'],
 } as const satisfies { [T in TableName]: readonly (keyof Database[T] & string)[] };
 

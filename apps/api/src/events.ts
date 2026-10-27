@@ -45,6 +45,9 @@ export const VERSION_GRACE_MS = 24 * 60 * 60 * 1000;
 /** Room for a full batch: 200 events and 20 texts of 20,000 characters (as UTF-8). */
 const BODY_LIMIT = 2 * 1024 * 1024;
 
+/** Postgres: unique_violation. */
+const UNIQUE_VIOLATION = '23505';
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface EventRoutesOptions {
@@ -80,14 +83,22 @@ export function eventRoutes(
       if (namesSomeoneElse(batch.data.events, userId)) {
         return reply.code(403).send({ error: 'Forbidden' });
       }
-      const outcome = await req.withOrg((trx) =>
-        ingest(trx, batch.data.events, batch.data.texts, {
-          orgId,
-          studentId: userId,
-          now: deps.now(),
-          graceMs: options.graceMs ?? VERSION_GRACE_MS,
-        }),
-      );
+      const run = () =>
+        req.withOrg((trx) =>
+          ingest(trx, batch.data.events, batch.data.texts, {
+            orgId,
+            studentId: userId,
+            now: deps.now(),
+            graceMs: options.graceMs ?? VERSION_GRACE_MS,
+          }),
+        );
+      // Two batches of the same student's events in flight at once (a resend racing
+      // the first send) can both find an id new; the second then fails on the ledger's
+      // unique key and is judged again, finding it recorded.
+      const outcome = await run().catch((error: unknown) => {
+        if ((error as { code?: unknown }).code === UNIQUE_VIOLATION) return run();
+        throw error;
+      });
       if (outcome.forbidden) return reply.code(403).send({ error: 'Forbidden' });
       return reply.code(200).header('cache-control', 'no-store').send(outcome.response);
     },
@@ -126,11 +137,6 @@ async function ingest(
   texts: readonly EventText[],
   ctx: IngestContext,
 ): Promise<Outcome> {
-  const classIds = classIdsOf(raw);
-  const { enrolled, allowed, optedOut } = await batchContext(trx, classIds, ctx);
-  // Enrolled in every class the batch names, or the whole batch is refused.
-  if (!enrolled) return { forbidden: true };
-
   const rejected: EventRejection[] = [];
   const duplicates: string[] = [];
   const reject = (
@@ -140,7 +146,7 @@ async function ingest(
     message: string,
   ) => rejected.push({ index, id, code, message });
 
-  // 1. Each event on its own: catalogue, client allowance, pinned version.
+  // 1. Each event on its own against M1 and the client allowance (no database).
   const seen = new Set<string>();
   let candidates: Candidate[] = [];
   raw.forEach((input, index) => {
@@ -150,79 +156,91 @@ async function ingest(
       reject(index, typeof id === 'string' ? id.slice(0, 26) : null, verdict.code, verdict.message);
       return;
     }
-    const { event } = verdict;
-    if (!allowed.get(event.classId.toLowerCase())?.has(event.versionId.toLowerCase())) {
-      reject(index, event.id, 'version_not_pinned', 'The class is not on this curriculum version.');
-      return;
-    }
-    // The same id twice in one batch is a resend too.
-    if (seen.has(event.id)) {
-      duplicates.push(event.id);
-      return;
-    }
-    seen.add(event.id);
-    candidates.push({ index, event });
+    candidates.push({ index, event: verdict.event });
   });
 
-  // 2. Ids already recorded: resends of this student's are dropped without error. The
-  // batch's lock (taken in batchContext) holds until commit, so this read and the seq
-  // below see every earlier batch of this student's.
-  let last = 0;
-  if (candidates.length > 0) {
-    const ids = candidates.map((c) => c.event.id);
-    const { rows } = await sql<{ last: string | null; known: { id: string; student: string }[] }>`
-      SELECT
-        (SELECT k.seq FROM interaction_event_key AS k WHERE k.student_id = ${ctx.studentId}
-           ORDER BY k.seq DESC LIMIT 1) AS last,
-        (SELECT coalesce(json_agg(json_build_object('id', k.id, 'student', k.student_id)), '[]')
-           FROM interaction_event_key AS k WHERE k.id = ANY(${ids}::text[])) AS known
-    `.execute(trx);
-    last = Number(rows[0]?.last ?? 0);
-    const owner = new Map((rows[0]?.known ?? []).map((k) => [k.id, k.student]));
-    candidates = candidates.filter(({ index, event }) => {
-      const by = owner.get(event.id);
-      if (by === undefined) return true;
-      if (by === ctx.studentId) duplicates.push(event.id);
-      else reject(index, event.id, 'id_taken', 'This event id is already in use.');
+  // 2. One statement for everything the batch is judged against.
+  const context = await batchContext(
+    trx,
+    classIdsOf(raw),
+    candidates.map((c) => c.event.id),
+    ctx,
+  );
+  // Enrolled in every class the batch names, or the whole batch is refused.
+  if (!context.enrolled) return { forbidden: true };
+
+  candidates = candidates.filter(({ index, event }) => {
+    if (!context.allowed.get(event.classId.toLowerCase())?.has(event.versionId.toLowerCase())) {
+      reject(index, event.id, 'version_not_pinned', 'The class is not on this curriculum version.');
       return false;
-    });
-  }
+    }
+    // Resends, including the same id twice in one batch, are dropped without error.
+    const by = context.known.get(event.id);
+    if (seen.has(event.id) || by === ctx.studentId) {
+      duplicates.push(event.id);
+      return false;
+    }
+    if (by !== undefined) {
+      reject(index, event.id, 'id_taken', 'This event id is already in use.');
+      return false;
+    }
+    seen.add(event.id);
+    return true;
+  });
 
   // 3. Typed text for the new events, through the D26 backstop, then every reference
-  // checked against what this student has stored.
+  // checked against what this student has stored. No queries without text.
   candidates = await storeTexts(trx, candidates, texts, ctx, reject);
 
-  // 4. Sequence numbers continue from this student's last one.
-  const accepted: EventBatchResponse['accepted'] = [];
-  if (candidates.length > 0) {
-    let seq = last;
-    const rows = candidates.map(({ event }) => {
-      seq += 1;
-      accepted.push({ id: event.id, seq });
-      return {
-        id: event.id,
-        class_id: event.classId,
-        version_id: event.versionId,
-        seq,
-        at: event.at,
-        type: event.type,
-        payload: event.payload,
-      };
-    });
-    // One parameter for the whole batch: the hot path's cheapest insert (M2-P1).
-    await sql`
-      INSERT INTO interaction_event
-        (id, org_id, student_id, class_id, version_id, seq, at, type, payload, tracing_opted_out)
-      SELECT r.id, ${ctx.orgId}::uuid, ${ctx.studentId}::uuid, r.class_id, r.version_id, r.seq,
-        r.at, r.type, r.payload, ${optedOut}
-      FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS r(
-        id text, class_id uuid, version_id uuid, seq bigint, at timestamptz, type text,
-        payload jsonb)
-    `.execute(trx);
-  }
+  // 4. Numbers and rows in one statement.
+  const accepted = await insertEvents(trx, candidates, context.optedOut, ctx);
 
   rejected.sort((a, b) => a.index - b.index);
   return { forbidden: false, response: { accepted, duplicates, rejected } };
+}
+
+/**
+ * Allocate the batch's n sequence numbers and store its events. The upsert on
+ * student_event_seq takes constant time, whatever the student's history, and its row
+ * lock puts a student's batches one after another until commit, so numbers are never
+ * shared and never skipped.
+ */
+async function insertEvents(
+  trx: Trx,
+  candidates: readonly Candidate[],
+  optedOut: boolean,
+  ctx: IngestContext,
+): Promise<EventBatchResponse['accepted']> {
+  if (candidates.length === 0) return [];
+  const n = candidates.length;
+  const rows = candidates.map(({ event }, k) => ({
+    k: k + 1,
+    id: event.id,
+    class_id: event.classId,
+    version_id: event.versionId,
+    at: event.at,
+    type: event.type,
+    payload: event.payload,
+  }));
+  const { rows: stored } = await sql<{ id: string; seq: string }>`
+    WITH alloc AS (
+      INSERT INTO student_event_seq AS q (student_id, org_id, last_seq)
+        VALUES (${ctx.studentId}::uuid, ${ctx.orgId}::uuid, ${n})
+        ON CONFLICT (student_id) DO UPDATE SET last_seq = q.last_seq + ${n}
+        RETURNING q.last_seq
+    )
+    INSERT INTO interaction_event
+      (id, org_id, student_id, class_id, version_id, seq, at, type, payload, tracing_opted_out)
+    SELECT r.id, ${ctx.orgId}::uuid, ${ctx.studentId}::uuid, r.class_id, r.version_id,
+      alloc.last_seq - ${n} + r.k, r.at, r.type, r.payload, ${optedOut}
+    FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS r(
+      k integer, id text, class_id uuid, version_id uuid, at timestamptz, type text,
+      payload jsonb)
+    CROSS JOIN alloc
+    RETURNING id, seq
+  `.execute(trx);
+  const seqOf = new Map(stored.map((r) => [r.id, Number(r.seq)]));
+  return candidates.map(({ event }) => ({ id: event.id, seq: seqOf.get(event.id)! }));
 }
 
 interface BatchContext {
@@ -236,17 +254,15 @@ interface BatchContext {
   allowed: Map<string, Set<string>>;
   /** D24: the student is opted out of tracing now. */
   optedOut: boolean;
+  /** Who already has each of the batch's ids recorded. */
+  known: Map<string, string>;
 }
 
-/**
- * Take the student's batch lock and read everything the batch is judged against, in
- * one statement: ingest is the hot path (M2-P1), so each round trip counts. The lock
- * (one batch per student at a time, so seq has no gaps and ids are checked once)
- * holds until the transaction ends.
- */
+/** Everything a batch is judged against, in one statement (M2-P1). */
 async function batchContext(
   trx: Trx,
   classIds: readonly string[],
+  ids: readonly string[],
   ctx: IngestContext,
 ): Promise<BatchContext> {
   const since = new Date(ctx.now.getTime() - ctx.graceMs);
@@ -254,17 +270,9 @@ async function batchContext(
     classes: { id: string; pinned: string | null; enrolled: boolean }[];
     repins: { classId: string; versionId: string | null }[];
     opted_out: boolean;
+    known: { id: string; student: string }[];
   }>`
     SELECT
-      pg_advisory_xact_lock(hashtextextended(${`events:${ctx.studentId}`}, 0)) AS locked,
-      -- For this transaction only. The tenant policy's org_id = current_org_id() matches
-      -- the ledger key's leading column (org_id, id). With statistics behind a
-      -- fast-growing table, the planner can find the student's last seq by reading
-      -- every key row in the organization, through a bitmap scan or a sort of that
-      -- index. With neither, the only plan left is one step down the student's own
-      -- (student_id, seq) index, however big the organization's history is.
-      set_config('enable_bitmapscan', 'off', true) AS no_bitmap,
-      set_config('enable_sort', 'off', true) AS no_sort,
       (SELECT coalesce(json_agg(json_build_object(
                 'id', c.id, 'pinned', c.pinned_version_id, 'enrolled', e.student_id IS NOT NULL)), '[]')
          FROM class AS c
@@ -273,9 +281,11 @@ async function batchContext(
       (SELECT coalesce(json_agg(json_build_object(
                 'classId', a.class_id, 'versionId', a.before ->> 'pinned_version_id')), '[]')
          FROM audit_event AS a
-         WHERE a.target_type = 'class' AND a.class_id = ANY(${classIds}::uuid[])
-           AND a.at > ${since} AND a.before ? 'pinned_version_id') AS repins,
-      EXISTS (SELECT 1 FROM tracing_opt_out AS o WHERE o.student_id = ${ctx.studentId}) AS opted_out
+         WHERE a.target_type = 'class' AND a.before ? 'pinned_version_id'
+           AND a.class_id = ANY(${classIds}::uuid[]) AND a.at > ${since}) AS repins,
+      EXISTS (SELECT 1 FROM tracing_opt_out AS o WHERE o.student_id = ${ctx.studentId}) AS opted_out,
+      (SELECT coalesce(json_agg(json_build_object('id', k.id, 'student', k.student_id)), '[]')
+         FROM interaction_event_key AS k WHERE k.id = ANY(${ids}::text[])) AS known
   `.execute(trx);
   const row = rows[0]!;
   const allowed = new Map<string, Set<string>>(classIds.map((id) => [id, new Set()]));
@@ -287,7 +297,12 @@ async function batchContext(
   for (const r of row.repins) {
     if (r.versionId) allowed.get(r.classId)?.add(r.versionId);
   }
-  return { enrolled: enrolledIn === classIds.length, allowed, optedOut: row.opted_out };
+  return {
+    enrolled: enrolledIn === classIds.length,
+    allowed,
+    optedOut: row.opted_out,
+    known: new Map(row.known.map((k) => [k.id, k.student])),
+  };
 }
 
 async function storeTexts(
