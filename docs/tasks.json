@@ -895,9 +895,9 @@
       "deps": [],
       "done_when": "Codex C6-E4 (docs/qa/codex/Codex-C6-review-750a50b.md): a valid pack with notes 'one\\rtwo' exports to CSV and LibreOffice opens it as 'one\\ntwo', failing C6-F7. CSV export either preserves the raw carriage return in a representative application or refuses with a located, actionable message pointing the teacher to the lossless XLSX export; XLSX keeps preserving it",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c6cx1",
+      "updated": "2026-10-27"
     }
   ]
 }
