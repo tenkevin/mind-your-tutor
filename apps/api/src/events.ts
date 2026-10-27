@@ -1,4 +1,4 @@
-import { backstopText, totalMisses, type BackstopMisses } from '@ideamap/ai/backstop';
+import { backstopText } from '@ideamap/ai/backstop';
 import {
   EventBatchSchema,
   eventTextRef,
@@ -139,253 +139,243 @@ async function ingest(
 ): Promise<Outcome> {
   const rejected: EventRejection[] = [];
   const duplicates: string[] = [];
-  const reject = (
-    index: number,
-    id: string | null,
-    code: EventRejection['code'],
-    message: string,
-  ) => rejected.push({ index, id, code, message });
 
-  // 1. Each event on its own against M1 and the client allowance (no database).
+  // 1. Each event on its own against M1 and the client allowance (no database). The
+  // same id twice in one batch is a resend too.
   const seen = new Set<string>();
-  let candidates: Candidate[] = [];
+  const candidates: Candidate[] = [];
   raw.forEach((input, index) => {
     const verdict = judgeClientEvent(input);
     if (!verdict.ok) {
       const id = (input as { id?: unknown } | null)?.id;
-      reject(index, typeof id === 'string' ? id.slice(0, 26) : null, verdict.code, verdict.message);
+      rejected.push({
+        index,
+        id: typeof id === 'string' ? id.slice(0, 26) : null,
+        code: verdict.code,
+        message: verdict.message,
+      });
       return;
     }
+    if (seen.has(verdict.event.id)) {
+      duplicates.push(verdict.event.id);
+      return;
+    }
+    seen.add(verdict.event.id);
     candidates.push({ index, event: verdict.event });
   });
 
-  // 2. One statement for everything the batch is judged against.
-  const context = await batchContext(
-    trx,
-    classIdsOf(raw),
-    candidates.map((c) => c.event.id),
-    ctx,
-  );
-  // Enrolled in every class the batch names, or the whole batch is refused.
-  if (!context.enrolled) return { forbidden: true };
+  // 2. Typed text through the D26 backstop before it goes anywhere (a roster read, only
+  // for batches with text).
+  const checked = await backstopTexts(trx, candidates, texts, ctx);
 
-  candidates = candidates.filter(({ index, event }) => {
-    if (!context.allowed.get(event.classId.toLowerCase())?.has(event.versionId.toLowerCase())) {
-      reject(index, event.id, 'version_not_pinned', 'The class is not on this curriculum version.');
-      return false;
+  // 3. Everything else in one statement: ingest is the hot path (M2-P1), and each
+  // round trip to the database counts.
+  const result = await judgeAndStore(trx, classIdsOf(raw), candidates, checked, ctx);
+  if (!result.enrolled) return { forbidden: true };
+  for (const other of result.others) {
+    if (other.status === 'duplicate') duplicates.push(other.id);
+    else {
+      rejected.push({
+        index: other.i,
+        id: other.id,
+        code: other.status,
+        message: MESSAGES[other.status],
+      });
     }
-    // Resends, including the same id twice in one batch, are dropped without error.
-    const by = context.known.get(event.id);
-    if (seen.has(event.id) || by === ctx.studentId) {
-      duplicates.push(event.id);
-      return false;
-    }
-    if (by !== undefined) {
-      reject(index, event.id, 'id_taken', 'This event id is already in use.');
-      return false;
-    }
-    seen.add(event.id);
-    return true;
-  });
-
-  // 3. Typed text for the new events, through the D26 backstop, then every reference
-  // checked against what this student has stored. No queries without text.
-  candidates = await storeTexts(trx, candidates, texts, ctx, reject);
-
-  // 4. Numbers and rows in one statement.
-  const accepted = await insertEvents(trx, candidates, context.optedOut, ctx);
-
+  }
   rejected.sort((a, b) => a.index - b.index);
+  const seqOf = new Map(result.accepted.map((r) => [r.id, r.seq]));
+  const accepted = candidates
+    .filter(({ event }) => seqOf.has(event.id))
+    .map(({ event }) => ({ id: event.id, seq: seqOf.get(event.id)! }));
   return { forbidden: false, response: { accepted, duplicates, rejected } };
 }
 
+/** What happened to each event the statement didn't store. */
+type Other = 'duplicate' | 'id_taken' | 'version_not_pinned' | 'text_missing';
+
+const MESSAGES: Record<Exclude<Other, 'duplicate'>, string> = {
+  version_not_pinned: 'The class is not on this curriculum version.',
+  id_taken: 'This event id is already in use.',
+  text_missing: 'The typed text this event refers to was not sent.',
+};
+
+interface CheckedText {
+  id: string;
+  class_id: string;
+  kind: 'teachback' | 'challenge';
+  body: string;
+  names: number;
+  emails: number;
+  phones: number;
+}
+
 /**
- * Allocate the batch's n sequence numbers and store its events. The upsert on
- * student_event_seq takes constant time, whatever the student's history, and its row
- * lock puts a student's batches one after another until commit, so numbers are never
- * shared and never skipped.
+ * The batch, judged and stored in one statement:
+ * - the student must be enrolled in every class the batch names, or nothing is stored;
+ * - each class accepts its pinned version, and a version it was pinned to until a re-pin
+ *   inside the grace period (re-pins are read from the class's audit log, F6);
+ * - ids already recorded are resends of this student's (duplicates) or someone else's;
+ * - typed text is stored for the new events that refer to it (a resent text stays as it
+ *   was, and counts no second privacy miss), and an event must refer to this student's
+ *   own text, sent now or stored earlier;
+ * - the new events take the next numbers from student_event_seq: one upsert, constant
+ *   time whatever the history, whose row lock puts a student's batches one after
+ *   another until commit, so numbers are never shared and never skipped.
  */
-async function insertEvents(
+async function judgeAndStore(
   trx: Trx,
+  classIds: readonly string[],
   candidates: readonly Candidate[],
-  optedOut: boolean,
+  texts: readonly CheckedText[],
   ctx: IngestContext,
-): Promise<EventBatchResponse['accepted']> {
-  if (candidates.length === 0) return [];
-  const n = candidates.length;
-  const rows = candidates.map(({ event }, k) => ({
-    k: k + 1,
+): Promise<{
+  enrolled: boolean;
+  accepted: { id: string; seq: number }[];
+  others: { i: number; id: string; status: Other }[];
+}> {
+  const events = candidates.map(({ index, event }) => ({
+    i: index,
     id: event.id,
     class_id: event.classId,
     version_id: event.versionId,
     at: event.at,
     type: event.type,
     payload: event.payload,
+    text_ref: eventTextRef(event),
   }));
-  const { rows: stored } = await sql<{ id: string; seq: string }>`
-    WITH alloc AS (
-      INSERT INTO student_event_seq AS q (student_id, org_id, last_seq)
-        VALUES (${ctx.studentId}::uuid, ${ctx.orgId}::uuid, ${n})
-        ON CONFLICT (student_id) DO UPDATE SET last_seq = q.last_seq + ${n}
-        RETURNING q.last_seq
-    )
-    INSERT INTO interaction_event
-      (id, org_id, student_id, class_id, version_id, seq, at, type, payload, tracing_opted_out)
-    SELECT r.id, ${ctx.orgId}::uuid, ${ctx.studentId}::uuid, r.class_id, r.version_id,
-      alloc.last_seq - ${n} + r.k, r.at, r.type, r.payload, ${optedOut}
-    FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS r(
-      k integer, id text, class_id uuid, version_id uuid, at timestamptz, type text,
-      payload jsonb)
-    CROSS JOIN alloc
-    RETURNING id, seq
-  `.execute(trx);
-  const seqOf = new Map(stored.map((r) => [r.id, Number(r.seq)]));
-  return candidates.map(({ event }) => ({ id: event.id, seq: seqOf.get(event.id)! }));
-}
-
-interface BatchContext {
-  /** The student is enrolled in every class the batch names. */
-  enrolled: boolean;
-  /**
-   * The versions each class accepts events from: its pinned version, and any version
-   * it was pinned to until a re-pin less than the grace period ago. Re-pins are read
-   * from the audit log, which a trigger writes for every change to a class (F6).
-   */
-  allowed: Map<string, Set<string>>;
-  /** D24: the student is opted out of tracing now. */
-  optedOut: boolean;
-  /** Who already has each of the batch's ids recorded. */
-  known: Map<string, string>;
-}
-
-/** Everything a batch is judged against, in one statement (M2-P1). */
-async function batchContext(
-  trx: Trx,
-  classIds: readonly string[],
-  ids: readonly string[],
-  ctx: IngestContext,
-): Promise<BatchContext> {
   const since = new Date(ctx.now.getTime() - ctx.graceMs);
+  const s = sql`${ctx.studentId}::uuid`;
+  const org = sql`${ctx.orgId}::uuid`;
+  const classes = sql`${classIds}::uuid[]`;
   const { rows } = await sql<{
-    classes: { id: string; pinned: string | null; enrolled: boolean }[];
-    repins: { classId: string; versionId: string | null }[];
-    opted_out: boolean;
-    known: { id: string; student: string }[];
+    enrolled: boolean;
+    accepted: { id: string; seq: number }[];
+    others: { i: number; id: string; status: Other }[];
   }>`
-    SELECT
-      (SELECT coalesce(json_agg(json_build_object(
-                'id', c.id, 'pinned', c.pinned_version_id, 'enrolled', e.student_id IS NOT NULL)), '[]')
-         FROM class AS c
-         LEFT JOIN enrollment AS e ON e.class_id = c.id AND e.student_id = ${ctx.studentId}
-         WHERE c.id = ANY(${classIds}::uuid[])) AS classes,
-      (SELECT coalesce(json_agg(json_build_object(
-                'classId', a.class_id, 'versionId', a.before ->> 'pinned_version_id')), '[]')
-         FROM audit_event AS a
-         WHERE a.target_type = 'class' AND a.before ? 'pinned_version_id'
-           AND a.class_id = ANY(${classIds}::uuid[]) AND a.at > ${since}) AS repins,
-      EXISTS (SELECT 1 FROM tracing_opt_out AS o WHERE o.student_id = ${ctx.studentId}) AS opted_out,
-      (SELECT coalesce(json_agg(json_build_object('id', k.id, 'student', k.student_id)), '[]')
-         FROM interaction_event_key AS k WHERE k.id = ANY(${ids}::text[])) AS known
+    WITH ev AS (
+      SELECT * FROM jsonb_to_recordset(${JSON.stringify(events)}::jsonb) AS r(
+        i integer, id text, class_id uuid, version_id uuid, at timestamptz, type text,
+        payload jsonb, text_ref uuid)
+    ), cls AS (
+      SELECT c.id, c.pinned_version_id,
+        EXISTS (SELECT 1 FROM enrollment AS e WHERE e.class_id = c.id AND e.student_id = ${s})
+          AS enrolled
+      FROM class AS c WHERE c.id = ANY(${classes})
+    ), gate AS (
+      SELECT (SELECT count(*) FROM cls WHERE cls.enrolled) = cardinality(${classes}) AS ok
+    ), allowed AS (
+      SELECT cls.id AS class_id, cls.pinned_version_id AS version_id
+        FROM cls WHERE cls.pinned_version_id IS NOT NULL
+      UNION
+      SELECT a.class_id, (a.before ->> 'pinned_version_id')::uuid
+        FROM audit_event AS a
+        WHERE a.target_type = 'class' AND a.before ? 'pinned_version_id'
+          AND a.class_id = ANY(${classes}) AND a.at > ${since}
+    ), known AS (
+      SELECT k.id, k.student_id FROM interaction_event_key AS k
+        WHERE k.id = ANY(ARRAY(SELECT ev.id FROM ev))
+    ), judged AS (
+      SELECT ev.*, CASE
+          WHEN NOT EXISTS (SELECT 1 FROM allowed AS w
+                             WHERE w.class_id = ev.class_id AND w.version_id = ev.version_id)
+            THEN 'version_not_pinned'
+          WHEN known.student_id = ${s} THEN 'duplicate'
+          WHEN known.id IS NOT NULL THEN 'id_taken'
+          ELSE 'new' END AS status
+      FROM ev LEFT JOIN known ON known.id = ev.id
+    ), tx AS (
+      SELECT * FROM jsonb_to_recordset(${JSON.stringify(texts)}::jsonb) AS t(
+        id uuid, class_id uuid, kind text, body text, names integer, emails integer,
+        phones integer)
+      WHERE (SELECT ok FROM gate)
+        AND t.id IN (SELECT j.text_ref FROM judged AS j WHERE j.status = 'new')
+    ), stored AS (
+      INSERT INTO interaction_text (id, org_id, class_id, student_id, kind, body, redacted_at)
+        SELECT tx.id, ${org}, tx.class_id, ${s}, tx.kind, tx.body, now() FROM tx
+        ON CONFLICT (id) DO NOTHING
+        RETURNING id
+    ), missed AS (
+      INSERT INTO privacy_miss (org_id, class_id, source, names, emails, phones)
+        SELECT ${org}, tx.class_id, 'event_ingest', tx.names, tx.emails, tx.phones
+        FROM tx JOIN stored ON stored.id = tx.id
+        WHERE tx.names + tx.emails + tx.phones > 0
+    ), owned AS (
+      SELECT t.id FROM interaction_text AS t
+        WHERE t.id IN (SELECT j.text_ref FROM judged AS j) AND t.student_id = ${s}
+      UNION SELECT stored.id FROM stored
+    ), checked AS (
+      SELECT j.*, CASE
+          WHEN j.status = 'new' AND j.text_ref IS NOT NULL
+           AND j.text_ref NOT IN (SELECT owned.id FROM owned) THEN 'text_missing'
+          ELSE j.status END AS outcome
+      FROM judged AS j
+    ), fresh AS (
+      SELECT c.*, row_number() OVER (ORDER BY c.i) AS k
+        FROM checked AS c WHERE c.outcome = 'new' AND (SELECT ok FROM gate)
+    ), n AS (
+      SELECT count(*)::integer AS n FROM fresh
+    ), alloc AS (
+      INSERT INTO student_event_seq AS q (student_id, org_id, last_seq)
+        SELECT ${s}, ${org}, n.n FROM n WHERE n.n > 0
+        ON CONFLICT (student_id) DO UPDATE SET last_seq = q.last_seq + excluded.last_seq
+        RETURNING q.last_seq
+    ), ins AS (
+      INSERT INTO interaction_event
+          (id, org_id, student_id, class_id, version_id, seq, at, type, payload, tracing_opted_out)
+        SELECT f.id, ${org}, ${s}, f.class_id, f.version_id, alloc.last_seq - n.n + f.k, f.at,
+          f.type, f.payload,
+          EXISTS (SELECT 1 FROM tracing_opt_out AS o WHERE o.student_id = ${s})
+        FROM fresh AS f CROSS JOIN alloc CROSS JOIN n
+        RETURNING id, seq
+    )
+    SELECT (SELECT ok FROM gate) AS enrolled,
+      (SELECT coalesce(json_agg(json_build_object('id', ins.id, 'seq', ins.seq)), '[]')
+         FROM ins) AS accepted,
+      (SELECT coalesce(json_agg(json_build_object('i', c.i, 'id', c.id, 'status', c.outcome)), '[]')
+         FROM checked AS c WHERE c.outcome <> 'new') AS others
   `.execute(trx);
   const row = rows[0]!;
-  const allowed = new Map<string, Set<string>>(classIds.map((id) => [id, new Set()]));
-  let enrolledIn = 0;
-  for (const c of row.classes) {
-    if (c.enrolled) enrolledIn++;
-    if (c.pinned) allowed.get(c.id)?.add(c.pinned);
-  }
-  for (const r of row.repins) {
-    if (r.versionId) allowed.get(r.classId)?.add(r.versionId);
-  }
   return {
-    enrolled: enrolledIn === classIds.length,
-    allowed,
-    optedOut: row.opted_out,
-    known: new Map(row.known.map((k) => [k.id, k.student])),
+    enrolled: row.enrolled,
+    accepted: row.accepted.map((r) => ({ id: r.id, seq: Number(r.seq) })),
+    others: row.others,
   };
 }
 
-async function storeTexts(
+/**
+ * The batch's typed texts that its events refer to, with real roster names and contact
+ * details blurred and counted (D26). Only the blurred body ever reaches the database.
+ */
+async function backstopTexts(
   trx: Trx,
-  candidates: Candidate[],
+  candidates: readonly Candidate[],
   texts: readonly EventText[],
   ctx: IngestContext,
-  reject: (index: number, id: string | null, code: 'text_missing', message: string) => void,
-): Promise<Candidate[]> {
-  const refs = candidates.flatMap(({ event }) => {
-    const ref = eventTextRef(event);
-    return ref ? [{ ref: ref.toLowerCase(), event }] : [];
-  });
-  if (refs.length === 0) return candidates;
-
+): Promise<CheckedText[]> {
+  if (texts.length === 0) return [];
   const sent = new Map(texts.map((t) => [t.id.toLowerCase(), t.body]));
-  const toStore = new Map<
+  const wanted = new Map<
     string,
     { classId: string; kind: 'teachback' | 'challenge'; body: string }
   >();
-  for (const { ref, event } of refs) {
-    const body = sent.get(ref);
-    if (body !== undefined && !toStore.has(ref)) {
+  for (const { event } of candidates) {
+    const ref = eventTextRef(event)?.toLowerCase();
+    const body = ref ? sent.get(ref) : undefined;
+    if (ref && body !== undefined && !wanted.has(ref)) {
       const kind = TEXT_EVENT_KINDS[event.type as keyof typeof TEXT_EVENT_KINDS];
-      toStore.set(ref, { classId: event.classId, kind, body });
+      wanted.set(ref, { classId: event.classId, kind, body });
     }
   }
-
-  if (toStore.size > 0) {
-    const names = await rosterNames(
-      trx,
-      [...new Set([...toStore.values()].map((t) => t.classId))],
-      ctx,
-    );
-    const misses = new Map<string, { classId: string; misses: BackstopMisses }>();
-    const rows = [...toStore].map(([id, t]) => {
-      const checked = backstopText(t.body, names);
-      if (totalMisses(checked.misses) > 0)
-        misses.set(id, { classId: t.classId, misses: checked.misses });
-      return {
-        id,
-        org_id: ctx.orgId,
-        class_id: t.classId,
-        student_id: ctx.studentId,
-        kind: t.kind,
-        body: checked.text,
-        redacted_at: ctx.now,
-      };
-    });
-    // A text already stored (a resend) is kept as it was.
-    const inserted = await trx
-      .insertInto('interaction_text')
-      .values(rows)
-      .onConflict((oc) => oc.column('id').doNothing())
-      .returning('id')
-      .execute();
-    const missRows = inserted.flatMap(({ id }) => {
-      const m = misses.get(id);
-      return m
-        ? [{ org_id: ctx.orgId, class_id: m.classId, source: 'event_ingest' as const, ...m.misses }]
-        : [];
-    });
-    if (missRows.length > 0) await trx.insertInto('privacy_miss').values(missRows).execute();
-  }
-
-  // Every reference must name this student's own text, sent now or stored earlier;
-  // an id that clashed with someone else's text is never pointed at.
-  const own = await trx
-    .selectFrom('interaction_text')
-    .select('id')
-    .where(
-      'id',
-      'in',
-      refs.map((r) => r.ref),
-    )
-    .where('student_id', '=', ctx.studentId)
-    .execute();
-  const mine = new Set(own.map((r) => r.id));
-  return candidates.filter(({ index, event }) => {
-    const ref = eventTextRef(event)?.toLowerCase();
-    if (!ref || mine.has(ref)) return true;
-    reject(index, event.id, 'text_missing', 'The typed text this event refers to was not sent.');
-    return false;
+  if (wanted.size === 0) return [];
+  const names = await rosterNames(
+    trx,
+    [...new Set([...wanted.values()].map((t) => t.classId))],
+    ctx,
+  );
+  return [...wanted].map(([id, t]) => {
+    const { text, misses } = backstopText(t.body, names);
+    return { id, class_id: t.classId, kind: t.kind, body: text, ...misses };
   });
 }
 
