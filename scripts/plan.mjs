@@ -9,7 +9,7 @@
 //   node scripts/plan.mjs claim <ID> <agent>
 //   node scripts/plan.mjs review <ID>     work is on a branch / PR, waiting for review
 //   node scripts/plan.mjs done <ID>
-//   node scripts/plan.mjs release <ID>    give a claimed task back
+//   node scripts/plan.mjs release <ID>    give a claimed or in-review task back
 //   node scripts/plan.mjs check           validate the graph and that PLAN.md is current (CI)
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -224,7 +224,7 @@ switch (cmd) {
   }
   case 'review': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing') fail(`${id} is ${t.status}, not in progress`); setStatus(id, 'review'); break; }
   case 'done': { const t = byId[id] || fail(`no task ${id}`); if (t.status === 'todo') fail(`${id} was never claimed`); setStatus(id, 'done'); break; }
-  case 'release': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing') fail(`${id} is ${t.status}, not in progress`); setStatus(id, 'todo', null); break; }
+  case 'release': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing' && t.status !== 'review') fail(`${id} is ${t.status}, not claimed`); setStatus(id, 'todo', null); break; }
   case 'check': {
     if (errs.length) fail(errs.join('\n'));
     let current = '';
