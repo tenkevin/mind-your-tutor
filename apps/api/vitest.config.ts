@@ -5,6 +5,9 @@ export default defineConfig({
   resolve: { conditions: ['@ideamap/source'] },
   ssr: { resolve: { conditions: ['@ideamap/source'] } },
   test: {
+    // The default reporter hides a passing test's console output; the M2-P1 timing
+    // summary and timeline are for the CI log, so CI uses the verbose reporter.
+    reporters: process.env.CI ? ['verbose'] : ['default'],
     // Database tests migrate their own database; give slow CI runners room.
     testTimeout: 60_000,
     hookTimeout: 120_000,

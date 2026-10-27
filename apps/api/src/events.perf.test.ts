@@ -46,6 +46,7 @@ function ulid(): string {
 
 const p95 = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.95)]!;
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]!;
+const p99 = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.99)]!;
 
 function runGenerator(planPath: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -194,12 +195,25 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
       if (process.env.IDEAMAP_PERF_OUT) {
         await writeFile(process.env.IDEAMAP_PERF_OUT, JSON.stringify(summary));
       }
-      if (process.env.IDEAMAP_PERF_VERBOSE) {
-        console.log(
-          `ingest ${summary.rate.toFixed(0)} events/s; p95 client ${summary.clientP95.toFixed(1)} ms, ` +
-            `server ${summary.serverP95.toFixed(1)} ms; median client ${summary.clientMedian.toFixed(1)} ms`,
+      // Always printed, so a CI log shows the numbers and where any tail comes from.
+      // Requests are in plan order and due at i / RATE seconds, so request i belongs
+      // to second floor(i / RATE) of the run.
+      const f = (n: number) => n.toFixed(1).padStart(6);
+      const lines = [
+        `ingest ${summary.rate.toFixed(0)} events/s over ${out.seconds.toFixed(1)} s, ${out.results.length} batches`,
+        `client ms p50 ${f(summary.clientMedian)} p95 ${f(summary.clientP95)} p99 ${f(p99(clientMs))} max ${f(Math.max(...clientMs))}`,
+        `server ms p50 ${f(summary.serverMedian)} p95 ${f(summary.serverP95)} p99 ${f(p99(serverMs))} max ${f(Math.max(...serverMs))}`,
+        'timeline (client ms per second of the run):',
+      ];
+      const seconds = Math.ceil(out.results.length / RATE);
+      for (let s = 0; s < seconds; s++) {
+        const xs = clientMs.slice(Math.round(s * RATE), Math.round((s + 1) * RATE));
+        if (xs.length === 0) continue;
+        lines.push(
+          `  s${String(s).padStart(2)}  n ${String(xs.length).padStart(3)}  p50 ${f(median(xs))}  p95 ${f(p95(xs))}  max ${f(Math.max(...xs))}`,
         );
       }
+      console.log(lines.join('\n'));
       expect(out.results.every((r) => r.status === 200)).toBe(true);
       expect(events).toBe(students.length * PER_BATCH * TICKS);
       expect(summary.rate).toBeGreaterThan(5000);
