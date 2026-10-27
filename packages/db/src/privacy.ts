@@ -236,6 +236,10 @@ export interface StudentRecord {
   ai_outputs: Record<string, unknown>[];
   ai_interactions: Record<string, unknown>[];
   progress_snapshots: Record<string, unknown>[];
+  /** D24: when the district opted the student out of tracing, if it has. */
+  tracing_opt_out: Record<string, unknown>[];
+  /** The student's last event seq (M2). */
+  event_seq: Record<string, unknown>[];
   auth_sessions: Record<string, unknown>[];
 }
 
@@ -255,6 +259,8 @@ export const RECORD_OMITS = {
   ai_outputs: ['org_id', 'student_id'],
   ai_interactions: ['org_id', 'user_id'],
   progress_snapshots: ['org_id', 'student_id'],
+  tracing_opt_out: ['org_id', 'student_id'],
+  event_seq: ['org_id', 'student_id'],
   auth_sessions: ['org_id', 'user_id', 'token_hash'],
 } as const;
 
@@ -320,6 +326,16 @@ export async function collectStudentRecord(
     .selectAll()
     .where('student_id', '=', studentId)
     .execute();
+  const tracing_opt_out = await trx
+    .selectFrom('tracing_opt_out')
+    .selectAll()
+    .where('student_id', '=', studentId)
+    .execute();
+  const event_seq = await trx
+    .selectFrom('student_event_seq')
+    .selectAll()
+    .where('student_id', '=', studentId)
+    .execute();
   const auth_sessions = await trx
     .selectFrom('auth_session')
     .selectAll()
@@ -339,6 +355,8 @@ export async function collectStudentRecord(
     ai_outputs: omitAll(ai_outputs, RECORD_OMITS.ai_outputs),
     ai_interactions: omitAll(ai_interactions, RECORD_OMITS.ai_interactions),
     progress_snapshots: omitAll(progress_snapshots, RECORD_OMITS.progress_snapshots),
+    tracing_opt_out: omitAll(tracing_opt_out, RECORD_OMITS.tracing_opt_out),
+    event_seq: omitAll(event_seq, RECORD_OMITS.event_seq),
     auth_sessions: omitAll(auth_sessions, RECORD_OMITS.auth_sessions),
   };
 }

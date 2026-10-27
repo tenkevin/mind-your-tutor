@@ -905,6 +905,8 @@ describe.skipIf(!hasDatabase)('student export covers every stored field (QA F6-E
       ai_outputs: 'ai_output',
       ai_interactions: 'ai_interaction',
       progress_snapshots: 'progress_snapshot',
+      tracing_opt_out: 'tracing_opt_out',
+      event_seq: 'student_event_seq',
       auth_sessions: 'auth_session',
     };
     for (const [section, table] of Object.entries(sources) as [

@@ -190,6 +190,27 @@ describe.skipIf(!hasDatabase)('POST /events (M2)', () => {
     expect(seqs).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
+  it('numbers concurrent batches from one student with no gaps or repeats (M2-F2)', async () => {
+    const studentId = api.sample.users['student-a2'];
+    const before = (await storedFor(studentId)).length;
+    const batches = Array.from({ length: 6 }, () =>
+      mixed(10).map((e) => ({ ...e, classId: api.sample.classes.a2 })),
+    );
+    // The first batch is also resent while it is in flight, as a retrying tab would.
+    const sends = [...batches, batches[0]!].map((events) => student(sky)({ events }));
+    const answers = (await Promise.all(sends)).map(body);
+
+    const accepted = answers.flatMap((a) => a.accepted);
+    expect(accepted).toHaveLength(60);
+    expect(new Set(accepted.map((a) => a.id)).size).toBe(60);
+    expect(answers.flatMap((a) => a.duplicates)).toHaveLength(10);
+    expect(answers.flatMap((a) => a.rejected)).toEqual([]);
+    const seqs = accepted.map((a) => a.seq).sort((x, y) => x - y);
+    expect(seqs).toEqual(Array.from({ length: 60 }, (_, i) => before + i + 1));
+    const stored = (await storedFor(studentId)).map((r) => Number(r.seq));
+    expect(stored).toEqual(Array.from({ length: before + 60 }, (_, i) => i + 1));
+  });
+
   it('rejects bad events with a reason each and stores the valid ones (M2-F3)', async () => {
     const ok1 = event('idea.opened', { ideaId: 'rain' });
     const ok2 = event('hint.requested', { questionId: 'rain/mcq/a>b' });

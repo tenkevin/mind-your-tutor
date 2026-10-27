@@ -1,4 +1,9 @@
-import { CSRF_HEADER, type EventBatchResponse } from '@ideamap/contracts';
+import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { CSRF_HEADER } from '@ideamap/contracts';
 import { createDb, type Db } from '@ideamap/db';
 import { hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -7,8 +12,17 @@ import { SESSION_COOKIE } from './policy.js';
 import { fromApp, ORIGIN, sessionFor, startApi, type TestApi } from './test/harness.js';
 
 // M2-P1: event ingest throughput. A timing test, so it runs in the `perf` project
-// (vitest.config.ts): after the other test files, one file at a time, with the
-// runner to itself.
+// (vitest.config.ts): after the other test files, one file at a time.
+//
+// The API listens on a real port and a separate process (test/load-generator.mjs)
+// sends the load, so the generator's CPU work can't stall the API's event loop. Each
+// batch is timed twice: by the generator (what a client sees, the bar) and by the API
+// (from request to response, which leaves out the generator's own delays).
+//
+// For benchmarking: IDEAMAP_PERF_POOL sets the API's pool size (default pg's 10, as
+// deployed) and IDEAMAP_PERF_OUT names a file for a JSON summary of the run.
+
+const GENERATOR = fileURLToPath(new URL('./test/load-generator.mjs', import.meta.url));
 
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 let ulidCount = 0;
@@ -29,17 +43,34 @@ function ulid(): string {
   return head + tail;
 }
 
+const p95 = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.95)]!;
+const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]!;
+
+function runGenerator(planPath: string, outPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [GENERATOR, planPath, outPath], { stdio: 'inherit' });
+    child.on('error', reject);
+    child.on('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`load generator exited with ${code}`)),
+    );
+  });
+}
+
 describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
   let api: TestApi;
   // The API as deployed: its own pool at pg's default size (10, as `createDb(url)` in
   // index.ts), not the 4 connections the harness gives test files running in parallel.
   let db: Db;
   let server: ReturnType<typeof buildServer>;
+  const serverMs: number[] = [];
   beforeAll(async () => {
     api = await startApi();
-    db = createDb(api.t.url);
+    db = createDb(api.t.url, { max: Number(process.env.IDEAMAP_PERF_POOL ?? 10) });
     server = buildServer({ db, config: api.config });
-    await server.ready();
+    server.addHook('onResponse', async (req, reply) => {
+      if (req.url === '/events') serverMs.push(reply.elapsedTime);
+    });
+    await server.listen({ host: '127.0.0.1', port: 0 });
   }, 120_000);
   afterAll(async () => {
     await server?.close();
@@ -105,46 +136,57 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         payload: { ideaId: 'evaporation' },
       })),
     });
-    // The simulated clients' work (making and serialising batches) is done before the
-    // clock starts, so the run measures the server.
-    const plan = Array.from({ length: TICKS }, () =>
-      students.map((s, i) => ({ who: sessions[i]!, body: JSON.stringify(batch(s.classId)) })),
-    ).flat();
-    const latencies: number[] = [];
-    let events = 0;
-    const started = performance.now();
-    await Promise.all(
-      plan.map(async ({ who, body }, i) => {
-        const due = started + (i / RATE) * 1000;
-        const wait = due - performance.now();
-        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-        const t0 = performance.now();
-        const res = await server.inject({
-          method: 'POST',
-          url: '/events',
+    // The whole plan is made before the clock starts.
+    const port = (server.server.address() as { port: number }).port;
+    const plan = {
+      port,
+      ratePerSecond: RATE,
+      headers: { ...fromApp(), origin: ORIGIN, 'content-type': 'application/json' },
+      requests: Array.from({ length: TICKS }, () =>
+        students.map((s, i) => ({
           headers: {
-            ...fromApp(),
-            origin: ORIGIN,
-            [CSRF_HEADER]: who.csrf,
-            'content-type': 'application/json',
+            [CSRF_HEADER]: sessions[i]!.csrf,
+            cookie: `${SESSION_COOKIE}=${sessions[i]!.cookie}`,
           },
-          cookies: { [SESSION_COOKIE]: who.cookie },
-          payload: body,
-        });
-        latencies.push(performance.now() - t0);
-        expect(res.statusCode).toBe(200);
-        events += (res.json() as EventBatchResponse).accepted.length;
-      }),
-    );
-    const seconds = (performance.now() - started) / 1000;
-    latencies.sort((a, b) => a - b);
-    const p95 = latencies[Math.floor(latencies.length * 0.95)]!;
-    const rate = events / seconds;
-    if (process.env.IDEAMAP_PERF_VERBOSE) {
-      console.log(`ingest ${rate.toFixed(0)} events/s, p95 ${p95.toFixed(1)} ms, ${events} events`);
+          body: JSON.stringify(batch(s.classId)),
+        })),
+      ).flat(),
+    };
+    const dir = await mkdtemp(join(tmpdir(), 'ideamap-load-'));
+    try {
+      await writeFile(join(dir, 'plan.json'), JSON.stringify(plan));
+      serverMs.length = 0;
+      await runGenerator(join(dir, 'plan.json'), join(dir, 'out.json'));
+      const out = JSON.parse(await readFile(join(dir, 'out.json'), 'utf8')) as {
+        seconds: number;
+        results: { ms: number; status: number; accepted: number }[];
+      };
+      const clientMs = out.results.map((r) => r.ms);
+      const events = out.results.reduce((sum, r) => sum + r.accepted, 0);
+      const summary = {
+        rate: events / out.seconds,
+        events,
+        clientP95: p95(clientMs),
+        clientMedian: median(clientMs),
+        serverP95: p95(serverMs),
+        serverMedian: median(serverMs),
+        pool: Number(process.env.IDEAMAP_PERF_POOL ?? 10),
+      };
+      if (process.env.IDEAMAP_PERF_OUT) {
+        await writeFile(process.env.IDEAMAP_PERF_OUT, JSON.stringify(summary));
+      }
+      if (process.env.IDEAMAP_PERF_VERBOSE) {
+        console.log(
+          `ingest ${summary.rate.toFixed(0)} events/s; p95 client ${summary.clientP95.toFixed(1)} ms, ` +
+            `server ${summary.serverP95.toFixed(1)} ms; median client ${summary.clientMedian.toFixed(1)} ms`,
+        );
+      }
+      expect(out.results.every((r) => r.status === 200)).toBe(true);
+      expect(events).toBe(students.length * PER_BATCH * TICKS);
+      expect(summary.rate).toBeGreaterThan(5000);
+      expect(summary.clientP95).toBeLessThan(200);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
-    expect(events).toBe(students.length * PER_BATCH * TICKS);
-    expect(rate).toBeGreaterThan(5000);
-    expect(p95).toBeLessThan(200);
   }, 300_000);
 });

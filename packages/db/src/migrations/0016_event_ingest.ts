@@ -14,11 +14,20 @@ import { APP_ROLE, dropTables, grantApp, tenantTable } from './helpers.js';
 // 4. privacy_miss (D26): one row per typed text in which the server backstop found
 //    a real roster name or contact detail the device layer should have removed.
 //    Counts only: never the text, the name, or the student.
-// 5. app.purge_student_events (D22): raw events are deleted when a student leaves the
+// 5. student_event_seq: each student's last event seq, allocated a batch at a time by
+//    one upsert. Constant time however long the student's history, and its row lock
+//    puts a student's batches one after another, so seq has no gaps.
+// 6. app.purge_student_events (D22): raw events are deleted when a student leaves the
 //    district and on a FERPA delete, with the map views and AI outputs they point to
 //    (§8.5). Append-only stays absolute for every other path: the replacement trigger
 //    allows a DELETE only of the student this function is purging, inside it, and the
 //    app role still has no DELETE privilege on these tables. Settles open question 7.
+// 7. Row-level security evaluates the organization (and class) once per query, as
+//    (SELECT app.current_org_id()), rather than once per row; the planner then treats
+//    it as one value, which keeps it from reading a whole organization's rows to
+//    answer a question about one student.
+// 8. An index for the grace-period lookup of a class's recent re-pins (§8.5), so it
+//    doesn't grow with the audit log.
 //
 // Every function pins search_path to pg_catalog, pg_temp and names tables by schema.
 
@@ -121,7 +130,25 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await tenantTable(db, 'privacy_miss');
   await grantApp(db, 'privacy_miss', ['SELECT', 'INSERT']);
 
-  // 5. Append-only, except for the purge. Replaces app.refuse_change() on the four
+  // 5. Each student's last seq. Ingest allocates a batch's n numbers with one upsert
+  // (last_seq + n), whose row lock holds until commit. Events stored before this table
+  // existed are counted in.
+  await sql`
+    CREATE TABLE student_event_seq (
+      student_id uuid PRIMARY KEY,
+      org_id uuid NOT NULL,
+      last_seq bigint NOT NULL CHECK (last_seq >= 0),
+      FOREIGN KEY (org_id, student_id) REFERENCES app_user (org_id, id) ON DELETE CASCADE
+    )
+  `.execute(db);
+  await sql`
+    INSERT INTO student_event_seq (student_id, org_id, last_seq)
+      SELECT student_id, org_id, max(seq) FROM interaction_event_key GROUP BY student_id, org_id
+  `.execute(db);
+  await tenantTable(db, 'student_event_seq');
+  await grantApp(db, 'student_event_seq', ['SELECT', 'INSERT', 'UPDATE']);
+
+  // 6. Append-only, except for the purge. Replaces app.refuse_change() on the four
   // tracker tables only; every other append-only table keeps it.
   await sql`
     CREATE FUNCTION app.refuse_tracker_change() RETURNS trigger
@@ -188,6 +215,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
         GET DIAGNOSTICS views = ROW_COUNT;
         DELETE FROM public.ai_output AS o WHERE o.org_id = org AND o.student_id = student;
         GET DIAGNOSTICS outputs = ROW_COUNT;
+        -- No events left, so numbering starts again.
+        DELETE FROM public.student_event_seq AS q WHERE q.org_id = org AND q.student_id = student;
         PERFORM set_config(${sql.lit(PURGE_SETTING)}, '', true);
 
         RETURN jsonb_build_object(
@@ -201,9 +230,46 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`GRANT EXECUTE ON FUNCTION app.purge_student_events(uuid) TO ${sql.id(APP_ROLE)}`.execute(
     db,
   );
+
+  // 7. Organization and class once per query. Every tenant and class-scope policy is
+  // rewritten; organization is keyed by its own id.
+  const { rows: policies } = await sql<{ table: string; policy: string }>`
+    SELECT tablename AS table, policyname AS policy FROM pg_catalog.pg_policies
+    WHERE schemaname = 'public' AND policyname IN ('tenant_isolation', 'class_scope')
+    ORDER BY tablename, policyname
+  `.execute(db);
+  for (const { table, policy } of policies) {
+    const check =
+      policy === 'class_scope'
+        ? sql`class_id = (SELECT app.current_class_id())`
+        : sql`${sql.ref(table === 'organization' ? 'id' : 'org_id')} = (SELECT app.current_org_id())`;
+    await sql`
+      ALTER POLICY ${sql.id(policy)} ON ${sql.table(table)} USING (${check}) WITH CHECK (${check})
+    `.execute(db);
+  }
+
+  // 8. A class's re-pins inside the grace period (ingest's version check).
+  await sql`
+    CREATE INDEX audit_event_class_repin ON audit_event (class_id, at)
+      WHERE target_type = 'class' AND before ? 'pinned_version_id'
+  `.execute(db);
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
+  await sql`DROP INDEX IF EXISTS audit_event_class_repin`.execute(db);
+  const { rows: policies } = await sql<{ table: string; policy: string }>`
+    SELECT tablename AS table, policyname AS policy FROM pg_catalog.pg_policies
+    WHERE schemaname = 'public' AND policyname IN ('tenant_isolation', 'class_scope')
+  `.execute(db);
+  for (const { table, policy } of policies) {
+    const check =
+      policy === 'class_scope'
+        ? sql`class_id = app.current_class_id()`
+        : sql`${sql.ref(table === 'organization' ? 'id' : 'org_id')} = app.current_org_id()`;
+    await sql`
+      ALTER POLICY ${sql.id(policy)} ON ${sql.table(table)} USING (${check}) WITH CHECK (${check})
+    `.execute(db);
+  }
   for (const table of TRACKER_TABLES) {
     const t = sql.table(table);
     await sql`DROP TRIGGER IF EXISTS append_only ON ${t}`.execute(db);
@@ -214,7 +280,7 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   }
   await sql`DROP FUNCTION IF EXISTS app.purge_student_events(uuid)`.execute(db);
   await sql`DROP FUNCTION IF EXISTS app.refuse_tracker_change()`.execute(db);
-  await dropTables(db, ['privacy_miss', 'tracing_opt_out']);
+  await dropTables(db, ['student_event_seq', 'privacy_miss', 'tracing_opt_out']);
   await sql`ALTER TABLE interaction_text DROP CONSTRAINT interaction_text_kind_check`.execute(db);
   await sql`
     ALTER TABLE interaction_text ADD CONSTRAINT interaction_text_kind_check

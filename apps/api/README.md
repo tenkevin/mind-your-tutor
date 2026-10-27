@@ -96,9 +96,15 @@ file gets a fresh database and its own mock identity provider. Set
   (`unknown_type`, `forbidden_field`, `invalid`, `server_only`, `version_not_pinned`,
   `text_missing`, `id_taken`) while the rest of the batch is stored. Resent ids are
   returned as `duplicates`, never stored twice.
-- **seq and level:** `seq` continues per student with no gaps (one batch per student at
-  a time); `level` is generated from the type by the database, which also refuses any type
-  outside the catalogue.
+- **seq and level:** `seq` continues per student with no gaps. A batch's numbers come
+  from one upsert on `student_event_seq` (constant time, whatever the history), whose
+  row lock puts a student's batches one after another; a resend racing its first send
+  loses on the ledger's unique key and is judged again as a duplicate. `level` is
+  generated from the type by the database, which also refuses any type outside the
+  catalogue.
+- **Round trips:** one statement reads everything a batch is judged against
+  (enrolment, pins, re-pins, opt-out, ids already recorded), and one allocates the
+  numbers and inserts the events. Text queries run only when the batch has typed text.
 - **Versions:** the class's pinned version, or the one it replaced within the grace
   period after a publish (`VERSION_GRACE_MS`, 24 hours; read from the class's audit log).
 - **Typed text** comes anonymised from the device (D26, task A7). The server backstop
