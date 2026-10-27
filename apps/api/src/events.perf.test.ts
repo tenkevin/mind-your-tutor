@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { CSRF_HEADER } from '@ideamap/contracts';
 import { createDb, type Db } from '@ideamap/db';
 import { hasDatabase } from '@ideamap/db/testing';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
@@ -125,6 +126,10 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
         .execute();
       for (const u of created) students.push({ userId: u.id, classId: klass.id });
     }
+    // A deployed database has planner statistics. The seed above just loaded about
+    // 27,000 rows, and autovacuum's analyze would land mid-run: until it does, the
+    // planner works from defaults for a table it thinks is empty.
+    await sql`ANALYZE`.execute(owner);
     const sessions = await Promise.all(students.map((s) => sessionFor(api, s.userId, orgs.a)));
 
     // Each of the 900 students sends one batch every 5 s, arriving evenly across the
