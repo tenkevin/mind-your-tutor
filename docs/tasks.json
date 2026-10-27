@@ -873,9 +873,9 @@
       "deps": [],
       "done_when": "Codex C5-E1 (docs/qa/codex/Codex-C5-review-6f43575.md): 'packages/domain/src/diff.ts:31 reduces Assessment rows to the first nonempty question for each idea' so an edit to a later accepted question is hidden and reordering unchanged rows invents a change. The diff compares all accepted assessment questions order-independently, following the checker's accepted/skipped-row rules, and shows every change; regressions cover edit, remove and reorder",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-c5cx1",
+      "updated": "2026-10-27"
     },
     {
       "id": "C5cx2",
