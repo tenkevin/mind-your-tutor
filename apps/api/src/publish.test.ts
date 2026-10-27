@@ -1,9 +1,17 @@
 import { VersionIssuesSchema, type Pack } from '@ideamap/contracts';
 import { json } from '@ideamap/db';
 import { checkPack } from '@ideamap/domain';
-import type { Caller } from '@ideamap/worker';
+import type { Caller, OrgScope } from '@ideamap/worker';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
+import {
+  sql,
+  type KyselyPlugin,
+  type PluginTransformQueryArgs,
+  type PluginTransformResultArgs,
+  type QueryResult,
+  type RootOperationNode,
+  type UnknownRow,
+} from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { packA, packB, packE, reordered } from '../../../packages/contracts/src/testing/publish.js';
 import {
@@ -31,6 +39,52 @@ const config = loadConfig({
   IDEAMAP_APP_ORIGINS: ORIGIN,
   IDEAMAP_SESSION_SECRET: 'test-only-session-secret-0123456789abcdef',
 });
+
+/**
+ * C5-E2: holds the first `curriculum_version` read of each of `parties` transactions
+ * until all of them have read, then releases them together. It changes no query or row;
+ * it makes the ordering "both read the draft, then take the lock" deterministic.
+ */
+function versionReadGate(parties: number) {
+  let arrived = 0;
+  let release!: () => void;
+  const open = new Promise<void>((resolve) => (release = resolve));
+  const state = { reads: 0 };
+  const plugin = (): KyselyPlugin => {
+    const watched = new Set<unknown>();
+    let held = false;
+    return {
+      transformQuery({ node, queryId }: PluginTransformQueryArgs): RootOperationNode {
+        const from = node.kind === 'SelectQueryNode' ? node.from?.froms[0] : undefined;
+        const table =
+          from?.kind === 'TableNode' ? (from.table.identifier as { name: string }).name : '';
+        if (!held && table === 'curriculum_version') {
+          held = true;
+          watched.add(queryId);
+        }
+        return node;
+      },
+      async transformResult({
+        result,
+        queryId,
+      }: PluginTransformResultArgs): Promise<QueryResult<UnknownRow>> {
+        if (watched.has(queryId)) {
+          state.reads += 1;
+          if (++arrived >= parties) release();
+          await open;
+        }
+        return result;
+      },
+    };
+  };
+  return {
+    state,
+    scope: (db: Parameters<typeof appScope>[0]): OrgScope => {
+      const inner = appScope(db);
+      return (orgId, fn) => inner(orgId, (trx) => fn(trx.withPlugin(plugin())));
+    },
+  };
+}
 
 describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   let t: TestDatabase;
@@ -424,6 +478,131 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(await pins()).toEqual(before);
     expect((await version(versionC)).status).toBe('draft');
     expect((await allAudits()).length).toBe(auditCount);
+  });
+
+  describe('C5cx2-F1..F4, S1, U1: concurrent publishes of one draft (C5-E2)', () => {
+    /** Two requests publish one draft; both read it as a draft before either locks. */
+    const race = async (
+      requests: Array<{ as: string; classes: string[]; key?: string }>,
+      payloadDraft?: string,
+    ) => {
+      const gate = versionReadGate(requests.length);
+      const racing = buildServer({
+        db: t.db,
+        config,
+        publish: { deps: { scope: gate.scope(t.db) } },
+      });
+      const id = payloadDraft ?? (await draft(a, a.curriculumId, packB()));
+      const send = (r: (typeof requests)[number]) => {
+        const signed = sessions.get(r.as)!;
+        return racing.inject({
+          method: 'POST',
+          url: `/versions/${id}/publish`,
+          headers: {
+            host: new URL(ORIGIN).host,
+            'x-forwarded-proto': 'https',
+            origin: ORIGIN,
+            [CSRF_HEADER]: signed.csrf,
+            ...(r.key ? { 'idempotency-key': r.key } : {}),
+          },
+          cookies: { [SESSION_COOKIE]: signed.cookie },
+          payload: { class_ids: r.classes },
+        });
+      };
+      try {
+        const responses = await Promise.all(requests.map(send));
+        expect(gate.state.reads).toBe(requests.length);
+        return { id, responses };
+      } finally {
+        await racing.close();
+      }
+    };
+    const underneath = async (id: string) => {
+      const rows = (await allAudits()).filter(
+        (e) =>
+          e.target_id === id ||
+          (e.after as { pinned_version_id?: string } | null)?.pinned_version_id === id,
+      );
+      const count = (action: string) => rows.filter((e) => e.action === action).length;
+      return {
+        published: count('version.published'),
+        pins: count('class.updated'),
+        publishRecords: count('curriculum_version.publish'),
+        pinnedClasses: rows
+          .filter((e) => e.action === 'class.updated')
+          .map((e) => e.target_id)
+          .sort(),
+      };
+    };
+    const restore = async () => {
+      for (const c of [ids.c1!, ids.c2!, ids.other!]) {
+        await t.db
+          .updateTable('class')
+          .set({ pinned_version_id: versionA })
+          .where('id', '=', c)
+          .execute();
+      }
+    };
+
+    it('different keys: both succeed, both classes pinned, one status change and one pin each', async () => {
+      const { id, responses } = await race([
+        { as: 'teacher', classes: [ids.c1!], key: 'race-1' },
+        { as: 'teacher', classes: [ids.c2!], key: 'race-2' },
+      ]);
+      expect(responses.map((r) => r.statusCode)).toEqual([201, 201]);
+      const now = await pins();
+      expect(now[ids.c1!]).toBe(id);
+      expect(now[ids.c2!]).toBe(id);
+      expect((await version(id)).status).toBe('published');
+      const rows = await underneath(id);
+      expect(rows).toMatchObject({ published: 1, pins: 2, publishRecords: 2 });
+      expect(rows.pinnedClasses).toEqual([ids.c1!, ids.c2!].sort());
+      // Each response names its own class and the published version.
+      const results = responses.map(
+        (r) => (r.json() as { publish: { classes: Array<{ class_id: string }> } }).publish,
+      );
+      expect(results.map((r) => r.classes.map((c) => c.class_id))).toEqual([[ids.c1], [ids.c2]]);
+      await restore();
+    });
+
+    it('no key: both succeed with the same audit counts', async () => {
+      const { id, responses } = await race([
+        { as: 'teacher', classes: [ids.c1!] },
+        { as: 'teacher', classes: [ids.c2!] },
+      ]);
+      expect(responses.map((r) => r.statusCode)).toEqual([201, 201]);
+      const now = await pins();
+      expect([now[ids.c1!], now[ids.c2!]]).toEqual([id, id]);
+      expect(await underneath(id)).toMatchObject({ published: 1, pins: 2, publishRecords: 2 });
+      await restore();
+    });
+
+    it('a shared key for the same classes: one publish, the other repeats its result', async () => {
+      const { id, responses } = await race([
+        { as: 'teacher', classes: [ids.c1!, ids.c2!], key: 'race-shared' },
+        { as: 'teacher', classes: [ids.c2!, ids.c1!], key: 'race-shared' },
+      ]);
+      expect(responses.map((r) => r.statusCode).sort()).toEqual([200, 201]);
+      expect(responses[0]!.json()).toEqual(responses[1]!.json());
+      const now = await pins();
+      expect([now[ids.c1!], now[ids.c2!]]).toEqual([id, id]);
+      expect(await underneath(id)).toMatchObject({ published: 1, pins: 2, publishRecords: 1 });
+      await restore();
+    });
+
+    it('S1: a class the other teacher doesn’t teach is refused and pins nothing', async () => {
+      const { id, responses } = await race([
+        { as: 'teacher', classes: [ids.c1!], key: 'race-ok' },
+        { as: 'teacher', classes: [ids.other!], key: 'race-denied' },
+      ]);
+      expect(responses.map((r) => r.statusCode)).toEqual([201, 403]);
+      expect(responses[1]!.body).not.toMatch(/select|stack|at .*\.ts/i);
+      const now = await pins();
+      expect(now[ids.c1!]).toBe(id);
+      expect(now[ids.other!]).toBe(versionA);
+      expect(await underneath(id)).toMatchObject({ published: 1, pins: 1, publishRecords: 1 });
+      await restore();
+    });
   });
 
   it('C5-F8: a repeated Idempotency-Key is a no-op with the same result and one audit record', async () => {

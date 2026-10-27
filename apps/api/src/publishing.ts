@@ -341,15 +341,18 @@ export async function publish(
   return deps.scope(caller.orgId, async (trx) => {
     // F6's audit triggers record the caller as the actor of the pin and status changes.
     await actAs(trx, caller.userId);
-    const version = await loadVersion(trx, versionId);
+    const found = await loadVersion(trx, versionId);
     // One publish at a time per curriculum: locking it orders concurrent publishes
     // and makes the idempotency check below race-free.
     await trx
       .selectFrom('curriculum')
       .select('id')
-      .where('id', '=', version.curriculum_id)
+      .where('id', '=', found.curriculum_id)
       .forUpdate()
       .executeTakeFirstOrThrow();
+    // Re-read under the lock: a publish that held it first may have moved the status
+    // since the read above (C5-E2), and the draft-to-published decision must see that.
+    const version = await loadVersion(trx, versionId);
     // Checked before a repeat is answered, so a key never stands in for permission.
     const classes = await loadClasses(trx, caller, version, sortedIds, true);
 
