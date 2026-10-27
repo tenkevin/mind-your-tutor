@@ -22,11 +22,7 @@ import { APP_ROLE, dropTables, grantApp, tenantTable } from './helpers.js';
 //    (§8.5). Append-only stays absolute for every other path: the replacement trigger
 //    allows a DELETE only of the student this function is purging, inside it, and the
 //    app role still has no DELETE privilege on these tables. Settles open question 7.
-// 7. Row-level security evaluates the organization (and class) once per query, as
-//    (SELECT app.current_org_id()), rather than once per row; the planner then treats
-//    it as one value, which keeps it from reading a whole organization's rows to
-//    answer a question about one student.
-// 8. An index for the grace-period lookup of a class's recent re-pins (§8.5), so it
+// 7. An index for the grace-period lookup of a class's recent re-pins (§8.5), so it
 //    doesn't grow with the audit log.
 //
 // Every function pins search_path to pg_catalog, pg_temp and names tables by schema.
@@ -231,24 +227,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     db,
   );
 
-  // 7. Organization and class once per query. Every tenant and class-scope policy is
-  // rewritten; organization is keyed by its own id.
-  const { rows: policies } = await sql<{ table: string; policy: string }>`
-    SELECT tablename AS table, policyname AS policy FROM pg_catalog.pg_policies
-    WHERE schemaname = 'public' AND policyname IN ('tenant_isolation', 'class_scope')
-    ORDER BY tablename, policyname
-  `.execute(db);
-  for (const { table, policy } of policies) {
-    const check =
-      policy === 'class_scope'
-        ? sql`class_id = (SELECT app.current_class_id())`
-        : sql`${sql.ref(table === 'organization' ? 'id' : 'org_id')} = (SELECT app.current_org_id())`;
-    await sql`
-      ALTER POLICY ${sql.id(policy)} ON ${sql.table(table)} USING (${check}) WITH CHECK (${check})
-    `.execute(db);
-  }
-
-  // 8. A class's re-pins inside the grace period (ingest's version check).
+  // 7. A class's re-pins inside the grace period (ingest's version check).
   await sql`
     CREATE INDEX audit_event_class_repin ON audit_event (class_id, at)
       WHERE target_type = 'class' AND before ? 'pinned_version_id'
@@ -257,19 +236,6 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
 export async function down(db: Kysely<unknown>): Promise<void> {
   await sql`DROP INDEX IF EXISTS audit_event_class_repin`.execute(db);
-  const { rows: policies } = await sql<{ table: string; policy: string }>`
-    SELECT tablename AS table, policyname AS policy FROM pg_catalog.pg_policies
-    WHERE schemaname = 'public' AND policyname IN ('tenant_isolation', 'class_scope')
-  `.execute(db);
-  for (const { table, policy } of policies) {
-    const check =
-      policy === 'class_scope'
-        ? sql`class_id = app.current_class_id()`
-        : sql`${sql.ref(table === 'organization' ? 'id' : 'org_id')} = app.current_org_id()`;
-    await sql`
-      ALTER POLICY ${sql.id(policy)} ON ${sql.table(table)} USING (${check}) WITH CHECK (${check})
-    `.execute(db);
-  }
   for (const table of TRACKER_TABLES) {
     const t = sql.table(table);
     await sql`DROP TRIGGER IF EXISTS append_only ON ${t}`.execute(db);
