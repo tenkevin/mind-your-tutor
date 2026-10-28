@@ -189,6 +189,7 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
       interaction_text: 1 + 4,
       ai_interaction: 1 + 3,
       auth_session: 2 + 3,
+      safety_flag: 0,
       export_files: 0,
       aborted: false,
     });
@@ -240,6 +241,7 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
       interaction_text: 0,
       ai_interaction: 0,
       auth_session: 0,
+      safety_flag: 0,
       export_files: 0,
       aborted: false,
     });
@@ -494,6 +496,7 @@ describe('retention schedule', () => {
         interaction_text: 0,
         ai_interaction: 0,
         auth_session: 0,
+        safety_flag: 0,
         export_files: 0,
         aborted: false,
       };
