@@ -898,6 +898,17 @@
       "status": "review",
       "owner": "agent-c6cx1",
       "updated": "2026-10-27"
+    },
+    {
+      "id": "A5b",
+      "title": "Teacher-approved persona eval baselines",
+      "size": 1,
+      "deps": [
+        "A5"
+      ],
+      "done_when": "Per D34, replies a teacher approves become eval ground truth in a living evidence set, tagged to persona template versions per §12 q14 once settled",
+      "placeholder": true,
+      "status": "todo"
     }
   ]
 }
