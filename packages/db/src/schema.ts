@@ -514,9 +514,9 @@ export const COLUMNS = {
     'ordinal',
     'content',
     'embedding',
+    'created_at',
     'page',
     'section',
-    'created_at',
   ],
   class: [
     'id',
@@ -563,9 +563,9 @@ export const COLUMNS = {
     'ordinal',
     'content',
     'embedding',
+    'created_at',
     'page',
     'section',
-    'created_at',
   ],
   interaction_event: [
     'id',
