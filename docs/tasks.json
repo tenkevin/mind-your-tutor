@@ -706,7 +706,8 @@
         "S5",
         "C5cx1",
         "C5cx2",
-        "C6cx1"
+        "C6cx1",
+        "A11"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
@@ -911,6 +912,18 @@
       ],
       "done_when": "Per D34, replies a teacher approves become eval ground truth in a living evidence set, tagged to persona template versions per §12 q14 once settled",
       "placeholder": true,
+      "status": "todo"
+    },
+    {
+      "id": "A11",
+      "title": "Grounded tutoring: sparring-partner mode when no verified source covers the question",
+      "size": 1,
+      "deps": [
+        "A2",
+        "A3"
+      ],
+      "done_when": "Per D35, Ms. Ivy answers factual questions only from verified assets, citing the passage; when none covers the question she states that and guides the student's reasoning with questions instead of stating facts. Covered by A5 eval cases",
+      "placeholder": false,
       "status": "todo"
     }
   ]
