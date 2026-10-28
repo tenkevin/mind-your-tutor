@@ -1,4 +1,4 @@
-import { needsFormulaEscape } from './mapping.js';
+import { canonicalLineEndings, needsFormulaEscape } from './mapping.js';
 import { writeZip } from './zip-write.js';
 
 // Export targets (ARCHITECTURE.md §7, decision D4): a report is built as plain
@@ -90,6 +90,9 @@ export interface ExportTarget {
 
 // ---- CSV -------------------------------------------------------------------
 
+// Exports write line endings canonically (LF), so an older stored pack that still holds CRLF
+// exports exactly what a fresh import would store, and LibreOffice reads it back unchanged.
+
 /** A carriage return not followed by a line feed (CRLF pairs are kept as they are). */
 const LONE_CR = /\r(?!\n)/;
 
@@ -109,7 +112,7 @@ const BOM = '﻿';
 
 function csvCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): string {
   if (cell === null) return '';
-  let text = String(cell);
+  let text = canonicalLineEndings(String(cell));
   checkCell(sheet, r, c, text);
   if (LONE_SURROGATE.test(text)) {
     const at = where(sheet, r, c);
@@ -211,7 +214,7 @@ function xlsxCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): s
   if (typeof cell === 'number' && Number.isFinite(cell)) {
     return `<c r="${ref}"${header ? ` s="${STYLE_HEADER}"` : ''}><v>${cell}</v></c>`;
   }
-  const text = String(cell);
+  const text = canonicalLineEndings(String(cell));
   checkCell(sheet, r, c, text);
   const style = header ? STYLE_HEADER : needsFormulaEscape(text) ? STYLE_TEXT : 0;
   return (

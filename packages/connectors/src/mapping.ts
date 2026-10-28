@@ -15,6 +15,9 @@ import type { RawCell, RawSheet } from './types.js';
 // candidates for one column is reported, never guessed. Near misses become
 // suggestions the teacher confirms; they are never applied on their own.
 
+/** Line endings are canonical (LF) once text is accepted: CRLF pairs become LF (docs/spec/README.md). */
+export const canonicalLineEndings = (text: string): string => text.replace(/\r\n/g, '\n');
+
 const isBlank = (cell: unknown) =>
   cell === undefined || cell === null || (typeof cell === 'string' && cell.trim() === '');
 

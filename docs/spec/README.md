@@ -15,3 +15,7 @@
 `edit` meanings: `sheet` comes only from the source data; `app` is set only in Teacher Settings; `both` means the sheet seeds it and Teacher Settings can override it for a class.
 
 Text cells are trimmed before validation. For `Ideas.explanation`, leading and trailing whitespace is removed, internal line breaks and spacing are kept, and a blank-only value becomes `null`.
+
+## Line endings (C6cx2)
+
+Line endings are canonical (LF) wherever curriculum text is accepted. When a pack is assembled from CSV, XLSX or pack JSON, every `\r\n` inside a cell becomes `\n`, so the stored pack never holds CRLF. Exports apply the same rule to what they write, so a pack stored before this rule (still holding CRLF) exports as LF, and LibreOffice opens every cell as exported. A lone `\r` is not changed on import. XLSX keeps it exactly; CSV export refuses it with a located message (C6cx1), because a spreadsheet application would read it as a line feed.

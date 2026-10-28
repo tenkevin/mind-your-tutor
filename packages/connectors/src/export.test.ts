@@ -503,10 +503,39 @@ describe('formats (C6-F7, F8, U1, U2)', () => {
     });
     // CRLF and LF inside cells still export, and XLSX keeps the lone CR.
     pack.ideas[1]!.title = 'ok';
-    pack.ideas[0]!.notes = 'a\r\nb\nc';
-    expect((await reimport(await csvExport.write(packReport(pack, DATE)))).pack).toEqual(pack);
     pack.ideas[0]!.notes = 'one\rtwo';
     expect((await reimport(await xlsxExport.write(packReport(pack, DATE)))).pack).toEqual(pack);
+  });
+
+  it('writes CRLF inside a cell as LF, so LibreOffice and a reimport agree (C6cx2-F1, F4, F5)', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.ideas[0]!.notes = 'a\r\nb\nc';
+    pack.ideas[1]!.title = 'x\r\ny';
+    const canonical = structuredClone(pack);
+    canonical.ideas[0]!.notes = 'a\nb\nc';
+    canonical.ideas[1]!.title = 'x\ny';
+    const csv = await csvExport.write(packReport(pack, DATE));
+    const xlsx = await xlsxExport.write(packReport(pack, DATE));
+    const ideasCsv = csvRows(
+      await csvExport.write({
+        ...packReport(pack, DATE),
+        sheets: packReport(pack, DATE).sheets.filter((s) => s.name === 'Ideas'),
+      }),
+    );
+    expect(ideasCsv.flat().some((c) => c.includes('\r'))).toBe(false);
+    const sheetXml = [...unzip(xlsx.bytes).values()].join('');
+    expect(sheetXml).not.toContain('&#13;');
+    expect(csv.bytes.length).toBeGreaterThan(0);
+    expect((await reimport(csv)).pack).toEqual(canonical);
+    expect((await reimport(xlsx)).pack).toEqual(canonical);
+  });
+
+  it('import turns CRLF in a cell into LF, in pack JSON too (C6cx2-F2)', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.ideas[0]!.notes = 'a\r\nb\nc';
+    const bytes = new TextEncoder().encode(JSON.stringify(pack));
+    const result = await importPack(file('pack.json', bytes));
+    expect(result.pack!.ideas[0]!.notes).toBe('a\nb\nc');
   });
 
   it('refuses a cell longer than a spreadsheet can hold, rather than cutting it', async () => {
