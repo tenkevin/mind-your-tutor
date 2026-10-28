@@ -80,7 +80,7 @@ export type DiffIdeaRef = z.infer<typeof DiffIdeaRefSchema>;
 
 const VersionNumberSchema = z.object({ id: z.uuid(), number: z.number().int().min(1) });
 
-/** GET /versions/:versionId/diff */
+/** GET /api/versions/:versionId/diff */
 export const DiffResponseSchema = z.object({
   /** The published version compared against; null on a first publish. */
   from_version: VersionNumberSchema.nullable(),
@@ -97,13 +97,13 @@ export const ClassIdsSchema = z
   .max(MAX_PUBLISH_CLASSES)
   .refine((ids) => new Set(ids).size === ids.length, 'List each class once.');
 
-/** POST /versions/:versionId/preview */
+/** POST /api/versions/:versionId/preview */
 export const PublishPreviewRequestSchema = z.object({ class_ids: ClassIdsSchema });
 
-/** POST /versions/:versionId/publish; at least one class. */
+/** POST /api/versions/:versionId/publish; at least one class. */
 export const PublishRequestSchema = z.object({ class_ids: ClassIdsSchema.min(1) });
 
-/** POST /classes/:classId/pin: re-pin an earlier published version (rollback, §7). */
+/** POST /api/classes/:classId/pin: re-pin an earlier published version (rollback, §7). */
 export const RepinRequestSchema = z.object({ version_id: z.uuid() });
 
 /** Something that blocks publishing, and where in the sheet to fix it (C2 `fix`). */
