@@ -900,9 +900,9 @@
       "deps": [],
       "done_when": "Codex C6-E4 (docs/qa/codex/Codex-C6-review-750a50b.md): a valid pack with notes 'one\\rtwo' exports to CSV and LibreOffice opens it as 'one\\ntwo', failing C6-F7. CSV export either preserves the raw carriage return in a representative application or refuses with a located, actionable message pointing the teacher to the lossless XLSX export; XLSX keeps preserving it",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-c6cx1",
-      "updated": "2026-10-27"
+      "updated": "2026-10-28"
     },
     {
       "id": "A5b",
@@ -936,7 +936,9 @@
       ],
       "done_when": "Codex C6cx1-E1 (docs/qa/codex/Codex-C6cx1-review-29b23ff.md): a pack with notes 'a\\r\\nb\\nc' exports to CSV and XLSX, and LibreOffice opens both as 'a\\nb\\nc', failing C6-F7 (inherited from C6, not introduced by C6cx1). Accepted text with CRLF either survives the representative application in both formats, or line endings are made canonical (LF) where text is accepted, so no export holds text the application changes; any text that still can't survive is refused with a located, actionable message",
       "placeholder": false,
-      "status": "todo"
+      "status": "doing",
+      "owner": "agent-c6cx2",
+      "updated": "2026-10-28"
     }
   ]
 }
