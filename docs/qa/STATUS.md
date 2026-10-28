@@ -20,11 +20,11 @@ Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA re
 | 4 | A2 #37 (agent-a2) | `8f0f8ba` | 1 | `A2.md` (2026-10-28: A2-S4 per-district flag window, D32) | None yet; builder reports every must met locally, full suite incl. `function_binding.test.ts` | Codex review. Merge **before A5 and A3** (A5 swaps in A2's guardrails; A3 renumbers its migrations after A2's 0016/0017); A7 syncs after it |
 | 5 | M2 #30 (agent-m2b, finished) | `38c0782` | 31 | `M2.md` (2026-10-24) | M2-P1 failed earlier on CI (p95 298–325 ms). Fixed by `ANALYZE` after seeding: CI p95 49 ms, 5,581 events/s (run annotation "M2-P1 report") | Codex re-review of the current head |
 | 6 | M3 #31 (agent-m3) | `a022010` | 45 | `M3.md` (2026-10-24) | None yet | Codex review |
-| 7 | T2 #27 (agent-t2) | `5caed4d` | 0 | `T2.md` (2026-10-24) | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since. Sync session `session_017xAqLepzYRm6v6CWnJyuby` merged `idea-map` (head `5caed4d`); waiting for its CI and report | Codex review of `5caed4d` once CI is green |
+| 7 | T2 #27 (agent-t2) | `5caed4d` | 0 | `T2.md` (2026-10-24) | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since. Sync session merged `idea-map` at `5caed4d` (CI green; A1 gateway folded into T2's `startServer`, import routes and F5 policies kept; see PR body) | Codex review of `5caed4d` |
 | 8 | T3 #29 (agent-t3) | `d25e18d` | 42 | `T3.md` (2026-10-24) | Claude QA run 1 FAIL at `e195f98` ([report](reports/T3-run1.md)); fixes pushed since | Codex review of the current head |
 | 9 | A7 #36 (agent-a7) | `cf41793` | 0 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
 | 10 | A5 #35 (agent-a5) | `49be775` | 4 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
-| 11 | A3 #38 (agent-a3) | `c050790` | 1 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | None yet. Builder is reworking class uploads to be deletable and renumbering migrations | Codex review **after** the builder reports the D31 rework |
+| 11 | A3 #38 (agent-a3) | `c050790` | 1 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | None yet. D31 rework done at `c050790` (CI green): vault kept and versioned, class uploads deletable, migrations 0018/0019 | Codex review |
 
 **Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 
