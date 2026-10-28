@@ -596,7 +596,7 @@
       ],
       "done_when": "Fixed eval prompts run per grade band in CI with a pass threshold",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a5",
       "updated": "2026-10-28"
     },
