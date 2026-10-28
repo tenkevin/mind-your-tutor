@@ -397,6 +397,41 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect((await pins())[ids.c1!]).toBe(versionA);
   });
 
+  it('T8-F3, S1: the publishing options list only the caller’s classes, with pins and published versions', async () => {
+    const own = await call('teacher', 'GET', `/api/curricula/${a.curriculumId}/publishing`);
+    expect(own.statusCode).toBe(200);
+    expect(own.headers['cache-control']).toBe('no-store');
+    const body = own.json<{
+      classes: { id: string; name: string; pinned_version: { number: number } | null }[];
+      published_versions: { id: string; number: number }[];
+    }>();
+    expect(body.classes.map((c) => c.id).sort()).toEqual([ids.c1, ids.c2, ids.c3].sort());
+    expect(body.classes.find((c) => c.id === ids.c1)!.pinned_version).toEqual({
+      id: versionA,
+      number: (await version(versionA)).number,
+    });
+    // Only published versions are offered: no drafts, no archived ones.
+    const statuses = await Promise.all(body.published_versions.map((v) => version(v.id)));
+    expect(statuses.every((v) => v.status === 'published')).toBe(true);
+    const numbers = body.published_versions.map((v) => v.number);
+    expect(numbers).toEqual([...numbers].sort((x, y) => y - x));
+
+    // Another teacher of the org sees none of these classes; an admin sees all four on this curriculum.
+    const other = await call('teacher2', 'GET', `/api/curricula/${a.curriculumId}/publishing`);
+    expect(other.json<{ classes: { id: string }[] }>().classes.map((c) => c.id)).toEqual([
+      ids.other,
+    ]);
+    const admin = await call('admin', 'GET', `/api/curricula/${a.curriculumId}/publishing`);
+    expect(admin.json<{ classes: unknown[] }>().classes).toHaveLength(4);
+    // Another organization's curriculum looks the same as a missing one; students are refused.
+    expect(
+      (await call('b-teacher', 'GET', `/api/curricula/${a.curriculumId}/publishing`)).statusCode,
+    ).toBe(403);
+    expect(
+      (await call('student', 'GET', `/api/curricula/${a.curriculumId}/publishing`)).statusCode,
+    ).toBe(403);
+  });
+
   it('C5-F8: all or nothing when a class fails part-way, or is missing', async () => {
     const versionC = await draft(a, a.curriculumId, packB());
     const before = await pins();

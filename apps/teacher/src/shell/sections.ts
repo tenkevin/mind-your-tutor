@@ -2,7 +2,7 @@
 // (project/Teacher Settings.dc.html). Later tasks fill each one in (ARCHITECTURE.md §11);
 // T1 gives each its anchor, heading and place in the nav.
 
-export type SectionIcon = 'table' | 'cap' | 'chat' | 'calendar' | 'cards' | 'lock';
+export type SectionIcon = 'table' | 'cap' | 'chat' | 'calendar' | 'cards' | 'lock' | 'upload';
 
 export interface Section {
   /** The section's element id, and the URL fragment the nav links to. */
@@ -23,6 +23,14 @@ export const SECTIONS: readonly Section[] = [
     icon: 'table',
     summary:
       'The spreadsheet is the source of truth for ideas, links, categories, prerequisites, standards codes, media and assessment questions. Edit those there, then import a new version.',
+  },
+  {
+    id: 'sec-publish',
+    label: 'Publish',
+    heading: 'Publish',
+    icon: 'upload',
+    summary:
+      'Review what changed in the draft, pick the classes that should get it and publish. Students only ever see published versions.',
   },
   {
     id: 'sec-course',

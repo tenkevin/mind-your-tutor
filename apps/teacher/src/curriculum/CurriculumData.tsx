@@ -238,7 +238,11 @@ function Failure({ job, earlier }: { job: ImportJobView; earlier: number | null 
   );
 }
 
-function PublishState({ version }: { version: NonNullable<CurriculumDataResponse['version']> }) {
+export function PublishState({
+  version,
+}: {
+  version: NonNullable<CurriculumDataResponse['version']>;
+}) {
   if (version.status !== 'draft') {
     return (
       <p className="cdata-publish" data-state="published">
@@ -381,7 +385,11 @@ function Group({ group }: { group: IssueGroup }) {
   );
 }
 
-function DataChecks({ version }: { version: NonNullable<CurriculumDataResponse['version']> }) {
+export function DataChecks({
+  version,
+}: {
+  version: NonNullable<CurriculumDataResponse['version']>;
+}) {
   const counts = countIssues(version.groups);
   const summary =
     version.groups.length === 0

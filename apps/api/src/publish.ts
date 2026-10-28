@@ -4,6 +4,7 @@ import { STAFF, type RoutePolicy } from './policy.js';
 import {
   PublishRequestError,
   getDiff,
+  getPublishingOptions,
   previewPublish,
   publish,
   repin,
@@ -19,6 +20,8 @@ import {
 //   POST /api/versions/:versionId/publish   { class_ids }, Idempotency-Key: optional
 //        201 with the pins moved, or 200 with the first result for a repeated key.
 //   POST /api/classes/:classId/pin          { version_id }
+//   GET  /api/curricula/:curriculumId/publishing
+//        T8: the classes the caller may publish to (with their pins) and the published versions.
 //        Rollback: back to an earlier published version.
 //
 // The server registers these under the /api prefix, beside every other app route (the
@@ -48,6 +51,12 @@ const PUBLISH: RoutePolicy = {
 const REPIN: RoutePolicy = {
   roles: ['admin', 'teacher'],
   scope: { kind: 'class', param: 'classId' },
+};
+
+/** The publish screen's classes and version history; the handler limits it to the caller's classes. */
+const OPTIONS: RoutePolicy = {
+  roles: ['admin', 'teacher'],
+  scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
 };
 
 /** Register in a scope of its own (buildServer does), so its error handler stays local. */
@@ -131,6 +140,17 @@ export function publishRoutes(scope: FastifyInstance, options: PublishRoutesOpti
     async (request) => {
       const who = await caller(request);
       return { pin: await repin(options.deps, who, request.params.classId, request.body) };
+    },
+  );
+
+  scope.get<{ Params: { curriculumId: string } }>(
+    '/curricula/:curriculumId/publishing',
+    { config: { policy: OPTIONS } },
+    async (request, reply) => {
+      const who = await caller(request);
+      // Pins move when anyone publishes; never served from a cache.
+      reply.header('cache-control', 'no-store');
+      return getPublishingOptions(options.deps, who, request.params.curriculumId);
     },
   );
 }

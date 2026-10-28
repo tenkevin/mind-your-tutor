@@ -15,6 +15,7 @@ import {
 } from './auth/session';
 import { SignIn } from './auth/SignIn';
 import { CurriculumData } from './curriculum/CurriculumData';
+import { PublishScreen } from './publish/PublishScreen';
 import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
 import { sectionFor } from './shell/sections';
 
@@ -194,6 +195,13 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       content={{
         'sec-source': curriculumId ? (
           <CurriculumData
+            curriculumId={curriculumId}
+            csrf={view.me.csrfToken}
+            onSignedOut={() => location.assign(signInPath(here()))}
+          />
+        ) : null,
+        'sec-publish': curriculumId ? (
+          <PublishScreen
             curriculumId={curriculumId}
             csrf={view.me.csrfToken}
             onSignedOut={() => location.assign(signInPath(here()))}

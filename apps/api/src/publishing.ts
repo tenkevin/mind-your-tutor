@@ -5,6 +5,7 @@ import {
   IdempotencyKeySchema,
   PublishPreviewRequestSchema,
   PublishPreviewSchema,
+  PublishingOptionsSchema,
   PublishRequestSchema,
   PublishResultSchema,
   RepinRequestSchema,
@@ -16,6 +17,7 @@ import {
   type PinMove,
   type PublishPreview,
   type PublishResult,
+  type PublishingOptions,
   type RepinResult,
   type StudentsReceiving,
   type VersionIssue,
@@ -442,6 +444,60 @@ export async function publish(
       })
       .execute();
     return { result, repeated: false };
+  });
+}
+
+/**
+ * GET /api/curricula/:curriculumId/publishing (T8): the classes the caller may publish
+ * to, with their pinned versions, and the published versions a class can go back to.
+ */
+export async function getPublishingOptions(
+  deps: PublishDeps,
+  caller: Caller,
+  curriculumId: string,
+): Promise<PublishingOptions> {
+  mayPublish(caller);
+  uuid(curriculumId, NO_VERSION);
+  return deps.scope(caller.orgId, async (trx) => {
+    const exists = await trx
+      .selectFrom('curriculum')
+      .select('id')
+      .where('id', '=', curriculumId)
+      .executeTakeFirst();
+    if (!exists) throw new PublishRequestError(403, NO_VERSION);
+    let classQuery = trx
+      .selectFrom('class')
+      .select(['id', 'name', 'pinned_version_id'])
+      .where('curriculum_id', '=', curriculumId)
+      .orderBy('name')
+      .orderBy('id');
+    if (caller.role !== 'admin') classQuery = classQuery.where('teacher_id', '=', caller.userId);
+    const [classes, versions] = await Promise.all([
+      classQuery.execute(),
+      trx
+        .selectFrom('curriculum_version')
+        .select(['id', 'number', 'published_at'])
+        .where('curriculum_id', '=', curriculumId)
+        .where('status', '=', 'published')
+        .orderBy('number', 'desc')
+        .execute(),
+    ]);
+    const byId = new Map(versions.map((v) => [v.id, v]));
+    return PublishingOptionsSchema.parse({
+      classes: classes.map((c) => {
+        const pinned = c.pinned_version_id ? byId.get(c.pinned_version_id) : undefined;
+        return {
+          id: c.id,
+          name: c.name,
+          pinned_version: pinned ? { id: pinned.id, number: pinned.number } : null,
+        };
+      }),
+      published_versions: versions.map((v) => ({
+        id: v.id,
+        number: v.number,
+        published_at: v.published_at ? v.published_at.toISOString() : null,
+      })),
+    });
   });
 }
 

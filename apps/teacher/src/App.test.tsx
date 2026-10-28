@@ -107,9 +107,10 @@ describe('Shell section nav (T1-F3)', () => {
     expect(sectionFor('#nope')).toBeNull();
   });
 
-  it('matches the design’s six sections, in order', () => {
+  it('matches the design’s six sections, in order, with T8’s Publish after the data', () => {
     expect(SECTIONS.map((s) => s.label)).toEqual([
       'Curriculum data',
+      'Publish',
       'Course details',
       'AI personas',
       'Schedule',

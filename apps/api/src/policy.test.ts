@@ -59,6 +59,7 @@ const PUBLISH_ROUTE_URLS = [
   '/api/versions/:versionId/preview',
   '/api/versions/:versionId/publish',
   '/api/classes/:classId/pin',
+  '/api/curricula/:curriculumId/publishing',
 ];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
@@ -175,6 +176,13 @@ describe('C5 publish routes join the registry (F5-F4)', () => {
       [
         'POST /api/classes/:classId/pin',
         { roles: ['admin', 'teacher'], scope: { kind: 'class', param: 'classId' } },
+      ],
+      [
+        'GET /api/curricula/:curriculumId/publishing',
+        {
+          roles: ['admin', 'teacher'],
+          scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+        },
       ],
     ]);
     expect(routes.map((r) => r.url)).toEqual(PUBLISH_ROUTE_URLS);
@@ -377,6 +385,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/classes/${classes.a1}/pin`,
         body: { version_id: versionId },
       },
+      {
+        route: '/api/curricula/:curriculumId/publishing',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/publishing`,
+      },
       // F6: aimed at another student of org A, so deleting them leaves the sweep's
       // student session alone.
       {
@@ -465,6 +478,8 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
     'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],
+    // T8: any teacher of the org may open the screen; it lists only their own classes.
+    'GET /api/curricula/:curriculumId/publishing': ['admin', 'otherClassTeacher'],
     // A1: Ms. Ivy and Milo for the class's students; Atlas for its staff only.
     'POST /api/classes/:classId/ai/tutor': ['admin', 'student'],
     'POST /api/classes/:classId/ai/peer': ['admin', 'student'],
