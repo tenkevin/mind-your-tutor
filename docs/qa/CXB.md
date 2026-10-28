@@ -41,3 +41,4 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 
 - **A7 on-device NER accuracy on children's writing.** Measure recall on a realistic set of children's writing (nicknames, misspellings, lower case) and set a bar. Deferred by the user; add to a later privacy task's criteria before the pilot widens. A7's 98.3% is on the builder's own 58-identifier set.
 - **A7 model licence.** `gagan3012/bert-tiny-finetuned-ner` states no licence; accepted for now (D33), revisit before release.
+- **A3 object-storage files after a class is deleted.** Deleting a class cascades its uploads' rows, passages and embeddings, but the original files in object storage stay until a storage sweep exists (A3 PR #38 decisions). Add a sweep (or delete files with the class) to a later storage/privacy task's criteria. No student PII is involved (D31).

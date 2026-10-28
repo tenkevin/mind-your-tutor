@@ -25,15 +25,38 @@ function unitNames(pack: Pack): Map<number, string> {
 }
 
 /**
- * One question per idea: the first non-empty question among its Assessment rows, in
- * row order, or null. Rows for ideas not in the pack are ignored (C2 skips them).
+ * Every accepted question per idea, sorted by code point. A row is accepted by the same
+ * rules as the data check (checks.ts): its idea is in the Ideas tab, its unit is in the
+ * Units tab and is the idea's own unit (unless the idea's unit is unknown, which has
+ * its own error), and its question isn't blank. Skipped rows are ignored, never chosen
+ * over an accepted one. Repeats are kept, so a copied question counts as a second one.
  */
-function questions(pack: Pack): Map<string, string | null> {
-  const out = new Map<string, string | null>();
+function questions(pack: Pack): Map<string, string[]> {
+  const ideas = ideasById(pack);
+  const units = unitNames(pack);
+  const out = new Map<string, string[]>();
   for (const row of pack.assessment) {
-    if (!out.get(row.idea_id)) out.set(row.idea_id, row.question);
+    const idea = ideas.get(row.idea_id);
+    if (!idea || !units.has(row.unit)) continue;
+    if (row.unit !== idea.unit && units.has(idea.unit)) continue;
+    if (!row.question?.trim()) continue;
+    const list = out.get(row.idea_id) ?? [];
+    list.push(row.question);
+    out.set(row.idea_id, list);
   }
+  for (const list of out.values()) list.sort(byCodePoint);
   return out;
+}
+
+/** Multiset difference of two sorted lists: what `a` has that `b` lacks. */
+function minus(a: readonly string[], b: readonly string[]): string[] {
+  const left = new Map<string, number>();
+  for (const q of b) left.set(q, (left.get(q) ?? 0) + 1);
+  return a.filter((q) => {
+    const n = left.get(q) ?? 0;
+    if (n > 0) left.set(q, n - 1);
+    return n === 0;
+  });
 }
 
 const sortedUnique = (ids: readonly string[]) => [...new Set(ids)].sort(byCodePoint);
@@ -69,7 +92,7 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
     assessment_changed: [],
   };
 
-  const prevQuestions = before ? questions(before) : new Map<string, string | null>();
+  const prevQuestions = before ? questions(before) : new Map<string, string[]>();
   const nextQuestions = questions(after);
 
   for (const id of [...new Set([...prev.keys(), ...next.keys()])].sort(byCodePoint)) {
@@ -106,8 +129,19 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
         to: unit(nextUnits, now.unit),
       });
     }
-    const q = { before: prevQuestions.get(id) ?? null, after: nextQuestions.get(id) ?? null };
-    if (q.before !== q.after) diff.assessment_changed.push({ idea_id: id, title: now.title, ...q });
+    const q = { before: prevQuestions.get(id) ?? [], after: nextQuestions.get(id) ?? [] };
+    const removed = minus(q.before, q.after);
+    const added = minus(q.after, q.before);
+    if (removed.length + added.length > 0) {
+      diff.assessment_changed.push({
+        idea_id: id,
+        title: now.title,
+        unit: unit(nextUnits, now.unit),
+        ...q,
+        removed,
+        added,
+      });
+    }
   }
 
   diff.empty =

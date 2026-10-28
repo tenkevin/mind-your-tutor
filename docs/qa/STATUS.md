@@ -6,27 +6,27 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D30 and the §8 spec v1 exactly; see AGENTS.md.
 
-## Queue (snapshot 2026-10-28, `idea-map` at `1d92bf8`)
+## Queue (snapshot 2026-10-28 04:15 UTC)
 
 Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA report. Codex's runner excludes `packages/db/src/function_binding.test.ts`; the coordinator closes any full-suite must locally (Postgres 16 + pgvector, PR synced with current `idea-map`) before merging, as it did for F4cx1, F5 and A1.
 
-Every open PR below is CI green and `mergeable_state: clean`, but **behind `idea-map` by A1's application merge** (`438a939`), so each needs a sync and fresh exact-head CI before merge. Fix tasks (`cx`) merge first.
+**Criteria are ready for every PR below:** each `docs/qa/<ID>.md` exists and the copy on each PR branch matches `idea-map` (checked 2026-10-28 04:15). Review a PR against the criteria version named in its row and its current head. A PR more than 0 behind needs a sync and fresh exact-head CI before merge; a sync that changes no task code keeps a PASS (`git diff <reviewed> <head> -- <task paths>`). Fix tasks (`cx`) merge first.
 
-| Priority | Task / PR | Head | Behind | Review history | Next action |
-|---|---|---|---|---|---|
-| 1 | C6cx1 #32 (agent-c6cx1) | `29b23ff` | 13 | None yet | Codex review; then sync and merge |
-| 2 | C5cx1 #33 (agent-c5cx1) | `7005308` | 12 | None yet | Codex review; then sync and merge |
-| 3 | C5cx2 #34 (agent-c5cx2) | `0c56a73` | 11 | None yet | Codex review; then sync and merge |
-| 4 | M2 #30 (agent-m2b, finished) | `38c0782` | 8 | M2-P1 failed earlier on CI (p95 298–325 ms). Fixed by `ANALYZE` after seeding: CI p95 49 ms, 5,581 events/s (run annotation "M2-P1 report") | Codex re-review of the current head |
-| 5 | M3 #31 (agent-m3) | `a022010` | 22 | None yet | Codex review |
-| 6 | T2 #27 (agent-t2) | `1afe366` | 18 | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since | Codex review of the current head |
-| 7 | T3 #29 (agent-t3) | `d25e18d` | 19 | Claude QA run 1 FAIL at `e195f98` ([report](reports/T3-run1.md)); fixes pushed since | Codex review of the current head |
-| 8 | A2 #37 (agent-a2) | `f45d60f` | 2 | None yet; builder reports every must met locally, full suite incl. `function_binding.test.ts` | Codex review. Merge **before A5** (A5 swaps in A2's guardrails) and sync A7 after it (both touch `gateway.ts`) |
-| 9 | A7 #36 (agent-a7) | `60f0234` | 3 | None yet; builder reports musts plus F8/F9 met locally | Codex review; §12 q12 assumptions are open user decisions |
-| 10 | A5 #35 (agent-a5) | `fdd993e` | 2 | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails (`packages/ai/src/evals/guardrails.ts`) with A2's |
-| 11 | A3 #38 (agent-a3) | `d0863c4` | 2 | None yet. Coordinator flagged A3-S3 (teacher-level FERPA delete of uploads missing) to the builder, 01:30 UTC | Builder fixes A3-S3; then Codex review |
+| Priority | Task / PR | Head | Behind | Criteria (version) | Review history | Next action |
+|---|---|---|---|---|---|---|
+| 1 | C6cx1 #32 (agent-c6cx1) | `29b23ff` | 36 | `C6cx1.md` (2026-10-27) | None yet | Codex review; then sync and merge |
+| 2 | C5cx1 #33 (agent-c5cx1) | `7005308` | 35 | `C5cx1.md` (2026-10-27) | None yet | Codex review; then sync and merge |
+| 3 | C5cx2 #34 (agent-c5cx2) | `0c56a73` | 34 | `C5cx2.md` (2026-10-27) | None yet | Codex review; then sync and merge |
+| 4 | A2 #37 (agent-a2) | `8f0f8ba` | 1 | `A2.md` (2026-10-28: A2-S4 per-district flag window, D32) | None yet; builder reports every must met locally, full suite incl. `function_binding.test.ts` | Codex review. Merge **before A5 and A3** (A5 swaps in A2's guardrails; A3 renumbers its migrations after A2's 0016/0017); A7 syncs after it |
+| 5 | M2 #30 (agent-m2b, finished) | `38c0782` | 31 | `M2.md` (2026-10-24) | M2-P1 failed earlier on CI (p95 298–325 ms). Fixed by `ANALYZE` after seeding: CI p95 49 ms, 5,581 events/s (run annotation "M2-P1 report") | Codex re-review of the current head |
+| 6 | M3 #31 (agent-m3) | `a022010` | 45 | `M3.md` (2026-10-24) | None yet | Codex review |
+| 7 | T2 #27 (agent-t2) | `5caed4d` | 0 | `T2.md` (2026-10-24) | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since. Sync session merged `idea-map` at `5caed4d` (CI green; A1 gateway folded into T2's `startServer`, import routes and F5 policies kept; see PR body) | Codex review of `5caed4d` |
+| 8 | T3 #29 (agent-t3) | `d25e18d` | 42 | `T3.md` (2026-10-24) | Claude QA run 1 FAIL at `e195f98` ([report](reports/T3-run1.md)); fixes pushed since | Codex review of the current head |
+| 9 | A7 #36 (agent-a7) | `cf41793` | 0 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
+| 10 | A5 #35 (agent-a5) | `49be775` | 4 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
+| 11 | A3 #38 (agent-a3) | `c050790` | 1 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | None yet. D31 rework done at `c050790` (CI green): vault kept and versioned, class uploads deletable, migrations 0018/0019 | Codex review |
 
-**Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36, rows 8–11 above.
+**Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 
 **Builder decisions (2026-10-28), read from the sessions' final replies, which cloud sessions don't send back on their own:**
 - **A2:** only the new student message is moderated on input (earlier turns are client-held, as in A1). A `safety_flag` is deleted with its transcript at the district's AI retention period (90-day default, D22/§10). The moderator defaults to the gateway's own model and fails closed. **Settled as D32:** deleted at the retention period, or 30 days after resolution if sooner (new must A2-S4, sent to the builder).
