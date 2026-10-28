@@ -18,6 +18,7 @@ export const packageName = '@ideamap/worker';
 export {
   ImportRequestError,
   abandonImport,
+  getCurriculumData,
   getImportJob,
   importFailure,
   packSeed,

@@ -58,13 +58,19 @@ export const CurriculumDiffSchema = z.object({
   /** The idea moved to another unit. */
   units_changed: z.array(DiffIdeaRefSchema.extend({ from: DiffUnitSchema, to: DiffUnitSchema })),
   /**
-   * The idea's Assessment question changed, was added or was cleared. `before` and
-   * `after` are null when there is no question.
+   * The idea's accepted Assessment questions changed. `before` and `after` are all of
+   * its accepted questions (the ones the data check keeps), sorted by code point, so
+   * row order never matters; either is empty when the idea has none. `removed` and
+   * `added` are the questions only in `before` and only in `after`: an edited question
+   * shows as one removed and one added. `unit` is the idea's unit in the draft.
    */
   assessment_changed: z.array(
     DiffIdeaRefSchema.extend({
-      before: z.string().max(LIMITS.question).nullable(),
-      after: z.string().max(LIMITS.question).nullable(),
+      unit: DiffUnitSchema,
+      before: z.array(z.string().max(LIMITS.question)),
+      after: z.array(z.string().max(LIMITS.question)),
+      removed: z.array(z.string().max(LIMITS.question)),
+      added: z.array(z.string().max(LIMITS.question)),
     }),
   ),
 });
@@ -74,7 +80,7 @@ export type DiffIdeaRef = z.infer<typeof DiffIdeaRefSchema>;
 
 const VersionNumberSchema = z.object({ id: z.uuid(), number: z.number().int().min(1) });
 
-/** GET /versions/:versionId/diff */
+/** GET /api/versions/:versionId/diff */
 export const DiffResponseSchema = z.object({
   /** The published version compared against; null on a first publish. */
   from_version: VersionNumberSchema.nullable(),
@@ -91,13 +97,13 @@ export const ClassIdsSchema = z
   .max(MAX_PUBLISH_CLASSES)
   .refine((ids) => new Set(ids).size === ids.length, 'List each class once.');
 
-/** POST /versions/:versionId/preview */
+/** POST /api/versions/:versionId/preview */
 export const PublishPreviewRequestSchema = z.object({ class_ids: ClassIdsSchema });
 
-/** POST /versions/:versionId/publish; at least one class. */
+/** POST /api/versions/:versionId/publish; at least one class. */
 export const PublishRequestSchema = z.object({ class_ids: ClassIdsSchema.min(1) });
 
-/** POST /classes/:classId/pin: re-pin an earlier published version (rollback, §7). */
+/** POST /api/classes/:classId/pin: re-pin an earlier published version (rollback, §7). */
 export const RepinRequestSchema = z.object({ version_id: z.uuid() });
 
 /** Something that blocks publishing, and where in the sheet to fix it (C2 `fix`). */
