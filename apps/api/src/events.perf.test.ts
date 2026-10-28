@@ -133,6 +133,17 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
     // The seed's dirty pages and the earlier test files' too: flush them now, so a
     // checkpoint doesn't land mid-run and slow the first seconds of it.
     await sql`CHECKPOINT`.execute(owner);
+    // The server is shared with the other packages' tests, which run before this one
+    // (the worker's retention test deletes 500,000 rows); let their autovacuum finish.
+    for (let i = 0; i < 120; i++) {
+      const { rows } = await sql<{ n: number }>`
+        SELECT count(*)::int AS n FROM pg_stat_activity
+        WHERE backend_type = 'autovacuum worker'
+           OR (state = 'active' AND pid <> pg_backend_pid() AND backend_type = 'client backend')
+      `.execute(owner);
+      if (rows[0]!.n === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
     const sessions = await Promise.all(students.map((s) => sessionFor(api, s.userId, orgs.a)));
 
     // Each of the 900 students sends one batch every 5 s, arriving evenly across the
