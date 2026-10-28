@@ -611,7 +611,7 @@
       ],
       "done_when": "For each idea with no explanation, each unit with no objective, and each assessment row with no question after import, Atlas or Ms. Ivy drafts one (D9, D12). Teachers review, edit and approve drafts in Teacher Settings; only approved text reaches students; approvals are stored per curriculum and survive re-import",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a6",
       "updated": "2026-10-28"
     },
