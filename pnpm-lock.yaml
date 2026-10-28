@@ -162,6 +162,9 @@ importers:
 
   apps/student:
     dependencies:
+      '@ideamap/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@ideamap/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

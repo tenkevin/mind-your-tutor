@@ -16,5 +16,9 @@ export {
   readingBand,
 } from './prompt.js';
 export type { PromptConfig, PromptVariable, ReadingBand } from './prompt.js';
-export { patternBackstop } from './backstop.js';
+export { entityBackstop, patternBackstop } from './backstop.js';
 export type { BackstopContext, BlurResult, IdentifierBackstop } from './backstop.js';
+export { Anonymiser } from './anonymise.js';
+export type { AnonymiserOptions } from './anonymise.js';
+export { ruleRecognizer } from './entities.js';
+export type { Entity, EntityKind, EntityRecognizer, SyncEntityRecognizer } from './entities.js';

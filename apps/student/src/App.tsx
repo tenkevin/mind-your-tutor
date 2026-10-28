@@ -7,6 +7,7 @@ import {
 } from '@ideamap/contracts';
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
+import { NAMES_STAY_NOTE } from './privacy';
 
 // The session lives in an HttpOnly cookie; the app only asks /api/me who is signed in.
 
@@ -58,6 +59,10 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     <main style={{ padding: 'var(--space-6)' }}>
       <h1>Idea Map · Student</h1>
       <p>Hi, {view.me.user.name}.</p>
+      <details>
+        <summary>Your privacy</summary>
+        <p>{NAMES_STAY_NOTE}</p>
+      </details>
     </main>
   );
 }

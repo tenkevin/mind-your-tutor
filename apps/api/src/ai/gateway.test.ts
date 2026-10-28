@@ -10,7 +10,7 @@ import { hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { mockModel, type MockModel } from '../test/mock-model.js';
 import { as, sessionFor, startApi, type Signed, type TestApi } from '../test/harness.js';
-import type { AiGatewayOptions } from './gateway.js';
+import { AI_ROUTES, type AiGatewayOptions } from './gateway.js';
 
 // A1-F2 to F8, A1-S2 to S5, against a mock provider. A1-P1 is timed in policy.test.ts,
 // beside F5-P1, so the two timings never run at the same time.
@@ -264,12 +264,14 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
     expect(res.statusCode, res.body).toBe(200);
     const sent = w.model.requests[0]!;
     expect(sent.messages).toEqual([
-      { role: 'user', content: 'Hello, this is Person A.' },
+      // "Person A" in the history is a label the device wrote for someone else, so the
+      // backstop's labels continue after it (A7).
+      { role: 'user', content: 'Hello, this is Person B.' },
       { role: 'assistant', content: 'Hi Person A!' },
       {
         role: 'user',
         content:
-          'I am Person A, my email is [email] and my phone is [phone]. My teacher is Person B.',
+          'I am Person B, my email is [email] and my phone is [phone]. My teacher is Person C.',
       },
     ]);
     const { users } = w.api.sample;
@@ -402,6 +404,74 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
     } finally {
       await setClassConfig(w.api, {});
     }
+  });
+
+  it('blurs a raw roster name sent straight to the API on every model route, and stores nothing raw (A7-F5, F6, S3)', async () => {
+    // A modified client skips the device layer: the server still never lets the name out.
+    const raw =
+      'I am Sam Student, sam.student@district-a.example.org, and my friend Omar Quill lives in Leeds.';
+    const logsBefore = w.logs.length;
+    const who = { tutor: w.who.student, peer: w.who.student, agent: w.who.teacher };
+    for (const route of AI_ROUTES) {
+      w.model.requests.length = 0;
+      const res = await ask(who[route.persona], route.persona, { message: raw });
+      expect(res.statusCode, res.body).toBe(200);
+      const sent = w.model.requests[0]!;
+      expect(sent.messages[0]!.content, route.persona).toBe(
+        'I am Person A, [email], and my friend Person B lives in Place A.',
+      );
+      const row = await w.api.t.db
+        .selectFrom('ai_interaction')
+        .select(['request'])
+        .where('id', '=', res.json().interactionId)
+        .executeTakeFirstOrThrow();
+      expect(row.request).toMatchObject({ privacy_misses: 4 });
+      for (const secret of ['Sam', 'sam.student@', 'Omar', 'Quill', 'Leeds']) {
+        expect(JSON.stringify(sent), `${route.persona} ${secret}`).not.toContain(secret);
+        expect(JSON.stringify(row.request), `${route.persona} ${secret}`).not.toContain(secret);
+      }
+    }
+    for (const line of w.logs.slice(logsBefore)) {
+      for (const secret of ['Sam', 'sam.student@', 'Omar', 'Quill', 'Leeds']) {
+        expect(line).not.toContain(secret);
+      }
+    }
+    // The routes this test walks are every route that reaches a model.
+    expect(AI_ROUTES.map((r) => r.persona).sort()).toEqual(['agent', 'peer', 'tutor']);
+  });
+
+  it('blurs lower-case and out-of-class names, but not a shared surname part (A7-F8)', async () => {
+    const res = await ask(w.who.student, 'tutor', {
+      message: 'sam said hi, my friend Omar too, and a young student agreed',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(w.model.requests[0]!.messages[0]!.content).toBe(
+      'Person A said hi, my friend Person B too, and a young student agreed',
+    );
+  });
+
+  it('sends the student the same blurred reply it stores, never a raw roster identifier (A7-F9)', async () => {
+    w.model.behaviour = {
+      kind: 'reply',
+      text: 'Ask Sam Student (roster-student-a1) or sam.student@district-a.example.org.',
+    };
+    const res = await ask(w.who.student, 'tutor', { message: 'Who can help me?' });
+    expect(res.statusCode, res.body).toBe(200);
+    const reply = res.json().reply as string;
+    expect(reply).toBe('Ask Person A ([id]) or [email].');
+    const row = await w.api.t.db
+      .selectFrom('ai_interaction')
+      .select(['response'])
+      .where('id', '=', res.json().interactionId)
+      .executeTakeFirstOrThrow();
+    expect(row.response).toEqual({ text: reply });
+  });
+
+  it("does not blur the persona's own name (A7)", async () => {
+    w.model.behaviour = { kind: 'reply', text: 'Ms. Ivy is happy to help.' };
+    const res = await ask(w.who.student, 'tutor', { message: 'Hi Ms. Ivy' });
+    expect(res.json().reply).toBe('Ms. Ivy is happy to help.');
+    expect(w.model.requests[0]!.system).toContain('You are Ms. Ivy');
   });
 
   it('spends no quota on a refused call', async () => {

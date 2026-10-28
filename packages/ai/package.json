@@ -13,6 +13,11 @@
       "@ideamap/source": "./src/personas.ts",
       "types": "./dist/personas.d.ts",
       "default": "./dist/personas.js"
+    },
+    "./anonymise": {
+      "@ideamap/source": "./src/anonymise.ts",
+      "types": "./dist/anonymise.d.ts",
+      "default": "./dist/anonymise.js"
     }
   },
   "scripts": {

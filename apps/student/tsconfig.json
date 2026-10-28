@@ -3,6 +3,7 @@
   "compilerOptions": {
     // Read the contracts from source, as Vite does (vite.config.ts), so no build is needed first.
     "paths": {
+      "@ideamap/ai/anonymise": ["../../packages/ai/src/anonymise.ts"],
       "@ideamap/contracts": ["../../packages/contracts/src/index.ts"],
       "@ideamap/ui": ["../../packages/ui/src/index.ts"]
     }
