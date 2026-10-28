@@ -3,6 +3,7 @@ import { CSRF_HEADER } from '@ideamap/contracts';
 import type { ExportStore } from '@ideamap/db';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
@@ -17,6 +18,7 @@ import {
   type Signed,
   type TestApi,
 } from './test/harness.js';
+import { mockModel } from './test/mock-model.js';
 
 // F5-F4 to F5-F6, F5-S3, F5-S4, F5-P1.
 
@@ -50,19 +52,39 @@ const ROUTE_URLS = [
 ];
 
 /** C4's routes, registered when the server is given import deps. */
-const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+const IMPORT_ROUTE_URLS = [
+  '/api/curricula/:curriculumId/imports',
+  '/api/curricula/:curriculumId/imports/latest',
+  '/api/imports/:jobId',
+];
 /** C5's routes, registered when the server is given publish deps. */
 const PUBLISH_ROUTE_URLS = [
-  '/versions/:versionId/diff',
-  '/versions/:versionId/preview',
-  '/versions/:versionId/publish',
-  '/classes/:classId/pin',
+  '/api/versions/:versionId/diff',
+  '/api/versions/:versionId/preview',
+  '/api/versions/:versionId/publish',
+  '/api/classes/:classId/pin',
 ];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
 ];
+/** A1's AI gateway routes, registered when the server is given a model provider. */
+const AI_ROUTE_URLS = [
+  '/api/classes/:classId/ai/tutor',
+  '/api/classes/:classId/ai/peer',
+  '/api/classes/:classId/ai/agent',
+];
+/** The gateway with a mock provider and limits the sweep can't reach. */
+const MOCK_AI = {
+  provider: mockModel(),
+  config: {
+    model: 'test-model',
+    maxTokens: 500,
+    timeoutMs: 1000,
+    limits: { perStudent: 1000, perClass: 1000, windowMs: 60_000 },
+  },
+};
 /** An export store that keeps nothing, for sweeps that only check access. */
 const NO_FILES: ExportStore = { put: async () => {}, remove: async () => {} };
 const PACK = readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url));
@@ -115,10 +137,15 @@ describe('C4 import routes join the registry (F5-F4)', () => {
     expect(imports.map((r) => r.url).sort()).toEqual([...IMPORT_ROUTE_URLS].sort());
     await app.close();
     expect(imports.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
-      'GET /imports/:jobId',
-      'POST /curricula/:curriculumId/imports',
+      'GET /api/curricula/:curriculumId/imports/latest',
+      'GET /api/imports/:jobId',
+      'POST /api/curricula/:curriculumId/imports',
     ]);
     expect(imports.map((r) => r.policy)).toEqual([
+      {
+        roles: ['admin', 'author', 'teacher'],
+        scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+      },
       {
         roles: ['admin', 'author', 'teacher'],
         scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
@@ -143,11 +170,14 @@ describe('C5 publish routes join the registry (F5-F4)', () => {
     await app.close();
     const version = { kind: 'visible', table: 'curriculum_version', param: 'versionId' };
     expect(routes.map((r) => [`${r.method} ${r.url}`, r.policy])).toEqual([
-      ['GET /versions/:versionId/diff', { roles: ['admin', 'author', 'teacher'], scope: version }],
-      ['POST /versions/:versionId/preview', { roles: ['admin', 'teacher'], scope: version }],
-      ['POST /versions/:versionId/publish', { roles: ['admin', 'teacher'], scope: version }],
       [
-        'POST /classes/:classId/pin',
+        'GET /api/versions/:versionId/diff',
+        { roles: ['admin', 'author', 'teacher'], scope: version },
+      ],
+      ['POST /api/versions/:versionId/preview', { roles: ['admin', 'teacher'], scope: version }],
+      ['POST /api/versions/:versionId/publish', { roles: ['admin', 'teacher'], scope: version }],
+      [
+        'POST /api/classes/:classId/pin',
         { roles: ['admin', 'teacher'], scope: { kind: 'class', param: 'classId' } },
       ],
     ]);
@@ -179,6 +209,29 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
   });
 });
 
+describe('A1 AI gateway routes join the registry (F5-F4, A1-S2)', () => {
+  it('declares a class-scoped policy per persona: students for Ms. Ivy and Milo, staff for Atlas', async () => {
+    const app = buildServer({ db: undefined as never, config: offlineConfig, ai: MOCK_AI });
+    await app.ready();
+    const ai = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    expect(ai.map((r) => `${r.method} ${r.url}`)).toEqual(AI_ROUTE_URLS.map((u) => `POST ${u}`));
+    expect(ai.map((r) => r.policy)).toEqual([
+      STUDENT_AI_POLICY,
+      STUDENT_AI_POLICY,
+      STAFF_AI_POLICY,
+    ]);
+    expect(STUDENT_AI_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher', 'student'],
+      scope: { kind: 'class', param: 'classId', students: true },
+    });
+    expect(STAFF_AI_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher'],
+      scope: { kind: 'class', param: 'classId', students: false },
+    });
+  });
+});
+
 describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let api: TestApi;
   let who: Record<
@@ -188,9 +241,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let jobId = '';
   let versionId = '';
   beforeAll(async () => {
-    // With C4's import, C5's publish and F6's privacy routes registered, so the sweep
-    // covers them too.
-    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES });
+    // With C4's import, C5's publish, F6's privacy and A1's AI routes registered, so the
+    // sweep covers them too.
+    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES, ai: MOCK_AI });
     versionId = (
       await api.t.db
         .selectFrom('curriculum_version')
@@ -208,7 +261,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     };
     const started = await as(api, who.admin)(
       'POST',
-      `/curricula/${api.sample.curricula.a}/imports`,
+      `/api/curricula/${api.sample.curricula.a}/imports`,
       PACK,
       UPLOAD,
     );
@@ -326,34 +379,39 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         },
       },
       {
-        route: '/curricula/:curriculumId/imports',
+        route: '/api/curricula/:curriculumId/imports',
         method: 'POST',
-        url: `/curricula/${curricula.a}/imports`,
+        url: `/api/curricula/${curricula.a}/imports`,
         body: PACK,
         headers: UPLOAD,
       },
-      { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
       {
-        route: '/versions/:versionId/diff',
+        route: '/api/curricula/:curriculumId/imports/latest',
         method: 'GET',
-        url: `/versions/${versionId}/diff`,
+        url: `/api/curricula/${curricula.a}/imports/latest`,
+      },
+      { route: '/api/imports/:jobId', method: 'GET', url: `/api/imports/${jobId}` },
+      {
+        route: '/api/versions/:versionId/diff',
+        method: 'GET',
+        url: `/api/versions/${versionId}/diff`,
       },
       {
-        route: '/versions/:versionId/preview',
+        route: '/api/versions/:versionId/preview',
         method: 'POST',
-        url: `/versions/${versionId}/preview`,
+        url: `/api/versions/${versionId}/preview`,
         body: { class_ids: [classes.a1] },
       },
       {
-        route: '/versions/:versionId/publish',
+        route: '/api/versions/:versionId/publish',
         method: 'POST',
-        url: `/versions/${versionId}/publish`,
+        url: `/api/versions/${versionId}/publish`,
         body: { class_ids: [classes.a1] },
       },
       {
-        route: '/classes/:classId/pin',
+        route: '/api/classes/:classId/pin',
         method: 'POST',
-        url: `/classes/${classes.a1}/pin`,
+        url: `/api/classes/${classes.a1}/pin`,
         body: { version_id: versionId },
       },
       // F6: aimed at another student of org A, so deleting them leaves the sweep's
@@ -368,6 +426,13 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         method: 'DELETE',
         url: `/api/privacy/students/${users['student-a2']}`,
       },
+      // A1: one call per persona, aimed at class A1.
+      ...['tutor', 'peer', 'agent'].map((persona) => ({
+        route: `/api/classes/:classId/ai/${persona}`,
+        method: 'POST' as const,
+        url: `/api/classes/${classes.a1}/ai/${persona}`,
+        body: { message: 'Hello' },
+      })),
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -381,6 +446,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         ...IMPORT_ROUTE_URLS,
         ...PUBLISH_ROUTE_URLS,
         ...PRIVACY_ROUTE_URLS,
+        ...AI_ROUTE_URLS,
       ]),
     );
   });
@@ -430,11 +496,16 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
     'GET /api/curricula/:curriculumId/course': ['admin', 'otherClassTeacher'],
     // C4: staff in the curriculum's org may import into it and read its jobs.
-    'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
-    'GET /imports/:jobId': ['admin', 'otherClassTeacher'],
+    'POST /api/curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
+    'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
+    // T2: the same staff read the Curriculum data section.
+    'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
-    'GET /versions/:versionId/diff': ['admin', 'otherClassTeacher'],
+    'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],
+    // A1: Ms. Ivy and Milo for the class's students; Atlas for its staff only.
+    'POST /api/classes/:classId/ai/tutor': ['admin', 'student'],
+    'POST /api/classes/:classId/ai/peer': ['admin', 'student'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {
@@ -652,10 +723,12 @@ describe.skipIf(!hasDatabase)('CSRF and the database guard (F5-S3, F5-S4)', () =
   });
 });
 
-describe.skipIf(!hasDatabase)('performance (F5-P1)', () => {
+// F5-P1 and A1-P1 share one file, so these timings run one after the other, never
+// alongside each other.
+describe.skipIf(!hasDatabase)('performance (F5-P1, A1-P1)', () => {
   let api: TestApi;
   beforeAll(async () => {
-    api = await startApi();
+    api = await startApi({}, { ai: { ...MOCK_AI, provider: mockModel() } });
   });
   afterAll(async () => {
     await api?.close();
@@ -687,5 +760,28 @@ describe.skipIf(!hasDatabase)('performance (F5-P1)', () => {
       console.log(`auth p95 ${p95(authed).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
     }
     expect(overhead).toBeLessThan(5);
+  });
+
+  it('adds under 30 ms p95 of gateway work over a signed-in no-op, with an instant provider (A1-P1)', async () => {
+    const student = await sessionFor(api, api.sample.users['student-a1'], api.sample.orgs.a);
+    const gateway = `/api/classes/${api.sample.classes.a1}/ai/tutor`;
+    const time = async (path: string, body?: unknown) => {
+      const out: number[] = [];
+      for (let i = 0; i < 200; i++) {
+        const started = performance.now();
+        const res = await as(api, student)(body ? 'POST' : 'GET', path, body);
+        out.push(performance.now() - started);
+        expect(res.statusCode).toBe(200);
+      }
+      return out.sort((a, b) => a - b);
+    };
+    await time(gateway, { message: 'warm up' });
+    const base = await time('/api/session');
+    const calls = await time(gateway, { message: 'What is condensation, Sam?' });
+    const p95 = (xs: number[]) => xs[Math.floor(xs.length * 0.95)]!;
+    if (process.env.IDEAMAP_PERF_VERBOSE) {
+      console.log(`gateway p95 ${p95(calls).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+    }
+    expect(p95(calls) - p95(base)).toBeLessThan(30);
   });
 });

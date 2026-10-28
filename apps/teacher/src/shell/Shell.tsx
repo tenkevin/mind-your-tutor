@@ -47,7 +47,7 @@ export interface ShellProps {
   retrying?: boolean;
   onRetry?: () => void;
   onSignOut: () => void;
-  /** What each section shows under its heading, by section id. */
+  /** Each section's content, by section id, below its heading and summary. */
   content?: Partial<Record<string, ReactNode>>;
 }
 

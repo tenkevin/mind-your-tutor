@@ -16,6 +16,7 @@ import {
 import { SignIn } from './auth/SignIn';
 import { CourseDetails } from './course/CourseDetails';
 import { createCourseForm, type CourseForm, type FormState } from './course/form';
+import { CurriculumData } from './curriculum/CurriculumData';
 import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
 import { sectionFor } from './shell/sections';
 
@@ -55,14 +56,21 @@ async function get(url: string): Promise<unknown> {
   return res.json() as Promise<unknown>;
 }
 
-/** The class the header shows: `?class=<id>` if it's one of theirs, else their first. */
-async function loadHeader(wanted: string | null): Promise<HeaderState> {
+/** The class the console shows: `?class=<id>` if it's one of theirs, else their first. */
+interface Chosen {
+  header: HeaderState;
+  /** The class's curriculum, for the Curriculum data section; null with no class. */
+  curriculumId: string | null;
+}
+
+async function loadHeader(wanted: string | null): Promise<Chosen> {
   const { classes } = ClassesResponseSchema.parse(await get('/api/classes'));
   const klass = classes.find((c) => c.id === wanted) ?? classes[0];
-  if (!klass) return 'none';
-  return ClassHeaderResponseSchema.parse(
+  if (!klass) return { header: 'none', curriculumId: null };
+  const header = ClassHeaderResponseSchema.parse(
     await get(`/api/classes/${encodeURIComponent(klass.id)}/header`),
   );
+  return { header, curriculumId: klass.curriculumId };
 }
 
 function useHash(): string {
@@ -117,6 +125,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   useEffect(() => {
     if (course && replayed > 0) void course.load();
   }, [course, replayed]);
+  const [curriculumId, setCurriculumId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client) return;
@@ -161,7 +170,11 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     if (section) document.getElementById(section.id)?.scrollIntoView();
     let live = true;
     loadHeader(new URLSearchParams(location.search).get('class'))
-      .then((h) => live && setHeader(h))
+      .then((chosen) => {
+        if (!live) return;
+        setHeader(chosen.header);
+        setCurriculumId(chosen.curriculumId);
+      })
       .catch((error: unknown) => {
         if (live && !(error instanceof SignedOut)) setHeader('none');
       });
@@ -212,7 +225,16 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       retrying={retrying}
       onRetry={retry}
       onSignOut={signOut}
-      content={course ? { 'sec-course': <CourseDetails form={course} /> } : {}}
+      content={{
+        ...(course ? { 'sec-course': <CourseDetails form={course} /> } : {}),
+        'sec-source': curriculumId ? (
+          <CurriculumData
+            curriculumId={curriculumId}
+            csrf={view.me.csrfToken}
+            onSignedOut={() => location.assign(signInPath(here()))}
+          />
+        ) : null,
+      }}
     />
   );
 }

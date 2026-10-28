@@ -76,7 +76,10 @@ describe('loadConfig', () => {
 
   it('lists every variable it reads in .env.example, with no values (F5-S8)', () => {
     const example = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8');
-    const source = readFileSync(new URL('./config.ts', import.meta.url), 'utf8');
+    // The server settings, and the AI gateway's (A1).
+    const source = ['./config.ts', './ai/config.ts']
+      .map((file) => readFileSync(new URL(file, import.meta.url), 'utf8'))
+      .join('\n');
     const read = new Set(source.match(/IDEAMAP_[A-Z_]+(?=['`])/g));
     for (const name of read) {
       if (name.endsWith('_')) continue; // the per-provider prefix

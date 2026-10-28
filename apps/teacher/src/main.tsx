@@ -1,6 +1,7 @@
 import '@ideamap/ui/styles.css';
 import './shell/shell.css';
 import './course/course.css';
+import './curriculum/curriculum.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
