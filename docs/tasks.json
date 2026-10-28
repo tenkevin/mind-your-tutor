@@ -703,7 +703,10 @@
         "A9",
         "A10",
         "M6",
-        "S5"
+        "S5",
+        "C5cx1",
+        "C5cx2",
+        "C6cx1"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
