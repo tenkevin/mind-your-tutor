@@ -11,7 +11,9 @@ Each built-in persona (Ms. Ivy, Milo, Atlas) runs against fixed, synthetic promp
 
 **How a case runs.** The prompt is filled with the same `fill` as the gateway (A1) and the fixed guardrails go last. The reply is scored on the case's checks (reading level for the band, on topic, refuses personal data, no markdown, Milo asks a question, Atlas names the tab). A band passes when its mean score meets its threshold and no critical check fails (guardrails last, prompt unchanged since recording, refuses personal data).
 
-**In CI** (`pnpm test`, also its own step) the model is the recording. No key, no network, identical scores every run, a few seconds. Editing a template changes the prompt hash, so the case fails until the replies are re-recorded with a real model. That is deliberate: a template change needs a real-model look before it ships.
+**In CI** (`pnpm test`, also its own step) the model is the recording. No key, no network, identical scores every run, a few seconds. Editing a template changes the prompt hash, so the case fails until its baseline reply is replaced. That is deliberate: a template change needs a fresh look before it ships.
+
+**Baselines are an interim seed.** The replies in `recordings.json` are hand-written. D34 (ARCHITECTURE.md §1) replaces them with teacher-approved replies, tagged to template versions; how is open in §12 q14, and the later task A5b builds it.
 
 **With a real model** (opt-in, never in CI):
 
