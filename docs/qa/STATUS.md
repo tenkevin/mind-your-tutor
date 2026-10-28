@@ -25,6 +25,10 @@ Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA re
 | 9 | A7 #36 (agent-a7) | `cf41793` | 0 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
 | 10 | A5 #35 (agent-a5) | `49be775` | 4 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
 | 11 | A3 #38 (agent-a3) | `c050790` | 1 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | None yet. D31 rework done at `c050790` (CI green): vault kept and versioned, class uploads deletable, migrations 0018/0019 | Codex review |
+| 12 | C6cx2 #39 (agent-c6cx2) | `5b23c8b` | 10 | `C6cx2.md` (2026-10-28) | None yet. Canonical LF on import (`assemblePack`) and on export, so legacy CRLF packs export as a fresh import would store them; lone CR still refused in CSV (C6cx1); LibreOffice matrix run by the builder with ad hoc scripts (no soffice in CI) | Codex review (fix task: merge first) |
+| 13 | T8 #40 (agent-t8) | `18d6e07` | 3 | `T8.md` (2026-10-24) | None yet. New API route `GET /api/curricula/:id/publishing` (F5 policy, in the sweep). Rollback lists every other published version, earlier or newer (criteria say earlier); not browser-run | Codex review |
+| 14 | T6 #41 (agent-t6) | `0223f39` | 2 | `T6.md` (2026-10-24) | None yet. Mapping edits author/admin only; picker options from headers the newest import recorded; server-side paging (100 rows) | Codex review |
+| 15 | A6 #42 (agent-a6) | `0b0b1d4` | 1 | `A6.md` (2026-10-24) | None yet. Drafting runs in the API process (holds the key) via an injected writer; bypasses the student rate limiter, bounded by job concurrency 4; new student read route `GET /api/classes/:id/content`; library passages wait for A3 | Codex review |
 
 **Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 
