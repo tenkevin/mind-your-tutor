@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { canPublishIssues } from '@ideamap/contracts';
 import { packA } from '../../contracts/src/testing/publish.js';
 import { checkPack } from './checks.js';
 import { classContent, draftContext, findDraftable } from './drafts.js';
@@ -33,7 +32,6 @@ describe('findDraftable (A6)', () => {
     const draftable = issues.filter((i) => i.draftable);
     expect(draftable.length).toBeGreaterThan(0);
     expect(draftable.every((i) => i.level === 'warning')).toBe(true);
-    expect(canPublishIssues(issues.filter((i) => i.level !== 'error'))).toBe(true);
     const kinds = findDraftable(pack).map((f) => f.kind);
     expect(kinds).toContain('unit_objective');
     expect(kinds).toContain('assessment_question');

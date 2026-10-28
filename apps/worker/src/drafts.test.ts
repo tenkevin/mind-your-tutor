@@ -40,6 +40,7 @@ describe.skipIf(!hasDatabase)('bulk drafting after import (A6-P1)', () => {
     deps = { scope: appScope(t.db), boss, store: store() };
     await registerWorkers({
       ...deps,
+      boss,
       pollingIntervalSeconds: 0.5,
       draftWriter: async () => {
         await gate;
