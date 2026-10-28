@@ -775,7 +775,7 @@
       ],
       "done_when": "Per D26/D27: the app blurs people's names, places, contact and school identifiers into neutral labels on the device before any text leaves it (NER plus pattern rules), keeps the mapping on the device and re-fills replies; interests stay specific. The server backstop detects any identifier that got through, blurs it before the model call, counts a privacy miss and never stores raw text",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a7",
       "updated": "2026-10-28"
     },
