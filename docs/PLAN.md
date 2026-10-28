@@ -46,7 +46,7 @@ _Nothing is ready. Everything left is claimed or waiting._
 | S2 | Student explorer reads published version and class config | S1, M4 |
 | S3 | Missions driven by due dates | S2, T4 |
 | S4 | Tutor and peer chat through the gateway | S2, A2, A7, A8 |
-| L1 | Pilot: one curriculum shared by two classes | T5, T6, T7, T8, A4, A5, S3, S4, C7, M5, A6, A7, A9, A10, M6 |
+| L1 | Pilot: one curriculum shared by two classes | T5, T6, T7, T8, A4, A5, S3, S4, C7, M5, A6, A7, A9, A10, M6, C5cx1, C5cx2, C6cx1 |
 | X1 | Google Drive import picker | L1 |
 | X2 | Cloudinary media provider | L1 |
 | A8 | Dual memory: conversation history and long-term learning summary | A7 |
@@ -123,6 +123,9 @@ flowchart LR
   subgraph curriculum["Curriculum and publishing"]
     direction LR
     C7["C7 · Progress migration rules on publish<br/><small>+4 wk slack</small>"]
+    C5cx1["C5cx1 · Fix Codex error C5-E1: assessment diff hides accepted questions and depends on row order<br/><small>+17 wk slack</small>"]
+    C5cx2["C5cx2 · Fix Codex error C5-E2: concurrent publishes cache stale draft status and one returns 500<br/><small>+17 wk slack</small>"]
+    C6cx1["C6cx1 · Fix Codex error C6-E4: lone carriage return changes when a CSV export opens in LibreOffice<br/><small>+17 wk slack</small>"]
   end
   subgraph teacher["Teacher console"]
     direction LR
@@ -152,11 +155,6 @@ flowchart LR
     direction LR
     X1["X1 · Google Drive import picker<br/><small>after the pilot</small>"]
     X2["X2 · Cloudinary media provider<br/><small>after the pilot</small>"]
-  end
-  subgraph other["Other"]
-    C5cx1["C5cx1 · Fix Codex error C5-E1: assessment diff hides accepted questions and depends on row order<br/><small>after the pilot</small>"]
-    C5cx2["C5cx2 · Fix Codex error C5-E2: concurrent publishes cache stale draft status and one returns 500<br/><small>after the pilot</small>"]
-    C6cx1["C6cx1 · Fix Codex error C6-E4: lone carriage return changes when a CSV export opens in LibreOffice<br/><small>after the pilot</small>"]
   end
   DONE -.-> M2
   DONE -.-> M3
