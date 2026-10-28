@@ -114,8 +114,8 @@ describe.skipIf(!hasDatabase)('library routes (A3)', () => {
     expect(await runJobs()).toBe(1);
     const after = await as(api, teacherA1)('GET', `/api/classes/${a1}/library`);
     expect(after.json().sources[0].indexStatus).toBe('indexed');
-    // The original file is gone once its passages are stored.
-    expect(api.library!.store.objects.size).toBe(0);
+    // The original file is kept (D31).
+    expect(api.library!.store.objects.size).toBe(1);
   });
 
   it("searches a class's uploads for Atlas and Ms. Ivy, and never shows them to another class (A3-F2, F4, S1)", async () => {
@@ -296,84 +296,179 @@ describe.skipIf(!hasDatabase)('library routes (A3)', () => {
     expect(titles(await search(teacherA1, a1, 'agent', 'scan'))).not.toContain('scan');
   });
 
-  it('removes an upload with its passages and embeddings (A3-S3)', async () => {
+  it('keeps originals and passages after indexing, and takes a document out of use without deleting it (A3-S3, D31)', async () => {
     const res = await upload(
       teacherA1,
       `/api/classes/${a1}/library/uploads`,
-      Buffer.from('Short lived note about rivers.'),
+      Buffer.from('Short lived note about rivers and deltas.'),
       'rivers.txt',
     );
     const id = res.json().doc.id as string;
+    const stored = api.library!.store.objects.size;
     await runJobs();
-    const count = () =>
+    // The original is kept after indexing (re-embedding later needs no re-upload).
+    expect(api.library!.store.objects.size).toBe(stored);
+    const passages = () =>
       api.t.db
         .selectFrom('class_chunk')
         .select((eb) => eb.fn.countAll<number>().as('n'))
         .where('class_library_doc_id', '=', id)
         .executeTakeFirstOrThrow()
         .then((r) => Number(r.n));
-    expect(await count()).toBe(1);
+    expect(await passages()).toBe(1);
+    expect(titles(await search(teacherA1, a1, 'agent', 'rivers deltas'))).toContain('rivers');
 
-    // Another teacher, even of the same curriculum, cannot remove it.
+    // Another teacher cannot change it.
+    const body = { archived: true };
     expect(
-      (await as(api, teacherA2)('DELETE', `/api/classes/${a2}/library/uploads/${id}`)).statusCode,
+      (await as(api, teacherA2)('PUT', `/api/classes/${a2}/library/uploads/${id}`, body))
+        .statusCode,
     ).toBe(404);
     expect(
-      (await as(api, teacherA2)('DELETE', `/api/classes/${a1}/library/uploads/${id}`)).statusCode,
+      (await as(api, teacherA2)('PUT', `/api/classes/${a1}/library/uploads/${id}`, body))
+        .statusCode,
     ).toBe(403);
-    expect(await count()).toBe(1);
 
-    expect(
-      (await as(api, teacherA1)('DELETE', `/api/classes/${a1}/library/uploads/${id}`)).statusCode,
-    ).toBe(204);
-    expect(await count()).toBe(0);
+    // Archived: search skips it; everything is still stored; the list says so in words.
+    const archived = await as(api, teacherA1)(
+      'PUT',
+      `/api/classes/${a1}/library/uploads/${id}`,
+      body,
+    );
+    expect(archived.json()).toMatchObject({ archived: true });
+    expect(titles(await search(teacherA1, a1, 'agent', 'rivers deltas'))).not.toContain('rivers');
+    expect(await passages()).toBe(1);
+    expect(api.library!.store.objects.size).toBe(stored);
+    const listed = await as(api, teacherA1)('GET', `/api/classes/${a1}/library`);
+    expect(listed.json().sources).toContainEqual(
+      expect.objectContaining({
+        title: 'rivers',
+        archived: true,
+        useForLabel: 'Out of use (kept)',
+      }),
+    );
+    // And back.
+    await as(api, teacherA1)('PUT', `/api/classes/${a1}/library/uploads/${id}`, {
+      archived: false,
+    });
+    expect(titles(await search(teacherA1, a1, 'agent', 'rivers deltas'))).toContain('rivers');
+    // There is no delete route.
     expect(
       (await as(api, teacherA1)('DELETE', `/api/classes/${a1}/library/uploads/${id}`)).statusCode,
     ).toBe(404);
   });
 
-  it("removes a queued upload's file when its row is removed, and everything when the class goes (A3-S3)", async () => {
-    const res = await upload(
+  it('replaces a class upload with a new version once it is indexed, keeping the old one (A3-S3, D31)', async () => {
+    const first = await upload(
       teacherA1,
       `/api/classes/${a1}/library/uploads`,
-      Buffer.from('queued only'),
-      'queued.txt',
+      Buffer.from('Glaciers store frozen fresh water.'),
+      'glaciers.txt',
     );
-    const id = res.json().doc.id as string;
-    api.library!.jobs.length = 0;
-    const stored = api.library!.store.objects.size;
-    await as(api, teacherA1)('DELETE', `/api/classes/${a1}/library/uploads/${id}`);
-    expect(api.library!.store.objects.size).toBe(stored - 1);
-
-    // Deleting a class takes its uploads' passages with it.
-    const klass = await api.t.db
-      .insertInto('class')
-      .values({
-        org_id: api.sample.orgs.a,
-        curriculum_id: curriculumA,
-        teacher_id: api.sample.users['teacher-a1'],
-        name: 'Short-lived class',
-      })
-      .returning('id')
-      .executeTakeFirstOrThrow();
-    const keep = await upload(
-      teacherA1,
-      `/api/classes/${klass.id}/library/uploads`,
-      Buffer.from('class gone soon'),
-      'gone.txt',
-    );
-    expect(keep.statusCode, keep.body).toBe(202);
+    const v1 = first.json().doc.id as string;
     await runJobs();
-    const total = () =>
-      api.t.db
-        .selectFrom('class_chunk')
-        .select((eb) => eb.fn.countAll<number>().as('n'))
-        .where('class_id', '=', klass.id)
-        .executeTakeFirstOrThrow()
-        .then((r) => Number(r.n));
-    expect(await total()).toBe(1);
-    await api.t.db.deleteFrom('class').where('id', '=', klass.id).execute();
-    expect(await total()).toBe(0);
+    expect(titles(await search(teacherA1, a1, 'agent', 'glaciers frozen water'))).toContain(
+      'glaciers',
+    );
+
+    const second = await upload(
+      teacherA1,
+      `/api/classes/${a1}/library/uploads/${v1}/versions`,
+      Buffer.from('Glaciers and ice sheets hold most fresh water, and they are shrinking.'),
+      'glaciers v2.txt',
+    );
+    expect(second.statusCode, second.body).toBe(202);
+    expect(second.json().doc).toMatchObject({ title: 'glaciers', version: 2 });
+    const v2 = second.json().doc.id as string;
+    // Until the new version is indexed the old one is still searched.
+    expect(
+      (await search(teacherA1, a1, 'agent', 'glaciers shrinking')).json().passages[0],
+    ).toMatchObject({
+      documentId: v1,
+    });
+    await runJobs();
+    const after = await search(teacherA1, a1, 'agent', 'glaciers shrinking');
+    const ids = after.json().passages.map((p: { documentId: string }) => p.documentId);
+    expect(ids[0]).toBe(v2);
+    expect(ids).not.toContain(v1);
+    // The old version is archived, with its passages and file kept.
+    const old = await api.t.db
+      .selectFrom('class_library_doc')
+      .select(['archived_at'])
+      .where('id', '=', v1)
+      .executeTakeFirstOrThrow();
+    expect(old.archived_at).not.toBeNull();
+    const oldPassages = await api.t.db
+      .selectFrom('class_chunk')
+      .select('id')
+      .where('class_library_doc_id', '=', v1)
+      .execute();
+    expect(oldPassages).toHaveLength(1);
+    // A version of a replaced document is refused; so is one for an unknown document.
+    const again = await upload(
+      teacherA1,
+      `/api/classes/${a1}/library/uploads/${v1}/versions`,
+      Buffer.from('third'),
+      'g3.txt',
+    );
+    expect(again.statusCode).toBe(409);
+    const unknown = await upload(
+      teacherA1,
+      `/api/classes/${a1}/library/uploads/00000000-0000-4000-8000-000000000000/versions`,
+      Buffer.from('x'),
+      'g3.txt',
+    );
+    expect(unknown.statusCode).toBe(404);
+  });
+
+  it("versions a shared document and carries each class's setting over (A3-S3, D11, D31)", async () => {
+    const created = await upload(
+      author,
+      `/api/curricula/${curriculumA}/library`,
+      Buffer.from('Rivers carry water from the land to the sea.'),
+      'Rivers handbook.txt',
+      { 'x-use-for': 'both' },
+    );
+    const v1 = created.json().doc.id as string;
+    await runJobs();
+    await as(api, teacherA1)('PUT', `/api/classes/${a1}/library/${v1}`, { use_for: 'tutor' });
+
+    const next = await upload(
+      author,
+      `/api/curricula/${curriculumA}/library/${v1}/versions`,
+      Buffer.from('Rivers carry water and silt from the land to the sea, forming deltas.'),
+      'rivers-v2.txt',
+    );
+    expect(next.statusCode, next.body).toBe(202);
+    expect(next.json().doc).toMatchObject({ title: 'Rivers handbook', useFor: 'both', version: 2 });
+    const v2 = next.json().doc.id as string;
+    await runJobs();
+    // Class A1 keeps "Ms. Ivy only" for the new version; A2 keeps the default.
+    const ivy = await search(teacherA1, a1, 'tutor', 'rivers silt deltas');
+    expect(ivy.json().passages[0]).toMatchObject({ documentId: v2 });
+    expect(titles(await search(teacherA1, a1, 'agent', 'rivers silt deltas'))).not.toContain(
+      'Rivers handbook',
+    );
+    expect(
+      (await search(teacherA2, a2, 'agent', 'rivers silt deltas')).json().passages[0],
+    ).toMatchObject({
+      documentId: v2,
+    });
+    // Archive and restore a shared document; no delete route.
+    const url = `/api/curricula/${curriculumA}/library/${v2}`;
+    expect((await as(api, author)('PUT', url, { archived: true })).json()).toMatchObject({
+      archived: true,
+    });
+    expect(titles(await search(teacherA2, a2, 'agent', 'rivers silt deltas'))).not.toContain(
+      'Rivers handbook',
+    );
+    await as(api, author)('PUT', url, { archived: false });
+    expect(titles(await search(teacherA2, a2, 'agent', 'rivers silt deltas'))).toContain(
+      'Rivers handbook',
+    );
+    expect((await as(api, author)('DELETE', url)).statusCode).toBe(404);
+    expect((await as(api, teacherA1)('PUT', url, { archived: true })).statusCode).toBe(403);
+    expect((await as(api, author)('PUT', url, {})).statusCode).toBe(400);
   });
 
   it('validates search requests and rate limits them', async () => {
@@ -423,57 +518,5 @@ describe.skipIf(!hasDatabase)('library limits (A3)', () => {
     expect((await ask()).statusCode).toBe(200);
     expect((await ask()).statusCode).toBe(200);
     expect((await ask()).statusCode).toBe(429);
-  });
-});
-
-describe.skipIf(!hasDatabase)("FERPA delete of a teacher's uploads over HTTP (A3-S3)", () => {
-  let api: TestApi;
-  beforeAll(async () => {
-    api = await startApi(
-      {},
-      { library: true, privacy: { put: async () => {}, remove: async () => {} } },
-    );
-    await api.t.db.deleteFrom('class_library_doc').execute();
-  });
-  afterAll(async () => {
-    await api?.close();
-  });
-
-  it('removes passages, embeddings and any unindexed original file; only an admin may ask', async () => {
-    const { users, orgs, classes } = api.sample;
-    const teacher = await sessionFor(api, users['teacher-a1'], orgs.a);
-    const admin = await sessionFor(api, users['admin-a'], orgs.a);
-    const send = (name: string) =>
-      as(api, teacher)(
-        'POST',
-        `/api/classes/${classes.a1}/library/uploads`,
-        Buffer.from(`Note ${name}`),
-        {
-          ...OCTET,
-          'x-file-name': name,
-        },
-      );
-    expect((await send('indexed.txt')).statusCode).toBe(202);
-    for (const job of api.library!.jobs.splice(0)) {
-      await indexLibrary(
-        {
-          scope: (orgId, fn) => scoped(api.t.db, { orgId }, fn),
-          store: api.library!.store,
-          embedder,
-        },
-        job.data,
-      );
-    }
-    expect((await send('pending.txt')).statusCode).toBe(202); // still has its file
-    expect(api.library!.store.objects.size).toBe(1);
-
-    const url = `/api/privacy/teachers/${users['teacher-a1']}/uploads`;
-    expect((await as(api, teacher)('DELETE', url)).statusCode).toBe(403);
-    const res = await as(api, admin)('DELETE', url);
-    expect(res.statusCode, res.body).toBe(200);
-    expect(res.json().deleted).toEqual({ documents: 2, chunks: 1, files: 2 });
-    expect(api.library!.store.objects.size).toBe(0);
-    const left = await api.t.db.selectFrom('class_chunk').select('id').execute();
-    expect(left).toEqual([]);
   });
 });

@@ -162,11 +162,22 @@ async function store(
           .execute();
       }
     }
-    await trx
+    const indexed = await trx
       .updateTable(table(target))
       .set({ index_status: 'indexed', checksum, indexed_at: sql<Date>`now()` })
       .where('id', '=', target.docId)
-      .execute();
+      .returning('replaces_id')
+      .executeTakeFirstOrThrow();
+    // A new version takes over from the one it replaces only now that it can be searched,
+    // so search never has a gap. The old version and its passages are kept (D31).
+    if (indexed.replaces_id) {
+      await trx
+        .updateTable(table(target))
+        .set({ archived_at: sql<Date>`now()` })
+        .where('id', '=', indexed.replaces_id)
+        .where('archived_at', 'is', null)
+        .execute();
+    }
   });
 }
 
@@ -190,18 +201,14 @@ async function indexDocument(deps: IndexDeps, target: Target): Promise<boolean |
     chunks = chunkSections(extracted.sections, { maxChunks: deps.limits?.maxChunks });
   } catch (cause) {
     if (cause instanceof FileRefused) {
-      // It can never be read, so there is no reason to keep the file.
+      // The original is kept (D31), so a corrected tool or vendor can try it again.
       await markFailed(deps, target);
-      await deps.store.delete(doc.file_url).catch(() => undefined);
       return false;
     }
     throw cause;
   }
   const vectors = await embedAll(deps.embedder, chunks);
   await store(deps, target, sha256(bytes), chunks, vectors);
-  // The passages are what the library keeps; the original file isn't needed again (and
-  // goes with its class or teacher's data whatever else happens).
-  await deps.store.delete(doc.file_url).catch(() => undefined);
   return true;
 }
 

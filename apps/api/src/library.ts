@@ -1,4 +1,5 @@
 import {
+  LibraryDocUpdateSchema,
   LibrarySearchRequestSchema,
   QUEUES,
   USE_FOR,
@@ -14,7 +15,8 @@ import {
   type LibraryLimits,
   type ObjectStore,
 } from '@ideamap/connectors';
-import { searchLibrary } from '@ideamap/db';
+import { CLASS_SETTING, searchLibrary } from '@ideamap/db';
+import { sql } from 'kysely';
 import { inTransaction, type Sender } from '@ideamap/worker';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -26,10 +28,11 @@ import type { RoutePolicy } from './policy.js';
 //
 //   POST   /api/curricula/:curriculumId/library        upload a shared document (author, admin)
 //   GET    /api/curricula/:curriculumId/library        the shared documents and their indexing status
-//   DELETE /api/curricula/:curriculumId/library/:docId remove a shared document and its passages
+//   PUT    /api/curricula/:curriculumId/library/:docId change use_for, or archive / restore (D31)
+//   POST   /api/curricula/:curriculumId/library/:docId/versions   upload a new version
 //   POST   /api/classes/:classId/library/uploads       upload a document for this class only
-//   PUT    /api/classes/:classId/library/uploads/:docId   change how the AI uses an upload
-//   DELETE /api/classes/:classId/library/uploads/:docId   remove an upload and its passages
+//   PUT    /api/classes/:classId/library/uploads/:docId   change use_for, or archive / restore (D31)
+//   POST   /api/classes/:classId/library/uploads/:docId/versions   upload a new version
 //   POST   /api/classes/:classId/library/search        ranked passages for Atlas or Ms. Ivy
 //
 // (Listing a class's knowledge sources and setting how a class uses a shared document
@@ -95,7 +98,15 @@ function titleFor(request: FastifyRequest, fileName: string): string {
 }
 
 type Screen =
-  | { ok: true; bytes: Uint8Array; title: string; useFor: (typeof USE_FOR)[number] }
+  | {
+      ok: true;
+      bytes: Uint8Array;
+      title: string;
+      /** False when the title came from the file's name, so a new version keeps the old one. */
+      titleGiven: boolean;
+      useFor: (typeof USE_FOR)[number];
+      useForGiven: boolean;
+    }
   | { ok: false; status: number; error: string };
 
 export function libraryRoutes(app: FastifyInstance, options: LibraryRoutesOptions): void {
@@ -151,7 +162,14 @@ export function libraryRoutes(app: FastifyInstance, options: LibraryRoutesOption
     if (!useFor.success) {
       return { ok: false, status: 400, error: `Set X-Use-For to ${USE_FOR.join(', ')}.` };
     }
-    return { ok: true, bytes: request.body, title, useFor: useFor.data };
+    return {
+      ok: true,
+      bytes: request.body,
+      title,
+      titleGiven: decoded(request.headers['x-title']).trim() !== '',
+      useFor: useFor.data,
+      useForGiven: decoded(request.headers['x-use-for']) !== '',
+    };
   }
 
   const refuse = (reply: FastifyReply, s: { status: number; error: string }) =>
@@ -248,33 +266,143 @@ export function libraryRoutes(app: FastifyInstance, options: LibraryRoutesOption
     },
   );
 
-  app.delete<{ Params: { curriculumId: string; docId: string } }>(
+  // Materials are kept, never deleted (D31): change how a document is used, or take it
+  // out of use (`archived`) and bring it back.
+  app.put<{ Params: { curriculumId: string; docId: string } }>(
     '/api/curricula/:curriculumId/library/:docId',
     { config: curriculumPolicy(true) },
     async (req, reply) => {
+      const parsed = LibraryDocUpdateSchema.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: 'Invalid update' });
       const { orgId, userId } = req.session!;
       const { curriculumId, docId } = req.params;
-      const removed = await req.withOrg(async (trx) => {
-        const row = await trx
-          .deleteFrom('library_doc')
+      const { use_for: useFor, archived } = parsed.data;
+      const row = await req.withOrg(async (trx) => {
+        const updated = await trx
+          .updateTable('library_doc')
+          .set({
+            ...(useFor ? { use_for: useFor } : {}),
+            ...(archived === undefined
+              ? {}
+              : { archived_at: archived ? sql<Date>`coalesce(archived_at, now())` : null }),
+          })
           .where('id', '=', docId)
           .where('curriculum_id', '=', curriculumId)
-          .returning(['id', 'file_url'])
+          .returning(['id', 'use_for', 'archived_at'])
           .executeTakeFirst();
-        if (!row) return null;
+        if (!updated) return null;
         await audit(trx, {
           orgId,
           actorId: userId,
-          action: 'library_doc.removed',
+          action: 'library_doc.updated',
           targetType: 'library_doc',
-          targetId: row.id,
+          targetId: updated.id,
+          detail: { use_for: useFor ?? null, archived: archived ?? null },
           at: new Date(),
         });
-        return row;
+        return updated;
       });
-      if (!removed) return reply.code(404).send({ error: 'Not found' });
-      await options.store.delete(removed.file_url).catch(() => undefined);
-      return reply.code(204).send();
+      if (!row) return reply.code(404).send({ error: 'Not found' });
+      return { useFor: row.use_for, archived: row.archived_at !== null };
+    },
+  );
+
+  // A new version of a shared document: a new row, indexed by its own job. Once indexed
+  // it replaces the old version in search; the old version and its file are kept.
+  app.post<{ Params: { curriculumId: string; docId: string } }>(
+    '/api/curricula/:curriculumId/library/:docId/versions',
+    { bodyLimit: limits.maxFileBytes, config: curriculumPolicy(true) },
+    async (req, reply) => {
+      const upload = screen(req);
+      if (!upload.ok) return refuse(reply, upload);
+      const { orgId, userId } = req.session!;
+      const { curriculumId, docId } = req.params;
+      const key = uploadKey(orgId);
+      await options.store.put(key, upload.bytes);
+      try {
+        const doc = await req.withOrg(async (trx) => {
+          const old = await trx
+            .selectFrom('library_doc')
+            .select(['id', 'title', 'use_for', 'version'])
+            .where('id', '=', docId)
+            .where('curriculum_id', '=', curriculumId)
+            .executeTakeFirst();
+          if (!old) return 'missing' as const;
+          const newer = await trx
+            .selectFrom('library_doc')
+            .select('id')
+            .where('replaces_id', '=', old.id)
+            .executeTakeFirst();
+          if (newer) return 'superseded' as const;
+          const row = await trx
+            .insertInto('library_doc')
+            .values({
+              org_id: orgId,
+              curriculum_id: curriculumId,
+              title: upload.titleGiven ? upload.title : old.title,
+              file_url: key,
+              use_for: upload.useForGiven ? upload.useFor : old.use_for,
+              version: old.version + 1,
+              replaces_id: old.id,
+            })
+            .returning(['id', 'title', 'use_for', 'index_status', 'version'])
+            .executeTakeFirstOrThrow();
+          // Each class keeps how it used the old version. Settings are class-scoped
+          // under row-level security, so they are carried over class by class.
+          const classes = await trx
+            .selectFrom('class')
+            .select('id')
+            .where('curriculum_id', '=', curriculumId)
+            .execute();
+          for (const klass of classes) {
+            await sql`SELECT set_config(${CLASS_SETTING}, ${klass.id}, true)`.execute(trx);
+            await sql`
+              INSERT INTO class_library_setting
+                (class_id, library_doc_id, org_id, curriculum_id, use_for, updated_by)
+              SELECT class_id, ${row.id}::uuid, org_id, curriculum_id, use_for, updated_by
+              FROM class_library_setting
+              WHERE class_id = ${klass.id}::uuid AND library_doc_id = ${old.id}::uuid
+            `.execute(trx);
+          }
+          const payload: SharedLibraryIndexPayload = {
+            org_id: orgId,
+            curriculum_id: curriculumId,
+            library_doc_id: row.id,
+          };
+          await options.boss.send(QUEUES.indexLibrary, payload, {
+            singletonKey: row.id,
+            db: inTransaction(trx),
+          });
+          await audit(trx, {
+            orgId,
+            actorId: userId,
+            action: 'library_doc.versioned',
+            targetType: 'library_doc',
+            targetId: row.id,
+            detail: { replaces: old.id, version: row.version },
+            at: new Date(),
+          });
+          return row;
+        });
+        if (doc === 'missing' || doc === 'superseded') {
+          await options.store.delete(key).catch(() => undefined);
+          return doc === 'missing'
+            ? reply.code(404).send({ error: 'Not found' })
+            : reply.code(409).send({ error: 'A newer version of this document already exists.' });
+        }
+        return reply.code(202).send({
+          doc: {
+            id: doc.id,
+            title: doc.title,
+            useFor: doc.use_for,
+            indexStatus: doc.index_status,
+            version: doc.version,
+          },
+        });
+      } catch (error) {
+        await options.store.delete(key).catch(() => undefined);
+        throw error;
+      }
     },
   );
 
@@ -341,40 +469,99 @@ export function libraryRoutes(app: FastifyInstance, options: LibraryRoutesOption
     '/api/classes/:classId/library/uploads/:docId',
     { config: classPolicy },
     async (req, reply) => {
-      const parsed = UseForBody.safeParse(req.body);
-      if (!parsed.success) return reply.code(400).send({ error: 'Invalid setting' });
+      const parsed = LibraryDocUpdateSchema.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: 'Invalid update' });
       const { classId, docId } = req.params;
+      const { use_for: useFor, archived } = parsed.data;
       const row = await req.withOrg((trx) =>
         trx
           .updateTable('class_library_doc')
-          .set({ use_for: parsed.data.use_for })
+          .set({
+            ...(useFor ? { use_for: useFor } : {}),
+            ...(archived === undefined
+              ? {}
+              : { archived_at: archived ? sql<Date>`coalesce(archived_at, now())` : null }),
+          })
           .where('id', '=', docId)
           .where('class_id', '=', classId)
-          .returning('id')
+          .returning(['use_for', 'archived_at'])
           .executeTakeFirst(),
       );
       if (!row) return reply.code(404).send({ error: 'Not found' });
-      return { useFor: parsed.data.use_for };
+      return { useFor: row.use_for, archived: row.archived_at !== null };
     },
   );
 
-  app.delete<{ Params: { classId: string; docId: string } }>(
-    '/api/classes/:classId/library/uploads/:docId',
-    { config: classPolicy },
+  // A new version of a class upload, as for the shared library.
+  app.post<{ Params: { classId: string; docId: string } }>(
+    '/api/classes/:classId/library/uploads/:docId/versions',
+    { bodyLimit: limits.maxFileBytes, config: classPolicy },
     async (req, reply) => {
+      const upload = screen(req);
+      if (!upload.ok) return refuse(reply, upload);
+      const { orgId, userId } = req.session!;
       const { classId, docId } = req.params;
-      // The foreign keys remove the document's passages and their embeddings with it.
-      const removed = await req.withOrg((trx) =>
-        trx
-          .deleteFrom('class_library_doc')
-          .where('id', '=', docId)
-          .where('class_id', '=', classId)
-          .returning('file_url')
-          .executeTakeFirst(),
-      );
-      if (!removed) return reply.code(404).send({ error: 'Not found' });
-      await options.store.delete(removed.file_url).catch(() => undefined);
-      return reply.code(204).send();
+      const key = uploadKey(orgId);
+      await options.store.put(key, upload.bytes);
+      try {
+        const doc = await req.withOrg(async (trx) => {
+          const old = await trx
+            .selectFrom('class_library_doc')
+            .select(['id', 'title', 'use_for', 'version'])
+            .where('id', '=', docId)
+            .where('class_id', '=', classId)
+            .executeTakeFirst();
+          if (!old) return 'missing' as const;
+          const newer = await trx
+            .selectFrom('class_library_doc')
+            .select('id')
+            .where('replaces_id', '=', old.id)
+            .executeTakeFirst();
+          if (newer) return 'superseded' as const;
+          const row = await trx
+            .insertInto('class_library_doc')
+            .values({
+              org_id: orgId,
+              class_id: classId,
+              title: upload.titleGiven ? upload.title : old.title,
+              file_url: key,
+              use_for: upload.useForGiven ? upload.useFor : old.use_for,
+              uploaded_by: userId,
+              version: old.version + 1,
+              replaces_id: old.id,
+            })
+            .returning(['id', 'title', 'use_for', 'index_status', 'version'])
+            .executeTakeFirstOrThrow();
+          const payload: ClassLibraryIndexPayload = {
+            org_id: orgId,
+            class_id: classId,
+            class_library_doc_id: row.id,
+          };
+          await options.boss.send(QUEUES.indexLibrary, payload, {
+            singletonKey: row.id,
+            db: inTransaction(trx),
+          });
+          return row;
+        });
+        if (doc === 'missing' || doc === 'superseded') {
+          await options.store.delete(key).catch(() => undefined);
+          return doc === 'missing'
+            ? reply.code(404).send({ error: 'Not found' })
+            : reply.code(409).send({ error: 'A newer version of this document already exists.' });
+        }
+        return reply.code(202).send({
+          doc: {
+            id: doc.id,
+            title: doc.title,
+            useFor: doc.use_for,
+            indexStatus: doc.index_status,
+            version: doc.version,
+          },
+        });
+      } catch (error) {
+        await options.store.delete(key).catch(() => undefined);
+        throw error;
+      }
     },
   );
 

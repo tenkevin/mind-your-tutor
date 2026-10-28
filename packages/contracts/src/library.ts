@@ -70,8 +70,25 @@ export const LibrarySourceSchema = z.object({
   useFor: ClassUseForSchema,
   useForLabel: z.string(),
   indexStatus: z.enum(['pending', 'indexing', 'indexed', 'failed']),
+  /** Taken out of use (D31): kept, but search skips it. */
+  archived: z.boolean(),
+  version: z.number().int().min(1),
 });
 export type LibrarySource = z.infer<typeof LibrarySourceSchema>;
+
+/** Plain words for a document that is out of use. */
+export const ARCHIVED_WORDS = 'Out of use (kept)';
+
+/** PUT on a shared document or a class upload: change its use, or take it out of use / back. */
+export const LibraryDocUpdateSchema = z
+  .strictObject({
+    use_for: z.enum(USE_FOR).optional(),
+    archived: z.boolean().optional(),
+  })
+  .refine((v) => v.use_for !== undefined || v.archived !== undefined, {
+    message: 'Set use_for or archived.',
+  });
+export type LibraryDocUpdate = z.infer<typeof LibraryDocUpdateSchema>;
 
 /**
  * Library jobs queue ids only (0003). A class upload names its class and document;

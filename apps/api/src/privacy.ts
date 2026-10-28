@@ -1,6 +1,5 @@
 import {
   deleteStudentIn,
-  deleteTeacherUploadsIn,
   exportStudentIn,
   PrivacyError,
   type ExportStore,
@@ -17,15 +16,7 @@ import type { RoutePolicy } from './policy.js';
 export interface PrivacyRoutes {
   /** Where student-record export files are written (and removed from on deletion). */
   store: ExportStore;
-  /** Removes an upload's original file from object storage (A3), if the library is wired. */
-  removeUpload?: (key: string) => Promise<void>;
 }
-
-/** Deleting a teacher's uploads (D11): the admin of the teacher's organization. */
-export const TEACHER_UPLOADS_POLICY: RoutePolicy = {
-  roles: ['admin'],
-  scope: { kind: 'user', param: 'teacherId' },
-};
 
 /** The district owns the data (FERPA), so its admin makes these requests, no one else. */
 export const STUDENT_PRIVACY_POLICY: RoutePolicy = {
@@ -76,25 +67,6 @@ export function privacyRoutes(app: FastifyInstance, options: PrivacyRoutes): voi
     async (req, reply) => {
       try {
         const deleted = await deleteStudentIn(req.withOrg, studentRequest(req), options.store);
-        return await reply.code(200).send({ deleted });
-      } catch (error) {
-        return refused(error, reply);
-      }
-    },
-  );
-
-  // Extends F6's FERPA delete to the documents a teacher uploaded to their classes.
-  app.delete<{ Params: { teacherId: string } }>(
-    '/api/privacy/teachers/:teacherId/uploads',
-    { config: { policy: TEACHER_UPLOADS_POLICY } },
-    async (req, reply) => {
-      const { orgId, userId } = req.session!;
-      try {
-        const deleted = await deleteTeacherUploadsIn(
-          req.withOrg,
-          { orgId, actorId: userId, teacherId: req.params.teacherId },
-          options.removeUpload,
-        );
         return await reply.code(200).send({ deleted });
       } catch (error) {
         return refused(error, reply);

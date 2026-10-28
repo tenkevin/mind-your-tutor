@@ -1,4 +1,9 @@
-import { USE_FOR_WORDS, type LibraryAudience, type LibrarySource } from '@ideamap/contracts';
+import {
+  ARCHIVED_WORDS,
+  USE_FOR_WORDS,
+  type LibraryAudience,
+  type LibrarySource,
+} from '@ideamap/contracts';
 import { sql, type Transaction } from 'kysely';
 import { toVector } from './client.js';
 import { CLASS_SETTING } from './migrations/helpers.js';
@@ -11,7 +16,7 @@ import type { Database } from './schema.js';
 //   - a shared document is used as the class set it (`agent`, `tutor`, `both` or `off`),
 //     else as the curriculum's default; an upload is used as its own `use_for`;
 //   - Atlas (`agent`) sees documents set to agent or both; Ms. Ivy (`tutor`), tutor or both;
-//   - only indexed documents are searched, and never another class's uploads.
+//   - only indexed documents that are not archived (D31) are searched, and never another class's uploads.
 //
 // Vector search never leaves the filter to the index alone. An HNSW scan returns its
 // nearest candidates first and the filter then drops some, so a selective filter could
@@ -138,14 +143,22 @@ export async function librarySources(trx: Trx, classId: string): Promise<Library
     .leftJoin('class_library_setting as s', (join) =>
       join.onRef('s.library_doc_id', '=', 'd.id').onRef('s.class_id', '=', 'c.id'),
     )
-    .select(['d.id', 'd.title', 'd.use_for as default_use_for', 's.use_for', 'd.index_status'])
+    .select([
+      'd.id',
+      'd.title',
+      'd.use_for as default_use_for',
+      's.use_for',
+      'd.index_status',
+      'd.archived_at',
+      'd.version',
+    ])
     .where('c.id', '=', classId)
     .orderBy('d.title')
     .orderBy('d.id')
     .execute();
   const uploads = await trx
     .selectFrom('class_library_doc')
-    .select(['id', 'title', 'use_for', 'index_status'])
+    .select(['id', 'title', 'use_for', 'index_status', 'archived_at', 'version'])
     .where('class_id', '=', classId)
     .orderBy('title')
     .orderBy('id')
@@ -160,8 +173,10 @@ export async function librarySources(trx: Trx, classId: string): Promise<Library
         sourceLabel: 'Shared library',
         defaultUseFor: d.default_use_for,
         useFor,
-        useForLabel: USE_FOR_WORDS[useFor],
+        useForLabel: d.archived_at ? ARCHIVED_WORDS : USE_FOR_WORDS[useFor],
         indexStatus: d.index_status,
+        archived: d.archived_at !== null,
+        version: d.version,
       };
     }),
     ...uploads.map((u) => ({
@@ -171,8 +186,10 @@ export async function librarySources(trx: Trx, classId: string): Promise<Library
       sourceLabel: 'Uploaded for this class',
       defaultUseFor: null,
       useFor: u.use_for,
-      useForLabel: USE_FOR_WORDS[u.use_for],
+      useForLabel: u.archived_at ? ARCHIVED_WORDS : USE_FOR_WORDS[u.use_for],
       indexStatus: u.index_status,
+      archived: u.archived_at !== null,
+      version: u.version,
     })),
   ];
 }
@@ -191,7 +208,9 @@ export async function searchLibrary(trx: Trx, input: SearchInput): Promise<Passa
   const { classId, audience, k } = input;
   if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be a positive integer.');
   const sources = await librarySources(trx, classId);
-  const usable = sources.filter((s) => s.indexStatus === 'indexed' && reaches(s.useFor, audience));
+  const usable = sources.filter(
+    (s) => s.indexStatus === 'indexed' && !s.archived && reaches(s.useFor, audience),
+  );
   if (usable.length === 0) return [];
   const titles = new Map(usable.map((s) => [s.id, s.title]));
   const curriculum = await trx

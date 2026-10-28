@@ -2,7 +2,14 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { fromVector } from './client.js';
 import { librarySources, searchLibrary } from './library.js';
-import { asApp, freshDatabase, hasDatabase, type TestDatabase } from './test/harness.js';
+import {
+  asApp,
+  errorCode,
+  freshDatabase,
+  hasDatabase,
+  PG,
+  type TestDatabase,
+} from './test/harness.js';
 import { embedding, seedOrg, type SeededOrg } from './test/seed.js';
 
 // A3: library search for a class (D11). Settings, uploads, isolation, and k results
@@ -225,6 +232,53 @@ describe.skipIf(!hasDatabase)('library search (A3)', () => {
       defaultUseFor: null,
       useFor: 'both',
     });
+  });
+
+  it('skips archived documents and brings them back when restored (A3-S3, D31)', async () => {
+    await t.db
+      .updateTable('library_doc')
+      .set({ archived_at: new Date() })
+      .where('id', '=', docZ)
+      .execute();
+    await t.db
+      .updateTable('class_library_doc')
+      .set({ archived_at: new Date() })
+      .where('id', '=', uploadA)
+      .execute();
+    expect(titles(await search(a, classB, 'tutor', 3))).not.toContain('Z');
+    expect(titles(await search(a, classA, 'tutor', 4))).not.toContain('Lab sheet');
+    const sources = await asApp(t.db, a.orgId, (trx) => librarySources(trx, classA));
+    expect(sources.find((s) => s.title === 'Z')).toMatchObject({
+      archived: true,
+      useForLabel: 'Out of use (kept)',
+    });
+    // Out of use is not gone: the passages are still stored.
+    const kept = await t.db
+      .selectFrom('chunk')
+      .select('id')
+      .where('library_doc_id', '=', docZ)
+      .execute();
+    expect(kept).toHaveLength(1);
+    await t.db
+      .updateTable('library_doc')
+      .set({ archived_at: null })
+      .where('id', '=', docZ)
+      .execute();
+    await t.db
+      .updateTable('class_library_doc')
+      .set({ archived_at: null })
+      .where('id', '=', uploadA)
+      .execute();
+    expect(titles(await search(a, classB, 'tutor', 3))).toContain('Z');
+  });
+
+  it('never lets the app role delete a document (A3-S3, D31)', async () => {
+    for (const table of ['library_doc', 'class_library_doc'] as const) {
+      const code = await errorCode(() =>
+        asApp(t.db, a.orgId, (trx) => sql`DELETE FROM ${sql.table(table)}`.execute(trx), classA),
+      );
+      expect(code, table).toBe(PG.insufficientPrivilege);
+    }
   });
 
   it('rejects a bad k', async () => {

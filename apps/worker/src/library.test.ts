@@ -127,8 +127,8 @@ describe.skipIf(!hasDatabase)('library indexing (A3)', () => {
     expect(after.index_status).toBe('indexed');
     expect(after.checksum).toMatch(/^[0-9a-f]{64}$/);
     expect(after.indexed_at).not.toBeNull();
-    // The passages are kept; the original file is not (A3-S3).
-    expect(await objects.get(doc.key)).toBeNull();
+    // The original file is kept as well as the passages (A3-S3, D31).
+    expect(await objects.get(doc.key)).not.toBeNull();
 
     const chunks = await t.db
       .selectFrom('chunk')
@@ -199,34 +199,67 @@ describe.skipIf(!hasDatabase)('library indexing (A3)', () => {
       .toBe('indexed');
   });
 
-  it('re-indexing replaces the passages instead of adding to them', async () => {
-    const doc = await sharedDoc(a, 'Short', pdf(['One page only.']));
-    const payload = {
+  it('archives the version a new one replaces only once it is indexed, keeping both (A3-S3, D31)', async () => {
+    const v1 = await sharedDoc(a, 'Short', pdf(['One page only.']));
+    const payload = (id: string) => ({
+      org_id: a.orgId,
+      curriculum_id: a.curriculumId,
+      library_doc_id: id,
+    });
+    await indexLibrary(deps(), payload(v1.id));
+
+    const key = uploadKey(a.orgId);
+    await objects.put(key, pdf(['Now two pages.', 'Second page.']));
+    const v2 = await t.db
+      .insertInto('library_doc')
+      .values({
+        org_id: a.orgId,
+        curriculum_id: a.curriculumId,
+        title: 'Short',
+        file_url: key,
+        version: 2,
+        replaces_id: v1.id,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const archivedAt = async (id: string) =>
+      (
+        await t.db
+          .selectFrom('library_doc')
+          .select('archived_at')
+          .where('id', '=', id)
+          .executeTakeFirstOrThrow()
+      ).archived_at;
+    // Not yet indexed: the old version is still in use.
+    expect(await archivedAt(v1.id)).toBeNull();
+    expect((await indexLibrary(deps(), payload(v2.id))).indexed).toBe(1);
+    expect(await archivedAt(v1.id)).not.toBeNull();
+    expect(await archivedAt(v2.id)).toBeNull();
+
+    const contents = async (id: string) =>
+      (
+        await t.db
+          .selectFrom('chunk')
+          .select('content')
+          .where('library_doc_id', '=', id)
+          .orderBy('ordinal')
+          .execute()
+      ).map((c) => c.content);
+    expect(await contents(v1.id)).toEqual(['One page only.']);
+    expect(await contents(v2.id)).toEqual(['Now two pages.', 'Second page.']);
+    expect(await objects.get(v1.key)).not.toBeNull();
+    expect(await objects.get(key)).not.toBeNull();
+  });
+
+  it('keeps the original of a file it could not read (D31)', async () => {
+    const doc = await sharedDoc(a, 'Kept scan', pdf(['']));
+    const result = await indexLibrary(deps(), {
       org_id: a.orgId,
       curriculum_id: a.curriculumId,
       library_doc_id: doc.id,
-    };
-    await indexLibrary(deps(), payload);
-    // The author replaces the file; the second run replaces the first run's passages.
-    const row = await t.db
-      .selectFrom('library_doc')
-      .select('file_url')
-      .where('id', '=', doc.id)
-      .executeTakeFirstOrThrow();
-    await objects.put(row.file_url, pdf(['Now two pages.', 'Second page.']));
-    await t.db
-      .updateTable('library_doc')
-      .set({ index_status: 'pending' })
-      .where('id', '=', doc.id)
-      .execute();
-    expect((await indexLibrary(deps(), payload)).indexed).toBe(1);
-    const chunks = await t.db
-      .selectFrom('chunk')
-      .select(['ordinal', 'content'])
-      .where('library_doc_id', '=', doc.id)
-      .orderBy('ordinal')
-      .execute();
-    expect(chunks.map((c) => c.content)).toEqual(['Now two pages.', 'Second page.']);
+    });
+    expect(result.failed).toBe(1);
+    expect(await objects.get(doc.key)).not.toBeNull();
   });
 
   it('marks a file it cannot read as failed, without a retry loop (A3-S2)', async () => {

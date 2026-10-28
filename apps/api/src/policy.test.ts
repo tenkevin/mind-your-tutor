@@ -7,7 +7,7 @@ import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
-import { STUDENT_PRIVACY_POLICY, TEACHER_UPLOADS_POLICY } from './privacy.js';
+import { STUDENT_PRIVACY_POLICY } from './privacy.js';
 import {
   as,
   fromApp,
@@ -60,15 +60,16 @@ const PUBLISH_ROUTE_URLS = [
 const LIBRARY_ROUTE_URLS = [
   '/api/curricula/:curriculumId/library',
   '/api/curricula/:curriculumId/library/:docId',
+  '/api/curricula/:curriculumId/library/:docId/versions',
   '/api/classes/:classId/library/uploads',
   '/api/classes/:classId/library/uploads/:docId',
+  '/api/classes/:classId/library/uploads/:docId/versions',
   '/api/classes/:classId/library/search',
 ];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
-  '/api/privacy/teachers/:teacherId/uploads',
 ];
 /** A1's AI gateway routes, registered when the server is given a model provider. */
 const AI_ROUTE_URLS = [
@@ -200,7 +201,11 @@ describe('A3 library routes join the registry (F5-F4, A3-S1)', () => {
         },
       ],
       [
-        'DELETE /api/curricula/:curriculumId/library/:docId',
+        'PUT /api/curricula/:curriculumId/library/:docId',
+        { roles: ['admin', 'author'], scope: edit },
+      ],
+      [
+        'POST /api/curricula/:curriculumId/library/:docId/versions',
         { roles: ['admin', 'author'], scope: edit },
       ],
       ['POST /api/classes/:classId/library/uploads', { roles: ['admin', 'teacher'], scope: klass }],
@@ -209,7 +214,7 @@ describe('A3 library routes join the registry (F5-F4, A3-S1)', () => {
         { roles: ['admin', 'teacher'], scope: klass },
       ],
       [
-        'DELETE /api/classes/:classId/library/uploads/:docId',
+        'POST /api/classes/:classId/library/uploads/:docId/versions',
         { roles: ['admin', 'teacher'], scope: klass },
       ],
       ['POST /api/classes/:classId/library/search', { roles: ['admin', 'teacher'], scope: klass }],
@@ -230,15 +235,13 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
     await app.close();
     expect(privacy.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
       'DELETE /api/privacy/students/:studentId',
-      'DELETE /api/privacy/teachers/:teacherId/uploads',
       'POST /api/privacy/students/:studentId/export',
     ]);
     for (const route of privacy) {
-      const teacher = route.url.includes('/teachers/');
-      expect(route.policy).toEqual(teacher ? TEACHER_UPLOADS_POLICY : STUDENT_PRIVACY_POLICY);
+      expect(route.policy).toEqual(STUDENT_PRIVACY_POLICY);
       expect(route.policy).toEqual({
         roles: ['admin'],
-        scope: { kind: 'user', param: teacher ? 'teacherId' : 'studentId' },
+        scope: { kind: 'user', param: 'studentId' },
       });
     }
   });
@@ -450,11 +453,6 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/privacy/students/${users['student-a2']}/export`,
       },
       {
-        route: '/api/privacy/teachers/:teacherId/uploads',
-        method: 'DELETE',
-        url: `/api/privacy/teachers/${users['teacher-a2']}/uploads`,
-      },
-      {
         route: '/api/privacy/students/:studentId',
         method: 'DELETE',
         url: `/api/privacy/students/${users['student-a2']}`,
@@ -466,7 +464,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/classes/${classes.a1}/ai/${persona}`,
         body: { message: 'Hello' },
       })),
-      // A3: shared library and class uploads (the delete runs last for its document).
+      // A3: shared library and class uploads (a new version goes after the change to the same document).
       {
         route: '/api/curricula/:curriculumId/library',
         method: 'POST',
@@ -481,8 +479,16 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       },
       {
         route: '/api/curricula/:curriculumId/library/:docId',
-        method: 'DELETE',
+        method: 'PUT',
         url: `/api/curricula/${curricula.a}/library/${sweepShared}`,
+        body: { archived: true },
+      },
+      {
+        route: '/api/curricula/:curriculumId/library/:docId/versions',
+        method: 'POST',
+        url: `/api/curricula/${curricula.a}/library/${sweepShared}/versions`,
+        body: Buffer.from('A second version of the sweep document.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'v2.txt' },
       },
       {
         route: '/api/classes/:classId/library/uploads',
@@ -498,9 +504,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         body: { use_for: 'both' },
       },
       {
-        route: '/api/classes/:classId/library/uploads/:docId',
-        method: 'DELETE',
-        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.remove}`,
+        route: '/api/classes/:classId/library/uploads/:docId/versions',
+        method: 'POST',
+        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.remove}/versions`,
+        body: Buffer.from('A second version of the sweep upload.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'v2.txt' },
       },
       {
         route: '/api/classes/:classId/library/search',

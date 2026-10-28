@@ -143,6 +143,11 @@ export interface LibraryDocTable {
   indexed_at: NullableTimestamp;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** Taken out of use (D31): search skips it. Never deleted. */
+  archived_at: NullableTimestamp;
+  /** 1, then one more for each new version that replaces it. */
+  version: Generated<number>;
+  replaces_id: string | null;
 }
 
 export interface ChunkTable {
@@ -185,6 +190,9 @@ export interface ClassLibraryDocTable {
   uploaded_by: string | null;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  archived_at: NullableTimestamp;
+  version: Generated<number>;
+  replaces_id: string | null;
 }
 
 export interface ClassChunkTable {
@@ -505,6 +513,9 @@ export const COLUMNS = {
     'indexed_at',
     'created_at',
     'updated_at',
+    'archived_at',
+    'version',
+    'replaces_id',
   ],
   chunk: [
     'id',
@@ -554,6 +565,9 @@ export const COLUMNS = {
     'uploaded_by',
     'created_at',
     'updated_at',
+    'archived_at',
+    'version',
+    'replaces_id',
   ],
   class_chunk: [
     'id',
