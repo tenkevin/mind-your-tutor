@@ -40,8 +40,11 @@ describe('diffPacks (C5)', () => {
         {
           idea_id: 'sun',
           title: 'The Sun',
-          before: 'What does the Sun have to do with water going up into the air?',
-          after: 'How does the Sun help water rise into the air?',
+          unit: { unit: 1, name: 'Water goes up' },
+          before: ['What does the Sun have to do with water going up into the air?'],
+          after: ['How does the Sun help water rise into the air?'],
+          removed: ['What does the Sun have to do with water going up into the air?'],
+          added: ['How does the Sun help water rise into the air?'],
         },
       ],
     });
@@ -101,11 +104,88 @@ describe('diffPacks (C5)', () => {
     after.assessment = after.assessment.filter((a) => a.idea_id !== 'ocean');
     const diff = diffPacks(before, after);
     expect(diff.assessment_changed.map(({ idea_id, after: q }) => [idea_id, q])).toEqual([
-      ['ocean', null],
-      ['sun', null],
+      ['ocean', []],
+      ['sun', []],
     ]);
-    expect(diffPacks(after, before).assessment_changed.map((c) => c.before)).toEqual([null, null]);
+    expect(diffPacks(after, before).assessment_changed.map((c) => c.before)).toEqual([[], []]);
     expect(diffPacks(packA(), packB()).assessment_changed.map((c) => c.idea_id)).toEqual(['sun']);
+  });
+
+  describe('C5cx1: every accepted question of an idea', () => {
+    const sunRow = (pack: ReturnType<typeof packA>) =>
+      pack.assessment.find((a) => a.idea_id === 'sun')!;
+    const withSecond = (...extra: string[]) => {
+      const pack = packA();
+      for (const question of extra) pack.assessment.push({ ...sunRow(pack), question });
+      return pack;
+    };
+    const SECOND = 'Second valid question about the Sun?';
+
+    it('F1: editing only a later question is visible, old and new text, with idea and unit', () => {
+      const edited = withSecond('Changed second valid question about the Sun?');
+      const diff = diffPacks(withSecond(SECOND), edited);
+      expect(diff.empty).toBe(false);
+      expect(diff.assessment_changed).toHaveLength(1);
+      expect(diff.assessment_changed[0]).toMatchObject({
+        idea_id: 'sun',
+        title: 'The Sun',
+        unit: { unit: 1, name: 'Water goes up' },
+        removed: [SECOND],
+        added: ['Changed second valid question about the Sun?'],
+      });
+      expect(CurriculumDiffSchema.parse(diff)).toEqual(diff);
+    });
+
+    it('F2: reordering unchanged rows is an empty diff, for every permutation', () => {
+      const base = withSecond(SECOND, 'Third valid question about the Sun?', 'Another?');
+      const rows = base.assessment;
+      let seed = 12345;
+      const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+      const text = JSON.stringify(diffPacks(base, base));
+      for (let i = 0; i < 200; i++) {
+        const shuffled = [...rows];
+        for (let j = shuffled.length - 1; j > 0; j--) {
+          const k = Math.floor(rand() * (j + 1));
+          [shuffled[j], shuffled[k]] = [shuffled[k]!, shuffled[j]!];
+        }
+        const other = { ...base, assessment: shuffled };
+        const diff = diffPacks(base, other);
+        expect(diff.empty).toBe(true);
+        expect(JSON.stringify(diffPacks(other, base))).toBe(text);
+        // A real change reads the same whatever the order.
+        const changed = withSecond(SECOND, 'Third valid question about the Sun?');
+        const a = JSON.stringify(diffPacks(base, changed));
+        expect(JSON.stringify(diffPacks({ ...base, assessment: shuffled }, changed))).toBe(a);
+      }
+    });
+
+    it('F3: adding and removing questions', () => {
+      const two = withSecond(SECOND);
+      const three = withSecond(SECOND, 'Third valid question about the Sun?');
+      const added = diffPacks(two, three).assessment_changed;
+      expect(added.map((c) => [c.idea_id, c.removed, c.added])).toEqual([
+        ['sun', [], ['Third valid question about the Sun?']],
+      ]);
+      const removed = diffPacks(three, withSecond('Third valid question about the Sun?'));
+      expect(removed.assessment_changed.map((c) => [c.idea_id, c.removed, c.added])).toEqual([
+        ['sun', [SECOND], []],
+      ]);
+    });
+
+    it('F4: rows the checker skips are ignored, never chosen over an accepted row', () => {
+      const base = packA();
+      const noisy = packA();
+      const row = sunRow(noisy);
+      noisy.assessment.unshift(
+        { ...row, question: 'Unknown idea?', idea_id: 'nope' },
+        { ...row, question: 'Unknown unit?', unit: 99 },
+        { ...row, question: 'Wrong unit?', unit: 2 },
+        { ...row, question: '   ' },
+        { ...row, question: null },
+      );
+      expect(diffPacks(base, noisy).empty).toBe(true);
+      expect(diffPacks(noisy, base).empty).toBe(true);
+    });
   });
 
   it('names a unit missing from Units as null rather than failing', () => {
