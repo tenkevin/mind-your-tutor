@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BertNer, lazyModelRecognizer, modelRecognizer } from './index.js';
+import { BertNer, ModelUnavailableError, lazyModelRecognizer, modelRecognizer } from './index.js';
 
 // A7-F10, A7-P1: the bundled model file, run for real. CI needs no network: the weights
 // are committed (packages/ai/models, about 4.5 MB; source and licence in the README there).
@@ -40,9 +40,9 @@ describe('on-device ML NER model (A7-F10, D33)', () => {
 
   it('is small, with no word list of names or places on the device path (A7-P1, F10)', () => {
     expect(statSync(FILE).size).toBeLessThan(15 * 1024 * 1024);
-    for (const file of ['device-recognizer.ts', 'ner-model.ts']) {
+    for (const file of ['device-recognizer.ts', 'ner-model.ts', 'anonymise.ts']) {
       const source = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
-      expect(source, file).not.toMatch(/gazetteer|FIRST_NAMES|PLACES/);
+      expect(source, file).not.toMatch(/gazetteer|FIRST_NAMES|PLACES|ruleRecognizer/);
     }
   });
 
@@ -82,30 +82,71 @@ describe('device recognizer', () => {
   });
 });
 
-describe('lazy loading', () => {
-  it('loads the model once, on first use', async () => {
-    let loads = 0;
-    const recognizer = lazyModelRecognizer(async () => {
-      loads++;
+describe('lazy loading and failing closed (A7-F11, D33)', () => {
+  const ok = (id: string, counter?: { n: number }) => ({
+    id,
+    load: async () => {
+      if (counter) counter.n++;
       return bytes();
-    });
-    expect(loads).toBe(0);
-    expect(await recognizer.recognize('Maya is here')).toHaveLength(1);
-    await recognizer.recognize('Omar is here');
-    expect(loads).toBe(1);
+    },
+  });
+  const broken = (id: string) => ({
+    id,
+    load: async (): Promise<ArrayBuffer> => {
+      throw new Error('offline');
+    },
   });
 
-  it('falls back to the rules, and says so, if the file cannot be loaded', async () => {
-    const failures: unknown[] = [];
-    const recognizer = lazyModelRecognizer(
-      async () => {
-        throw new Error('offline');
-      },
-      (e) => failures.push(e),
+  it('loads the model once, on first use', async () => {
+    const loads = { n: 0 };
+    const recognizer = lazyModelRecognizer([ok('main', loads)]);
+    expect(loads.n).toBe(0);
+    expect(await recognizer.recognize('Maya is here')).toHaveLength(1);
+    await recognizer.recognize('Omar is here');
+    expect(loads.n).toBe(1);
+  });
+
+  it('with no loadable model, rejects and never falls back to word lists', async () => {
+    const failures: string[] = [];
+    const recognizer = lazyModelRecognizer([broken('main')], (id) => failures.push(id));
+    // "Maya" and "Leeds" are in the old word lists; they must not be found some other way.
+    await expect(recognizer.recognize('I live in Leeds and Maya is my friend')).rejects.toThrow(
+      ModelUnavailableError,
     );
-    const found = await recognizer.recognize('I live in Leeds and Maya is my friend');
-    expect(found.map((e) => e.kind)).toEqual(['place', 'person']);
+    expect(failures).toEqual(['main']);
+  });
+
+  it('a file that loads but is not a model counts as unavailable', async () => {
+    const recognizer = lazyModelRecognizer([{ id: 'bad', load: async () => new ArrayBuffer(64) }]);
+    await expect(recognizer.recognize('Maya')).rejects.toBeInstanceOf(ModelUnavailableError);
+  });
+
+  it('switches to a configured alternative when the first model fails', async () => {
+    const failures: string[] = [];
+    const loads = { n: 0 };
+    const recognizer = lazyModelRecognizer([broken('first'), ok('second', loads)], (id) =>
+      failures.push(id),
+    );
+    expect(await recognizer.recognize('I live in Leeds and Maya is my friend')).toHaveLength(2);
+    expect(failures).toEqual(['first']);
     await recognizer.recognize('again');
-    expect(failures).toHaveLength(1);
+    expect(loads.n).toBe(1);
+    expect(failures).toEqual(['first']);
+  });
+
+  it('tries again later, so a student who comes back online is not stuck', async () => {
+    let online = false;
+    const recognizer = lazyModelRecognizer([
+      {
+        id: 'main',
+        load: async () => {
+          if (!online) throw new Error('offline');
+          return bytes();
+        },
+      },
+    ]);
+    await expect(recognizer.recognize('Maya')).rejects.toBeInstanceOf(ModelUnavailableError);
+    online = true;
+    expect(await recognizer.recognize('Maya is here')).toHaveLength(1);
   });
 });

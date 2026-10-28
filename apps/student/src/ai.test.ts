@@ -1,6 +1,9 @@
 import { AI_RATE_LIMIT_MESSAGE, AI_UNAVAILABLE_MESSAGE, CSRF_HEADER } from '@ideamap/contracts';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { Anonymiser } from '@ideamap/ai/anonymise';
+import { modelRecognizer } from '@ideamap/ai/device';
+import { BertNer } from '../../../packages/ai/src/ner-model';
 import { askPersona } from './ai';
 import { clearPrivacyLayer, privacyLayer } from './privacy';
 
@@ -26,7 +29,15 @@ const ask = (fetchFn: typeof fetch) =>
     persona: 'tutor',
     csrfToken: 'csrf-1',
     request: { message: 'What is evaporation?' },
+    anonymiser: new Anonymiser({ recognizer: modelRecognizer(realModel()) }),
   });
+
+function realModel(): BertNer {
+  const b = readFileSync(
+    new URL('../../../packages/ai/models/ner-bert-tiny-v1.bin', import.meta.url),
+  );
+  return BertNer.load(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+}
 
 describe('askPersona (A1)', () => {
   it('posts only the conversation, with the CSRF token, to the persona route', async () => {
@@ -69,8 +80,10 @@ describe('askPersona (A1)', () => {
 });
 
 describe('the anonymous layer on the device (A7-F1, F4, S1)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it('sends labels, never names, and fills the reply back in', async () => {
-    const anonymiser = new Anonymiser();
+    const anonymiser = new Anonymiser({ recognizer: modelRecognizer(realModel()) });
     const { fetchFn, calls } = answering(200, {
       ...reply,
       reply: "Person A's idea is good. Ask Person B about Place A.",
@@ -119,6 +132,12 @@ describe('the anonymous layer on the device (A7-F1, F4, S1)', () => {
   });
 
   it("uses the tab's own layer by default, and forgets it on sign-out", async () => {
+    const weights = readFileSync(
+      new URL('../../../packages/ai/models/ner-bert-tiny-v1.bin', import.meta.url),
+    );
+    vi.stubGlobal('caches', undefined);
+    vi.stubGlobal('fetch', async () => new Response(new Uint8Array(weights)));
+    clearPrivacyLayer();
     const { fetchFn } = answering(200, { ...reply, reply: 'Hello Person A' });
     const ask = () =>
       askPersona(fetchFn, {

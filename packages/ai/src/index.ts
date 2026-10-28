@@ -24,6 +24,10 @@ export { ruleRecognizer } from './entities.js';
 export type { Entity, EntityKind, EntityRecognizer, SyncEntityRecognizer } from './entities.js';
 export { BertNer } from './ner-model.js';
 export type { NerLabel, NerSpan } from './ner-model.js';
-export { lazyModelRecognizer, modelRecognizer } from './device-recognizer.js';
-export type { ModelLoader } from './device-recognizer.js';
+export {
+  ModelUnavailableError,
+  lazyModelRecognizer,
+  modelRecognizer,
+} from './device-recognizer.js';
+export type { ModelLoader, NerModelSource } from './device-recognizer.js';
 export { patternRecognizer } from './entities.js';

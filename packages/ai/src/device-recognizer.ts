@@ -9,7 +9,6 @@ import {
   TEAM_BEFORE,
   patternRecognizer,
   resolveEntities,
-  ruleRecognizer,
   type Entity,
   type EntityRecognizer,
 } from './entities.js';
@@ -50,26 +49,54 @@ export function modelRecognizer(model: BertNer): EntityRecognizer {
 
 export type ModelLoader = () => Promise<ArrayBuffer>;
 
+/** One model the device may use: a typed config entry (see apps/student/src/privacy.ts). */
+export interface NerModelSource {
+  id: string;
+  load: ModelLoader;
+}
+
+/** No configured model could be loaded; the device sends nothing (D33). */
+export class ModelUnavailableError extends Error {
+  constructor(readonly tried: readonly string[]) {
+    super('No on-device model could be loaded');
+    this.name = 'ModelUnavailableError';
+  }
+}
+
 /**
- * A recognizer that loads the model the first time it is needed and keeps it. If the file
- * can't be loaded (offline, blocked), it falls back to the pattern and word-list rules, so
- * a student isn't locked out; the server backstop still blurs whatever slips through.
- * `onFallback` lets the app note that, without any text.
+ * A recognizer that loads a model the first time it is needed and keeps it. It tries the
+ * configured models in order and uses the first that loads. If none does it fails closed:
+ * `recognize` rejects with `ModelUnavailableError` and the caller must send nothing. There
+ * is no fallback to word lists on the device (D33). A later call tries again, so a student
+ * who comes back online is not stuck. `onFailure` gets the model id and the error, never text.
  */
 export function lazyModelRecognizer(
-  load: ModelLoader,
-  onFallback?: (error: unknown) => void,
+  sources: readonly NerModelSource[],
+  onFailure?: (id: string, error: unknown) => void,
 ): EntityRecognizer {
-  let ready: Promise<EntityRecognizer> | null = null;
+  let ready: EntityRecognizer | null = null;
+  let loading: Promise<EntityRecognizer> | null = null;
+
+  async function load(): Promise<EntityRecognizer> {
+    for (const source of sources) {
+      try {
+        return modelRecognizer(BertNer.load(await source.load()));
+      } catch (error) {
+        onFailure?.(source.id, error);
+      }
+    }
+    throw new ModelUnavailableError(sources.map((s) => s.id));
+  }
+
   return {
     async recognize(text) {
-      ready ??= load()
-        .then((bytes) => modelRecognizer(BertNer.load(bytes)))
-        .catch((error: unknown) => {
-          onFallback?.(error);
-          return ruleRecognizer;
+      if (!ready) {
+        loading ??= load().finally(() => {
+          loading = null;
         });
-      return (await ready).recognize(text);
+        ready = await loading;
+      }
+      return ready.recognize(text);
     },
   };
 }

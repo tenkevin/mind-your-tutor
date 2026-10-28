@@ -4,17 +4,12 @@
 // reply for the student. The mapping exists only in this object's memory: it is never
 // sent, stored or logged, and `clear` (sign-out) drops it.
 
-import {
-  LABEL,
-  LABEL_PREFIX,
-  ruleRecognizer,
-  type EntityKind,
-  type EntityRecognizer,
-} from './entities.js';
+import { LABEL, LABEL_PREFIX, type EntityKind, type EntityRecognizer } from './entities.js';
 
 export interface AnonymiserOptions {
-  /** Defaults to the rules; an on-device NER model plugs in here (§12 q12). */
-  recognizer?: EntityRecognizer;
+  /** The device's recognizer: the on-device model plus pattern rules (D33). No default, so
+   * nothing can quietly fall back to word lists. */
+  recognizer: EntityRecognizer;
 }
 
 function letters(n: number): string {
@@ -42,8 +37,8 @@ export class Anonymiser {
   private readonly labelOf = new Map<string, string>();
   private readonly counts = new Map<EntityKind, number>();
 
-  constructor(options: AnonymiserOptions = {}) {
-    this.recognizer = options.recognizer ?? ruleRecognizer;
+  constructor(options: AnonymiserOptions) {
+    this.recognizer = options.recognizer;
   }
 
   /** Label for an identifier: the same one for the same entity, a new one for another. */

@@ -7,12 +7,13 @@ import {
   type AiChatResponse,
 } from '@ideamap/contracts';
 import type { Anonymiser } from '@ideamap/ai/anonymise';
-import { privacyLayer } from './privacy';
+import { ModelUnavailableError } from '@ideamap/ai/device';
+import { PRIVACY_UNAVAILABLE_MESSAGE, privacyLayer } from './privacy';
 
 // The student app's client for the AI gateway (A1). The app sends only the
 // conversation; the server picks the persona by route and fills its prompt (§6, §9).
 // Everything the student typed is blurred on the device first and the reply is filled
-// back in (D26, A7); if blurring fails nothing is sent. Errors come back as plain sentences for the student, never a raw status (A1-U1).
+// back in (D26, A7); if blurring fails (for instance no model can be loaded) nothing is sent. Errors come back as plain sentences for the student, never a raw status (A1-U1).
 
 export type StudentPersona = 'tutor' | 'peer';
 
@@ -44,8 +45,11 @@ export async function askPersona(
         body.history.push({ role: turn.role, text: await anonymiser.blur(turn.text) });
       }
     }
-  } catch {
-    return { ok: false, message: AI_UNAVAILABLE_MESSAGE, retryAfterSeconds: null };
+  } catch (error) {
+    // Nothing has been sent. Without a model the device can't hide names (D33).
+    const message =
+      error instanceof ModelUnavailableError ? PRIVACY_UNAVAILABLE_MESSAGE : AI_UNAVAILABLE_MESSAGE;
+    return { ok: false, message, retryAfterSeconds: null };
   }
   let res: Response;
   try {
