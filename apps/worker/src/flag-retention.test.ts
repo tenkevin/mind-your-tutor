@@ -11,7 +11,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runRetention } from './retention.js';
 
 // A2-S4 (D32): a safety flag is deleted with its transcript at the district's AI
-// retention period, or 30 days after it is resolved, whichever comes first.
+// retention period, or once it has been resolved for the district's early-deletion
+// window (default 30 days, read at run time), whichever comes first.
 
 const ago = (days: number) => sql<Date>`now() - make_interval(days => ${days})`;
 
@@ -79,32 +80,54 @@ describe.skipIf(!hasDatabase)('safety flag retention (A2-S4, D32)', () => {
   let retention: Db;
   let a: SeededOrg;
   let b: SeededOrg;
+  let c: SeededOrg;
+  let d: SeededOrg;
+  let e: SeededOrg;
   let result: Awaited<ReturnType<typeof runRetention>>;
+
+  const setOrg = (
+    org: SeededOrg,
+    values: { ai_retention_days?: number; flag_resolved_retention_days?: number },
+  ) => t.db.updateTable('organization').set(values).where('id', '=', org.orgId).execute();
 
   beforeAll(async () => {
     t = await freshDatabase();
-    a = await seedOrg(t.db, 'a');
-    b = await seedOrg(t.db, 'b');
-    // B keeps transcripts 20 days.
-    await t.db
-      .updateTable('organization')
-      .set({ ai_retention_days: 20 })
-      .where('id', '=', b.orgId)
-      .execute();
+    [a, b, c, d, e] = [
+      await seedOrg(t.db, 'a'),
+      await seedOrg(t.db, 'b'),
+      await seedOrg(t.db, 'c'),
+      await seedOrg(t.db, 'd'),
+      await seedOrg(t.db, 'e'),
+    ];
+    // B keeps transcripts 20 days; C's window is 7 days, D's 60; E keeps the default.
+    await setOrg(b, { ai_retention_days: 20 });
+    await setOrg(c, { flag_resolved_retention_days: 7 });
+    await setOrg(d, { flag_resolved_retention_days: 60 });
 
-    // Org A, default 90 days. Unresolved flags follow their transcript: 29, 31, 89, 91.
+    // Org A, defaults (transcripts 90 days, window 30). Unresolved flags follow their
+    // transcript: 29, 31, 89, 91.
     for (const age of [29, 31, 89, 91]) await seedFlag(t.db, a, `f-open-${age}`, age);
-    // Resolved flags: 29 and 31 days ago, on a recent transcript.
+    // Resolved flags, 29 and 31 days ago, on a recent transcript.
     await seedFlag(t.db, a, 'f-resolved-29', 5, 29);
     await seedFlag(t.db, a, 'f-resolved-31', 5, 31);
     // Whichever comes first: resolved 31 days ago on a 40-day-old transcript (flag goes,
     // transcript stays), and resolved 5 days ago on a 91-day-old transcript (both go).
     await seedFlag(t.db, a, 'f-first-flag', 40, 31);
     await seedFlag(t.db, a, 'f-first-transcript', 91, 5);
-    // Org B, 20 days: the district's shorter period wins over the 30 days.
+    // Org B, transcripts 20 days: the district's shorter period wins over the window.
     await seedFlag(t.db, b, 'f-b-open-19', 19);
     await seedFlag(t.db, b, 'f-b-open-21', 21);
     await seedFlag(t.db, b, 'f-b-resolved-29', 5, 29);
+    // Org C, window 7 days.
+    await seedFlag(t.db, c, 'f-c-resolved-6', 2, 6);
+    await seedFlag(t.db, c, 'f-c-resolved-8', 2, 8);
+    await seedFlag(t.db, c, 'f-c-open-8', 8);
+    // Org D, window 60 days: a flag resolved 31 days ago stays.
+    await seedFlag(t.db, d, 'f-d-resolved-31', 5, 31);
+    await seedFlag(t.db, d, 'f-d-resolved-59', 5, 59);
+    await seedFlag(t.db, d, 'f-d-resolved-61', 5, 61);
+    // Org E, default window; changed later.
+    await seedFlag(t.db, e, 'f-e-resolved-20', 5, 20);
 
     retention = await t.loginAs(RETENTION_ROLE);
     result = await runRetention(retention, { batchSize: 2 });
@@ -120,13 +143,13 @@ describe.skipIf(!hasDatabase)('safety flag retention (A2-S4, D32)', () => {
     expect(await transcriptsLeft(t.db, a.orgId)).not.toContain('f-open-91');
   });
 
-  it('keeps an unresolved flag at days 29 and 31 (30 days only counts from resolution)', async () => {
+  it('keeps an unresolved flag at days 29 and 31 (the window counts from resolution)', async () => {
     expect(await flagsLeft(t.db, a.orgId)).toEqual(
       expect.arrayContaining(['f-open-29', 'f-open-31']),
     );
   });
 
-  it('deletes a resolved flag once 30 days have passed since resolution (days 29 and 31)', async () => {
+  it('deletes a resolved flag past the default window (days 29 and 31)', async () => {
     const left = await flagsLeft(t.db, a.orgId);
     expect(left).toContain('f-resolved-29');
     expect(left).not.toContain('f-resolved-31');
@@ -141,21 +164,50 @@ describe.skipIf(!hasDatabase)('safety flag retention (A2-S4, D32)', () => {
     expect(await transcriptsLeft(t.db, a.orgId)).not.toContain('f-first-transcript');
   });
 
-  it("follows another district's shorter transcript period, and its own resolution date", async () => {
-    expect(await flagsLeft(t.db, b.orgId)).toEqual(['f-b-open-19', 'f-b-resolved-29']);
-  });
-
-  it('keeps exactly the flags it should, in total', async () => {
+  it("keeps exactly org A's flags it should", async () => {
     expect(await flagsLeft(t.db, a.orgId)).toEqual(
       ['f-open-29', 'f-open-31', 'f-open-89', 'f-resolved-29'].sort(),
     );
   });
 
-  it('counts only flags it deleted by their own period, and a rerun deletes nothing', async () => {
-    // A: resolved-31 and first-flag. B: none (its resolved flag is 29 days).
-    expect(result.safety_flag).toBe(2);
+  it("follows another district's shorter transcript period", async () => {
+    expect(await flagsLeft(t.db, b.orgId)).toEqual(['f-b-open-19', 'f-b-resolved-29']);
+  });
+
+  it('follows a district window of 7 days', async () => {
+    // Resolved 8 days ago is gone; resolved 6 stays; an unresolved one is not touched.
+    expect(await flagsLeft(t.db, c.orgId)).toEqual(['f-c-open-8', 'f-c-resolved-6']);
+  });
+
+  it('follows a district window of 60 days', async () => {
+    expect(await flagsLeft(t.db, d.orgId)).toEqual(['f-d-resolved-31', 'f-d-resolved-59']);
+  });
+
+  it('counts only flags deleted by their window, and a rerun deletes nothing', async () => {
+    // A: resolved-31 and first-flag. C: resolved-8. D: resolved-61. B and E: none.
+    expect(result.safety_flag).toBe(4);
     const again = await runRetention(retention);
     expect(again).toMatchObject({ safety_flag: 0, ai_interaction: 0, aborted: false });
+  });
+
+  it('applies a changed window to flags that were already resolved', async () => {
+    expect(await flagsLeft(t.db, e.orgId)).toEqual(['f-e-resolved-20']);
+    await setOrg(e, { flag_resolved_retention_days: 10 });
+    const next = await runRetention(retention);
+    expect(next.safety_flag).toBe(1);
+    expect(await flagsLeft(t.db, e.orgId)).toEqual([]);
+    // And a longer window brings nothing back, but spares flags not yet due.
+    await setOrg(c, { flag_resolved_retention_days: 365 });
+    expect((await runRetention(retention)).safety_flag).toBe(0);
+    expect(await flagsLeft(t.db, c.orgId)).toEqual(['f-c-open-8', 'f-c-resolved-6']);
+  });
+
+  it('refuses a window outside 1 to 3650 days', async () => {
+    for (const days of [0, -1, 3651]) {
+      await expect(setOrg(a, { flag_resolved_retention_days: days })).rejects.toThrow(
+        /flag_resolved_retention_days|check/i,
+      );
+    }
   });
 
   it("lets the retention role see no unresolved flag and no flag's text or people", async () => {

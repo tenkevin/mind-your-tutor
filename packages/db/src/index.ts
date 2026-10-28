@@ -11,5 +11,4 @@ export {
   ORG_SETTING,
   RETENTION_ROLE,
 } from './migrations/helpers.js';
-export { RESOLVED_FLAG_DAYS } from './migrations/0017_flag_retention.js';
 export { EMBEDDING_DIMENSIONS } from './migrations/0006_library.js';

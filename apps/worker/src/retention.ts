@@ -1,4 +1,4 @@
-import { RESOLVED_FLAG_DAYS, RETENTION_ROLE, type Db, type ExportStore } from '@ideamap/db';
+import { RETENTION_ROLE, type Db, type ExportStore } from '@ideamap/db';
 import { sql, type Transaction } from 'kysely';
 import type { Database } from '@ideamap/db';
 
@@ -39,7 +39,7 @@ export interface RetentionResult {
   interaction_text: number;
   ai_interaction: number;
   auth_session: number;
-  /** Resolved safety flags past 30 days (D32); flags that go with their transcript aren't counted. */
+  /** Resolved safety flags past their district's early-deletion window (D32); flags that go with their transcript aren't counted. */
   safety_flag: number;
   export_files: number;
   /** True when the signal stopped the run before it finished. */
@@ -89,8 +89,9 @@ export async function runRetention(
   );
 
   // Resolved safety flags first (D32), so they're counted before a transcript's own
-  // deletion carries away any that are still open. The role's policy shows only flags
-  // resolved over RESOLVED_FLAG_DAYS ago; the explicit condition mirrors it for the index.
+  // deletion carries away any that are still open. Each organization's early-deletion
+  // window is read here, at run time, so a change applies to flags already resolved;
+  // the role's policy shows only flags past it, and the explicit condition mirrors it.
   for (const { id: orgId } of orgs) {
     for (;;) {
       if (stopped()) return result;
@@ -99,7 +100,7 @@ export async function runRetention(
           DELETE FROM safety_flag WHERE id IN (
             SELECT id FROM safety_flag
             WHERE org_id = ${orgId} AND status = 'resolved'
-              AND resolved_at < now() - make_interval(days => ${RESOLVED_FLAG_DAYS + 1})
+              AND resolved_at < app.flag_resolved_cutoff(${orgId})
             ORDER BY resolved_at
             LIMIT ${batchSize})
         `.execute(trx);

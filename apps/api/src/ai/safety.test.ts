@@ -85,7 +85,7 @@ describe.skipIf(!hasDatabase)('student safety (A2)', () => {
     // Back to the default district policy.
     await w.api.t.db
       .updateTable('organization')
-      .set({ flag_notify: 'teacher_and_admin', help_text: null })
+      .set({ flag_notify: 'teacher_and_admin', help_text: null, flag_resolved_retention_days: 30 })
       .where('id', '=', w.api.sample.orgs.a)
       .execute();
   });
@@ -304,7 +304,15 @@ describe.skipIf(!hasDatabase)('student safety (A2)', () => {
         const res = await as(w.api, who)('PUT', '/api/safety-policy', { flagNotify: 'admin' });
         expect(res.statusCode).toBe(403);
       }
-      for (const bad of [{}, { flagNotify: 'everyone' }, { helpText: 'x'.repeat(501) }, { x: 1 }]) {
+      for (const bad of [
+        {},
+        { flagNotify: 'everyone' },
+        { helpText: 'x'.repeat(501) },
+        { x: 1 },
+        { flagResolvedRetentionDays: 0 },
+        { flagResolvedRetentionDays: 3651 },
+        { flagResolvedRetentionDays: 1.5 },
+      ]) {
         const res = await as(w.api, w.who.admin)('PUT', '/api/safety-policy', bad);
         expect(res.statusCode, JSON.stringify(bad)).toBe(400);
       }
@@ -312,7 +320,11 @@ describe.skipIf(!hasDatabase)('student safety (A2)', () => {
         flagNotify: 'teacher',
         helpText: 'Ask the front office.',
       });
-      expect(ok.json()).toEqual({ flagNotify: 'teacher', helpText: 'Ask the front office.' });
+      expect(ok.json()).toEqual({
+        flagNotify: 'teacher',
+        helpText: 'Ask the front office.',
+        flagResolvedRetentionDays: 30,
+      });
       const audit = await w.api.t.db
         .selectFrom('audit_event')
         .selectAll()
@@ -321,6 +333,38 @@ describe.skipIf(!hasDatabase)('student safety (A2)', () => {
         .orderBy('at', 'desc')
         .executeTakeFirstOrThrow();
       expect(JSON.stringify(audit.after)).toContain('Ask the front office.');
+    });
+  });
+
+  describe('early-deletion window (A2-S4, D32)', () => {
+    it('is set by an admin, defaults to 30 days, and the change is audited', async () => {
+      expect((await as(w.api, w.who.admin)('GET', '/api/safety-policy')).json()).toMatchObject({
+        flagResolvedRetentionDays: 30,
+      });
+      const put = await as(w.api, w.who.admin)('PUT', '/api/safety-policy', {
+        flagResolvedRetentionDays: 7,
+      });
+      expect(put.statusCode, put.body).toBe(200);
+      expect(put.json().flagResolvedRetentionDays).toBe(7);
+      const audit = await w.api.t.db
+        .selectFrom('audit_event')
+        .selectAll()
+        .where('action', '=', 'organization.updated')
+        .where('org_id', '=', w.api.sample.orgs.a)
+        .orderBy('at', 'desc')
+        .executeTakeFirstOrThrow();
+      expect(audit.before).toMatchObject({ flag_resolved_retention_days: 30 });
+      expect(audit.after).toMatchObject({ flag_resolved_retention_days: 7 });
+      expect(audit.actor_id).toBe(w.api.sample.users['admin-a']);
+    });
+
+    it('is refused to anyone but an admin', async () => {
+      for (const who of [w.who.teacher, w.who.student, w.who.otherClassTeacher]) {
+        const res = await as(w.api, who)('PUT', '/api/safety-policy', {
+          flagResolvedRetentionDays: 7,
+        });
+        expect(res.statusCode).toBe(403);
+      }
     });
   });
 

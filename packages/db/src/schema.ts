@@ -67,6 +67,8 @@ export interface OrganizationTable {
   flag_notify: Generated<FlagNotify>;
   /** What a student reads after such a message; null means the default (A2, from 0016). */
   help_text: string | null;
+  /** Days after a safety flag is resolved before it is deleted (D32; default 30, from 0017). */
+  flag_resolved_retention_days: Generated<number>;
 }
 
 export interface AppUserTable {
@@ -466,6 +468,7 @@ export const COLUMNS = {
     'session_retention_days',
     'flag_notify',
     'help_text',
+    'flag_resolved_retention_days',
   ],
   app_user: [
     'id',

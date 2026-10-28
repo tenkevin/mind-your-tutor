@@ -60,20 +60,24 @@ export type AiError = z.infer<typeof AiErrorSchema>;
 export const FLAG_NOTIFY = ['teacher_and_admin', 'teacher', 'admin'] as const;
 export const FLAG_CATEGORY_VALUES = ['self_harm', 'abuse'] as const;
 export const HELP_TEXT_MAX = 500;
+export const FLAG_RETENTION_DAYS_MAX = 3650;
 
 export const SafetyPolicySchema = z.strictObject({
   /** Who is told when a student's message is concerning. */
   flagNotify: z.enum(FLAG_NOTIFY),
   /** What a student reads after such a message; null uses the default. */
   helpText: z.string().nullable(),
+  /** Whole days a resolved flag is kept before it is deleted (D32; default 30). */
+  flagResolvedRetentionDays: z.number().int().min(1).max(FLAG_RETENTION_DAYS_MAX),
 });
 
 export const SafetyPolicyUpdateSchema = z
   .strictObject({
     flagNotify: z.enum(FLAG_NOTIFY).optional(),
     helpText: z.string().trim().min(1).max(HELP_TEXT_MAX).nullable().optional(),
+    flagResolvedRetentionDays: z.number().int().min(1).max(FLAG_RETENTION_DAYS_MAX).optional(),
   })
-  .refine((v) => v.flagNotify !== undefined || v.helpText !== undefined, {
+  .refine((v) => Object.values(v).some((x) => x !== undefined), {
     message: 'Nothing to change',
   });
 

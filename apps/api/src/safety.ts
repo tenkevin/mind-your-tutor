@@ -1,4 +1,5 @@
 import {
+  FLAG_RETENTION_DAYS_MAX,
   HELP_TEXT_MAX,
   SafetyPolicyUpdateSchema,
   type FlagNotify,
@@ -38,9 +39,13 @@ const NEXT_STEPS = {
 export async function loadSafetyPolicy(trx: Trx): Promise<SafetyPolicy> {
   const org = await trx
     .selectFrom('organization')
-    .select(['flag_notify', 'help_text'])
+    .select(['flag_notify', 'help_text', 'flag_resolved_retention_days'])
     .executeTakeFirstOrThrow();
-  return { flagNotify: org.flag_notify, helpText: org.help_text };
+  return {
+    flagNotify: org.flag_notify,
+    helpText: org.help_text,
+    flagResolvedRetentionDays: org.flag_resolved_retention_days,
+  };
 }
 
 /** Raise a flag for a concerning message, per the district's policy; returns that policy. */
@@ -222,10 +227,10 @@ export function safetyRoutes(app: FastifyInstance): void {
       const parsed = SafetyPolicyUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
         return reply.code(400).send({
-          error: `Send a flag policy and/or help text of up to ${HELP_TEXT_MAX} characters.`,
+          error: `Send a flag policy, help text of up to ${HELP_TEXT_MAX} characters, and/or a whole number of days from 1 to ${FLAG_RETENTION_DAYS_MAX}.`,
         });
       }
-      const { flagNotify, helpText } = parsed.data;
+      const { flagNotify, helpText, flagResolvedRetentionDays } = parsed.data;
       // The organization trigger writes the audit row, with before and after.
       const policy = await req.withOrg(async (trx) => {
         await trx
@@ -233,6 +238,9 @@ export function safetyRoutes(app: FastifyInstance): void {
           .set({
             ...(flagNotify !== undefined ? { flag_notify: flagNotify } : {}),
             ...(helpText !== undefined ? { help_text: helpText } : {}),
+            ...(flagResolvedRetentionDays !== undefined
+              ? { flag_resolved_retention_days: flagResolvedRetentionDays }
+              : {}),
           })
           .execute();
         return loadSafetyPolicy(trx);
