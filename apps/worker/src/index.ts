@@ -4,6 +4,7 @@ import { FileObjectStore, type ImportLimits, type ObjectStore } from '@ideamap/c
 import { createDb, withOrg, type Db } from '@ideamap/db';
 import type { PgBoss } from 'pg-boss';
 import { abandonImport, runImport, type OrgScope, type RunDeps } from './imports.js';
+import { runDrafting, type DraftWriter } from './drafts.js';
 import { indexLibrary } from './library.js';
 import { QUEUE_OPTIONS, createBoss, ensureQueues } from './queue.js';
 
@@ -25,6 +26,14 @@ export {
   type UploadRequest,
 } from './imports.js';
 export { indexLibrary } from './library.js';
+export {
+  runDrafting,
+  type DraftDeps,
+  type DraftOutcome,
+  type DraftReply,
+  type DraftRequest,
+  type DraftWriter,
+} from './drafts.js';
 export { QUEUE_OPTIONS, createBoss, ensureQueues, inTransaction, type Sender } from './queue.js';
 
 /** The production scope: the app role's connection, acting for one organization. */
@@ -41,6 +50,8 @@ export interface WorkerOptions {
   /** Seconds between polls when idle. Default 2. */
   pollingIntervalSeconds?: number;
   afterStep?: RunDeps['afterStep'];
+  /** Writes drafts for empty cells (A6). Left out, the draft queue isn't worked here. */
+  draftWriter?: DraftWriter;
 }
 
 /** Registers the job handlers on a started pg-boss. */
@@ -66,6 +77,27 @@ export async function registerWorkers(options: WorkerOptions): Promise<void> {
   );
   await boss.work<unknown>(QUEUES.indexLibrary, { pollingIntervalSeconds }, async ([job]) =>
     job ? indexLibrary(job.data) : undefined,
+  );
+  if (options.draftWriter) {
+    await registerDraftWorker({ boss, scope: options.scope, write: options.draftWriter });
+  }
+}
+
+/**
+ * Works the draft queue (A6). The API process runs this when it holds the model key, so
+ * the key stays in the one place that has it; a worker given a writer does the same.
+ */
+export async function registerDraftWorker(options: {
+  boss: PgBoss;
+  scope: OrgScope;
+  write: DraftWriter;
+  pollingIntervalSeconds?: number;
+}): Promise<void> {
+  const { boss, scope, write } = options;
+  await boss.work<unknown>(
+    QUEUES.draftMissing,
+    { pollingIntervalSeconds: options.pollingIntervalSeconds ?? 2, batchSize: 1 },
+    async ([job]) => (job ? runDrafting({ scope, write }, job.data) : undefined),
   );
 }
 

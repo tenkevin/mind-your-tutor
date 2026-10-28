@@ -13,6 +13,7 @@ import {
   VersionIssuesSchema,
   VersionSourceSchema,
   type CurriculumDataResponse,
+  type DraftJobPayload,
   type ImportFailure,
   type ImportIssue,
   type ImportJobView,
@@ -34,7 +35,7 @@ import {
   type ObjectStore,
 } from '@ideamap/connectors';
 import { json, type Database, type UserRole } from '@ideamap/db';
-import { checkPack, derive, layOut, rankLinks } from '@ideamap/domain';
+import { checkPack, derive, findDraftable, layOut, rankLinks } from '@ideamap/domain';
 import { sql, type Selectable, type Transaction } from 'kysely';
 import { z } from 'zod';
 import { inTransaction, type Sender } from './queue.js';
@@ -638,6 +639,18 @@ async function finish(
       singletonKey: version.id,
       db: inTransaction(trx),
     });
+    // Drafting the empty cells runs apart from the import (D12, A6-P1).
+    if (findDraftable(draft.pack).length > 0) {
+      const drafting: DraftJobPayload = {
+        org_id: orgId,
+        curriculum_id: draft.curriculumId,
+        version_id: version.id,
+      };
+      await deps.boss.send(QUEUES.draftMissing, drafting, {
+        singletonKey: version.id,
+        db: inTransaction(trx),
+      });
+    }
     return 'succeeded';
   });
 }

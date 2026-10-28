@@ -13,6 +13,9 @@ export const QUEUE_OPTIONS = {
   [QUEUES.import]: { retryLimit: 2, retryDelay: 2, expireInSeconds: 300 },
   // Library indexing (§7) runs apart from imports; A3 fills in the work.
   [QUEUES.indexLibrary]: { retryLimit: 3, retryDelay: 30, expireInSeconds: 900 },
+  // Drafting empty explanations, objectives and questions (A6); retried for just the
+  // rows still missing, and long enough for a few hundred model calls.
+  [QUEUES.draftMissing]: { retryLimit: 3, retryDelay: 60, expireInSeconds: 3600 },
 } as const satisfies Record<string, Omit<Queue, 'name'>>;
 
 export function createBoss(connectionString: string, options: { supervise?: boolean } = {}) {

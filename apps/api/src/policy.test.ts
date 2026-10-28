@@ -4,6 +4,7 @@ import type { ExportStore } from '@ideamap/db';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
+import { CLASS_CONTENT_POLICY, DRAFT_STAFF_POLICY } from './drafts.js';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
@@ -202,6 +203,34 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
         scope: { kind: 'user', param: 'studentId' },
       });
     }
+  });
+});
+
+describe('A6 draft routes join the registry (F5-F4, A6-S1)', () => {
+  it('declares a curriculum-scoped staff policy for review and a class policy for students’ content', async () => {
+    const app = buildServer({
+      db: undefined as never,
+      config: offlineConfig,
+      drafts: { boss: {} as never },
+    });
+    await app.ready();
+    const routes = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    expect(routes.map((r) => [`${r.method} ${r.url}`, r.policy])).toEqual([
+      ['GET /api/curricula/:curriculumId/drafts', DRAFT_STAFF_POLICY],
+      ['POST /api/curricula/:curriculumId/drafts/:draftId/approve', DRAFT_STAFF_POLICY],
+      ['POST /api/curricula/:curriculumId/drafts/:draftId/reject', DRAFT_STAFF_POLICY],
+      ['POST /api/curricula/:curriculumId/drafts/:draftId/redraft', DRAFT_STAFF_POLICY],
+      ['GET /api/classes/:classId/content', CLASS_CONTENT_POLICY],
+    ]);
+    expect(DRAFT_STAFF_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher'],
+      scope: { kind: 'curriculum', param: 'curriculumId', edit: false },
+    });
+    expect(CLASS_CONTENT_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher', 'student'],
+      scope: { kind: 'class', param: 'classId', students: true },
+    });
   });
 });
 
