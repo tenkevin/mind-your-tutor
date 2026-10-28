@@ -21,8 +21,18 @@ Every open PR below is CI green and `mergeable_state: clean`, but **behind `idea
 | 5 | M3 #31 (agent-m3) | `a022010` | 22 | None yet | Codex review |
 | 6 | T2 #27 (agent-t2) | `1afe366` | 18 | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since | Codex review of the current head |
 | 7 | T3 #29 (agent-t3) | `d25e18d` | 19 | Claude QA run 1 FAIL at `e195f98` ([report](reports/T3-run1.md)); fixes pushed since | Codex review of the current head |
+| 8 | A2 #37 (agent-a2) | `f45d60f` | 2 | None yet; builder reports every must met locally, full suite incl. `function_binding.test.ts` | Codex review. Merge **before A5** (A5 swaps in A2's guardrails) and sync A7 after it (both touch `gateway.ts`) |
+| 9 | A7 #36 (agent-a7) | `60f0234` | 3 | None yet; builder reports musts plus F8/F9 met locally | Codex review; §12 q12 assumptions are open user decisions |
+| 10 | A5 #35 (agent-a5) | `fdd993e` | 2 | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails (`packages/ai/src/evals/guardrails.ts`) with A2's |
+| 11 | A3 #38 (agent-a3) | `d0863c4` | 2 | None yet. Coordinator flagged A3-S3 (teacher-level FERPA delete of uploads missing) to the builder, 01:30 UTC | Builder fixes A3-S3; then Codex review |
 
-**Building:** A2, A3, A5, A7 in four separate Sonnet cloud sessions launched 2026-10-28 00:55 UTC (session ids in HANDOFF §roles); each builder claims its own task.
+**Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36, rows 8–11 above.
+
+**Builder decisions (2026-10-28), read from the sessions' final replies, which cloud sessions don't send back on their own:**
+- **A2:** only the new student message is moderated on input (earlier turns are client-held, as in A1). A `safety_flag` is deleted with its transcript at the district's AI retention period (90-day default, D22/§10). The moderator defaults to the gateway's own model and fails closed. *Flag retention is put to the user.*
+- **A3:** the uploaded original is deleted once its passages are stored. That means a future embedding vendor (§12 q6) can't re-embed without re-upload. *Put to the user.* Scanned PDFs are reported as unreadable, not OCR'd. Missing teacher-level FERPA delete (A3-S3) is a must gap, sent back to the builder.
+- **A5:** CI replays recorded replies, not the A1 mock model (the mock lives in `apps/api`; A5-F4 allows recorded or mock). Recordings are hand-written; someone with a model key must run `eval:live -- --record`, and every template edit needs a re-record. Uses stand-in guardrails until A2 merges.
+- **A7:** recorded in ARCHITECTURE §12 q12 on its branch as assumptions, not settled: the device layer is rules plus word lists behind `EntityRecognizer`; the device never receives the roster. Both stay user decisions.
 
 **Criteria ready, waiting on merges:** T4, T5, T7 (T3); T6, T8, A6 (T2); A4 (A3, T2); A8 (A7); A9 (A2, M2, A7); M4 (M3); M5, S1 (M2, M3); M6 (M3, A9); M7 (M3); A10 (A9, A5, M6); C7 (S1); S2 (S1, M4); S3 (S2, T4); S4 (S2, A2, A7, A8); L1 (the pilot set). **After the pilot:** X1 and X2 have no criteria yet.
 
