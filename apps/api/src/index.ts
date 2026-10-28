@@ -1,6 +1,8 @@
 import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
+import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
+import { createBoss, ensureQueues, orgScope } from '@ideamap/worker';
 import Fastify, {
   type FastifyInstance,
   type FastifyRequest,
@@ -99,13 +101,17 @@ export function buildServer(options: ServerOptions): FastifyInstance {
       : null;
   const { imports, publish } = options;
   if (imports) {
-    // Its own scope, for the upload body parser and error handler. The policy hooks
-    // above still apply.
-    app.register(async (scope) => importRoutes(scope, { deps: imports.deps, authenticate }));
+    // Its own scope, for the upload body parser and error handler, under /api like the
+    // other app routes (the apps proxy /api). The policy hooks above still apply.
+    app.register(async (scope) => importRoutes(scope, { deps: imports.deps, authenticate }), {
+      prefix: '/api',
+    });
   }
   if (publish) {
-    // Its own scope, for its error handler; the policy hooks above still apply.
-    app.register(async (scope) => publishRoutes(scope, { deps: publish.deps, authenticate }));
+    // Its own scope, for its error handler, also under /api; the policy hooks above apply.
+    app.register(async (scope) => publishRoutes(scope, { deps: publish.deps, authenticate }), {
+      prefix: '/api',
+    });
   }
 
   // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).
@@ -128,18 +134,49 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   return app;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const config = loadConfig();
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL must be set.');
+/**
+ * C4's imports for a running API: jobs go to pg-boss in the same database (its schema
+ * comes from migration 0003), uploads to a directory the worker reads too.
+ */
+export async function startImports(
+  db: Db,
+  databaseUrl: string,
+  uploadDir: string,
+): Promise<{ imports: NonNullable<ServerOptions['imports']>; stop: () => Promise<void> }> {
+  // The API only sends jobs; the worker supervises the queues.
+  const boss = createBoss(databaseUrl, { supervise: false });
+  boss.on('error', (error) => console.error(error));
+  await boss.start();
+  await ensureQueues(boss);
+  return {
+    imports: { deps: { scope: orgScope(db), boss, store: new FileObjectStore(uploadDir) } },
+    stop: () => boss.stop({ graceful: true }),
+  };
+}
+
+/**
+ * The API as deployed (T2-F8): sign-in, every app route, C4's imports and, with
+ * EXPORT_DIR, F6's privacy routes. Needs DATABASE_URL, UPLOAD_DIR and F5's settings.
+ */
+export async function startServer(
+  env: Record<string, string | undefined> = process.env,
+  options: { logger?: boolean } = {},
+): Promise<{ app: FastifyInstance; close: () => Promise<void> }> {
+  const config = loadConfig(env);
+  const url = env.DATABASE_URL;
+  const uploads = env.UPLOAD_DIR;
+  if (!url || !uploads) throw new Error('Set DATABASE_URL and UPLOAD_DIR.');
+  const db = createDb(url);
+  const { imports, stop } = await startImports(db, url, uploads);
   // FERPA export files go to EXPORT_DIR; without it the privacy routes are left out.
-  const exportDir = process.env.EXPORT_DIR;
+  const exportDir = env.EXPORT_DIR;
   // The AI gateway needs a provider key from the environment; without one it is left out.
-  const aiConfig = loadAiConfig();
+  const aiConfig = loadAiConfig(env);
   const app = buildServer({
-    db: createDb(url),
+    db,
     config,
-    logger: true,
+    logger: options.logger ?? true,
+    imports,
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
     ai: aiConfig.apiKey
       ? {
@@ -148,5 +185,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         }
       : undefined,
   });
+  return {
+    app,
+    close: async () => {
+      await app.close();
+      await stop();
+      await db.destroy();
+    },
+  };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const { app } = await startServer();
   await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' });
 }

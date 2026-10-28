@@ -49,13 +49,17 @@ const ROUTE_URLS = [
 ];
 
 /** C4's routes, registered when the server is given import deps. */
-const IMPORT_ROUTE_URLS = ['/curricula/:curriculumId/imports', '/imports/:jobId'];
+const IMPORT_ROUTE_URLS = [
+  '/api/curricula/:curriculumId/imports',
+  '/api/curricula/:curriculumId/imports/latest',
+  '/api/imports/:jobId',
+];
 /** C5's routes, registered when the server is given publish deps. */
 const PUBLISH_ROUTE_URLS = [
-  '/versions/:versionId/diff',
-  '/versions/:versionId/preview',
-  '/versions/:versionId/publish',
-  '/classes/:classId/pin',
+  '/api/versions/:versionId/diff',
+  '/api/versions/:versionId/preview',
+  '/api/versions/:versionId/publish',
+  '/api/classes/:classId/pin',
 ];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
@@ -132,10 +136,15 @@ describe('C4 import routes join the registry (F5-F4)', () => {
     expect(imports.map((r) => r.url).sort()).toEqual([...IMPORT_ROUTE_URLS].sort());
     await app.close();
     expect(imports.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
-      'GET /imports/:jobId',
-      'POST /curricula/:curriculumId/imports',
+      'GET /api/curricula/:curriculumId/imports/latest',
+      'GET /api/imports/:jobId',
+      'POST /api/curricula/:curriculumId/imports',
     ]);
     expect(imports.map((r) => r.policy)).toEqual([
+      {
+        roles: ['admin', 'author', 'teacher'],
+        scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+      },
       {
         roles: ['admin', 'author', 'teacher'],
         scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
@@ -160,11 +169,14 @@ describe('C5 publish routes join the registry (F5-F4)', () => {
     await app.close();
     const version = { kind: 'visible', table: 'curriculum_version', param: 'versionId' };
     expect(routes.map((r) => [`${r.method} ${r.url}`, r.policy])).toEqual([
-      ['GET /versions/:versionId/diff', { roles: ['admin', 'author', 'teacher'], scope: version }],
-      ['POST /versions/:versionId/preview', { roles: ['admin', 'teacher'], scope: version }],
-      ['POST /versions/:versionId/publish', { roles: ['admin', 'teacher'], scope: version }],
       [
-        'POST /classes/:classId/pin',
+        'GET /api/versions/:versionId/diff',
+        { roles: ['admin', 'author', 'teacher'], scope: version },
+      ],
+      ['POST /api/versions/:versionId/preview', { roles: ['admin', 'teacher'], scope: version }],
+      ['POST /api/versions/:versionId/publish', { roles: ['admin', 'teacher'], scope: version }],
+      [
+        'POST /api/classes/:classId/pin',
         { roles: ['admin', 'teacher'], scope: { kind: 'class', param: 'classId' } },
       ],
     ]);
@@ -250,7 +262,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     };
     const started = await as(api, who.admin)(
       'POST',
-      `/curricula/${api.sample.curricula.a}/imports`,
+      `/api/curricula/${api.sample.curricula.a}/imports`,
       PACK,
       UPLOAD,
     );
@@ -335,13 +347,12 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         },
       },
       {
-        route: '/curricula/:curriculumId/imports',
+        route: '/api/curricula/:curriculumId/imports',
         method: 'POST',
-        url: `/curricula/${curricula.a}/imports`,
+        url: `/api/curricula/${curricula.a}/imports`,
         body: PACK,
         headers: UPLOAD,
       },
-      { route: '/imports/:jobId', method: 'GET', url: `/imports/${jobId}` },
       // M2: a student posts their own learning events, in a class they're enrolled in.
       {
         route: '/events',
@@ -361,26 +372,32 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         },
       },
       {
-        route: '/versions/:versionId/diff',
+        route: '/api/curricula/:curriculumId/imports/latest',
         method: 'GET',
-        url: `/versions/${versionId}/diff`,
+        url: `/api/curricula/${curricula.a}/imports/latest`,
+      },
+      { route: '/api/imports/:jobId', method: 'GET', url: `/api/imports/${jobId}` },
+      {
+        route: '/api/versions/:versionId/diff',
+        method: 'GET',
+        url: `/api/versions/${versionId}/diff`,
       },
       {
-        route: '/versions/:versionId/preview',
+        route: '/api/versions/:versionId/preview',
         method: 'POST',
-        url: `/versions/${versionId}/preview`,
+        url: `/api/versions/${versionId}/preview`,
         body: { class_ids: [classes.a1] },
       },
       {
-        route: '/versions/:versionId/publish',
+        route: '/api/versions/:versionId/publish',
         method: 'POST',
-        url: `/versions/${versionId}/publish`,
+        url: `/api/versions/${versionId}/publish`,
         body: { class_ids: [classes.a1] },
       },
       {
-        route: '/classes/:classId/pin',
+        route: '/api/classes/:classId/pin',
         method: 'POST',
-        url: `/classes/${classes.a1}/pin`,
+        url: `/api/classes/${classes.a1}/pin`,
         body: { version_id: versionId },
       },
       // F6: aimed at another student of org A, so deleting them leaves the sweep's
@@ -476,13 +493,15 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // A teacher reads the defaults of a curriculum they teach (A2 also uses curriculum A).
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
     // C4: staff in the curriculum's org may import into it and read its jobs.
-    'POST /curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
-    'GET /imports/:jobId': ['admin', 'otherClassTeacher'],
+    'POST /api/curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
+    'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
+    // T2: the same staff read the Curriculum data section.
+    'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
     // M2: students only; admins and teachers are refused (their events are server-side).
     'POST /events': ['student'],
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
-    'GET /versions/:versionId/diff': ['admin', 'otherClassTeacher'],
+    'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],
     // A1: Ms. Ivy and Milo for the class's students; Atlas for its staff only.
     'POST /api/classes/:classId/ai/tutor': ['admin', 'student'],
     'POST /api/classes/:classId/ai/peer': ['admin', 'student'],
