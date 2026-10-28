@@ -526,9 +526,9 @@
       ],
       "done_when": "The teacher reviews the diff and checks, picks classes and publishes",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-t8",
+      "updated": "2026-10-28"
     },
     {
       "id": "A1",
