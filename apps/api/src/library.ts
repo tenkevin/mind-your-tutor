@@ -31,7 +31,8 @@ import type { RoutePolicy } from './policy.js';
 //   PUT    /api/curricula/:curriculumId/library/:docId change use_for, or archive / restore (D31)
 //   POST   /api/curricula/:curriculumId/library/:docId/versions   upload a new version
 //   POST   /api/classes/:classId/library/uploads       upload a document for this class only
-//   PUT    /api/classes/:classId/library/uploads/:docId   change use_for, or archive / restore (D31)
+//   PUT    /api/classes/:classId/library/uploads/:docId   change use_for, or archive / restore
+//   DELETE /api/classes/:classId/library/uploads/:docId   delete an upload, its passages and its file (D31)
 //   POST   /api/classes/:classId/library/uploads/:docId/versions   upload a new version
 //   POST   /api/classes/:classId/library/search        ranked passages for Atlas or Ms. Ivy
 //
@@ -489,6 +490,28 @@ export function libraryRoutes(app: FastifyInstance, options: LibraryRoutesOption
       );
       if (!row) return reply.code(404).send({ error: 'Not found' });
       return { useFor: row.use_for, archived: row.archived_at !== null };
+    },
+  );
+
+  // Class uploads are disposable (D31): the teacher may delete one. Its passages and
+  // embeddings go with it (foreign keys), the deletion is audited by trigger (F6), and
+  // its original file is removed from storage. Shared documents have no such route.
+  app.delete<{ Params: { classId: string; docId: string } }>(
+    '/api/classes/:classId/library/uploads/:docId',
+    { config: classPolicy },
+    async (req, reply) => {
+      const { classId, docId } = req.params;
+      const removed = await req.withOrg((trx) =>
+        trx
+          .deleteFrom('class_library_doc')
+          .where('id', '=', docId)
+          .where('class_id', '=', classId)
+          .returning('file_url')
+          .executeTakeFirst(),
+      );
+      if (!removed) return reply.code(404).send({ error: 'Not found' });
+      await options.store.delete(removed.file_url).catch(() => undefined);
+      return reply.code(204).send();
     },
   );
 

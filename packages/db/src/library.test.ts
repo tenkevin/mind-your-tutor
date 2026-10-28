@@ -272,13 +272,79 @@ describe.skipIf(!hasDatabase)('library search (A3)', () => {
     expect(titles(await search(a, classB, 'tutor', 3))).toContain('Z');
   });
 
-  it('never lets the app role delete a document (A3-S3, D31)', async () => {
-    for (const table of ['library_doc', 'class_library_doc'] as const) {
-      const code = await errorCode(() =>
-        asApp(t.db, a.orgId, (trx) => sql`DELETE FROM ${sql.table(table)}`.execute(trx), classA),
-      );
-      expect(code, table).toBe(PG.insufficientPrivilege);
-    }
+  it('never lets the app role delete a vault document, but may delete a class upload with its passages (A3-S3, D31)', async () => {
+    const code = await errorCode(() =>
+      asApp(t.db, a.orgId, (trx) => sql`DELETE FROM library_doc`.execute(trx), classA),
+    );
+    expect(code).toBe(PG.insufficientPrivilege);
+
+    const doc = await t.db
+      .insertInto('class_library_doc')
+      .values({
+        org_id: a.orgId,
+        class_id: classA,
+        title: 'Disposable',
+        file_url: 'disposable.pdf',
+        index_status: 'indexed',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await t.db
+      .insertInto('class_chunk')
+      .values({
+        org_id: a.orgId,
+        class_id: classA,
+        class_library_doc_id: doc.id,
+        ordinal: 0,
+        content: 'Throwaway.',
+        embedding: embedding(9),
+      })
+      .execute();
+    // A newer version names it; deleting the old one clears that link, not the new row.
+    const next = await t.db
+      .insertInto('class_library_doc')
+      .values({
+        org_id: a.orgId,
+        class_id: classA,
+        title: 'Disposable',
+        file_url: 'disposable-2.pdf',
+        version: 2,
+        replaces_id: doc.id,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    // Another class cannot delete it (row-level security), its own can.
+    await asApp(
+      t.db,
+      a.orgId,
+      (trx) => sql`DELETE FROM class_library_doc WHERE id = ${doc.id}`.execute(trx),
+      classB,
+    );
+    expect(
+      await t.db.selectFrom('class_library_doc').select('id').where('id', '=', doc.id).execute(),
+    ).toHaveLength(1);
+    await asApp(
+      t.db,
+      a.orgId,
+      (trx) => sql`DELETE FROM class_library_doc WHERE id = ${doc.id}`.execute(trx),
+      classA,
+    );
+    expect(
+      await t.db.selectFrom('class_library_doc').select('id').where('id', '=', doc.id).execute(),
+    ).toHaveLength(0);
+    expect(
+      await t.db
+        .selectFrom('class_chunk')
+        .select('id')
+        .where('class_library_doc_id', '=', doc.id)
+        .execute(),
+    ).toHaveLength(0);
+    const survivor = await t.db
+      .selectFrom('class_library_doc')
+      .select(['replaces_id', 'class_id'])
+      .where('id', '=', next.id)
+      .executeTakeFirstOrThrow();
+    expect(survivor).toEqual({ replaces_id: null, class_id: classA });
   });
 
   it('rejects a bad k', async () => {

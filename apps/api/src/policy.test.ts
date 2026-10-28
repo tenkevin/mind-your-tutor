@@ -214,6 +214,10 @@ describe('A3 library routes join the registry (F5-F4, A3-S1)', () => {
         { roles: ['admin', 'teacher'], scope: klass },
       ],
       [
+        'DELETE /api/classes/:classId/library/uploads/:docId',
+        { roles: ['admin', 'teacher'], scope: klass },
+      ],
+      [
         'POST /api/classes/:classId/library/uploads/:docId/versions',
         { roles: ['admin', 'teacher'], scope: klass },
       ],
@@ -280,7 +284,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let versionId = '';
   /** Documents the sweep may change or delete, so it leaves the sample's own alone. */
   let sweepShared = '';
-  let sweepUploads: { update: string; remove: string } = { update: '', remove: '' };
+  let sweepUploads: { update: string; remove: string; delete: string } = {
+    update: '',
+    remove: '',
+    delete: '',
+  };
   beforeAll(async () => {
     // With C4's import, C5's publish, F6's privacy and A1's AI routes registered, so the
     // sweep covers them too.
@@ -327,7 +335,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
           .returning('id')
           .executeTakeFirstOrThrow()
       ).id;
-    sweepUploads = { update: await upload('Sweep update'), remove: await upload('Sweep remove') };
+    sweepUploads = {
+      update: await upload('Sweep update'),
+      remove: await upload('Sweep remove'),
+      delete: await upload('Sweep delete'),
+    };
     const started = await as(api, who.admin)(
       'POST',
       `/curricula/${api.sample.curricula.a}/imports`,
@@ -502,6 +514,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         method: 'PUT',
         url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.update}`,
         body: { use_for: 'both' },
+      },
+      {
+        route: '/api/classes/:classId/library/uploads/:docId',
+        method: 'DELETE',
+        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.delete}`,
       },
       {
         route: '/api/classes/:classId/library/uploads/:docId/versions',

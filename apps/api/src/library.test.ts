@@ -296,7 +296,7 @@ describe.skipIf(!hasDatabase)('library routes (A3)', () => {
     expect(titles(await search(teacherA1, a1, 'agent', 'scan'))).not.toContain('scan');
   });
 
-  it('keeps originals and passages after indexing, and takes a document out of use without deleting it (A3-S3, D31)', async () => {
+  it('keeps originals after indexing, archives and restores, and deletes a class upload with its passages (A3-S3, D31)', async () => {
     const res = await upload(
       teacherA1,
       `/api/classes/${a1}/library/uploads`,
@@ -352,10 +352,26 @@ describe.skipIf(!hasDatabase)('library routes (A3)', () => {
       archived: false,
     });
     expect(titles(await search(teacherA1, a1, 'agent', 'rivers deltas'))).toContain('rivers');
-    // There is no delete route.
-    expect(
-      (await as(api, teacherA1)('DELETE', `/api/classes/${a1}/library/uploads/${id}`)).statusCode,
-    ).toBe(404);
+
+    // A class upload is disposable (D31): another teacher cannot delete it, its own can,
+    // and its passages, embeddings and file go with it.
+    const del = (who: Signed, classId: string) =>
+      as(api, who)('DELETE', `/api/classes/${classId}/library/uploads/${id}`);
+    expect((await del(teacherA2, a2)).statusCode).toBe(404);
+    expect((await del(teacherA2, a1)).statusCode).toBe(403);
+    expect(await passages()).toBe(1);
+    expect((await del(teacherA1, a1)).statusCode).toBe(204);
+    expect(await passages()).toBe(0);
+    expect(api.library!.store.objects.size).toBe(stored - 1);
+    expect(titles(await search(teacherA1, a1, 'agent', 'rivers deltas'))).not.toContain('rivers');
+    expect((await del(teacherA1, a1)).statusCode).toBe(404);
+    // The deletion is in the audit log.
+    const logged = await api.t.db
+      .selectFrom('audit_event')
+      .select('action')
+      .where('action', '=', 'class_library_doc.removed')
+      .execute();
+    expect(logged.length).toBeGreaterThan(0);
   });
 
   it('replaces a class upload with a new version once it is indexed, keeping the old one (A3-S3, D31)', async () => {
