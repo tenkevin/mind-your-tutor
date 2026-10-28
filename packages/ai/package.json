@@ -5,10 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "@ideamap/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./personas": {
+      "@ideamap/source": "./src/personas.ts",
       "types": "./dist/personas.d.ts",
       "default": "./dist/personas.js"
     }
@@ -17,6 +19,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@ideamap/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

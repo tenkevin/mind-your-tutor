@@ -397,6 +397,20 @@
         "C6cx1"
       ],
       "suggestions": "Re-QA of 750a50b: C6-E1/E2/E3 fixes pass. Apostrophe reimport limitation and future export-route authorization already in CXB. Full-suite gate UNVERIFIED (function_binding excluded)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-A1-review-070cb66.md",
+      "commit": "0332471",
+      "date": "2026-10-27",
+      "reviews": [
+        "A1"
+      ],
+      "verdict": "PASS (scoped); A1-F9 UNVERIFIED pending coordinator full-suite run incl. function_binding",
+      "errors": [],
+      "suggestions": [
+        "A1-P2 streaming stays a should check (A1)",
+        "per-process limits and roster-name detection: already in CXB (A7 / deployment)"
+      ]
     }
   ]
 }
