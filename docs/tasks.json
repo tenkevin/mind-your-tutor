@@ -553,7 +553,7 @@
       ],
       "done_when": "Student turns are moderated, fixed guardrails are added after templates, and flags reach the teacher",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a2",
       "updated": "2026-10-28"
     },
