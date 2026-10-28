@@ -457,6 +457,8 @@ export interface CurriculumDataProps {
   curriculumId: string;
   csrf: string;
   onSignedOut: () => void;
+  /** Called with the newest version's id when it changes (T6 follows it). */
+  onVersionChange?: (versionId: string | null) => void;
   fetch?: Fetch;
 }
 
@@ -475,6 +477,7 @@ export function CurriculumData({
   curriculumId,
   csrf,
   onSignedOut,
+  onVersionChange,
   fetch: fetchFn,
 }: CurriculumDataProps) {
   const csrfRef = useRef(csrf);
@@ -497,5 +500,13 @@ export function CurriculumData({
   }, [curriculumId, fetchFn]);
   const live = store ?? NO_STORE;
   const state = useSyncExternalStore(live.subscribe, live.getState, live.getState);
+  const versionId = state.data?.version?.id ?? null;
+  const report = useRef(onVersionChange);
+  useEffect(() => {
+    report.current = onVersionChange;
+  });
+  useEffect(() => {
+    report.current?.(versionId);
+  }, [versionId]);
   return <CurriculumDataView state={state} onChoose={(file) => void store?.upload(file)} />;
 }

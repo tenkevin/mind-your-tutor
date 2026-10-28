@@ -1,0 +1,242 @@
+/* Teacher Settings → From the spreadsheet (T6), after the data tabs and Column mapping
+   in project/Teacher Settings.dc.html. Nocturne tokens only. Text pairs follow T2's
+   (D10: 4.5:1): neutral-100 to -300 and accent-200 on bg, surface and accent-900 are
+   9.5:1 or better; neutral-400 7.1:1 or better. Status is never colour alone: each state
+   has words. */
+
+.ddata {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+.ddata p {
+  margin: 0;
+}
+.ddata-muted {
+  font-size: 12px;
+  color: var(--color-neutral-400);
+}
+.ddata-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+.ddata-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.ddata-version .input {
+  width: auto;
+  max-width: 100%;
+}
+.ddata-readonly {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-neutral-300);
+}
+.ddata-readonly svg {
+  flex: none;
+  color: var(--color-accent-300);
+}
+
+.ddata-chiprow,
+.ddata-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ddata-chip,
+.ddata-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-neutral-300);
+  font: 13px var(--font-body);
+  cursor: pointer;
+}
+.ddata-code {
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-100);
+  font-size: 12px;
+}
+.ddata-chip:hover,
+.ddata-code:hover {
+  background: var(--color-surface);
+}
+.ddata-chip[aria-pressed='true'],
+.ddata-code[aria-pressed='true'] {
+  background: var(--color-accent-900);
+  border-color: var(--color-accent-600);
+  color: var(--color-accent-200);
+}
+.ddata-chip svg {
+  color: var(--color-accent-300);
+}
+
+.ddata-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-neutral-400);
+}
+.ddata-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ddata-scroll {
+  overflow-x: auto;
+}
+.ddata-table th[scope='row'] {
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--color-neutral-100);
+}
+.ddata-table .ddata-cell {
+  font-size: 12px;
+  color: var(--color-neutral-300);
+  overflow-wrap: anywhere;
+}
+.ddata-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ddata-req {
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--color-neutral-600);
+  font-size: 11px;
+  color: var(--color-neutral-200);
+}
+.ddata-req[data-unknown] {
+  border-color: var(--color-accent-500);
+  color: var(--color-accent-200);
+}
+.ddata-status[data-state='unknown'],
+.ddata-missing {
+  color: var(--color-accent-200);
+}
+.ddata-url {
+  font:
+    12px ui-monospace,
+    Menlo,
+    monospace;
+  color: var(--color-neutral-200);
+}
+.ddata-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-neutral-300);
+}
+.ddata-pager span {
+  margin-right: auto;
+}
+
+/* Column mapping. */
+.ddata-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.ddata-mapping-h {
+  margin: 0;
+  font: 500 14px var(--font-heading);
+}
+.ddata-mapping-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ddata-mapping-toggle span {
+  flex: 1;
+}
+.ddata-mapping-toggle svg:first-child {
+  color: var(--color-accent-300);
+}
+.ddata-mapping-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ddata-map-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ddata-map-group legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-400);
+}
+.ddata-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.ddata-map-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+.ddata-map-row label {
+  flex: 1;
+  font-size: 12px;
+}
+.ddata-map-select {
+  width: auto;
+  max-width: 55%;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  font:
+    11px ui-monospace,
+    Menlo,
+    monospace;
+}
+.ddata-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ddata-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-neutral-200);
+}
