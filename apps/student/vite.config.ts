@@ -8,6 +8,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
+      {
+        find: '@ideamap/ai/device',
+        replacement: page('../../packages/ai/src/device-recognizer.ts'),
+      },
       { find: '@ideamap/ai/anonymise', replacement: page('../../packages/ai/src/anonymise.ts') },
       { find: '@ideamap/contracts', replacement: page('../../packages/contracts/src/index.ts') },
       // The bare package only; '@ideamap/ui/styles.css' still resolves through its exports.

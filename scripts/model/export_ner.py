@@ -6,21 +6,57 @@ Layout: b"IMNER1\0\0", u32 header length, JSON header, then the blob. The header
 tensor's name, shape, dtype and blob offset. 2-D weights are int8 with one float32 scale per
 row (stored right after the int8 rows); 1-D tensors are float32. The vocabulary rides in the
 blob as UTF-8 lines. Source model: gagan3012/bert-tiny-finetuned-ner (fine-tuned from
-prajjwal1/bert-tiny, MIT, on CoNLL-2003). Needs torch and numpy; the app does not.
+prajjwal1/bert-tiny, MIT, on CoNLL-2003). Needs numpy only; the app needs neither.
 """
-import json, struct, sys
+import collections, json, pickle, struct, sys, zipfile
 import numpy as np
-import torch
+
+
+class _Storage:
+    pass
+
+
+def _rebuild(storage, offset, size, stride, *_):
+    flat = storage.data
+    out = np.lib.stride_tricks.as_strided(
+        flat[offset:], shape=size, strides=[s * flat.itemsize for s in stride]
+    )
+    return np.array(out).reshape(size)
+
+
+def read_checkpoint(path):
+    """Read a PyTorch zip checkpoint's tensors with numpy only (no torch needed)."""
+    zf = zipfile.ZipFile(path)
+    prefix = zf.namelist()[0].split("/")[0]
+
+    class Unpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            if name == "_rebuild_tensor_v2":
+                return _rebuild
+            if name == "OrderedDict":
+                return collections.OrderedDict
+            if module == "torch" and name.endswith("Storage"):
+                return {"FloatStorage": np.float32, "LongStorage": np.int64}[name]
+            raise pickle.UnpicklingError(f"unexpected {module}.{name}")
+
+        def persistent_load(self, pid):
+            _, dtype, key, _, _ = pid
+            storage = _Storage()
+            storage.data = np.frombuffer(zf.read(f"{prefix}/data/{key}"), dtype=dtype)
+            return storage
+
+    return Unpickler(zf.open(f"{prefix}/data.pkl")).load()
+
 
 src, out = sys.argv[1], sys.argv[2]
 cfg = json.load(open(f"{src}/config.json"))
-state = torch.load(f"{src}/pytorch_model.bin", map_location="cpu", weights_only=True)
+state = read_checkpoint(f"{src}/pytorch_model.bin")
 blob = bytearray()
 tensors = []
 for name, t in state.items():
     if name.endswith("position_ids"):
         continue
-    a = t.numpy().astype(np.float32)
+    a = np.asarray(t).astype(np.float32)
     entry = {"name": name, "shape": list(a.shape), "offset": len(blob)}
     if a.ndim == 2:
         scale = np.abs(a).max(axis=1) / 127.0

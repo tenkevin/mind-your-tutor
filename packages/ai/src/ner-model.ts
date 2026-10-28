@@ -4,6 +4,18 @@
 // int8, see scripts/model/export_ner.py) and the forward pass below is plain TypeScript:
 // no WASM runtime, no server, no network once the file is loaded. Same input, same output.
 
+import { KERNEL_WASM_BASE64 } from './ner-kernel.js';
+
+// The package's lib has no DOM, so the little of WebAssembly used here is declared.
+interface WasmMemory {
+  buffer: ArrayBuffer;
+  grow(pages: number): number;
+}
+declare const WebAssembly: {
+  Module: new (bytes: Uint8Array) => object;
+  Instance: new (module: object) => { exports: object };
+};
+
 export type NerLabel = 'PER' | 'ORG' | 'LOC' | 'MISC';
 
 export interface NerSpan {
@@ -51,6 +63,10 @@ interface Weight {
   cols: number;
   q: Int8Array;
   scale: Float32Array;
+  /** Dequantised once for the matrix products (embeddings stay int8, read row by row). */
+  f?: Float32Array;
+  /** Byte offsets of the dequantised weights and of the bias in the kernel's memory. */
+  at?: { w: number; b: number };
 }
 
 const MAGIC = 'IMNER1\0\0';
@@ -78,8 +94,14 @@ export class BertNer {
   private readonly vocab = new Map<string, number>();
   private readonly dim: number;
   private readonly heads: number;
+  private kernel: {
+    memory: WasmMemory;
+    linear: (...args: number[]) => void;
+    x: number;
+    out: number;
+  } | null = null;
 
-  private constructor(buffer: ArrayBuffer) {
+  private constructor(buffer: ArrayBuffer, useKernel: boolean) {
     const bytes = new Uint8Array(buffer);
     if (new TextDecoder().decode(bytes.subarray(0, 8)) !== MAGIC)
       throw new Error('Not a model file');
@@ -118,11 +140,65 @@ export class BertNer {
       )
       .split('\n');
     words.forEach((word, i) => this.vocab.set(word, i));
+    if (useKernel) this.initKernel();
+  }
+
+  /**
+   * Matrix products run in a 272-byte WebAssembly SIMD kernel when the browser or Node has
+   * one; otherwise the same maths runs in plain JavaScript below. Either way the weights
+   * are dequantised once.
+   */
+  private initKernel(): void {
+    try {
+      const bytes = Uint8Array.from(atob(KERNEL_WASM_BASE64), (c) => c.charCodeAt(0));
+      const instance = new WebAssembly.Instance(new WebAssembly.Module(bytes));
+      const { mem, linear } = instance.exports as {
+        mem: WasmMemory;
+        linear: (...args: number[]) => void;
+      };
+      const matrices = [...this.w.entries()].filter(
+        ([name]) =>
+          /\.(weight)$/.test(name) && !name.includes('embeddings') && !name.includes('LayerNorm'),
+      );
+      let top = 0;
+      const layout = new Map<string, { w: number; b: number }>();
+      for (const [name, weight] of matrices) {
+        const bias = this.vector(name.replace(/weight$/, 'bias'));
+        layout.set(name, { w: top, b: top + weight.rows * weight.cols * 4 });
+        top += weight.rows * weight.cols * 4 + bias.length * 4;
+      }
+      const scratch = (WINDOW + 2) * this.cfg.intermediate_size * 4;
+      const total = top + 2 * scratch;
+      mem.grow(Math.ceil(total / 65536) - mem.buffer.byteLength / 65536);
+      const heap = new Float32Array(mem.buffer);
+      for (const [name, weight] of matrices) {
+        const at = layout.get(name)!;
+        const f = this.dequantised(weight);
+        heap.set(f, at.w / 4);
+        heap.set(this.vector(name.replace(/weight$/, 'bias')), at.b / 4);
+        weight.at = at;
+      }
+      this.kernel = { memory: mem, linear, x: top, out: top + scratch };
+    } catch {
+      this.kernel = null;
+    }
+  }
+
+  private dequantised(weight: Weight): Float32Array {
+    if (!weight.f) {
+      const { rows, cols, q, scale } = weight;
+      const f = new Float32Array(rows * cols);
+      for (let o = 0; o < rows; o++) {
+        for (let i = 0; i < cols; i++) f[o * cols + i] = q[o * cols + i]! * scale[o]!;
+      }
+      weight.f = f;
+    }
+    return weight.f;
   }
 
   /** Parse a model file (the bytes of `ner-bert-tiny-v1.bin`). */
-  static load(buffer: ArrayBuffer): BertNer {
-    return new BertNer(buffer);
+  static load(buffer: ArrayBuffer, options: { kernel?: boolean } = {}): BertNer {
+    return new BertNer(buffer, options.kernel ?? true);
   }
 
   private weight(name: string): Weight {
@@ -164,7 +240,7 @@ export class BertNer {
   }
 
   /** Words with their character spans: whitespace splits, punctuation stands alone. */
-  private static words(text: string): { start: number; end: number }[] {
+  static words(text: string): { start: number; end: number }[] {
     const out: { start: number; end: number }[] = [];
     let from = -1;
     let i = 0;
@@ -187,16 +263,23 @@ export class BertNer {
   // --- forward pass -------------------------------------------------------------------
 
   private linear(x: Float32Array, n: number, name: string, bias: string): Float32Array {
-    const { rows, cols, q, scale } = this.weight(name);
+    const weight = this.weight(name);
+    const { rows, cols } = weight;
+    const kernel = this.kernel;
+    if (kernel && weight.at && cols % 4 === 0) {
+      const heap = new Float32Array(kernel.memory.buffer);
+      heap.set(x.subarray(0, n * cols), kernel.x / 4);
+      kernel.linear(kernel.x, weight.at.w, weight.at.b, kernel.out, n, rows, cols);
+      return heap.slice(kernel.out / 4, kernel.out / 4 + n * rows);
+    }
+    const f = this.dequantised(weight);
     const b = this.vector(bias);
     const out = new Float32Array(n * rows);
     for (let t = 0; t < n; t++) {
-      const xo = t * cols;
       for (let o = 0; o < rows; o++) {
-        let sum = 0;
-        const wo = o * cols;
-        for (let i = 0; i < cols; i++) sum += x[xo + i]! * q[wo + i]!;
-        out[t * rows + o] = sum * scale[o]! + b[o]!;
+        let sum = b[o]!;
+        for (let i = 0; i < cols; i++) sum += x[t * cols + i]! * f[o * cols + i]!;
+        out[t * rows + o] = sum;
       }
     }
     return out;
