@@ -18,6 +18,11 @@
       "@ideamap/source": "./src/anonymise.ts",
       "types": "./dist/anonymise.d.ts",
       "default": "./dist/anonymise.js"
+    },
+    "./device": {
+      "@ideamap/source": "./src/device-recognizer.ts",
+      "types": "./dist/device-recognizer.d.ts",
+      "default": "./dist/device-recognizer.js"
     }
   },
   "scripts": {

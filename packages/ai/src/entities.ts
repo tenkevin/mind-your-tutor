@@ -72,12 +72,12 @@ const RELATION = new Set(
     ' ',
   ),
 );
-const PET_BEFORE =
+export const PET_BEFORE =
   /\b(?:cat|kitten|dog|puppy|pet|hamster|rabbit|bunny|fish|bird|parrot|horse|pony|turtle|tortoise|guinea pig|snake|lizard)\s+(?:(?:named|called)\s+)?$/i;
-const TEAM_BEFORE = new Set(
+export const TEAM_BEFORE = new Set(
   'real fc ac cf sc as inter atletico athletic olympique sporting'.split(' '),
 );
-const TEAM_AFTER = new Set('fc united city cf sc rovers wanderers athletic'.split(' '));
+export const TEAM_AFTER = new Set('fc united city cf sc rovers wanderers athletic'.split(' '));
 const PLACE_LOWER_SKIP = new Set(['turkey', 'china', 'chile', 'wales', 'queens']);
 
 interface Token {
@@ -276,27 +276,48 @@ function tokenEntities(text: string, out: Entity[]): void {
   }
 }
 
-/** The rules above: names, places, contact details and school identifiers. */
+function resolve(text: string, found: Entity[]): Entity[] {
+  // Labels already in the text ("Person A") are not identifiers.
+  const labels = [...text.matchAll(LABEL)].map((m) => [m.index!, m.index! + m[0].length]);
+  const clear = found.filter(
+    (e) => e.end > e.start && !labels.some(([s, f]) => e.start < f! && e.end > s!),
+  );
+
+  // Earliest first, longest first; overlapping candidates lose to the one before.
+  clear.sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
+  const kept: Entity[] = [];
+  for (const e of clear) {
+    const last = kept[kept.length - 1];
+    if (!last || e.start >= last.end) kept.push(e);
+  }
+  return kept;
+}
+
+/** Overlap and label handling shared by every recognizer (the device model uses it too). */
+export const resolveEntities = resolve;
+
+/**
+ * Pattern rules only: contact details, street addresses, school identifiers and
+ * landmarks. The device keeps these beside the ML model (D33), which finds names.
+ */
+export const patternRecognizer: SyncEntityRecognizer = {
+  recognize(text) {
+    const found: Entity[] = [];
+    regexEntities(text, found);
+    return resolve(text, found);
+  },
+};
+
+/**
+ * The patterns plus word lists and cues for names and places. The server backstop (D26)
+ * runs this over everything that reaches it; the device uses the ML model instead (D33).
+ */
 export const ruleRecognizer: SyncEntityRecognizer = {
   recognize(text) {
     const found: Entity[] = [];
     regexEntities(text, found);
     phraseEntities(text, found);
     tokenEntities(text, found);
-
-    // Labels already in the text ("Person A") are not identifiers.
-    const labels = [...text.matchAll(LABEL)].map((m) => [m.index!, m.index! + m[0].length]);
-    const clear = found.filter(
-      (e) => e.end > e.start && !labels.some(([s, f]) => e.start < f! && e.end > s!),
-    );
-
-    // Earliest first, longest first; overlapping candidates lose to the one before.
-    clear.sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
-    const kept: Entity[] = [];
-    for (const e of clear) {
-      const last = kept[kept.length - 1];
-      if (!last || e.start >= last.end) kept.push(e);
-    }
-    return kept;
+    return resolve(text, found);
   },
 };
