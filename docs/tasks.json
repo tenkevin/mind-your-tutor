@@ -371,8 +371,8 @@
       "done_when": "POST /events validates against M1, sets seq and level, drops duplicate ids, rejects unpinned versions and non-catalogue types, and writes partitioned rows; typed text goes to InteractionText anonymised (D26); the client batches with an offline queue; D22 retention and D24 opt-out flags are honoured",
       "placeholder": false,
       "status": "review",
-      "owner": "agent-m2",
-      "updated": "2026-10-24"
+      "owner": "agent-m2b",
+      "updated": "2026-10-27"
     },
     {
       "id": "M3",
@@ -540,9 +540,9 @@
       ],
       "done_when": "Every model call goes through the API, with prompt filling on the server, per-class rate limits and redacted logs",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-a1",
-      "updated": "2026-10-24"
+      "updated": "2026-10-27"
     },
     {
       "id": "A2",
@@ -553,9 +553,9 @@
       ],
       "done_when": "Student turns are moderated, fixed guardrails are added after templates, and flags reach the teacher",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-a2",
+      "updated": "2026-10-28"
     },
     {
       "id": "A3",
@@ -568,9 +568,9 @@
       ],
       "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings. Vector search always filters by curriculum (and class for uploads) or uses hnsw.iterative_scan, so row-level security never returns fewer than k results (F4 QA finding 3)",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-a3",
+      "updated": "2026-10-28"
     },
     {
       "id": "A4",
@@ -596,9 +596,9 @@
       ],
       "done_when": "Fixed eval prompts run per grade band in CI with a pass threshold",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-a5",
+      "updated": "2026-10-28"
     },
     {
       "id": "A6",
@@ -703,7 +703,12 @@
         "A9",
         "A10",
         "M6",
-        "S5"
+        "S5",
+        "C5cx1",
+        "C5cx2",
+        "C6cx1",
+        "A11",
+        "C6cx2"
       ],
       "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
       "placeholder": false,
@@ -775,9 +780,9 @@
       ],
       "done_when": "Per D26/D27: the app blurs people's names, places, contact and school identifiers into neutral labels on the device before any text leaves it (NER plus pattern rules), keeps the mapping on the device and re-fills replies; interests stay specific. The server backstop detects any identifier that got through, blurs it before the model call, counts a privacy miss and never stores raw text",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "review",
+      "owner": "agent-a7",
+      "updated": "2026-10-28"
     },
     {
       "id": "A8",
@@ -873,9 +878,9 @@
       "deps": [],
       "done_when": "Codex C5-E1 (docs/qa/codex/Codex-C5-review-6f43575.md): 'packages/domain/src/diff.ts:31 reduces Assessment rows to the first nonempty question for each idea' so an edit to a later accepted question is hidden and reordering unchanged rows invents a change. The diff compares all accepted assessment questions order-independently, following the checker's accepted/skipped-row rules, and shows every change; regressions cover edit, remove and reorder",
       "placeholder": false,
-      "status": "doing",
+      "status": "done",
       "owner": "agent-c5cx1",
-      "updated": "2026-10-27"
+      "updated": "2026-10-28"
     },
     {
       "id": "C5cx2",
@@ -884,7 +889,7 @@
       "deps": [],
       "done_when": "Codex C5-E2 (docs/qa/codex/Codex-C5-review-6f43575.md): 'apps/api/src/publishing.ts:339 reads the version before taking the curriculum lock', so two concurrent publishes of one draft to different classes return 201 and 500 and one class stays unpinned. The version state is re-read (or locked) after the curriculum lock; both publishes succeed with both class pins and the right audit rows; controlled concurrency tests cover distinct keys, no key and a shared key",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c5cx2",
       "updated": "2026-10-27"
     },
@@ -895,9 +900,43 @@
       "deps": [],
       "done_when": "Codex C6-E4 (docs/qa/codex/Codex-C6-review-750a50b.md): a valid pack with notes 'one\\rtwo' exports to CSV and LibreOffice opens it as 'one\\ntwo', failing C6-F7. CSV export either preserves the raw carriage return in a representative application or refuses with a located, actionable message pointing the teacher to the lossless XLSX export; XLSX keeps preserving it",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-c6cx1",
       "updated": "2026-10-27"
+    },
+    {
+      "id": "A5b",
+      "title": "Teacher-approved persona eval baselines",
+      "size": 1,
+      "deps": [
+        "A5"
+      ],
+      "done_when": "Per D34, replies a teacher approves become eval ground truth in a living evidence set, tagged to persona template versions per §12 q14 once settled",
+      "placeholder": true,
+      "status": "todo"
+    },
+    {
+      "id": "A11",
+      "title": "Grounded tutoring: sparring-partner mode when no verified source covers the question",
+      "size": 1,
+      "deps": [
+        "A2",
+        "A3"
+      ],
+      "done_when": "Per D35, Ms. Ivy answers factual questions only from verified assets, citing the passage; when none covers the question she states that and guides the student's reasoning with questions instead of stating facts. Covered by A5 eval cases",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C6cx2",
+      "title": "Fix Codex error C6cx1-E1: CRLF inside a cell changes when an export opens in LibreOffice",
+      "size": 1,
+      "deps": [
+        "C6cx1"
+      ],
+      "done_when": "Codex C6cx1-E1 (docs/qa/codex/Codex-C6cx1-review-29b23ff.md): a pack with notes 'a\\r\\nb\\nc' exports to CSV and XLSX, and LibreOffice opens both as 'a\\nb\\nc', failing C6-F7 (inherited from C6, not introduced by C6cx1). Accepted text with CRLF either survives the representative application in both formats, or line endings are made canonical (LF) where text is accepted, so no export holds text the application changes; any text that still can't survive is refused with a located, actionable message",
+      "placeholder": false,
+      "status": "todo"
     }
   ]
 }

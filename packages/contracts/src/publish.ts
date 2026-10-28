@@ -58,13 +58,19 @@ export const CurriculumDiffSchema = z.object({
   /** The idea moved to another unit. */
   units_changed: z.array(DiffIdeaRefSchema.extend({ from: DiffUnitSchema, to: DiffUnitSchema })),
   /**
-   * The idea's Assessment question changed, was added or was cleared. `before` and
-   * `after` are null when there is no question.
+   * The idea's accepted Assessment questions changed. `before` and `after` are all of
+   * its accepted questions (the ones the data check keeps), sorted by code point, so
+   * row order never matters; either is empty when the idea has none. `removed` and
+   * `added` are the questions only in `before` and only in `after`: an edited question
+   * shows as one removed and one added. `unit` is the idea's unit in the draft.
    */
   assessment_changed: z.array(
     DiffIdeaRefSchema.extend({
-      before: z.string().max(LIMITS.question).nullable(),
-      after: z.string().max(LIMITS.question).nullable(),
+      unit: DiffUnitSchema,
+      before: z.array(z.string().max(LIMITS.question)),
+      after: z.array(z.string().max(LIMITS.question)),
+      removed: z.array(z.string().max(LIMITS.question)),
+      added: z.array(z.string().max(LIMITS.question)),
     }),
   ),
 });

@@ -9,7 +9,7 @@
 //   node scripts/plan.mjs claim <ID> <agent>
 //   node scripts/plan.mjs review <ID>     work is on a branch / PR, waiting for review
 //   node scripts/plan.mjs done <ID>
-//   node scripts/plan.mjs release <ID>    give a claimed task back
+//   node scripts/plan.mjs release <ID>    give a claimed or in-review task back
 //   node scripts/plan.mjs check           validate the graph and that PLAN.md is current (CI)
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -96,7 +96,7 @@ function render() {
 // implied edges are dropped (transitive reduction over open tasks), and each task shows its slack:
 // how many weeks it can slip before the pilot does. Zero slack is the critical path.
 const LANES = [
-  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'M6', 'M7']],
+  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'A11', 'M6', 'M7']],
   ['tracker', 'Tracker and insight', ['M1', 'M2', 'M3', 'M4', 'M5']],
   ['curriculum', 'Curriculum and publishing', ['F6', 'C5', 'C6', 'C7']],
   ['teacher', 'Teacher console', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'A3', 'A4', 'A6']],
@@ -105,6 +105,9 @@ const LANES = [
   ['later', 'After the pilot', ['X1', 'X2']],
 ];
 const PILOT = 'L1';
+// A fix task (<ID>cx<n>, <ID>b) sits in the lane of the task it fixes.
+const baseId = id => id.replace(/cx\d+$/, '').replace(/(\d)[b-z]$/, '$1');
+const laneHas = (ids, id) => ids.includes(id) || ids.includes(baseId(id));
 const MAP_KEY = 'Key: red border = critical path (no slack); green = ready; purple = in progress; amber = in review; grey = waiting. The number under each task is its slack: weeks it can slip before the pilot does. Done work is collapsed into one box, and arrows already implied by another path are left out of the drawing (tasks.json keeps every dependency).';
 
 function slack() {
@@ -146,7 +149,7 @@ function mapLines(crit, critSet) {
   const L = ['flowchart LR', `  DONE(["Done: ${done.length} tasks<br/><small>${done.map(t => t.id).join(' ')}</small>"])`];
   const placed = new Set();
   LANES.forEach(([key, name, ids]) => {
-    const here = ids.filter(id => open.has(id));
+    const here = [...open].filter(id => laneHas(ids, id));
     if (!here.length) return;
     L.push(`  subgraph ${key}["${name}"]`, '    direction LR');
     here.forEach(id => { placed.add(id); L.push(`    ${id}["${label(byId[id])}"]`); });
@@ -157,7 +160,7 @@ function mapLines(crit, critSet) {
   const roots = [...open].filter(id => !byId[id].deps.some(d => open.has(d)) && byId[id].status !== 'done');
   roots.forEach(id => L.push(`  DONE -.-> ${id}`));
   // Non-critical edges into the pilot collapse into one arrow per lane.
-  const laneOf = id => (LANES.find(([, , ids]) => ids.includes(id)) || ['other'])[0];
+  const laneOf = id => (LANES.find(([, , ids]) => laneHas(ids, id)) || ['other'])[0];
   const laneToPilot = new Set();
   edges.forEach(([a, b]) => {
     if (b === PILOT && sl[a] !== 0 && laneOf(a) !== laneOf(PILOT)) { laneToPilot.add(laneOf(a)); return; }
@@ -224,7 +227,7 @@ switch (cmd) {
   }
   case 'review': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing') fail(`${id} is ${t.status}, not in progress`); setStatus(id, 'review'); break; }
   case 'done': { const t = byId[id] || fail(`no task ${id}`); if (t.status === 'todo') fail(`${id} was never claimed`); setStatus(id, 'done'); break; }
-  case 'release': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing') fail(`${id} is ${t.status}, not in progress`); setStatus(id, 'todo', null); break; }
+  case 'release': { const t = byId[id] || fail(`no task ${id}`); if (t.status !== 'doing' && t.status !== 'review') fail(`${id} is ${t.status}, not claimed`); setStatus(id, 'todo', null); break; }
   case 'check': {
     if (errs.length) fail(errs.join('\n'));
     let current = '';

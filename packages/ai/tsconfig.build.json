@@ -2,7 +2,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    // The build uses the built packages (pnpm -r builds dependencies first).
+    "customConditions": []
   },
   "exclude": ["src/**/*.test.ts"]
 }

@@ -30,9 +30,15 @@ Not a task to claim (placeholder). The coordinator moves each item into `docs/qa
 | Claude QA C5 run 1 (PR #23) | The idempotent repeat returns the original publish result even after the state has moved on; the DB guard still allows pinning an archived version (only the API refuses it) | T8 criteria / later hardening |
 | Coordinator sync of C5 (838582d) | F6-P2 audit-cost check `privacy.test.ts:484` is timing-flaky under load (10.9 ms vs < 10 ms bar; passes on re-run). Make the measurement robust (more samples, warm-up, median of runs) without raising the bar | F6 follow-up / tooling criteria |
 | agent-a1 (PR #28) | C6 export template example row (`packages/connectors/src/reports.ts`) carries a shortened copy of the Ms. Ivy fixture prompt, missing "Praise effort…"; make it match the fixture | Importer/exporter criteria |
-| Claude QA A1 run 1 ([report](reports/A1-run1.md)) | Roster backstop misses names outside the class and lowercase first names (`sam said hi`); shared surname parts over-blur | A7 criteria (fuller detector) |
 | Claude QA A1 run 1 | AI rate limits are in memory per API process; with N replicas the effective limit is N×. Decide whether per-class limits must hold across replicas | Deployment / L1 criteria |
-| Claude QA A1 run 1 | The client receives the model's raw reply while the stored reply is blurred, so a model echo of a roster identifier reaches the student | A7 criteria |
 | Claude QA T3 run 1 ([report](reports/T3-run1.md)) | Field-level audit paths from dotted keys are ambiguous; authors who don't teach a class have no UI path to the defaults editor | Later T-task criteria |
 | Codex-C5-review-6f43575.md S2 | The default API executable starts `buildServer()` without the optional publish dependencies; wire publish (and imports) into the bootstrap | Deployment / T8 criteria |
 | Codex-C5-review-6f43575.md S3 | Keep the D14 label and count: all unique enrolled students in the selected classes, including those without progress or whose progress won't change | T8 criteria |
+| agent-m2b, PR #30 ([comment](https://github.com/tenkevin/mind-your-tutor/pull/30#issuecomment-6452862377)) | M2-P1 passed on CI only after `ANALYZE` on the freshly seeded tables. A freshly bulk-loaded production database could stall ingest the same way. Check which ingest queries depend on planner statistics, and whether the deploy or import path should run `ANALYZE` | Deployment / L1 criteria |
+
+
+## Deferred by the user (2026-10-28)
+
+- **A7 on-device NER accuracy on children's writing.** Measure recall on a realistic set of children's writing (nicknames, misspellings, lower case) and set a bar. Deferred by the user; add to a later privacy task's criteria before the pilot widens. A7's 98.3% is on the builder's own 58-identifier set.
+- **A7 model licence.** `gagan3012/bert-tiny-finetuned-ner` states no licence; accepted for now (D33), revisit before release.
+- **A3 object-storage files after a class is deleted.** Deleting a class cascades its uploads' rows, passages and embeddings, but the original files in object storage stay until a storage sweep exists (A3 PR #38 decisions). Add a sweep (or delete files with the class) to a later storage/privacy task's criteria. No student PII is involved (D31).
