@@ -425,3 +425,55 @@ describe.skipIf(!hasDatabase)('library limits (A3)', () => {
     expect((await ask()).statusCode).toBe(429);
   });
 });
+
+describe.skipIf(!hasDatabase)("FERPA delete of a teacher's uploads over HTTP (A3-S3)", () => {
+  let api: TestApi;
+  beforeAll(async () => {
+    api = await startApi(
+      {},
+      { library: true, privacy: { put: async () => {}, remove: async () => {} } },
+    );
+    await api.t.db.deleteFrom('class_library_doc').execute();
+  });
+  afterAll(async () => {
+    await api?.close();
+  });
+
+  it('removes passages, embeddings and any unindexed original file; only an admin may ask', async () => {
+    const { users, orgs, classes } = api.sample;
+    const teacher = await sessionFor(api, users['teacher-a1'], orgs.a);
+    const admin = await sessionFor(api, users['admin-a'], orgs.a);
+    const send = (name: string) =>
+      as(api, teacher)(
+        'POST',
+        `/api/classes/${classes.a1}/library/uploads`,
+        Buffer.from(`Note ${name}`),
+        {
+          ...OCTET,
+          'x-file-name': name,
+        },
+      );
+    expect((await send('indexed.txt')).statusCode).toBe(202);
+    for (const job of api.library!.jobs.splice(0)) {
+      await indexLibrary(
+        {
+          scope: (orgId, fn) => scoped(api.t.db, { orgId }, fn),
+          store: api.library!.store,
+          embedder,
+        },
+        job.data,
+      );
+    }
+    expect((await send('pending.txt')).statusCode).toBe(202); // still has its file
+    expect(api.library!.store.objects.size).toBe(1);
+
+    const url = `/api/privacy/teachers/${users['teacher-a1']}/uploads`;
+    expect((await as(api, teacher)('DELETE', url)).statusCode).toBe(403);
+    const res = await as(api, admin)('DELETE', url);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().deleted).toEqual({ documents: 2, chunks: 1, files: 2 });
+    expect(api.library!.store.objects.size).toBe(0);
+    const left = await api.t.db.selectFrom('class_chunk').select('id').execute();
+    expect(left).toEqual([]);
+  });
+});

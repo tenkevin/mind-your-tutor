@@ -118,7 +118,12 @@ export async function startApi(
       } as unknown as Sender,
       embedder: hashEmbedder(),
     },
-    privacy: options.privacy ? { store: options.privacy } : undefined,
+    privacy: options.privacy
+      ? {
+          store: options.privacy,
+          removeUpload: library && ((key: string) => library.store.delete(key)),
+        }
+      : undefined,
     ai: options.ai,
     logger: options.log ? { level: 'info', stream: options.log } : false,
   });

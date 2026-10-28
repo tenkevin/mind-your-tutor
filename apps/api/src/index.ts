@@ -43,7 +43,12 @@ export {
   studentsReceiving,
   type PublishDeps,
 } from './publishing.js';
-export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
+export {
+  privacyRoutes,
+  STUDENT_PRIVACY_POLICY,
+  TEACHER_UPLOADS_POLICY,
+  type PrivacyRoutes,
+} from './privacy.js';
 
 export interface ServerOptions {
   db: Db;

@@ -12,6 +12,7 @@ import { APP_ROLE, RETENTION_ROLE } from './migrations/helpers.js';
 import {
   classHistory,
   deleteStudent,
+  deleteTeacherUploads,
   exportStudent,
   isSecretKey,
   PrivacyError,
@@ -25,7 +26,7 @@ import {
   type StudentRecord,
 } from './privacy.js';
 import { errorCode, freshDatabase, hasDatabase, PG, type TestDatabase } from './test/harness.js';
-import { seedOrg, testUlid, type SeededOrg } from './test/seed.js';
+import { embedding, seedOrg, testUlid, type SeededOrg } from './test/seed.js';
 
 // F6: audit writes (F6-F5, F6-F6, F6-S2, F6-P2, F6-U2), retention settings (F6-F2) and
 // FERPA export and delete (F6-F7, F6-S1, F6-S3). The retention job itself is tested in
@@ -1097,3 +1098,129 @@ describe.skipIf(!hasDatabase)(
     });
   },
 );
+
+describe.skipIf(!hasDatabase)("FERPA delete of a teacher's uploads (A3-S3, D11)", () => {
+  let t: TestDatabase;
+  let app: Db;
+  let a: Org;
+  let b: Org;
+  let secondClass: string;
+
+  const chunkCount = async (orgId: string) =>
+    Number(
+      (
+        await t.db
+          .selectFrom('class_chunk')
+          .select((eb) => eb.fn.countAll<number>().as('n'))
+          .where('org_id', '=', orgId)
+          .executeTakeFirstOrThrow()
+      ).n,
+    );
+
+  beforeAll(async () => {
+    t = await freshDatabase();
+    a = await seedWithAdmin(t.db, 'a');
+    b = await seedWithAdmin(t.db, 'b');
+    // A second class of org A with another teacher's upload, which must stay.
+    const other = await t.db
+      .insertInto('app_user')
+      .values({ org_id: a.orgId, role: 'teacher', name: 'Other teacher' })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const klass = await t.db
+      .insertInto('class')
+      .values({
+        org_id: a.orgId,
+        curriculum_id: a.curriculumId,
+        pinned_version_id: a.publishedId,
+        teacher_id: a.teacherId,
+        name: 'Second class',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    secondClass = klass.id;
+    for (const [uploader, file] of [
+      [a.teacherId, `orgs/${a.orgId}/uploads/11111111-1111-4111-8111-111111111111`],
+      [other.id, 'kept.pdf'],
+    ] as const) {
+      const doc = await t.db
+        .insertInto('class_library_doc')
+        .values({
+          org_id: a.orgId,
+          class_id: secondClass,
+          title: `Upload by ${uploader}`,
+          file_url: file,
+          uploaded_by: uploader,
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await t.db
+        .insertInto('class_chunk')
+        .values({
+          org_id: a.orgId,
+          class_id: secondClass,
+          class_library_doc_id: doc.id,
+          ordinal: 0,
+          content: 'A passage.',
+          embedding: embedding(7),
+        })
+        .execute();
+    }
+    app = await t.loginAs(APP_ROLE);
+  });
+  afterAll(async () => {
+    await t?.drop();
+  });
+
+  it('refuses a non-admin, another org, and a student as the subject', async () => {
+    const run = (actorId: string, orgId: string, teacherId: string) =>
+      deleteTeacherUploads(app, { orgId, actorId, teacherId });
+    await expect(run(a.teacherId, a.orgId, a.teacherId)).rejects.toMatchObject({
+      code: 'forbidden',
+    });
+    await expect(run(b.adminId, b.orgId, a.teacherId)).rejects.toMatchObject({ code: 'not_found' });
+    await expect(run(a.adminId, a.orgId, a.studentId)).rejects.toMatchObject({ code: 'not_found' });
+  });
+
+  it("removes the teacher's uploads in every class, with chunks, embeddings and files, and keeps others'", async () => {
+    expect(await chunkCount(a.orgId)).toBe(3); // seed upload + two above
+    const removed: string[] = [];
+    const result = await deleteTeacherUploads(
+      app,
+      { orgId: a.orgId, actorId: a.adminId, teacherId: a.teacherId },
+      async (key) => void removed.push(key),
+    );
+    expect(result).toEqual({ documents: 2, chunks: 2, files: 1 });
+    expect(removed).toEqual([`orgs/${a.orgId}/uploads/11111111-1111-4111-8111-111111111111`]);
+    const left = await t.db
+      .selectFrom('class_library_doc')
+      .select(['uploaded_by'])
+      .where('org_id', '=', a.orgId)
+      .execute();
+    expect(left).toHaveLength(1);
+    expect(left[0]!.uploaded_by).not.toBe(a.teacherId);
+    expect(await chunkCount(a.orgId)).toBe(1);
+    // Another organization is untouched.
+    expect(await chunkCount(b.orgId)).toBe(1);
+
+    const audit = await t.db
+      .selectFrom('audit_event')
+      .select(['actor_id', 'target_id', 'after'])
+      .where('action', '=', 'teacher.uploads_deleted')
+      .executeTakeFirstOrThrow();
+    expect(audit).toMatchObject({
+      actor_id: a.adminId,
+      target_id: a.teacherId,
+      after: { documents: 2, chunks: 2, files: 1 },
+    });
+  });
+
+  it('is safe to repeat', async () => {
+    const again = await deleteTeacherUploads(app, {
+      orgId: a.orgId,
+      actorId: a.adminId,
+      teacherId: a.teacherId,
+    });
+    expect(again).toEqual({ documents: 0, chunks: 0, files: 0 });
+  });
+});

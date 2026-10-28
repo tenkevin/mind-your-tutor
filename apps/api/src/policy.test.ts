@@ -7,7 +7,7 @@ import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
-import { STUDENT_PRIVACY_POLICY } from './privacy.js';
+import { STUDENT_PRIVACY_POLICY, TEACHER_UPLOADS_POLICY } from './privacy.js';
 import {
   as,
   fromApp,
@@ -68,6 +68,7 @@ const LIBRARY_ROUTE_URLS = [
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
+  '/api/privacy/teachers/:teacherId/uploads',
 ];
 /** A1's AI gateway routes, registered when the server is given a model provider. */
 const AI_ROUTE_URLS = [
@@ -229,13 +230,15 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
     await app.close();
     expect(privacy.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
       'DELETE /api/privacy/students/:studentId',
+      'DELETE /api/privacy/teachers/:teacherId/uploads',
       'POST /api/privacy/students/:studentId/export',
     ]);
     for (const route of privacy) {
-      expect(route.policy).toEqual(STUDENT_PRIVACY_POLICY);
+      const teacher = route.url.includes('/teachers/');
+      expect(route.policy).toEqual(teacher ? TEACHER_UPLOADS_POLICY : STUDENT_PRIVACY_POLICY);
       expect(route.policy).toEqual({
         roles: ['admin'],
-        scope: { kind: 'user', param: 'studentId' },
+        scope: { kind: 'user', param: teacher ? 'teacherId' : 'studentId' },
       });
     }
   });
@@ -445,6 +448,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         route: '/api/privacy/students/:studentId/export',
         method: 'POST',
         url: `/api/privacy/students/${users['student-a2']}/export`,
+      },
+      {
+        route: '/api/privacy/teachers/:teacherId/uploads',
+        method: 'DELETE',
+        url: `/api/privacy/teachers/${users['teacher-a2']}/uploads`,
       },
       {
         route: '/api/privacy/students/:studentId',
