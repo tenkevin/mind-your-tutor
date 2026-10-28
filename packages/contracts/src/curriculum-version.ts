@@ -4,6 +4,7 @@ import { DataCheckIssueSchema } from './data-checks.js';
 import { ColumnMappingEntrySchema, ColumnMappingSchema, ImportIssueSchema } from './import.js';
 import { PackIssueSchema } from './issues.js';
 import { PackSchema } from './pack.js';
+import { TAB_NAMES } from './spec.js';
 
 // An immutable snapshot of a curriculum (ARCHITECTURE.md §5 and §7): the validated
 // pack body, what was derived from it, the issues found and where it came from.
@@ -20,6 +21,13 @@ export const VersionSourceSchema = z.object({
   checksum: z.string().regex(/^[0-9a-f]{64}$/),
   /** How source columns were mapped onto pack columns (C1). */
   column_mapping: ColumnMappingSchema.default([]),
+  /**
+   * The sheet row of each pack item, by tab, in pack order, so issues about an item can
+   * name its row (T2-U3). Left out by older versions and before the file is read.
+   */
+  rows: z
+    .partialRecord(z.enum(TAB_NAMES), z.array(z.number().int().min(1)).max(100_000))
+    .optional(),
 });
 
 /**

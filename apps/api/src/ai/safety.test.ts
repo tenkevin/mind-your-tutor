@@ -6,6 +6,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { mockModel, type MockModel } from '../test/mock-model.js';
 import { mockModeration, type MockModeration } from '../test/mock-moderation.js';
 import { as, sessionFor, startApi, type Signed, type TestApi } from '../test/harness.js';
+import { scoped } from '../db.js';
+import { resolveOpenFlag } from '../safety.js';
 import { moderate } from './moderation.js';
 
 // A2-F1 to F7, A2-S1 to S3, A2-P1, A2-U1 and U2, against a mock model and a mock
@@ -534,6 +536,59 @@ describe.skipIf(!hasDatabase)('student safety (A2)', () => {
         actor_id: w.api.sample.users['admin-a'],
         after: { status: 'resolved' },
       });
+    });
+  });
+
+  describe('resolving at once (A2-S3)', () => {
+    it('writes one audit event however many callers hold a stale open view of the flag', async () => {
+      const res = await ask(w.who.student, SELF_HARM);
+      const flag = await w.api.t.db
+        .selectFrom('safety_flag')
+        .select(['id', 'class_id'])
+        .where('interaction_id', '=', res.json().interactionId)
+        .executeTakeFirstOrThrow();
+      const orgId = w.api.sample.orgs.a;
+      const stale = { id: flag.id, classId: flag.class_id };
+      // Each call is handed the same "open" view, as two requests that read before either wrote.
+      const outcomes: boolean[] = [];
+      for (const userId of [w.api.sample.users['teacher-a1'], w.api.sample.users['admin-a']]) {
+        outcomes.push(
+          await scoped(w.api.t.db, { orgId, actorId: userId }, (trx) =>
+            resolveOpenFlag(trx, { orgId, userId, flag: stale }),
+          ),
+        );
+      }
+      expect(outcomes).toEqual([true, false]);
+      const events = await w.api.t.db
+        .selectFrom('audit_event')
+        .select('actor_id')
+        .where('target_id', '=', flag.id)
+        .where('action', '=', 'safety_flag.resolved')
+        .execute();
+      expect(events).toEqual([{ actor_id: w.api.sample.users['teacher-a1'] }]);
+    });
+
+    it('writes one audit event when four callers resolve the same flag together', async () => {
+      const res = await ask(w.who.student, SELF_HARM);
+      const flag = await w.api.t.db
+        .selectFrom('safety_flag')
+        .select('id')
+        .where('interaction_id', '=', res.json().interactionId)
+        .executeTakeFirstOrThrow();
+      const url = `/api/safety-flags/${flag.id}/resolve`;
+      const results = await Promise.all(
+        Array.from({ length: 4 }, (_, i) =>
+          as(w.api, i % 2 === 0 ? w.who.teacher : w.who.admin)('POST', url),
+        ),
+      );
+      expect(results.map((r) => r.statusCode)).toEqual([200, 200, 200, 200]);
+      const events = await w.api.t.db
+        .selectFrom('audit_event')
+        .select('action')
+        .where('target_id', '=', flag.id)
+        .where('action', '=', 'safety_flag.resolved')
+        .execute();
+      expect(events).toHaveLength(1);
     });
   });
 

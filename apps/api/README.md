@@ -71,6 +71,22 @@ wrong role, class or org is 403. Handlers reach the database only through
 `req.withOrg`, which sets the org (and class) for row-level security and switches to the
 `ideamap_app` role. `src/policy.test.ts` calls every route as each kind of caller.
 
+## Curriculum imports
+
+`startServer` (the deployed entry point, `node dist/index.js`) wires C4's imports in: jobs
+go to pg-boss in the same database, uploads to `UPLOAD_DIR`, which the worker
+(`apps/worker`) reads too. The routes sit under `/api` with the other app routes, each
+with a staff policy on a curriculum or job the caller's org can see:
+
+- `POST /api/curricula/:curriculumId/imports`: the file as the body
+  (`application/octet-stream`), `X-File-Name` percent-encoded, optional `Idempotency-Key`.
+- `GET /api/curricula/:curriculumId/imports/latest`: the newest job and the newest
+  version's issues grouped by cause, for Teacher Settings → Curriculum data (T2).
+- `GET /api/imports/:jobId`: one job's status and steps, polled while it runs.
+
+`pnpm dev:auth` also runs an import worker in its own process, so a local upload goes all
+the way to a draft (uploads in a temporary directory unless `UPLOAD_DIR` is set).
+
 ## Roster import
 
 `POST /api/roster/import` (admins) takes OneRoster 1.1 `users.csv`, `classes.csv` and

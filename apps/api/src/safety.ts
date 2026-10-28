@@ -129,6 +129,34 @@ async function listFlags(
   }));
 }
 
+/**
+ * Move a flag from open to resolved, and write the audit row only if this call made the
+ * move. The caller may be working from a view of the flag that is already stale (another
+ * request resolved it first), so the conditional update decides, not that view: two
+ * resolutions of one flag leave one audit row (A2-S3). Returns whether this call resolved it.
+ */
+export async function resolveOpenFlag(
+  trx: Trx,
+  r: { orgId: string; userId: string; flag: Pick<SafetyFlag, 'id' | 'classId'> },
+): Promise<boolean> {
+  const moved = await trx
+    .updateTable('safety_flag')
+    .set({ status: 'resolved', resolved_at: new Date(), resolved_by: r.userId })
+    .where('id', '=', r.flag.id)
+    .where('status', '=', 'open')
+    .executeTakeFirst();
+  if (Number(moved.numUpdatedRows) !== 1) return false;
+  await writeAudit(trx, r.orgId, {
+    action: 'safety_flag.resolved',
+    targetType: 'safety_flag',
+    targetId: r.flag.id,
+    classId: r.flag.classId,
+    before: { status: 'open' },
+    after: { status: 'resolved' },
+  });
+  return true;
+}
+
 const CLASS_STAFF: RoutePolicy = {
   roles: STAFF,
   scope: { kind: 'class', param: 'classId', students: false },
@@ -188,22 +216,7 @@ export function safetyRoutes(app: FastifyInstance): void {
         // Only a flag the caller is told about can be handled by them.
         const [flag] = await listFlags(trx, viewer, { flagId });
         if (!flag) return null;
-        if (flag.status === 'open') {
-          await trx
-            .updateTable('safety_flag')
-            .set({ status: 'resolved', resolved_at: new Date(), resolved_by: userId })
-            .where('id', '=', flagId)
-            .where('status', '=', 'open')
-            .execute();
-          await writeAudit(trx, orgId, {
-            action: 'safety_flag.resolved',
-            targetType: 'safety_flag',
-            targetId: flagId,
-            classId: flag.classId,
-            before: { status: 'open' },
-            after: { status: 'resolved' },
-          });
-        }
+        if (flag.status === 'open') await resolveOpenFlag(trx, { orgId, userId, flag });
         return (await listFlags(trx, viewer, { flagId }))[0]!;
       });
       if (!resolved) return forbidden(reply);

@@ -14,6 +14,7 @@ import {
   type SessionClient,
 } from './auth/session';
 import { SignIn } from './auth/SignIn';
+import { CurriculumData } from './curriculum/CurriculumData';
 import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
 import { sectionFor } from './shell/sections';
 
@@ -42,8 +43,14 @@ function browserClient(): SessionClient {
 
 const here = () => `${location.pathname}${location.search}${location.hash}`;
 
-/** The class the header shows: `?class=<id>` if it's one of theirs, else their first. */
-async function loadHeader(wanted: string | null): Promise<HeaderState> {
+/** The class the console shows: `?class=<id>` if it's one of theirs, else their first. */
+interface Chosen {
+  header: HeaderState;
+  /** The class's curriculum, for the Curriculum data section; null with no class. */
+  curriculumId: string | null;
+}
+
+async function loadHeader(wanted: string | null): Promise<Chosen> {
   const get = async (url: string) => {
     const res = await fetch(url, { credentials: 'same-origin' });
     if (res.status === 401) {
@@ -55,10 +62,11 @@ async function loadHeader(wanted: string | null): Promise<HeaderState> {
   };
   const { classes } = ClassesResponseSchema.parse(await get('/api/classes'));
   const klass = classes.find((c) => c.id === wanted) ?? classes[0];
-  if (!klass) return 'none';
-  return ClassHeaderResponseSchema.parse(
+  if (!klass) return { header: 'none', curriculumId: null };
+  const header = ClassHeaderResponseSchema.parse(
     await get(`/api/classes/${encodeURIComponent(klass.id)}/header`),
   );
+  return { header, curriculumId: klass.curriculumId };
 }
 
 function useHash(): string {
@@ -89,6 +97,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   const saveState = useSyncExternalStore(saves.subscribe, saves.saveState, noClient.saveState);
   const hash = useHash();
   const [header, setHeader] = useState<HeaderState>('loading');
+  const [curriculumId, setCurriculumId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client) return;
@@ -130,7 +139,11 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     if (section) document.getElementById(section.id)?.scrollIntoView();
     let live = true;
     loadHeader(new URLSearchParams(location.search).get('class'))
-      .then((h) => live && setHeader(h))
+      .then((chosen) => {
+        if (!live) return;
+        setHeader(chosen.header);
+        setCurriculumId(chosen.curriculumId);
+      })
       .catch((error: unknown) => {
         if (live && !(error instanceof SignedOut)) setHeader('none');
       });
@@ -178,6 +191,15 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       retrying={retrying}
       onRetry={retry}
       onSignOut={signOut}
+      content={{
+        'sec-source': curriculumId ? (
+          <CurriculumData
+            curriculumId={curriculumId}
+            csrf={view.me.csrfToken}
+            onSignedOut={() => location.assign(signInPath(here()))}
+          />
+        ) : null,
+      }}
     />
   );
 }
