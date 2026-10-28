@@ -13,7 +13,7 @@ Read this before starting any task.
 
 ## Stop and resume protocol
 
-Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary:** **active.** Resumed 2026-10-23 03:00 UTC by the user ("continue to a new agent swarm"); normal coordination applies: claims, criteria-first, independent QA and the integration gate. On 2026-10-27 the user paused new builder launches for A2, A3, A5 and A7 until they give direction; those tasks stay claimed with no agent running. A stop is in effect only when this line says so.
+Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary:** **active.** Resumed 2026-10-23 03:00 UTC by the user ("continue to a new agent swarm"); normal coordination applies: claims, criteria-first, independent QA and the integration gate. On 2026-10-28 the user directed the new coordinator to build A2, A3, A5 and A7 in four separate cloud sessions (lifting the 2026-10-27 launch pause). A stop is in effect only when this line says so.
 
 On an authorized resume, fetch current state, verify PR heads/CI and outstanding claims, and reconcile the handoff before assigning work. Preserve independent QA and all existing merge gates. If a task is stopped mid-review, retain its truthful task status and record owner, exact head, evidence, unresolved checks and next action; do not mark it done merely to close a session.
 

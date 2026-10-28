@@ -22,7 +22,7 @@ Every open PR below is CI green and `mergeable_state: clean`, but **behind `idea
 | 6 | T2 #27 (agent-t2) | `1afe366` | 18 | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since | Codex review of the current head |
 | 7 | T3 #29 (agent-t3) | `d25e18d` | 19 | Claude QA run 1 FAIL at `e195f98` ([report](reports/T3-run1.md)); fixes pushed since | Codex review of the current head |
 
-**Ready, unclaimed:** A2, A3, A5, A7 (released 2026-10-28). To be built in four separate cloud sessions; each builder claims its own task.
+**Building:** A2, A3, A5, A7 in four separate Sonnet cloud sessions launched 2026-10-28 00:55 UTC (session ids in HANDOFF §roles); each builder claims its own task.
 
 **Criteria ready, waiting on merges:** T4, T5, T7 (T3); T6, T8, A6 (T2); A4 (A3, T2); A8 (A7); A9 (A2, M2, A7); M4 (M3); M5, S1 (M2, M3); M6 (M3, A9); M7 (M3); A10 (A9, A5, M6); C7 (S1); S2 (S1, M4); S3 (S2, T4); S4 (S2, A2, A7, A8); L1 (the pilot set). **After the pilot:** X1 and X2 have no criteria yet.
 

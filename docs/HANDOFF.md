@@ -4,9 +4,9 @@
 
 | Role | Who |
 |---|---|
-| Coordinator | Claude session `session_015Pb4Y1xEbgHXnNwxXnH8pZ`, local checkout `/home/claude/repo`. Owns claims, criteria, routing, the coordinator's local gate checks, merges and task state |
+| Coordinator | Claude session `session_017xAqLcBw3ZrNAbTTGfVg5K` (took over from `session_015Pb4Y1xEbgHXnNwxXnH8pZ` on 2026-10-28), checkout `/home/user/mind-your-tutor`. Owns claims, criteria, routing, the coordinator's local gate checks, merges and task state |
 | Independent reviewer | **Codex** (brought in by the user). A `Codex-*` file reviewing a PR's current head is that PR's QA report. Independent Claude QA is paused (user, 2026-10-24) |
-| Builders | Local Sonnet subagents launched by the coordinator, one task each. None is running at this snapshot |
+| Builders | Sonnet **cloud sessions** started by the coordinator with `create_session`, one task each. Running since 2026-10-28 00:55 UTC: A2 `session_017xAqLdhaHMuRWJHE4HsReH`, A3 `session_017xAqLcx4eLwDN9TPBQiSqU`, A5 `session_017xAqLbNcxTazVTF9QNhJsT`, A7 `session_017xAqLeh1LQDBNjR1hqeg4g` (tags `idea-map:build-<ID>`). Never use local subagents for parallel builds |
 
 The earlier Codex-thread coordinator (`01a1662b-…`) and its C9 stop boundary are history; they no longer apply. Sections 5–8 are live-state snapshots, so re-check before acting. Live queue: `docs/qa/STATUS.md`.
 
@@ -84,7 +84,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 | Status | Tasks |
 |---|---|
 | Done | F1, F1b, F1c, F1d, F2, F2cx1, F3, F4, F4b, F4cx1, F4cx3, F5, F6, C1, C1cx1, C2, C2cx5, C3, C4, C5, C6, C8, C9, M1, T1, S5, A1, MD |
-| Ready, unclaimed | A2, A3, A5, A7 (released 2026-10-28, `1d8b14f`, `1d92bf8`). The user wants each built in its own **cloud session**; local subagents share one checkout and collided, so they were stopped before writing code |
+| Building | A2, A3, A5, A7 in four cloud sessions launched 2026-10-28 00:55 UTC (§ roles table); each builder claims its own task (agent-a2/a3/a5/a7). Earlier local subagents shared one checkout and collided, so they were stopped before writing code |
 | In review, waiting for Codex | T2 #27, T3 #29, M2 #30, M3 #31, C6cx1 #32, C5cx1 #33, C5cx2 #34 (heads and history in STATUS.md) |
 | Blocked on dependencies | C7, M4, M5, T4–T8, A4, A6, A8, A9, A10, M6, M7, S1–S4, L1, X1, X2 |
 | Placeholder | CXB (holding list, never claimable) |
@@ -95,7 +95,7 @@ All seven open PRs are CI green and mergeable, but each is now **8–22 commits 
 
 ## 6. Next actions, in order
 
-1. **Launch A2, A3, A5 and A7 as four separate cloud sessions** (Sonnet, repo `tenkevin/mind-your-tutor` at `idea-map`), each agent claiming its own task first. Don't use local subagents for parallel builds: they share one checkout. If `create_session` isn't available, ask the user to start the sessions.
+1. **A2, A3, A5 and A7 builders are running** as cloud sessions (launched 2026-10-28). Check each with `get_session`/`list_events` (kinds `["result"]`) and confirm their claims landed on `idea-map`; route each PR to Codex once CI is green. Don't use local subagents for parallel builds.
 2. Watch for new `Codex-*` files (§7 command), process each into `codex-ledger.json`, route errors to `<ID>cx<n>` tasks and suggestions to criteria or CXB.
 3. For each PR with a Codex PASS on its current head: sync with `idea-map`, wait for exact-head CI, run any full-suite must locally, then merge **one per pass** and confirm merge CI. The merge helper (`merge-pr.sh <pr> <id> <sha> <report>` in the coordinator's scratchpad) waits for CI, checks `behind_by == 0` and that `idea-map` is green, squash-merges, saves `docs/qa/reports/<ID>.md`, runs `plan.mjs done` and confirms merge CI.
 4. Fix-task priority (rule 5): C6cx1, C5cx1 and C5cx2 merge ahead of feature PRs once they pass.
