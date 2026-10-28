@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { hashEmbedder } from '@ideamap/ai';
 import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, migrateUp } from '@ideamap/db';
 import { createBoss, orgScope, registerWorkers } from '@ideamap/worker';
@@ -64,6 +65,8 @@ await registerWorkers({
   boss: workerBoss,
   scope: orgScope(db),
   store: new FileObjectStore(uploadDir),
+  // Local development: the word-matching embedder (the vendor is open, §12 q6).
+  embedder: hashEmbedder(),
   pollingIntervalSeconds: 1,
 });
 const app = buildServer({ db, config, logger: false, imports });
