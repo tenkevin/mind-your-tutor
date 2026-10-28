@@ -36,7 +36,7 @@ Read these only when you're working in that area:
 | `fixtures/water-cycle/README.md` | Sample data, plus its deliberate errors (1 error, 1 warning, 1 info) |
 | `docs/tasks.json` | Source of truth for tasks. Change status only via `node scripts/plan.mjs` |
 
-Background only, and rarely needed: `project/*.dc.html` (design prototypes, used as visual reference and reference behaviour, e.g. `buildGraph`/`genQuiz` in `Idea Map Explorer v2.dc.html`), `chats/chat1.md` (the original design intent), `project/HANDOFF.md`, and `docs/idea-map-blueprint.html` (a published page, now stale). Never read `pnpm-lock.yaml` or `project/support.js`.
+Background only, and rarely needed: `project/*.dc.html` (design prototypes, used as visual reference and reference behaviour, e.g. `buildGraph`/`genQuiz` in `Idea Map Explorer v2.dc.html`), `chats/chat1.md` (the original design intent), `project/HANDOFF.md`, and `docs/idea-map-blueprint.html` (published at https://claude.ai/artifact/L4mqXZcsrcm5KEL2BnH68Y; v0.4 snapshot of 2026-10-28 with D1–D34. Republish it, and re-render `docs/plan-map.png` from the Mermaid block in `docs/PLAN.md`, after decisions or task changes). Never read `pnpm-lock.yaml` or `project/support.js`.
 
 ## 2. Decisions in one line each (detail in ARCHITECTURE §1)
 
@@ -105,7 +105,7 @@ All seven open PRs are CI green and mergeable, but each is now **8–22 commits 
 
 ## 6a. Builder prompt framework (user, 2026-10-28)
 
-Cloud builder sessions **cannot message the coordinator back** (no `send_message` in their tool set) and a clean finish raises no event, so decisions in their final replies are lost unless the coordinator pulls them. Every builder prompt therefore follows the framework below, which worked for T2, and adds the decisions heading. The coordinator reads each builder's final reply (`list_events`, kinds `["result"]`) and its PR body at every check-in.
+A clean finish of a cloud builder session raises no event for the coordinator, so decisions in its final reply are lost unless the coordinator pulls them. Builders *can* reach the coordinator with `send_message` (A7 and A5 did on 2026-10-28), but don't rely on it. Every builder prompt therefore follows the framework below, which worked for T2, and adds the decisions heading. The coordinator reads each builder's final reply (`list_events`, kinds `["result"]`) and its PR body at every check-in.
 
 > You are agent agent-<id>. Read AGENTS.md first and follow it exactly. Then read docs/qa/<ID>.md: an independent QA agent will test your PR against it, and the PR merges only if every must check passes. Read docs/ARCHITECTURE.md <relevant sections and decisions>.
 >
