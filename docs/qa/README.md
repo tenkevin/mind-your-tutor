@@ -4,7 +4,7 @@ Every task has a QA criteria file, `docs/qa/<ID>.md`, written **before the task 
 
 ## Authorization and handoff
 
-Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Resumed 2026-10-23 03:00 UTC by the user** ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent QA and the integration gate. Routine state and reports belong in these living documents; direct messages are reserved for urgent findings, actionable blockers or authorized startup assignments. QA owns evidence and verdicts; the coordinator owns task states and merges. An unavailable required check remains unverified; do not retry or reroute previously blocked review actions through another tool, session or CI.
+Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Coordination is active** under the user's resume of 2026-10-23 03:00 UTC ("continue to a new agent swarm"): claims, criteria-first, independent review and the integration gate. Since 2026-10-24 the independent reviewer is **Codex**; independent Claude QA is paused (user policy in `STATUS.md`). Routine state and reports belong in these living documents; direct messages are reserved for urgent findings, actionable blockers or authorized startup assignments. QA owns evidence and verdicts; the coordinator owns task states and merges. An unavailable required check remains unverified; do not retry or reroute previously blocked review actions through another tool, session or CI. The one standing exception is `packages/db/src/function_binding.test.ts`, which Codex may not run: the coordinator runs it, with the full root suite, locally before merging and records the result in the completion report.
 
 ## Who does what
 
@@ -12,7 +12,7 @@ Read `../HANDOFF.md` and `STATUS.md` before starting a review. **Resumed 2026-10
 |---|---|---|
 | Write the criteria | Coordinator (or a person), from the task's `done_when`, `docs/ARCHITECTURE.md`, `docs/spec/` and the design in `project/`, **without looking at any implementation** | Before the task is claimed |
 | Build to the criteria | The task's agent. It reads the criteria as the bar but does not mark them | During the task |
-| Run the criteria | A **separate QA agent** that did not write the code, in a fresh session, against the PR branch | After the PR is opened and CI is green |
+| Run the criteria | A **separate reviewer** that did not write the code (currently Codex), against the PR branch | After the PR is opened and CI is green |
 | Decide | Coordinator merges only on a QA **PASS**. A FAIL goes back to the task's agent with the report | After QA |
 | Keep the record | Coordinator saves the report as `docs/qa/reports/<ID>.md`, confirms actual merge CI, then marks done | After verified merge |
 

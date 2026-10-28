@@ -3,7 +3,14 @@ import cookie from '@fastify/cookie';
 import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
 import { createBoss, ensureQueues, orgScope } from '@ideamap/worker';
-import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyRequest,
+  type FastifyServerOptions,
+} from 'fastify';
+import { anthropicProvider } from './ai/anthropic.js';
+import { loadAiConfig } from './ai/config.js';
+import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
 import { loadConfig, type AuthConfig } from './config.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
@@ -17,6 +24,14 @@ import { deriveKeys } from './tokens.js';
 export { loadConfig, type AuthConfig } from './config.js';
 export { importRoutes, type Authenticate, type ImportRoutesOptions } from './imports.js';
 export type { IdentityProvider } from './providers.js';
+export { loadAiConfig, type AiConfig } from './ai/config.js';
+export {
+  AI_ROUTES,
+  STAFF_AI_POLICY,
+  STUDENT_AI_POLICY,
+  type AiGatewayOptions,
+} from './ai/gateway.js';
+export type { ModelProvider, ModelReply, ModelRequest } from './ai/provider.js';
 export { publishRoutes, type PublishRoutesOptions } from './publish.js';
 export {
   PublishRequestError,
@@ -37,13 +52,16 @@ export interface ServerOptions {
   providers?: Map<string, IdentityProvider>;
   /** The clock, for session limits; tests move it forward. */
   now?: () => Date;
-  logger?: boolean;
+  /** Fastify's logger: true, or options such as a destination stream (tests read it). */
+  logger?: FastifyServerOptions['logger'];
   /** Curriculum imports (C4); left out, the routes aren't registered. */
   imports?: Pick<ImportRoutesOptions, 'deps'>;
   /** Diff, preview, publish and rollback (C5); left out, the routes aren't registered. */
   publish?: Pick<PublishRoutesOptions, 'deps'>;
   /** FERPA student export and delete (F6); left out, the routes aren't registered. */
   privacy?: PrivacyRoutes;
+  /** The AI gateway (A1); left out, its routes aren't registered. */
+  ai?: AiGatewayOptions;
 }
 
 export function buildServer(options: ServerOptions): FastifyInstance {
@@ -93,6 +111,11 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).
   if (options.privacy) privacyRoutes(app, options.privacy);
 
+  // Every model call goes through the gateway; the policy hooks above apply.
+  if (options.ai) {
+    aiRoutes(app, { sessionSecret: config.sessionSecret, now: deps.now }, options.ai);
+  }
+
   // Fixed bodies, so unknown paths and internal errors aren't echoed back.
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: 'Not found' }));
   app.setErrorHandler((error: { statusCode?: number }, req, reply) => {
@@ -141,12 +164,20 @@ export async function startServer(
   const { imports, stop } = await startImports(db, url, uploads);
   // FERPA export files go to EXPORT_DIR; without it the privacy routes are left out.
   const exportDir = env.EXPORT_DIR;
+  // The AI gateway needs a provider key from the environment; without one it is left out.
+  const aiConfig = loadAiConfig(env);
   const app = buildServer({
     db,
     config,
     logger: options.logger ?? true,
     imports,
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
+    ai: aiConfig.apiKey
+      ? {
+          provider: anthropicProvider({ apiKey: aiConfig.apiKey, fallbacks: aiConfig.fallbacks }),
+          config: aiConfig,
+        }
+      : undefined,
   });
   return {
     app,

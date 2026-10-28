@@ -3,6 +3,7 @@ import { CSRF_HEADER } from '@ideamap/contracts';
 import type { ExportStore } from '@ideamap/db';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
 import { loadConfig } from './config.js';
 import { buildServer } from './index.js';
 import { SESSION_COOKIE } from './policy.js';
@@ -17,6 +18,7 @@ import {
   type Signed,
   type TestApi,
 } from './test/harness.js';
+import { mockModel } from './test/mock-model.js';
 
 // F5-F4 to F5-F6, F5-S3, F5-S4, F5-P1.
 
@@ -63,6 +65,22 @@ const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
 ];
+/** A1's AI gateway routes, registered when the server is given a model provider. */
+const AI_ROUTE_URLS = [
+  '/api/classes/:classId/ai/tutor',
+  '/api/classes/:classId/ai/peer',
+  '/api/classes/:classId/ai/agent',
+];
+/** The gateway with a mock provider and limits the sweep can't reach. */
+const MOCK_AI = {
+  provider: mockModel(),
+  config: {
+    model: 'test-model',
+    maxTokens: 500,
+    timeoutMs: 1000,
+    limits: { perStudent: 1000, perClass: 1000, windowMs: 60_000 },
+  },
+};
 /** An export store that keeps nothing, for sweeps that only check access. */
 const NO_FILES: ExportStore = { put: async () => {}, remove: async () => {} };
 const PACK = readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url));
@@ -187,6 +205,29 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
   });
 });
 
+describe('A1 AI gateway routes join the registry (F5-F4, A1-S2)', () => {
+  it('declares a class-scoped policy per persona: students for Ms. Ivy and Milo, staff for Atlas', async () => {
+    const app = buildServer({ db: undefined as never, config: offlineConfig, ai: MOCK_AI });
+    await app.ready();
+    const ai = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    expect(ai.map((r) => `${r.method} ${r.url}`)).toEqual(AI_ROUTE_URLS.map((u) => `POST ${u}`));
+    expect(ai.map((r) => r.policy)).toEqual([
+      STUDENT_AI_POLICY,
+      STUDENT_AI_POLICY,
+      STAFF_AI_POLICY,
+    ]);
+    expect(STUDENT_AI_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher', 'student'],
+      scope: { kind: 'class', param: 'classId', students: true },
+    });
+    expect(STAFF_AI_POLICY).toEqual({
+      roles: ['admin', 'author', 'teacher'],
+      scope: { kind: 'class', param: 'classId', students: false },
+    });
+  });
+});
+
 describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let api: TestApi;
   let who: Record<
@@ -196,9 +237,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let jobId = '';
   let versionId = '';
   beforeAll(async () => {
-    // With C4's import, C5's publish and F6's privacy routes registered, so the sweep
-    // covers them too.
-    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES });
+    // With C4's import, C5's publish, F6's privacy and A1's AI routes registered, so the
+    // sweep covers them too.
+    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES, ai: MOCK_AI });
     versionId = (
       await api.t.db
         .selectFrom('curriculum_version')
@@ -348,6 +389,13 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         method: 'DELETE',
         url: `/api/privacy/students/${users['student-a2']}`,
       },
+      // A1: one call per persona, aimed at class A1.
+      ...['tutor', 'peer', 'agent'].map((persona) => ({
+        route: `/api/classes/:classId/ai/${persona}`,
+        method: 'POST' as const,
+        url: `/api/classes/${classes.a1}/ai/${persona}`,
+        body: { message: 'Hello' },
+      })),
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -361,6 +409,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         ...IMPORT_ROUTE_URLS,
         ...PUBLISH_ROUTE_URLS,
         ...PRIVACY_ROUTE_URLS,
+        ...AI_ROUTE_URLS,
       ]),
     );
   });
@@ -416,6 +465,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
     'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],
+    // A1: Ms. Ivy and Milo for the class's students; Atlas for its staff only.
+    'POST /api/classes/:classId/ai/tutor': ['admin', 'student'],
+    'POST /api/classes/:classId/ai/peer': ['admin', 'student'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {
@@ -633,10 +685,12 @@ describe.skipIf(!hasDatabase)('CSRF and the database guard (F5-S3, F5-S4)', () =
   });
 });
 
-describe.skipIf(!hasDatabase)('performance (F5-P1)', () => {
+// F5-P1 and A1-P1 share one file, so these timings run one after the other, never
+// alongside each other.
+describe.skipIf(!hasDatabase)('performance (F5-P1, A1-P1)', () => {
   let api: TestApi;
   beforeAll(async () => {
-    api = await startApi();
+    api = await startApi({}, { ai: { ...MOCK_AI, provider: mockModel() } });
   });
   afterAll(async () => {
     await api?.close();
@@ -668,5 +722,28 @@ describe.skipIf(!hasDatabase)('performance (F5-P1)', () => {
       console.log(`auth p95 ${p95(authed).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
     }
     expect(overhead).toBeLessThan(5);
+  });
+
+  it('adds under 30 ms p95 of gateway work over a signed-in no-op, with an instant provider (A1-P1)', async () => {
+    const student = await sessionFor(api, api.sample.users['student-a1'], api.sample.orgs.a);
+    const gateway = `/api/classes/${api.sample.classes.a1}/ai/tutor`;
+    const time = async (path: string, body?: unknown) => {
+      const out: number[] = [];
+      for (let i = 0; i < 200; i++) {
+        const started = performance.now();
+        const res = await as(api, student)(body ? 'POST' : 'GET', path, body);
+        out.push(performance.now() - started);
+        expect(res.statusCode).toBe(200);
+      }
+      return out.sort((a, b) => a - b);
+    };
+    await time(gateway, { message: 'warm up' });
+    const base = await time('/api/session');
+    const calls = await time(gateway, { message: 'What is condensation, Sam?' });
+    const p95 = (xs: number[]) => xs[Math.floor(xs.length * 0.95)]!;
+    if (process.env.IDEAMAP_PERF_VERBOSE) {
+      console.log(`gateway p95 ${p95(calls).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+    }
+    expect(p95(calls) - p95(base)).toBeLessThan(30);
   });
 });
