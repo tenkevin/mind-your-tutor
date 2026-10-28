@@ -936,7 +936,9 @@
       ],
       "done_when": "Codex C6cx1-E1 (docs/qa/codex/Codex-C6cx1-review-29b23ff.md): a pack with notes 'a\\r\\nb\\nc' exports to CSV and XLSX, and LibreOffice opens both as 'a\\nb\\nc', failing C6-F7 (inherited from C6, not introduced by C6cx1). Accepted text with CRLF either survives the representative application in both formats, or line endings are made canonical (LF) where text is accepted, so no export holds text the application changes; any text that still can't survive is refused with a located, actionable message",
       "placeholder": false,
-      "status": "todo"
+      "status": "doing",
+      "owner": "agent-c6cx2",
+      "updated": "2026-10-28"
     }
   ]
 }
