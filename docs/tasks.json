@@ -498,7 +498,7 @@
       ],
       "done_when": "The Prerequisites, Categories, Standards codes, Media and Assessment tabs and the column mapping editor work",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-t6",
       "updated": "2026-10-28"
     },
