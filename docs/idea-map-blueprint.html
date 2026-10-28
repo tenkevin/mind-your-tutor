@@ -49,6 +49,7 @@ p { margin: 0 0 10px; max-width: 72ch; }
 .mono { font-family: var(--font-mono); font-size: 12px; }
 .label { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
 section.view { display: flex; flex-direction: column; gap: 28px; }
+[hidden] { display: none !important; }
 .block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -117,7 +118,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <header>
   <div class="wrap bar">
-    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.3 · 23 Oct 2026</span></div>
+    <div class="brand"><b>Idea Map Blueprint</b><span>Architecture v0.4 · 28 Oct 2026</span></div>
     <nav role="tablist" aria-label="Views">
       <button role="tab" id="tab-architecture" data-view="architecture">Architecture</button>
       <button role="tab" id="tab-graph" data-view="graph">Dependencies</button>
@@ -168,6 +169,11 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Specific interests (D27)</td><td>Interests such as a favourite team reach the model, so examples connect to the student. Identifiers never do.</td></tr>
           <tr><td>Two memories (D28)</td><td>Short-term is the conversation. Long-term keeps misconceptions, what helped, pace and up to five interest categories, never feelings, family or health.</td></tr>
           <tr><td>Memory controls (D29)</td><td>Memory lasts while the student is enrolled. The student can see, delete or switch it off, and so can their teacher.</td></tr>
+          <tr><td>Teacher ids on feedback (D30)</td><td>Teacher rulings and edits carry the teacher's pseudonymous id, so each teacher's examples weigh equally. Students never see it.</td></tr>
+          <tr><td>Teaching materials kept (D31)</td><td>Library documents and class uploads hold no student data, so the original files and passages are kept: updated or taken out of use, never deleted. A new embedding vendor re-indexes from the stored files.</td></tr>
+          <tr><td>Safety flags are alerts (D32)</td><td>Idea Map alerts staff; it is not the school's record. A flag is deleted with its transcript (90 days by default), or 30 days after it is resolved, whichever comes first.</td></tr>
+          <tr><td>On-device name model (D33)</td><td>An ML name-recognition model on the device finds names and places from sentence context, so no class roster ever reaches a student device. Pattern rules still catch contact details.</td></tr>
+          <tr><td>Teacher-approved evals (D34)</td><td>Persona evals are judged against replies teachers have approved, a living set of evidence. How approvals follow template versions is still open.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -178,7 +184,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
         <div class="tier"><span class="label">Browser</span><div class="boxes">
           <div class="box key"><b>Teacher console</b><small>Settings, import, publish, Atlas</small></div>
           <div class="box"><b>Student explorer</b><small>Map, quizzes, Milo, missions, read-aloud and voice</small></div>
-          <div class="box key"><b>Anonymous layer</b><small>Blurs names and places on the device</small></div>
+          <div class="box key"><b>Anonymous layer</b><small>On-device ML model blurs names and places</small></div>
         </div></div>
         <div class="tier"><span class="label">API</span><div class="boxes">
           <div class="box"><b>Auth &amp; roles</b><small>SSO, org tenancy</small></div>
@@ -197,7 +203,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
         </div></div>
         <div class="tier"><span class="label">Storage</span><div class="boxes">
           <div class="box"><b>Postgres</b><small>Data, job queue (pg-boss), vectors (pgvector)</small></div>
-          <div class="box"><b>Object storage</b><small>Uploads, exports</small></div>
+          <div class="box"><b>Object storage</b><small>Library originals (kept), uploads, exports</small></div>
           <div class="box later"><b>Later: Drive, Cloudinary</b><small>Import picker, media provider</small></div>
         </div></div>
       </div>
@@ -302,11 +308,13 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>COPPA</td><td>School-authorised consent; collect only name, school email and roster ids</td></tr>
           <tr><td>FERPA</td><td>District owns the data; signed data processing agreement; export and delete on request</td></tr>
           <tr><td>AI vendor</td><td>Zero-retention, no-training terms; pseudonymous ids in prompts</td></tr>
-          <tr><td>Anonymous layer</td><td>Names and places replaced on the student's device before any text leaves it; a server backstop catches misses</td></tr>
+          <tr><td>Anonymous layer</td><td>An on-device ML model replaces names and places before any text leaves the device; no roster on the device; a server backstop catches misses</td></tr>
           <tr><td>Learning traces</td><td>Learning events only, kept while enrolled; opt-out from audits and research</td></tr>
           <tr><td>AI memory</td><td>Learning facts and up to five interest categories; the student can view, delete or turn it off</td></tr>
           <tr><td>Fairness and research</td><td>Audits by school and district; race audit run by the district; research on de-identified data only</td></tr>
           <tr><td>Transcripts</td><td>Stored redacted, retention set per district (default 90 days), visible to the class teacher</td></tr>
+          <tr><td>Safety flags</td><td>Alerts to the teacher and admin, not the school's record; deleted with the transcript or 30 days after resolution, whichever is first</td></tr>
+          <tr><td>Teaching materials</td><td>No student data; kept permanently, outside the student delete path</td></tr>
           <tr><td>Access</td><td>Admin, author, teacher and student roles; row-level security per org; audit log on config changes and publishes</td></tr>
           <tr><td>Sign-in</td><td>Google Workspace for Education, Clever or ClassLink; rosters imported from OneRoster CSV</td></tr>
         </tbody>
@@ -320,8 +328,9 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Shared edits</td><td>Who may change defaults on a shared curriculum: its author only, or any teacher (by making a copy)?</td></tr>
           <tr><td>Changed questions</td><td>If a new version changes a unit's assessment questions, do students who already taught Milo keep the trophy?</td></tr>
           <tr><td>First school</td><td>Which sign-in and rostering provider, transcript retention period and hosting region?</td></tr>
-          <tr><td>Embedding model</td><td>Which model the library search uses; changing it later means re-indexing.</td></tr>
-          <tr><td>Privacy layer</td><td>Check the design against the SoulSpeak paper; pick the on-device name detector; decide whether devices may hold the class roster.</td></tr>
+          <tr><td>Embedding model</td><td>Which model the library search uses. Changing it later re-indexes from the stored originals, with no re-upload.</td></tr>
+          <tr><td>Privacy layer</td><td>Check the design against the SoulSpeak paper; choose which on-device name model to use, and measure it on children's writing.</td></tr>
+          <tr><td>Eval approvals</td><td>How teacher-approved eval replies are tagged to persona template versions, so old approvals don't clash with new templates.</td></tr>
           <tr><td>Scale-out</td><td>Sign-in state and rate limits are per server process until the app runs on several servers.</td></tr>
         </tbody>
       </table></div>
@@ -366,7 +375,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <script>
 const PLAN = {
- "snapshot": "2026-10-23 19:45 UTC",
+ "snapshot": "2026-10-28 03:00 UTC",
  "phases": [
   {
    "id": "F",
@@ -511,7 +520,7 @@ const PLAN = {
    "deps": [
     "F4"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-f6"
   },
   {
@@ -576,7 +585,7 @@ const PLAN = {
    "deps": [
     "C4"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-c5"
   },
   {
@@ -587,7 +596,7 @@ const PLAN = {
     "C2",
     "F4"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-c6"
   },
   {
@@ -598,7 +607,8 @@ const PLAN = {
     "C5",
     "S1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "C8",
@@ -628,6 +638,7 @@ const PLAN = {
    "size": 1,
    "deps": [],
    "status": "todo",
+   "owner": null,
    "placeholder": true
   },
   {
@@ -646,7 +657,7 @@ const PLAN = {
     "MD",
     "F3"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-m1"
   },
   {
@@ -659,7 +670,8 @@ const PLAN = {
     "F5",
     "F4b"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-m2b"
   },
   {
    "id": "M3",
@@ -671,7 +683,8 @@ const PLAN = {
     "F1c",
     "F1d"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-m3"
   },
   {
    "id": "M4",
@@ -681,7 +694,8 @@ const PLAN = {
     "C3",
     "M3"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "M5",
@@ -692,7 +706,8 @@ const PLAN = {
     "M3",
     "T1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "T1",
@@ -702,7 +717,7 @@ const PLAN = {
     "F2",
     "F5"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-t1"
   },
   {
@@ -713,7 +728,8 @@ const PLAN = {
     "T1",
     "C4"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-t2"
   },
   {
    "id": "T3",
@@ -723,7 +739,8 @@ const PLAN = {
     "T1",
     "F4"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-t3"
   },
   {
    "id": "T4",
@@ -732,7 +749,8 @@ const PLAN = {
    "deps": [
     "T3"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "T5",
@@ -742,7 +760,8 @@ const PLAN = {
     "T3",
     "C3"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "T6",
@@ -752,7 +771,8 @@ const PLAN = {
     "T2",
     "C1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "T7",
@@ -762,7 +782,8 @@ const PLAN = {
     "T3",
     "A1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "T8",
@@ -772,7 +793,8 @@ const PLAN = {
     "T2",
     "C5"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "A1",
@@ -782,7 +804,8 @@ const PLAN = {
     "F5",
     "F6"
    ],
-   "status": "todo"
+   "status": "done",
+   "owner": "agent-a1"
   },
   {
    "id": "A2",
@@ -791,7 +814,8 @@ const PLAN = {
    "deps": [
     "A1"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-a2"
   },
   {
    "id": "A3",
@@ -802,7 +826,8 @@ const PLAN = {
     "C4",
     "F4b"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-a3"
   },
   {
    "id": "A4",
@@ -813,7 +838,8 @@ const PLAN = {
     "C2",
     "T2"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "A5",
@@ -822,7 +848,8 @@ const PLAN = {
    "deps": [
     "A1"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-a5"
   },
   {
    "id": "A6",
@@ -833,7 +860,8 @@ const PLAN = {
     "C4",
     "T2"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "S1",
@@ -843,7 +871,8 @@ const PLAN = {
     "M2",
     "M3"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "S2",
@@ -856,7 +885,8 @@ const PLAN = {
     "M4",
     "S5"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "S3",
@@ -866,7 +896,8 @@ const PLAN = {
     "S2",
     "T4"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "S4",
@@ -878,7 +909,8 @@ const PLAN = {
     "A7",
     "A8"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "L1",
@@ -907,9 +939,13 @@ const PLAN = {
     "A9",
     "A10",
     "M6",
-    "S5"
+    "S5",
+    "C5cx1",
+    "C5cx2",
+    "C6cx1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "X1",
@@ -919,7 +955,8 @@ const PLAN = {
     "C1",
     "L1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "X2",
@@ -929,7 +966,8 @@ const PLAN = {
     "C4",
     "L1"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "C1cx1",
@@ -959,7 +997,8 @@ const PLAN = {
     "A1",
     "F5"
    ],
-   "status": "todo"
+   "status": "review",
+   "owner": "agent-a7"
   },
   {
    "id": "A8",
@@ -969,7 +1008,8 @@ const PLAN = {
     "A7",
     "F6"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "A9",
@@ -981,7 +1021,8 @@ const PLAN = {
     "A7",
     "S5"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "A10",
@@ -992,7 +1033,8 @@ const PLAN = {
     "A5",
     "M6"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "M6",
@@ -1003,7 +1045,8 @@ const PLAN = {
     "A9",
     "F6"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "M7",
@@ -1013,7 +1056,8 @@ const PLAN = {
     "M3",
     "F6"
    ],
-   "status": "todo"
+   "status": "todo",
+   "owner": null
   },
   {
    "id": "S5",
@@ -1022,8 +1066,42 @@ const PLAN = {
    "deps": [
     "F2"
    ],
-   "status": "review",
+   "status": "done",
    "owner": "agent-s5"
+  },
+  {
+   "id": "C5cx1",
+   "title": "Fix Codex error C5-E1: assessment diff hides accepted questions and depends on row order",
+   "size": 1,
+   "deps": [],
+   "status": "review",
+   "owner": "agent-c5cx1"
+  },
+  {
+   "id": "C5cx2",
+   "title": "Fix Codex error C5-E2: concurrent publishes cache stale draft status and one returns 500",
+   "size": 1,
+   "deps": [],
+   "status": "review",
+   "owner": "agent-c5cx2"
+  },
+  {
+   "id": "C6cx1",
+   "title": "Fix Codex error C6-E4: lone carriage return changes when a CSV export opens in LibreOffice",
+   "size": 1,
+   "deps": [],
+   "status": "review",
+   "owner": "agent-c6cx1"
+  },
+  {
+   "id": "A5b",
+   "title": "Teacher-approved persona eval baselines",
+   "size": 1,
+   "deps": [
+    "A5"
+   ],
+   "status": "todo",
+   "placeholder": true
   }
  ]
 };
@@ -1072,6 +1150,9 @@ const LANES = [
   ["Pilot, then later", ["L1", "X1", "X2"]],
 ];
 const PILOT = "L1";
+// A fix task (<ID>cx<n>, <ID>b) sits in the lane of the task it fixes.
+const baseId = id => id.replace(/cx\d+$/, "").replace(/(\d)[b-z]$/, "$1");
+const laneHas = (ids, id) => ids.includes(id) || ids.includes(baseId(id));
 const openIds = PLAN.tasks.filter(t => st(t.id) !== "done" && !t.placeholder).map(t => t.id);
 const isOpen = new Set(openIds);
 // Slack against the pilot: weeks a task can slip before the pilot does; null for work after the pilot.
@@ -1096,7 +1177,7 @@ function layoutGraph() {
   openIds.forEach(c);
   const pos = {}, lanes = []; let y = PAD;
   LANES.forEach(([name, ids]) => {
-    const here = ids.filter(id => isOpen.has(id)); if (!here.length) return;
+    const here = openIds.filter(id => laneHas(ids, id)); if (!here.length) return;
     const rows = {}; here.forEach(id => { (rows[col[id]] = rows[col[id]] || []).push(id); });
     const depth = Math.max(...Object.values(rows).map(r => r.length));
     here.forEach(id => { const r = rows[col[id]]; pos[id] = { x: PAD + col[id] * CW, y: y + LANE_HEAD + r.indexOf(id) * RH }; });
@@ -1123,7 +1204,7 @@ function drawGraph() {
   const rel = new Set([selected, ...byId[selected].deps, ...(dependents[selected] || [])]);
   const crit0 = id => SLACK[id] === 0;
   // Non-critical arrows into the pilot fold into one arrow per lane.
-  const laneOf = id => LANES.findIndex(([, ids]) => ids.includes(id));
+  const laneOf = id => LANES.findIndex(([, ids]) => laneHas(ids, id));
   const feedLanes = new Set();
   const pin = G.pos[PILOT];
   DRAWN.forEach(([d, id]) => {
@@ -1167,7 +1248,7 @@ function drawDetail() {
   meta.append(deps, next); d.appendChild(meta);
 }
 const critWeeks = ef["L1"];
-document.getElementById("critStat").innerHTML = `<span>Critical path: <b>${openIds.filter(id => SLACK[id] === 0).join(" → ")}</b>, about <b>${critWeeks} weeks</b> end to end</span>`;
+document.getElementById("critStat").innerHTML = `<span>Critical path: <b>${openIds.filter(id => SLACK[id] === 0).sort((x, y) => ef[x] - ef[y]).join(" → ")}</b>, about <b>${critWeeks} weeks</b> end to end</span>`;
 
 // ---- board ----
 function statusSelect(id) {
