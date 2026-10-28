@@ -568,8 +568,8 @@
       ],
       "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings. Vector search always filters by curriculum (and class for uploads) or uses hnsw.iterative_scan, so row-level security never returns fewer than k results (F4 QA finding 3)",
       "placeholder": false,
-      "status": "doing",
-      "owner": "agent-a3",
+      "status": "todo",
+      "owner": null,
       "updated": "2026-10-28"
     },
     {
@@ -596,8 +596,8 @@
       ],
       "done_when": "Fixed eval prompts run per grade band in CI with a pass threshold",
       "placeholder": false,
-      "status": "doing",
-      "owner": "agent-a5",
+      "status": "todo",
+      "owner": null,
       "updated": "2026-10-28"
     },
     {
@@ -775,8 +775,8 @@
       ],
       "done_when": "Per D26/D27: the app blurs people's names, places, contact and school identifiers into neutral labels on the device before any text leaves it (NER plus pattern rules), keeps the mapping on the device and re-fills replies; interests stay specific. The server backstop detects any identifier that got through, blurs it before the model call, counts a privacy miss and never stores raw text",
       "placeholder": false,
-      "status": "doing",
-      "owner": "agent-a7",
+      "status": "todo",
+      "owner": null,
       "updated": "2026-10-28"
     },
     {
