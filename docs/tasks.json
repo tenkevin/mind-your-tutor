@@ -568,7 +568,7 @@
       ],
       "done_when": "Library uploads are chunked and embedded, and searchLibrary returns ranked passages. Per D11, a class can set each shared document to agent, tutor, both or off, and upload its own documents. Search for a class covers the shared library plus its uploads with its settings applied, and never returns another class's uploads. ClassConfig contracts gain the library settings. Vector search always filters by curriculum (and class for uploads) or uses hnsw.iterative_scan, so row-level security never returns fewer than k results (F4 QA finding 3)",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-a3",
       "updated": "2026-10-28"
     },
