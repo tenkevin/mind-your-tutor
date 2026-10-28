@@ -1,4 +1,4 @@
-import { backstopText, totalMisses, type BackstopMisses } from '@ideamap/ai/backstop';
+import { patternBackstop } from '@ideamap/ai/backstop';
 import {
   EventBatchSchema,
   eventTextRef,
@@ -337,18 +337,23 @@ async function storeTexts(
       [...new Set([...toStore.values()].map((t) => t.classId))],
       ctx,
     );
-    const misses = new Map<string, { classId: string; misses: BackstopMisses }>();
+    const misses = new Map<
+      string,
+      { classId: string; misses: { names: number; emails: number; phones: number } }
+    >();
     const rows = [...toStore].map(([id, t]) => {
-      const checked = backstopText(t.body, names);
-      if (totalMisses(checked.misses) > 0)
-        misses.set(id, { classId: t.classId, misses: checked.misses });
+      const checked = patternBackstop.blur([t.body], { names });
+      if (checked.misses > 0) {
+        const { names: n, emails, phones } = checked.byKind;
+        misses.set(id, { classId: t.classId, misses: { names: n, emails, phones } });
+      }
       return {
         id,
         org_id: ctx.orgId,
         class_id: t.classId,
         student_id: ctx.studentId,
         kind: t.kind,
-        body: checked.text,
+        body: checked.texts[0]!,
         redacted_at: ctx.now,
       };
     });

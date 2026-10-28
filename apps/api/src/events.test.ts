@@ -1,5 +1,4 @@
 import { Writable } from 'node:stream';
-import { BLURRED } from '@ideamap/ai/backstop';
 import { CSRF_HEADER, EventBatchResponseSchema, type EventBatchResponse } from '@ideamap/contracts';
 import { json, type ExportStore } from '@ideamap/db';
 import { errorCode, hasDatabase, PG } from '@ideamap/db/testing';
@@ -348,7 +347,7 @@ describe.skipIf(!hasDatabase)('POST /events (M2)', () => {
     expect(byId.get(challenge.id)).toMatchObject({ body: challenge.body, kind: 'challenge' });
     const blurred = byId.get(leaked.id)!;
     expect(blurred.body).toBe(
-      `${BLURRED} and I think evaporation is first. Ask ${BLURRED} or mail ${BLURRED}`,
+      'Person A and I think evaporation is first. Ask Person B or mail [email]',
     );
     expect(blurred.redacted_at).not.toBeNull();
     for (const t of texts) {

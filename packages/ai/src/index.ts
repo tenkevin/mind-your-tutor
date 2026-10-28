@@ -7,5 +7,14 @@ export type {
   PersonaOverride,
   PersonaTone,
 } from './personas.js';
-export { backstopText, totalMisses, BLURRED } from './backstop.js';
-export type { BackstopMisses, BackstopResult } from './backstop.js';
+export {
+  PROMPT_VARIABLES,
+  TONE_PHRASES,
+  fill,
+  gradeLabel,
+  promptVariables,
+  readingBand,
+} from './prompt.js';
+export type { PromptConfig, PromptVariable, ReadingBand } from './prompt.js';
+export { patternBackstop } from './backstop.js';
+export type { BackstopContext, BlurResult, IdentifierBackstop } from './backstop.js';
