@@ -40,6 +40,9 @@ jobs:
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
+      # Persona evals on recorded replies: no model key, same scores every run (A5).
+      - name: Persona evals
+        run: pnpm --filter @ideamap/ai exec vitest run src/evals
       - run: pnpm build
       # Migrate the job's database from empty, then again to show it's a no-op.
       - name: Migrations
