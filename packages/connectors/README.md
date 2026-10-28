@@ -32,3 +32,5 @@ Nothing exported is cut short or dropped silently:
 - The blank template carries the spec's examples for the three required Course values (subject, topic and grade), marked in the Read me, so it imports as it is.
 
 Known limit: a CSV keeps the safety apostrophe, so formula-like text exported as CSV comes back from C1 with a leading `'`. XLSX keeps it exactly.
+
+A CSV export refuses a lone carriage return (CR not followed by LF) in a cell: LibreOffice opens it as a line feed, so the text would change. The refusal names the tab, row, column and idea and points to the XLSX export, which keeps it exactly. CRLF and LF inside cells are unchanged.
