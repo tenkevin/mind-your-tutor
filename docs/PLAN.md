@@ -113,6 +113,7 @@ flowchart LR
     A10["A10 · Pre-send feedback safeguards<br/><small>critical</small>"]
     M6["M6 · Fairness audits: school and district monitoring, district-run sampled audit<br/><small>critical</small>"]
     M7["M7 · De-identified research export<br/><small>after the pilot</small>"]
+    A11["A11 · Grounded tutoring: sparring-partner mode when no verified source covers the question<br/><small>+5 wk slack</small>"]
   end
   subgraph tracker["Tracker and insight"]
     direction LR
@@ -156,9 +157,6 @@ flowchart LR
     direction LR
     X1["X1 · Google Drive import picker<br/><small>after the pilot</small>"]
     X2["X2 · Cloudinary media provider<br/><small>after the pilot</small>"]
-  end
-  subgraph other["Other"]
-    A11["A11 · Grounded tutoring: sparring-partner mode when no verified source covers the question<br/><small>+5 wk slack</small>"]
   end
   DONE -.-> M2
   DONE -.-> M3
@@ -210,7 +208,7 @@ flowchart LR
   student --> L1
   curriculum --> L1
   tracker --> L1
-  other --> L1
+  trust --> L1
   linkStyle default stroke:#8b8fa3,stroke-width:1.3px
   linkStyle 32,36,38,40,42 stroke:#e5484d,stroke-width:3px
   style trust fill:#161826,stroke:#3a3d52,color:#b2b6ca
