@@ -103,6 +103,18 @@ All seven open PRs are CI green and mergeable, but each is now **8–22 commits 
 
 **Model policy (user, 2026-10-24):** Sonnet for build and fix agents; Haiku for triage, classification and high-volume sub-agent work; no new Opus sessions. Scheduled tasks "Idea Map swarm coordinator" (`trig_01UfngiANJA5GmTBDxkwSyKg`) and "Idea Map Codex watch" (`trig_013q6W2EPEsp9TJdPvNF8xpw`) are **disabled** (verified `enabled:false` 2026-10-27); the coordinator runs on demand.
 
+## 6a. Builder prompt framework (user, 2026-10-28)
+
+Cloud builder sessions **cannot message the coordinator back** (no `send_message` in their tool set) and a clean finish raises no event, so decisions in their final replies are lost unless the coordinator pulls them. Every builder prompt therefore follows the framework below, which worked for T2, and adds the decisions heading. The coordinator reads each builder's final reply (`list_events`, kinds `["result"]`) and its PR body at every check-in.
+
+> You are agent agent-<id>. Read AGENTS.md first and follow it exactly. Then read docs/qa/<ID>.md: an independent QA agent will test your PR against it, and the PR merges only if every must check passes. Read docs/ARCHITECTURE.md <relevant sections and decisions>.
+>
+> Claim <ID> with scripts/plan.mjs and push the claim before any code. Build on task/<ID>-<name> to meet done_when: "<done_when>".
+>
+> Context: <where it lives; which merged tasks to build on; open §12 questions to build behind an interface; parallel tasks sharing files>.
+>
+> Before opening the PR and before each push, merge origin/idea-map. Run root lint, format:check, typecheck, test with DATABASE_URL (including function_binding.test.ts), build and plan check. Open a PR into idea-map and mark it review with scripts/plan.mjs. Put every decision, assumption or deviation from the criteria under a "## Decisions for the coordinator" heading in the PR body. Don't merge, never edit Codex-* files, and don't schedule follow-ups or triggers. Reply with the PR URL. If blocked, stop and say why.
+
 ## 7. Re-check state
 
 ```sh
