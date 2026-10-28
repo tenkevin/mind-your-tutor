@@ -130,6 +130,9 @@ describe.skipIf(!hasDatabase)('throughput (M2-P1)', () => {
     // 27,000 rows, and autovacuum's analyze would land mid-run: until it does, the
     // planner works from defaults for a table it thinks is empty.
     await sql`ANALYZE`.execute(owner);
+    // The seed's dirty pages and the earlier test files' too: flush them now, so a
+    // checkpoint doesn't land mid-run and slow the first seconds of it.
+    await sql`CHECKPOINT`.execute(owner);
     const sessions = await Promise.all(students.map((s) => sessionFor(api, s.userId, orgs.a)));
 
     // Each of the 900 students sends one batch every 5 s, arriving evenly across the
