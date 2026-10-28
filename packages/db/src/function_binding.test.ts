@@ -25,6 +25,7 @@ const APP_FUNCTION_INVENTORY = [
   'app.current_class_id()',
   'app.current_org_id()',
   'app.ensure_interaction_event_partitions(integer)',
+  'app.flag_resolved_cutoff(uuid)',
   'app.guard_class_pin()',
   'app.guard_curriculum_version()',
   'app.record_interaction_event_keys()',
@@ -299,5 +300,7 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
     expect(source.get('app.audit_row_change()')).toContain('INSERT INTO public.audit_event');
     expect(source.get('app.audit_version_status()')).toContain('INSERT INTO public.audit_event');
     expect(source.get('app.retention_cutoff(uuid,text)')).toContain('FROM public.organization');
+    // A2's early-deletion window for resolved safety flags (D32).
+    expect(source.get('app.flag_resolved_cutoff(uuid)')).toContain('FROM public.organization');
   });
 });

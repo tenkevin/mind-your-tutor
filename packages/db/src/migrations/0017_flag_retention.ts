@@ -1,5 +1,5 @@
 import { sql, type Kysely } from 'kysely';
-import { APP_ROLE, RETENTION_ROLE } from './helpers.js';
+import { RETENTION_ROLE } from './helpers.js';
 
 // Safety flag retention (ARCHITECTURE.md D32; task A2). A flag is an alert, not the
 // school's record. It is deleted with its transcript at the district's AI retention
@@ -31,9 +31,6 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   `.execute(db);
   await sql`REVOKE ALL ON FUNCTION app.flag_resolved_cutoff(uuid) FROM PUBLIC`.execute(db);
   await sql`GRANT EXECUTE ON FUNCTION app.flag_resolved_cutoff(uuid) TO ${sql.id(RETENTION_ROLE)}`.execute(
-    db,
-  );
-  await sql`GRANT EXECUTE ON FUNCTION app.flag_resolved_cutoff(uuid) TO ${sql.id(APP_ROLE)}`.execute(
     db,
   );
 
