@@ -18,3 +18,5 @@ export {
 export type { PromptConfig, PromptVariable, ReadingBand } from './prompt.js';
 export { patternBackstop } from './backstop.js';
 export type { BackstopContext, BlurResult, IdentifierBackstop } from './backstop.js';
+export { EMBEDDING_DIMENSIONS, hashEmbedder } from './embedding.js';
+export type { Embedder } from './embedding.js';

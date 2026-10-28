@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { LIMITS, columns, documented } from './fields.js';
+import { LibrarySettingSchema, MAX_LIBRARY_SETTINGS } from './library.js';
 import { AUDIENCES, PERSONA_IDS, RARITIES, TONES, columnSpec, type TabName } from './spec.js';
 
 // A class's overrides of its curriculum's defaults (ARCHITECTURE.md §2 and §6).
 // It holds exactly the pack columns whose spec `edit` is `app` or `both`, except
-// the Library tab, which §6 keeps as curriculum data, and Ideas.explanation, whose
+// the Library tab, which §6 keeps as curriculum data (a class instead lists how it
+// uses each shared document, `library`; D11), and Ideas.explanation, whose
 // approved text D9 stores per curriculum (ExplanationOverride). Every field is optional:
 // absent means "use the curriculum's value". For nullable columns, `null` means
 // "this class clears it" (for example, no due date).
@@ -98,6 +100,14 @@ export const ClassConfigSchema = z.object({
     .array(PersonaOverrideSchema)
     .max(50)
     .superRefine(uniqueBy((p) => p.persona_id, 'Persona'))
+    .optional(),
+  // D11: how this class uses each shared library document. A document not listed keeps
+  // the curriculum's default. Ids must name documents of the class's curriculum; the
+  // schema checks their shape, and `unknownLibraryDocs` checks them against the library.
+  library: z
+    .array(LibrarySettingSchema)
+    .max(MAX_LIBRARY_SETTINGS)
+    .superRefine(uniqueBy((s) => s.library_doc_id, 'Library document'))
     .optional(),
 });
 

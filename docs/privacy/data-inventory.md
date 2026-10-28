@@ -113,7 +113,7 @@ Sessions are how a signed-in browser stays signed in (task F5). The browser hold
 | `library_doc.title`, `library_doc.file_url`, `library_doc.use_for` | A shared reference document from the Library tab, and which AI persona may use it | No | Sheet | Staff | Length of the agreement | Removed on re-import; with the district |
 | `library_doc.checksum`, `library_doc.index_status`, `library_doc.indexed_at` | Indexing state of the document | No | System | Staff | Length of the agreement | With the document |
 | `chunk.id`, `chunk.org_id`, `chunk.curriculum_id`, `chunk.library_doc_id`, `chunk.ordinal`, `chunk.created_at` | Record keys and position of a passage in its document | No | System | Nobody directly (used by AI search) | As its document | With its document |
-| `chunk.content`, `chunk.embedding` | A passage of a shared document and its search vector, for AI answers | No | Sheet | Nobody directly; quoted by the AI | As its document | With its document |
+| `chunk.content`, `chunk.embedding`, `chunk.page`, `chunk.section` | A passage of a shared document, its search vector and where in the document it came from (a PDF page or a heading), for AI answers | No | Sheet | Nobody directly; quoted by the AI | As its document | With its document |
 
 ## Classes and class settings
 
@@ -135,7 +135,7 @@ Sessions are how a signed-in browser stays signed in (task F5). The browser hold
 | `class_library_doc.checksum`, `class_library_doc.index_status`, `class_library_doc.indexed_at` | Indexing state | No | System | The class's teacher | As the document | With the document |
 | `class_library_doc.uploaded_by` | Who uploaded it | Staff | System | The class's teacher | As the document | With the document |
 | `class_chunk.id`, `class_chunk.org_id`, `class_chunk.class_id`, `class_chunk.class_library_doc_id`, `class_chunk.ordinal`, `class_chunk.created_at` | Record keys and position of a passage | No | System | Nobody directly (used by AI search for that class) | As its document | With its document |
-| `class_chunk.content`, `class_chunk.embedding` | A passage of a class upload and its search vector | No | Staff | Nobody directly; quoted by that class's AI | As its document | With its document |
+| `class_chunk.content`, `class_chunk.embedding`, `class_chunk.page`, `class_chunk.section` | A passage of a class upload, its search vector and where in the document it came from | No | Staff | Nobody directly; quoted by that class's AI | As its document | With its document |
 
 Teachers should not upload documents that contain student information; uploads are reference material such as lab sheets.
 

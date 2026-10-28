@@ -153,6 +153,10 @@ export interface ChunkTable {
   ordinal: number;
   content: string;
   embedding: VectorText;
+  /** PDF page from 1, or null. */
+  page: number | null;
+  /** Heading in a Word or Markdown file, or null. */
+  section: string | null;
   created_at: CreatedAt;
 }
 
@@ -191,6 +195,8 @@ export interface ClassChunkTable {
   ordinal: number;
   content: string;
   embedding: VectorText;
+  page: number | null;
+  section: string | null;
   created_at: CreatedAt;
 }
 
@@ -508,6 +514,8 @@ export const COLUMNS = {
     'ordinal',
     'content',
     'embedding',
+    'page',
+    'section',
     'created_at',
   ],
   class: [
@@ -555,6 +563,8 @@ export const COLUMNS = {
     'ordinal',
     'content',
     'embedding',
+    'page',
+    'section',
     'created_at',
   ],
   interaction_event: [

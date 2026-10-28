@@ -15,7 +15,13 @@ const editable = (tab: string) =>
 
 describe('ClassConfig follows §6 and the spec edit column (F3-F8)', () => {
   it('has exactly the app/both columns, keyed per unit, idea and persona', () => {
-    expect(Object.keys(ClassConfigSchema.shape)).toEqual(['course', 'units', 'ideas', 'personas']);
+    expect(Object.keys(ClassConfigSchema.shape)).toEqual([
+      'course',
+      'units',
+      'ideas',
+      'personas',
+      'library',
+    ]);
     expect(Object.keys(CourseOverridesSchema.shape)).toEqual(editable('Course'));
     expect(Object.keys(UnitOverrideSchema.shape)).toEqual(['unit', ...editable('Units')]);
     expect(Object.keys(IdeaOverrideSchema.shape)).toEqual(['idea_id', 'rarity']);
@@ -28,9 +34,9 @@ describe('ClassConfig follows §6 and the spec edit column (F3-F8)', () => {
     expect(Object.keys(IdeaOverrideSchema.shape)).not.toContain('explanation');
   });
 
-  it('leaves out Library, which §6 keeps as curriculum data', () => {
+  it('keeps the Library tab as curriculum data; a class only lists its use_for choices (D11)', () => {
     expect(editable('Library')).toEqual(['title', 'file_url', 'use_for']);
-    expect(Object.keys(ClassConfigSchema.shape)).not.toContain('library');
+    expect(Object.keys(ClassConfigSchema.shape)).toContain('library');
   });
 
   it('makes every field optional', () => {

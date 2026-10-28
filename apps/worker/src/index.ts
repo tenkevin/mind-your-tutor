@@ -1,10 +1,17 @@
 import { pathToFileURL } from 'node:url';
 import { QUEUES } from '@ideamap/contracts';
-import { FileObjectStore, type ImportLimits, type ObjectStore } from '@ideamap/connectors';
+import {
+  FileObjectStore,
+  type ImportLimits,
+  type LibraryLimits,
+  type ObjectStore,
+} from '@ideamap/connectors';
 import { createDb, withOrg, type Db } from '@ideamap/db';
 import type { PgBoss } from 'pg-boss';
 import { abandonImport, runImport, type OrgScope, type RunDeps } from './imports.js';
-import { indexLibrary } from './library.js';
+import { abandonLibraryIndex, indexLibrary } from './library.js';
+import type { Embedder } from '@ideamap/ai';
+import { hashEmbedder } from '@ideamap/ai';
 import { QUEUE_OPTIONS, createBoss, ensureQueues } from './queue.js';
 
 export const packageName = '@ideamap/worker';
@@ -23,7 +30,7 @@ export {
   type RunOutcome,
   type UploadRequest,
 } from './imports.js';
-export { indexLibrary } from './library.js';
+export { abandonLibraryIndex, indexLibrary, type IndexDeps, type IndexResult } from './library.js';
 export { QUEUE_OPTIONS, createBoss, ensureQueues, inTransaction, type Sender } from './queue.js';
 
 /** The production scope: the app role's connection, acting for one organization. */
@@ -36,7 +43,10 @@ export interface WorkerOptions {
   boss: PgBoss;
   scope: OrgScope;
   store: ObjectStore;
+  /** Turns library passages into vectors (A3). The vendor is open (§12 q6). */
+  embedder: Embedder;
   limits?: Partial<ImportLimits>;
+  libraryLimits?: Partial<LibraryLimits>;
   /** Seconds between polls when idle. Default 2. */
   pollingIntervalSeconds?: number;
   afterStep?: RunDeps['afterStep'];
@@ -63,8 +73,26 @@ export async function registerWorkers(options: WorkerOptions): Promise<void> {
       }
     },
   );
-  await boss.work<unknown>(QUEUES.indexLibrary, { pollingIntervalSeconds }, async ([job]) =>
-    job ? indexLibrary(job.data) : undefined,
+  const library = {
+    scope: options.scope,
+    store: options.store,
+    embedder: options.embedder,
+    limits: options.libraryLimits,
+  };
+  await boss.work<unknown>(
+    QUEUES.indexLibrary,
+    { pollingIntervalSeconds, batchSize: 1 },
+    async ([job]) => {
+      if (!job) return;
+      try {
+        return await indexLibrary(library, job.data);
+      } catch (cause) {
+        if (job.retryCount >= QUEUE_OPTIONS[QUEUES.indexLibrary].retryLimit) {
+          await abandonLibraryIndex(library, job.data);
+        }
+        throw cause;
+      }
+    },
   );
 }
 
@@ -76,7 +104,16 @@ async function main(): Promise<void> {
   const boss = createBoss(url);
   boss.on('error', (error) => console.error(error));
   await boss.start();
-  await registerWorkers({ boss, scope: orgScope(db), store: new FileObjectStore(uploads) });
+  // The embedding vendor is an open question (ARCHITECTURE.md §12 q6). Until it is
+  // settled the worker uses the deterministic development embedder, which matches words,
+  // not meaning; a real model plugs in here behind `Embedder`.
+  console.warn('Library indexing uses the development embedder (word matching only).');
+  await registerWorkers({
+    boss,
+    scope: orgScope(db),
+    store: new FileObjectStore(uploads),
+    embedder: hashEmbedder(),
+  });
   const stop = async () => {
     await boss.stop({ graceful: true });
     await db.destroy();

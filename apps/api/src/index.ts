@@ -10,6 +10,7 @@ import { anthropicProvider } from './ai/anthropic.js';
 import { loadAiConfig } from './ai/config.js';
 import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
 import { loadConfig, type AuthConfig } from './config.js';
+import { libraryRoutes, type LibraryRoutesOptions } from './library.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
 import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
@@ -31,6 +32,7 @@ export {
 } from './ai/gateway.js';
 export type { ModelProvider, ModelReply, ModelRequest } from './ai/provider.js';
 export { publishRoutes, type PublishRoutesOptions } from './publish.js';
+export { libraryRoutes, type LibraryRoutesOptions } from './library.js';
 export {
   PublishRequestError,
   blockingIssues,
@@ -58,6 +60,8 @@ export interface ServerOptions {
   publish?: Pick<PublishRoutesOptions, 'deps'>;
   /** FERPA student export and delete (F6); left out, the routes aren't registered. */
   privacy?: PrivacyRoutes;
+  /** Library uploads and search (A3); left out, the routes aren't registered. */
+  library?: LibraryRoutesOptions;
   /** The AI gateway (A1); left out, its routes aren't registered. */
   ai?: AiGatewayOptions;
 }
@@ -100,6 +104,12 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   if (publish) {
     // Its own scope, for its error handler; the policy hooks above still apply.
     app.register(async (scope) => publishRoutes(scope, { deps: publish.deps, authenticate }));
+  }
+
+  if (options.library) {
+    // Its own scope, for the upload body parser and error handler.
+    const library = options.library;
+    app.register(async (scope) => libraryRoutes(scope, library));
   }
 
   // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).

@@ -12,3 +12,4 @@ export {
   RETENTION_ROLE,
 } from './migrations/helpers.js';
 export { EMBEDDING_DIMENSIONS } from './migrations/0006_library.js';
+export * from './library.js';

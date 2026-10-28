@@ -1,3 +1,4 @@
+import { hashEmbedder } from '@ideamap/ai';
 import { QUEUES, type ImportJobView, type ImportStepName } from '@ideamap/contracts';
 import { sql } from 'kysely';
 import type { PgBoss } from 'pg-boss';
@@ -101,6 +102,7 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     await registerWorkers({
       ...deps,
       boss,
+      embedder: hashEmbedder(),
       pollingIntervalSeconds: 0.5,
       afterStep: (step) => hook?.(step),
     });
@@ -534,7 +536,7 @@ describe.skipIf(!hasDatabase)('large imports (C4-P2)', () => {
 
   it('a 2,000-idea XLSX imports in under 30 seconds, under 512 MB', async () => {
     const deps: ImportDeps = { scope: appScope(t.db), boss, store: store() };
-    await registerWorkers({ ...deps, boss, pollingIntervalSeconds: 0.5 });
+    await registerWorkers({ ...deps, boss, embedder: hashEmbedder(), pollingIntervalSeconds: 0.5 });
     const org = await seedOrg(t.db, 'large');
     const bytes = bigWorkbook(2000);
     let peak = process.memoryUsage().rss;

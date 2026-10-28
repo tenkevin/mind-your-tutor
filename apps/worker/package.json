@@ -17,6 +17,7 @@
     "retention": "node dist/cli.js retention"
   },
   "dependencies": {
+    "@ideamap/ai": "workspace:*",
     "@ideamap/connectors": "workspace:*",
     "@ideamap/contracts": "workspace:*",
     "@ideamap/db": "workspace:*",

@@ -13,6 +13,7 @@ export {
   type CellKind,
 } from './fields.js';
 export * from './class-config.js';
+export * from './library.js';
 export * from './curriculum-version.js';
 export * from './derived.js';
 export * from './explanation.js';

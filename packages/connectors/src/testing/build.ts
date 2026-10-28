@@ -1,6 +1,6 @@
 // Test helpers: write zips and .xlsx workbooks with exactly the quirks a test needs.
 import { readFileSync } from 'node:fs';
-import { crc32, deflateRawSync } from 'node:zlib';
+import { crc32, deflateRawSync, deflateSync } from 'node:zlib';
 
 export const fixtureDir = new URL('../../../../fixtures/water-cycle/', import.meta.url);
 export const TABS = [
@@ -205,3 +205,63 @@ export function xlsx(sheets: Record<string, XCell[][]>, options: XlsxOptions = {
 
 /** Splits a CSV the simple way, for building test sheets from the fixture. */
 export { parseCsv } from '../csv.js';
+
+/**
+ * A small PDF with one page per string (Flate-compressed content streams), for library
+ * tests. `extra` is added to the catalog, for example a JavaScript action.
+ */
+export function pdf(pages: readonly string[], extra = ''): Uint8Array {
+  const objects: string[] = [];
+  const pageIds = pages.map((_, i) => 4 + 2 * i);
+  objects[1] = `<< /Type /Catalog /Pages 2 0 R ${extra} >>`;
+  objects[2] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pages.length} >>`;
+  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+  const streams = new Map<number, Buffer>();
+  pages.forEach((text, i) => {
+    const id = 4 + 2 * i;
+    const lines = text.split('\n').map((line) => `(${line.replace(/([\\()])/g, '\\$1')}) Tj T*`);
+    const content = deflateSync(Buffer.from(`BT /F1 12 Tf 14 TL 72 720 Td ${lines.join(' ')} ET`));
+    objects[id] =
+      `<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R >> >> /Contents ${id + 1} 0 R >>`;
+    streams.set(id + 1, content);
+  });
+  const parts: Buffer[] = [Buffer.from('%PDF-1.4\n', 'latin1')];
+  for (let id = 1; id < 4 + 2 * pages.length; id++) {
+    const stream = streams.get(id);
+    parts.push(
+      stream
+        ? Buffer.concat([
+            Buffer.from(
+              `${id} 0 obj\n<< /Filter /FlateDecode /Length ${stream.length} >>\nstream\n`,
+            ),
+            stream,
+            Buffer.from('\nendstream\nendobj\n'),
+          ])
+        : Buffer.from(`${id} 0 obj\n${objects[id]}\nendobj\n`, 'latin1'),
+    );
+  }
+  parts.push(Buffer.from('trailer\n<< /Root 1 0 R >>\n%%EOF\n'));
+  return new Uint8Array(Buffer.concat(parts));
+}
+
+/** A .docx whose body is the given paragraphs; `heading:` marks a Heading 1 paragraph. */
+export function docx(paragraphs: readonly string[]): Uint8Array {
+  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const body = paragraphs
+    .map((p) =>
+      p.startsWith('heading:')
+        ? `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>${escape(p.slice(8))}</w:t></w:r></w:p>`
+        : `<w:p><w:r><w:t xml:space="preserve">${escape(p)}</w:t></w:r></w:p>`,
+    )
+    .join('');
+  return zip([
+    {
+      name: '[Content_Types].xml',
+      data: '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>',
+    },
+    {
+      name: 'word/document.xml',
+      data: `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}</w:body></w:document>`,
+    },
+  ]);
+}
