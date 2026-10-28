@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { CSRF_HEADER } from '@ideamap/contracts';
-import type { ExportStore } from '@ideamap/db';
+import { json, type ExportStore } from '@ideamap/db';
 import { asApp, hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { STAFF_AI_POLICY, STUDENT_AI_POLICY } from './ai/gateway.js';
@@ -19,6 +19,7 @@ import {
   type TestApi,
 } from './test/harness.js';
 import { mockModel } from './test/mock-model.js';
+import { mockModeration } from './test/mock-moderation.js';
 
 // F5-F4 to F5-F6, F5-S3, F5-S4, F5-P1.
 
@@ -61,6 +62,13 @@ const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
 ];
+/** A2's flag and flag-policy routes, registered with the AI gateway. */
+const SAFETY_ROUTE_URLS = [
+  '/api/classes/:classId/safety-flags',
+  '/api/safety-flags',
+  '/api/safety-flags/:flagId/resolve',
+  '/api/safety-policy',
+];
 /** A1's AI gateway routes, registered when the server is given a model provider. */
 const AI_ROUTE_URLS = [
   '/api/classes/:classId/ai/tutor',
@@ -70,10 +78,12 @@ const AI_ROUTE_URLS = [
 /** The gateway with a mock provider and limits the sweep can't reach. */
 const MOCK_AI = {
   provider: mockModel(),
+  moderation: mockModeration(),
   config: {
     model: 'test-model',
     maxTokens: 500,
     timeoutMs: 1000,
+    moderationTimeoutMs: 1000,
     limits: { perStudent: 1000, perClass: 1000, windowMs: 60_000 },
   },
 };
@@ -197,7 +207,9 @@ describe('A1 AI gateway routes join the registry (F5-F4, A1-S2)', () => {
   it('declares a class-scoped policy per persona: students for Ms. Ivy and Milo, staff for Atlas', async () => {
     const app = buildServer({ db: undefined as never, config: offlineConfig, ai: MOCK_AI });
     await app.ready();
-    const ai = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    const ai = app.routePolicies.filter(
+      (r) => !ROUTE_URLS.includes(r.url) && !SAFETY_ROUTE_URLS.includes(r.url),
+    );
     await app.close();
     expect(ai.map((r) => `${r.method} ${r.url}`)).toEqual(AI_ROUTE_URLS.map((u) => `POST ${u}`));
     expect(ai.map((r) => r.policy)).toEqual([
@@ -216,6 +228,28 @@ describe('A1 AI gateway routes join the registry (F5-F4, A1-S2)', () => {
   });
 });
 
+describe('A2 safety routes join the registry (F5-F4)', () => {
+  it('declares a policy for each flag and flag-policy route', async () => {
+    const app = buildServer({ db: undefined as never, config: offlineConfig, ai: MOCK_AI });
+    await app.ready();
+    const routes = app.routePolicies.filter((r) => SAFETY_ROUTE_URLS.includes(r.url));
+    await app.close();
+    expect(routes.map((r) => `${r.method} ${r.url}`).sort()).toEqual(
+      [
+        'GET /api/classes/:classId/safety-flags',
+        'GET /api/safety-flags',
+        'POST /api/safety-flags/:flagId/resolve',
+        'GET /api/safety-policy',
+        'PUT /api/safety-policy',
+      ].sort(),
+    );
+    // Students are never in a flag route's roles.
+    for (const r of routes) {
+      expect('roles' in r.policy ? r.policy.roles : []).not.toContain('student');
+    }
+  });
+});
+
 describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   let api: TestApi;
   let who: Record<
@@ -224,6 +258,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   >;
   let jobId = '';
   let versionId = '';
+  let flagId = '';
   beforeAll(async () => {
     // With C4's import, C5's publish, F6's privacy and A1's AI routes registered, so the
     // sweep covers them too.
@@ -233,6 +268,33 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         .selectFrom('curriculum_version')
         .select('id')
         .where('curriculum_id', '=', api.sample.curricula.a)
+        .executeTakeFirstOrThrow()
+    ).id;
+    // One open flag in class A1, for the resolve route.
+    const interaction = await api.t.db
+      .insertInto('ai_interaction')
+      .values({
+        org_id: api.sample.orgs.a,
+        class_id: api.sample.classes.a1,
+        user_id: api.sample.users['student-a1'],
+        persona: 'tutor',
+        model: 'none',
+        request: json({ messages: [{ role: 'user', content: 'synthetic' }] }),
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    flagId = (
+      await api.t.db
+        .insertInto('safety_flag')
+        .values({
+          org_id: api.sample.orgs.a,
+          class_id: api.sample.classes.a1,
+          interaction_id: interaction.id,
+          category: 'self_harm',
+          notify_teacher: true,
+          notify_admin: true,
+        })
+        .returning('id')
         .executeTakeFirstOrThrow()
     ).id;
     const { users, orgs } = api.sample;
@@ -379,6 +441,25 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/classes/${classes.a1}/ai/${persona}`,
         body: { message: 'Hello' },
       })),
+      // A2: the class's flags, the district's flags, resolving one, and the flag policy.
+      {
+        route: '/api/classes/:classId/safety-flags',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/safety-flags`,
+      },
+      { route: '/api/safety-flags', method: 'GET', url: '/api/safety-flags' },
+      {
+        route: '/api/safety-flags/:flagId/resolve',
+        method: 'POST',
+        url: `/api/safety-flags/${flagId}/resolve`,
+      },
+      { route: '/api/safety-policy', method: 'GET', url: '/api/safety-policy' },
+      {
+        route: '/api/safety-policy',
+        method: 'PUT',
+        url: '/api/safety-policy',
+        body: { flagNotify: 'teacher_and_admin' },
+      },
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -393,6 +474,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         ...PUBLISH_ROUTE_URLS,
         ...PRIVACY_ROUTE_URLS,
         ...AI_ROUTE_URLS,
+        ...SAFETY_ROUTE_URLS,
       ]),
     );
   });
@@ -449,6 +531,11 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     // A1: Ms. Ivy and Milo for the class's students; Atlas for its staff only.
     'POST /api/classes/:classId/ai/tutor': ['admin', 'student'],
     'POST /api/classes/:classId/ai/peer': ['admin', 'student'],
+    // A2: an admin of any org reads and sets their own org's flags and policy; another
+    // org's flag id and another class's teacher get 403.
+    'GET /api/safety-flags': ['admin', 'otherOrgAdmin'],
+    'GET /api/safety-policy': ['admin', 'otherOrgAdmin'],
+    'PUT /api/safety-policy': ['admin', 'otherOrgAdmin'],
   };
 
   it('answers 403 to the wrong role, class or org, and lets the admin through', async () => {

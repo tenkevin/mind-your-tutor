@@ -306,7 +306,7 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       target_id: published.id,
     })
     .execute();
-  await db
+  const interaction = await db
     .insertInto('ai_interaction')
     .values({
       org_id: orgId,
@@ -315,6 +315,18 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       persona: 'tutor',
       model: 'test-model',
       request: json({ messages: [] }),
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('safety_flag')
+    .values({
+      org_id: orgId,
+      class_id: classId,
+      interaction_id: interaction.id,
+      category: 'self_harm',
+      notify_teacher: true,
+      notify_admin: true,
     })
     .execute();
 

@@ -9,6 +9,8 @@ import Fastify, {
 import { anthropicProvider } from './ai/anthropic.js';
 import { loadAiConfig } from './ai/config.js';
 import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
+import { modelModeration } from './ai/moderation.js';
+import { safetyRoutes } from './safety.js';
 import { loadConfig, type AuthConfig } from './config.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
@@ -30,6 +32,12 @@ export {
   type AiGatewayOptions,
 } from './ai/gateway.js';
 export type { ModelProvider, ModelReply, ModelRequest } from './ai/provider.js';
+export {
+  modelModeration,
+  type ModerationProvider,
+  type ModerationRequest,
+  type ModerationVerdict,
+} from './ai/moderation.js';
 export { publishRoutes, type PublishRoutesOptions } from './publish.js';
 export {
   PublishRequestError,
@@ -108,6 +116,8 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   // Every model call goes through the gateway; the policy hooks above apply.
   if (options.ai) {
     aiRoutes(app, { sessionSecret: config.sessionSecret, now: deps.now }, options.ai);
+    // Flags raised by student turns, and the district's flag policy (A2).
+    safetyRoutes(app);
   }
 
   // Fixed bodies, so unknown paths and internal errors aren't echoed back.
@@ -130,14 +140,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const exportDir = process.env.EXPORT_DIR;
   // The AI gateway needs a provider key from the environment; without one it is left out.
   const aiConfig = loadAiConfig();
+  const aiProvider = aiConfig.apiKey
+    ? anthropicProvider({ apiKey: aiConfig.apiKey, fallbacks: aiConfig.fallbacks })
+    : null;
   const app = buildServer({
     db: createDb(url),
     config,
     logger: true,
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
-    ai: aiConfig.apiKey
+    ai: aiProvider
       ? {
-          provider: anthropicProvider({ apiKey: aiConfig.apiKey, fallbacks: aiConfig.fallbacks }),
+          provider: aiProvider,
+          moderation: modelModeration(aiProvider, { model: aiConfig.model }),
           config: aiConfig,
         }
       : undefined,

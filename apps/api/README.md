@@ -131,7 +131,7 @@ detail.
 **Keys and limits.** From the environment only (`src/ai/config.ts`; names in
 `.env.example`): `IDEAMAP_AI_API_KEY` (without it the routes aren't registered),
 `IDEAMAP_AI_MODEL` (default `claude-opus-5-5`), `IDEAMAP_AI_FALLBACKS` (`off` turns off the
-server-side refusal fallback), `IDEAMAP_AI_MAX_TOKENS`, `IDEAMAP_AI_TIMEOUT_MS`,
+server-side refusal fallback), `IDEAMAP_AI_MAX_TOKENS`, `IDEAMAP_AI_TIMEOUT_MS`, `IDEAMAP_AI_MODERATION_TIMEOUT_MS` (default 5000),
 `IDEAMAP_AI_STUDENT_PER_MINUTE` (default 10) and `IDEAMAP_AI_CLASS_PER_MINUTE` (default
 120). Limits are kept in memory per API process, like the sign-in limiter, so with several
 API processes each enforces its own window. §10 requires a zero-retention, no-training

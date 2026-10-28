@@ -13,6 +13,8 @@ export interface AiConfig {
   fallbacks: boolean;
   maxTokens: number;
   timeoutMs: number;
+  /** How long a moderation check may take before the turn fails closed (A2). */
+  moderationTimeoutMs: number;
   limits: AiLimits;
 }
 
@@ -39,6 +41,7 @@ export function loadAiConfig(env: Env = process.env): AiConfig {
     fallbacks: env.IDEAMAP_AI_FALLBACKS !== 'off',
     maxTokens: whole(env, 'IDEAMAP_AI_MAX_TOKENS', 2000, 64_000),
     timeoutMs: whole(env, 'IDEAMAP_AI_TIMEOUT_MS', 30_000, 600_000),
+    moderationTimeoutMs: whole(env, 'IDEAMAP_AI_MODERATION_TIMEOUT_MS', 5_000, 60_000),
     limits: {
       perStudent: whole(env, 'IDEAMAP_AI_STUDENT_PER_MINUTE', 10, 10_000),
       perClass: whole(env, 'IDEAMAP_AI_CLASS_PER_MINUTE', 120, 100_000),

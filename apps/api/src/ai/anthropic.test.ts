@@ -119,6 +119,7 @@ describe('loadAiConfig', () => {
       fallbacks: true,
       maxTokens: 2000,
       timeoutMs: 30_000,
+      moderationTimeoutMs: 5000,
       limits: { perStudent: 10, perClass: 120, windowMs: 60_000 },
     });
     expect(
