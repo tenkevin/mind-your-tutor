@@ -1,6 +1,6 @@
 # Idea Map — Architecture
 
-Status: draft v0.1 · 2026-10-22
+Status: draft v0.1 · 2026-10-22; decisions D1–D30 settled (latest D30, 2026-10-24)
 Scope: the whole platform, with the Teacher Settings page (`project/Teacher Settings.dc.html`) as the first surface to build.
 Branch: `idea-map` (separate from MindyourTutor on `main`/`init`).
 Companions: `docs/PLAN.md` (live to-do list and dependency map, generated from `docs/tasks.json`), `AGENTS.md` (how work is claimed).

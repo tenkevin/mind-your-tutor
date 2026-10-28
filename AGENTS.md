@@ -13,7 +13,7 @@ Read this before starting any task.
 
 ## Stop and resume protocol
 
-Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary:** **Resumed 2026-10-23 03:00 UTC by the user** ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent QA and the integration gate. A stop is in effect only when this line says so.
+Check `docs/HANDOFF.md` and `docs/qa/STATUS.md` before choosing, claiming, delegating, reviewing or merging work. **Current boundary:** **active.** Resumed 2026-10-23 03:00 UTC by the user ("continue to a new agent swarm"); normal coordination applies: claims, criteria-first, independent QA and the integration gate. On 2026-10-27 the user paused new builder launches for A2, A3, A5 and A7 until they give direction; those tasks stay claimed with no agent running. A stop is in effect only when this line says so.
 
 On an authorized resume, fetch current state, verify PR heads/CI and outstanding claims, and reconcile the handoff before assigning work. Preserve independent QA and all existing merge gates. If a task is stopped mid-review, retain its truthful task status and record owner, exact head, evidence, unresolved checks and next action; do not mark it done merely to close a session.
 
@@ -39,8 +39,8 @@ On an authorized resume, fetch current state, verify PR heads/CI and outstanding
 One coordinator session runs the swarm:
 
 - **Criteria first:** before a task becomes claimable, it writes `docs/qa/<ID>.md` from the spec, never from an implementation, and pushes it to `idea-map`.
-- **Launching:** within the user-authorized scope, it starts a build agent for each ready task that has criteria, with at most 4 build agents and the stricter runtime limit respected. Use a lower-cost capable model for bounded components (Luna used in this run), escalating only when needed. Each agent gets one task.
-- **QA:** when a PR is open and CI is green, it starts a separate QA agent session for that PR. The QA agent never wrote the code, and QA agents don't count towards the limit of 4.
+- **Launching:** within the user-authorized scope, it starts a build agent for each ready task that has criteria, with at most 4 build agents and the stricter runtime limit respected. Builders and fix agents use Sonnet and triage uses Haiku (user, 2026-10-24); no new Opus sessions. Each agent gets one task.
+- **QA:** when a PR is open and CI is green, it goes to the independent reviewer. Since 2026-10-24 that is Codex, whose `Codex-*` review of the PR's current head is the QA report; Claude QA sessions are paused. The reviewer never wrote the code and doesn't count towards the limit of 4.
 - **Review and merge:** it reviews each PR against `done_when`, `docs/ARCHITECTURE.md` and the rules below. It merges into `idea-map` only on a QA PASS with CI green, confirms actual merge CI, saves the report as `docs/qa/reports/<ID>.md`, then runs `node scripts/plan.mjs done <ID>`.
 - **Changes:** when a PR needs work, it comments on the PR. The task's agent fixes it on the same branch.
 - **Integration gate:** a PR merges only when its head already contains the current `idea-map` head (GitHub compare shows it 0 commits behind) and CI is green on that exact head. Otherwise the agent merges `origin/idea-map` and pushes first. Merges happen one at a time, and after each one the coordinator checks `idea-map`'s CI. If it's red, all merging stops until an immediate fix task lands. (Added after F4 and C3, each green on its own, broke `idea-map` together: Codex F4-E3.)
