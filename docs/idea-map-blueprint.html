@@ -170,10 +170,11 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Two memories (D28)</td><td>Short-term is the conversation. Long-term keeps misconceptions, what helped, pace and up to five interest categories, never feelings, family or health.</td></tr>
           <tr><td>Memory controls (D29)</td><td>Memory lasts while the student is enrolled. The student can see, delete or switch it off, and so can their teacher.</td></tr>
           <tr><td>Teacher ids on feedback (D30)</td><td>Teacher rulings and edits carry the teacher's pseudonymous id, so each teacher's examples weigh equally. Students never see it.</td></tr>
-          <tr><td>Teaching materials kept (D31)</td><td>Library documents and class uploads hold no student data, so the original files and passages are kept: updated or taken out of use, never deleted. A new embedding vendor re-indexes from the stored files.</td></tr>
-          <tr><td>Safety flags are alerts (D32)</td><td>Idea Map alerts staff; it is not the school's record. A flag is deleted with its transcript (90 days by default), or 30 days after it is resolved, whichever comes first.</td></tr>
+          <tr><td>Tiered library (D31)</td><td>Official shared materials go to a kept, versioned vault: updated or taken out of use, never deleted, and re-indexed from the stored files if the embedding vendor changes. Teachers' class uploads are disposable: archived, deleted, or deleted with their class.</td></tr>
+          <tr><td>Safety flags are alerts (D32)</td><td>Idea Map alerts staff; it is not the school's record. A flag is deleted with its transcript (90 days by default), or after the district's early-deletion window once resolved (default: deleted on day 31), whichever comes first.</td></tr>
           <tr><td>On-device name model (D33)</td><td>An ML name-recognition model on the device finds names and places from sentence context, so no class roster ever reaches a student device. Pattern rules still catch contact details.</td></tr>
           <tr><td>Teacher-approved evals (D34)</td><td>Persona evals are judged against replies teachers have approved, a living set of evidence. How approvals follow template versions is still open.</td></tr>
+          <tr><td>Sparring partner, not oracle (D35)</td><td>No internet. When the class's verified materials don't cover a question, Ms. Ivy states no facts of her own; she says so and guides the student's reasoning with questions instead.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -313,8 +314,8 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>AI memory</td><td>Learning facts and up to five interest categories; the student can view, delete or turn it off</td></tr>
           <tr><td>Fairness and research</td><td>Audits by school and district; race audit run by the district; research on de-identified data only</td></tr>
           <tr><td>Transcripts</td><td>Stored redacted, retention set per district (default 90 days), visible to the class teacher</td></tr>
-          <tr><td>Safety flags</td><td>Alerts to the teacher and admin, not the school's record; deleted with the transcript or 30 days after resolution, whichever is first</td></tr>
-          <tr><td>Teaching materials</td><td>No student data; kept permanently, outside the student delete path</td></tr>
+          <tr><td>Safety flags</td><td>Alerts to the teacher and admin, not the school's record; deleted with the transcript, or after the district's early-deletion window once resolved (default day 31)</td></tr>
+          <tr><td>Teaching materials</td><td>Official vault kept permanently; class uploads kept with the class; both outside the student delete path</td></tr>
           <tr><td>Access</td><td>Admin, author, teacher and student roles; row-level security per org; audit log on config changes and publishes</td></tr>
           <tr><td>Sign-in</td><td>Google Workspace for Education, Clever or ClassLink; rosters imported from OneRoster CSV</td></tr>
         </tbody>
@@ -330,6 +331,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>First school</td><td>Which sign-in and rostering provider, transcript retention period and hosting region?</td></tr>
           <tr><td>Embedding model</td><td>Which model the library search uses. Changing it later re-indexes from the stored originals, with no re-upload.</td></tr>
           <tr><td>Privacy layer</td><td>Check the design against the SoulSpeak paper; choose which on-device name model to use, and measure it on children's writing.</td></tr>
+          <tr><td>Verified sources</td><td>Should a teacher's class uploads ground the tutor's factual answers, or only the curriculum and the official vault?</td></tr>
           <tr><td>Eval approvals</td><td>How teacher-approved eval replies are tagged to persona template versions, so old approvals don't clash with new templates.</td></tr>
           <tr><td>Scale-out</td><td>Sign-in state and rate limits are per server process until the app runs on several servers.</td></tr>
         </tbody>
@@ -375,7 +377,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <script>
 const PLAN = {
- "snapshot": "2026-10-28 03:00 UTC",
+ "snapshot": "2026-10-28 03:30 UTC",
  "phases": [
   {
    "id": "F",
@@ -942,7 +944,8 @@ const PLAN = {
     "S5",
     "C5cx1",
     "C5cx2",
-    "C6cx1"
+    "C6cx1",
+    "A11"
    ],
    "status": "todo",
    "owner": null
@@ -1102,6 +1105,16 @@ const PLAN = {
    ],
    "status": "todo",
    "placeholder": true
+  },
+  {
+   "id": "A11",
+   "title": "Grounded tutoring: sparring-partner mode when no verified source covers the question",
+   "size": 1,
+   "deps": [
+    "A2",
+    "A3"
+   ],
+   "status": "todo"
   }
  ]
 };
@@ -1142,7 +1155,7 @@ show(startView);
 const NS = "http://www.w3.org/2000/svg";
 // Lanes group open work by what it delivers, in priority order (same as docs/PLAN.md).
 const LANES = [
-  ["Trust: privacy, feedback, fairness", ["A1", "A2", "A5", "A7", "A8", "A9", "A10", "M6", "M7"]],
+  ["Trust: privacy, feedback, fairness", ["A1", "A2", "A5", "A7", "A8", "A9", "A10", "A11", "M6", "M7"]],
   ["Tracker and insight", ["M1", "M2", "M3", "M4", "M5"]],
   ["Curriculum and publishing", ["F6", "C5", "C6", "C7"]],
   ["Teacher console", ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "A3", "A4", "A6"]],

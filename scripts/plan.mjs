@@ -96,7 +96,7 @@ function render() {
 // implied edges are dropped (transitive reduction over open tasks), and each task shows its slack:
 // how many weeks it can slip before the pilot does. Zero slack is the critical path.
 const LANES = [
-  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'M6', 'M7']],
+  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'A11', 'M6', 'M7']],
   ['tracker', 'Tracker and insight', ['M1', 'M2', 'M3', 'M4', 'M5']],
   ['curriculum', 'Curriculum and publishing', ['F6', 'C5', 'C6', 'C7']],
   ['teacher', 'Teacher console', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'A3', 'A4', 'A6']],
