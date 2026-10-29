@@ -436,7 +436,7 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     const done = await finished(a.teacher, (await upload(a, xlsxFile())).id);
     const ms = performance.now() - started;
     expect(done.status).toBe('succeeded');
-    expect(ms).toBeLessThan(5000);
+    expect(ms, `C4-P1 sample import took ${ms.toFixed(0)} ms, budget 5000 ms`).toBeLessThan(5000);
   });
 
   it('C4-P3: five organizations importing at once each get their own draft', async () => {
@@ -456,7 +456,10 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
       expect(vs.every((v) => v.org_id === org.orgId)).toBe(true);
     }
     // One worker takes jobs one at a time; with polling, five take about five singles.
-    expect(all).toBeLessThan(Math.max(2 * one, 5 * one + 2000));
+    expect(
+      all,
+      `C4-P3 five imports took ${all.toFixed(0)} ms, one took ${one.toFixed(0)} ms, budget ${Math.max(2 * one, 5 * one + 2000).toFixed(0)} ms`,
+    ).toBeLessThan(Math.max(2 * one, 5 * one + 2000));
   });
 });
 
@@ -556,7 +559,7 @@ describe.skipIf(!hasDatabase)('large imports (C4-P2)', () => {
       expect(done.error).toBeNull();
       expect(done.status).toBe('succeeded');
       expect(done.steps[0]!.result).toBe('2,000 ideas, 4,000 links');
-      expect(ms).toBeLessThan(30_000);
+      expect(ms, `scale import took ${ms.toFixed(0)} ms, budget 30000 ms`).toBeLessThan(30_000);
       expect(peak).toBeLessThan(512 * 1024 * 1024);
     } finally {
       clearInterval(sampler);

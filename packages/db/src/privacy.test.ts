@@ -481,7 +481,10 @@ describe.skipIf(!hasDatabase)('audit cost (F6-P2)', () => {
     const plain = await p95(300);
     await sql`ALTER TABLE class_config ENABLE TRIGGER audit`.execute(t.db);
     if (process.env.IDEAMAP_PERF_VERBOSE) console.log({ audited, plain });
-    expect(audited - plain).toBeLessThan(10);
+    expect(
+      audited - plain,
+      `audit overhead p95: audited ${audited.toFixed(2)} ms, plain ${plain.toFixed(2)} ms, budget 10 ms`,
+    ).toBeLessThan(10);
   });
 });
 

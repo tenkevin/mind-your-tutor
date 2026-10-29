@@ -454,7 +454,9 @@ describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
 
       expect(result.interaction_text).toBe(Math.floor(ROWS / 2));
       expect(batches).toBeGreaterThanOrEqual(Math.floor(ROWS / 2 / 5000));
-      expect(elapsed).toBeLessThan(5 * 60_000);
+      expect(elapsed, `retention took ${elapsed.toFixed(0)} ms, budget 300000 ms`).toBeLessThan(
+        5 * 60_000,
+      );
       expect(insertTimes.length).toBeGreaterThan(0);
       insertTimes.sort((x, y) => x - y);
       const worst = insertTimes[insertTimes.length - 1]!;
@@ -468,7 +470,10 @@ describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
         });
       }
       // Inserts kept going: none waited on the job for long.
-      expect(worst).toBeLessThan(1000);
+      expect(
+        worst,
+        `slowest insert during retention ${worst.toFixed(0)} ms, budget 1000 ms`,
+      ).toBeLessThan(1000);
     },
     SCALE_TIMEOUT,
   );
