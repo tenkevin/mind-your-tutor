@@ -21,7 +21,7 @@ This brief is for a Claude Code **design session** that changes Idea Map's look 
 
 1. Start Postgres (with pgvector) and set `DATABASE_URL`, or use `pnpm db:up`.
 2. Run `pnpm dev:auth` to start the API and the mock sign-in. Then run `pnpm --filter @ideamap/teacher dev` (port 5173) and `pnpm --filter @ideamap/student dev` (port 5174). See `apps/api/README.md`.
-3. Sign in as `teacher-a1` (Terry Teacher), import `fixtures/water-cycle/water-cycle.xlsx`, and publish a version to Science 6A. The sample has one deliberate error, so publish the earlier version or fix the two cells described in `docs/decisions/2026-10-29-water-cycle-pilot-graph.md`.
+3. Sign in as `teacher-a1` (Terry Teacher), import `fixtures/water-cycle/water-cycle.xlsx`, and publish a version to Science 6A. Until T8 (#40) merges, `dev:auth` doesn't wire the publish routes. Instead, pin a version directly: insert a published `curriculum_version` row whose `derived` comes from `derive()` in `packages/domain`, and set `class.pinned_version_id`. This is the same approach S10's QA took. The sample has one deliberate error, so publish the earlier version or fix the two cells described in `docs/decisions/2026-10-29-water-cycle-pilot-graph.md`.
 4. Sign in to the student app as `student-a1` (Sam Student).
 5. Take before-and-after screenshots with Playwright, which is pre-installed, at 1440 px (laptop), 1366 px with a 4x CPU throttle (Chromebook) and 400 px (phone).
 
@@ -91,8 +91,6 @@ The user pastes this into a new Claude Code session on `tenkevin/mind-your-tutor
 >
 > First read `AGENTS.md`, then `docs/design/README.md` (this brief) and follow it exactly, then `docs/ROADMAP.md` and the decisions it cites (D10, D17, D20, D42, D43, D46 in `docs/ARCHITECTURE.md`). The student map (S10, merged at 3ad9110) and the theme contract (F8, merged at eff7d02) are on `idea-map`.
 >
-> Start with the open items in the brief's §7 (design issues carried over from QA): fix those first, one PR each.
->
-> Then start the app as the brief's §2 describes, publish the water cycle to Science 6A, and send me screenshots of the student map, an idea page and the teacher console at laptop, Chromebook and phone widths. Wait for my feedback.
+> Then start the app as the brief's §2 describes and publish the water cycle to Science 6A. Until T8 (#40) merges, the local publish route isn't wired, so pin a version in the database as the brief's §2 note explains. Send me screenshots of the student map, an idea page and the teacher console at laptop, Chromebook and phone widths. Then list the items in the brief's §7 (QA findings carried over to design), each with a screenshot and a proposed fix. Deferred must-checks come first. Wait for my feedback before changing anything.
 >
 > For each piece of feedback, make the change on a `design/<short-name>` branch, show me before-and-after screenshots, and when I approve, open a PR following the brief's §6. Stay within §3 and §4. If my feedback would break a rule or needs a logic change, tell me before doing anything. Never merge, never edit `Codex-*` files, and keep model identifiers out of commits, PRs and code.
