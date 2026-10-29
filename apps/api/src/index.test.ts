@@ -59,6 +59,11 @@ describe.skipIf(!hasDatabase)('the deployed API (T2-F8)', () => {
           'POST /api/curricula/:curriculumId/imports',
           'GET /api/curricula/:curriculumId/imports/latest',
           'GET /api/imports/:jobId',
+          'GET /api/versions/:versionId/diff',
+          'POST /api/versions/:versionId/preview',
+          'POST /api/versions/:versionId/publish',
+          'POST /api/classes/:classId/pin',
+          'GET /api/curricula/:curriculumId/publishing',
         ]),
       );
       // Signed out: the session authenticator answers before the body is read.
@@ -67,6 +72,18 @@ describe.skipIf(!hasDatabase)('the deployed API (T2-F8)', () => {
         url: '/api/curricula/00000000-0000-4000-8000-000000000000/imports/latest',
       });
       expect(res.statusCode).toBe(401);
+      // C5's publish routes are served too: refused, not missing (T8).
+      const version = '00000000-0000-4000-8000-000000000000';
+      for (const [method, url] of [
+        ['POST', `/api/versions/${version}/publish`],
+        ['POST', `/api/versions/${version}/preview`],
+        ['GET', `/api/curricula/${version}/publishing`],
+      ] as const) {
+        const refused = await server.app.inject({ method, url, payload: { class_ids: [] } });
+        expect([401, 403], `${method} ${url} → ${refused.statusCode}`).toContain(
+          refused.statusCode,
+        );
+      }
     } finally {
       await server.close();
       await rm(uploads, { recursive: true, force: true });

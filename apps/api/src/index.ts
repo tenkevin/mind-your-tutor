@@ -171,6 +171,7 @@ export async function startServer(
     config,
     logger: options.logger ?? true,
     imports,
+    publish: { deps: { scope: orgScope(db) } },
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
     ai: aiConfig.apiKey
       ? {

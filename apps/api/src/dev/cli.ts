@@ -66,7 +66,13 @@ await registerWorkers({
   store: new FileObjectStore(uploadDir),
   pollingIntervalSeconds: 1,
 });
-const app = buildServer({ db, config, logger: false, imports });
+const app = buildServer({
+  db,
+  config,
+  logger: false,
+  imports,
+  publish: { deps: { scope: orgScope(db) } },
+});
 await app.listen({ port: apiPort, host: 'localhost' });
 
 const users = Object.entries(mockProviders())
