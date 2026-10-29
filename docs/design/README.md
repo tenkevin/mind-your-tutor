@@ -75,20 +75,21 @@ Rule (user, 2026-10-29): when a task's QA fails on a **design aspect** (colour v
 
 | Task | Check | Problem | Evidence | Status |
 |---|---|---|---|---|
-| _none yet_ | | | | |
+| _none_ | | F8 passed on run 4 within the limit; nothing deferred | | |
 
 Should findings from QA that the design session should also take up:
 - S10 run 2 #2 and #5: on a phone, the first view of the map is clipped or tiny, and the header is too tall (also S2-U3).
 - S10 run 2 #3: "Words on the page" doesn't enlarge map card text (S2-U4).
+- F8 run 4: hover-out on map cards now snaps instead of easing (transitions live only on `:hover` and `:focus-visible`, so theme switches stay one recalc). Optional: restore an ease-out without a resting colour transition.
 - S10 runs 1 and 2 #4: cards crowd and overlap at 60 ideas (layout belongs to C16, but the card size and density are design).
 
 ## 8. Prompt for the design session
 
-The user pastes this into a new Claude Code session on `tenkevin/mind-your-tutor`. Use Sonnet, as for builders. The coordinator fills in the bracketed heads when S10 and F8 have merged.
+The user pastes this into a new Claude Code session on `tenkevin/mind-your-tutor`. Use Sonnet, as for builders. S10 merged as `3ad9110` and F8 as `eff7d02` on 2026-10-29.
 
 > You are the Idea Map design agent. You change the look of the app directly in the codebase while I give you feedback in this chat, and you ship each change as a pull request into `idea-map`.
 >
-> First read `AGENTS.md`, then `docs/design/README.md` (this brief) and follow it exactly, then `docs/ROADMAP.md` and the decisions it cites (D10, D17, D20, D42, D43, D46 in `docs/ARCHITECTURE.md`). The student map (S10, merged at [S10 merge SHA]) and the theme contract (F8, merged at [F8 merge SHA]) are on `idea-map`.
+> First read `AGENTS.md`, then `docs/design/README.md` (this brief) and follow it exactly, then `docs/ROADMAP.md` and the decisions it cites (D10, D17, D20, D42, D43, D46 in `docs/ARCHITECTURE.md`). The student map (S10, merged at 3ad9110) and the theme contract (F8, merged at eff7d02) are on `idea-map`.
 >
 > Start with the open items in the brief's §7 (design issues carried over from QA): fix those first, one PR each.
 >
