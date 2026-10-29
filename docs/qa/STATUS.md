@@ -6,7 +6,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D30 and the §8 spec v1 exactly; see AGENTS.md.
 
-> **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
+> **Design-aspect failures (user, 2026-10-29):** a third QA failure on a design aspect defers that check to the design session (`docs/design/README.md` §7) and the task merges once every other must passes; functional, security, performance and privacy failures never defer. **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
 
 ## Queue (snapshot 2026-10-29 17:00 UTC)
 

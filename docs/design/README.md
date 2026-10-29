@@ -2,7 +2,7 @@
 
 This brief is for a Claude Code **design session** that changes Idea Map's look directly in the codebase while the user gives feedback in chat. It ships changes as pull requests that go through the same review and merge rules as every other change (AGENTS.md). The design session never merges.
 
-**Start it only after S10 (student map preview) and F8 (theme contract) have merged**, so it doesn't edit files that builders are changing. The coordinator hands the user the prompt at the end of this file at that point.
+**Start it only after S10 (student map preview) and F8 (theme contract) have merged**, so it doesn't edit files that builders are changing. The coordinator hands the user the prompt in §8 at that point.
 
 ## 1. Where the design lives
 
@@ -67,13 +67,30 @@ The roadmap (`docs/ROADMAP.md`) says what belongs to which version. Don't design
 4. Don't finish until CI has passed on the exact head. Don't merge, never edit `Codex-*` files, and don't change task status in `docs/tasks.json`. The coordinator routes the PR to review and merges it.
 5. If feedback needs a logic change, or contradicts a rule in §3 or a decision in `docs/ARCHITECTURE.md`, say so in chat and stop. The user and coordinator decide.
 
-## 7. Prompt for the design session
+## 7. Design issues carried over from builder QA
+
+Rule (user, 2026-10-29): when a task's QA fails on a **design aspect** (colour values, contrast of a theme's palette, visual treatment, layout, legibility) for the third time, the builder stops iterating on it. Instead:
+- The coordinator merges the task once every other must passes, records the failing design checks here as deferred, and the design session fixes them first.
+- Functional, security, performance and privacy failures never defer; they must pass before merge.
+
+| Task | Check | Problem | Evidence | Status |
+|---|---|---|---|---|
+| _none yet_ | | | | |
+
+Should findings from QA that the design session should also take up:
+- S10 run 2 #2 and #5: on a phone, the first view of the map is clipped or tiny, and the header is too tall (also S2-U3).
+- S10 run 2 #3: "Words on the page" doesn't enlarge map card text (S2-U4).
+- S10 runs 1 and 2 #4: cards crowd and overlap at 60 ideas (layout belongs to C16, but the card size and density are design).
+
+## 8. Prompt for the design session
 
 The user pastes this into a new Claude Code session on `tenkevin/mind-your-tutor`. Use Sonnet, as for builders. The coordinator fills in the bracketed heads when S10 and F8 have merged.
 
 > You are the Idea Map design agent. You change the look of the app directly in the codebase while I give you feedback in this chat, and you ship each change as a pull request into `idea-map`.
 >
 > First read `AGENTS.md`, then `docs/design/README.md` (this brief) and follow it exactly, then `docs/ROADMAP.md` and the decisions it cites (D10, D17, D20, D42, D43, D46 in `docs/ARCHITECTURE.md`). The student map (S10, merged at [S10 merge SHA]) and the theme contract (F8, merged at [F8 merge SHA]) are on `idea-map`.
+>
+> Start with the open items in the brief's §7 (design issues carried over from QA): fix those first, one PR each.
 >
 > Then start the app as the brief's §2 describes, publish the water cycle to Science 6A, and send me screenshots of the student map, an idea page and the teacher console at laptop, Chromebook and phone widths. Wait for my feedback.
 >
