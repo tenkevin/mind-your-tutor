@@ -102,6 +102,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 3. For each PR with a Codex PASS on its current head: sync with `idea-map`, wait for exact-head CI, run any full-suite must locally, then merge **one per pass** and confirm merge CI.
 4. Fix-task priority (rule 5): F1e, C5cx2 and C6cx2 merge ahead of feature PRs once they pass.
 5. Merging C10 and C12 unblocks C14 → C16 → C17 (pilot pack) and M8; merging A3 unblocks C13 and C15; merging T2-dependent PRs unblocks A4.
+5b. **S10 and F8 (user, 2026-10-29):** independent Claude QA sessions (`session_017xAqLb4r7YvGMWBQtzre1s` for S10, `session_017xAqLeYapB4WFhDLCfuKG7` for F8) review them now; merge S10 first on PASS, then have the F8 builder (`session_017xAqLcV3C4ymbeAJoEqWWG`) merge `idea-map` and fold S10's map tokens into `nocturne.ts`, have QA re-run F8-P1/U2 on that head, and merge F8. Codex reviews both after merge on 2026-11-01.
 6. **Design hand-off (user, 2026-10-29):** when **both S10 and F8 have merged**, give the user the prompt in `docs/design/README.md` §7, with the two merge SHAs filled in. The user starts the design session themselves, and its PRs go through normal review. Don't start the session yourself.
 7. Open with the user: §12 q26 (training data for v0.2 research), undecided; X4 (contrastive learning) is on hold. Don't raise it again until the user does.
 
