@@ -1348,12 +1348,12 @@
     },
     {
       "id": "X4",
-      "title": "Research: multi-view contrastive learning",
+      "title": "Research: multi-view contrastive learning (on hold)",
       "size": 2,
       "deps": [
         "A5"
       ],
-      "done_when": "Prototype multi-view contrastive learning for representing student understanding; training data per §12 q26",
+      "done_when": "On hold (user, 2026-10-29) until §12 q26 is settled. Prototype multi-view contrastive learning for representing student understanding; training data per §12 q26",
       "placeholder": true,
       "status": "todo",
       "version": "0.2"

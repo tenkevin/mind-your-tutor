@@ -37,7 +37,7 @@ Idea Map ships in four versions (decision D45, user, 2026-10-29). Each task in `
 | Interests and customised answers | Onboarding and interests (K–10 dropdowns, D36), and examples shaped by interests (never in vetted items) | S7, A16 |
 | Study planner | A dual-track planner, the tutor's plan tools, and reminders (D39) | A12, A13, S8 |
 | Isolated models | Each model or agent gets its own sandbox and storage branch, with no internet access | F7 |
-| Model research | A specialised math model and an evaluation model; multi-view contrastive learning. Training data is open question §12 q26: de-identified or synthetic only, unless the user decides otherwise | X3, X4 |
+| Model research | A specialised math model and an evaluation model; multi-view contrastive learning (**on hold**, user 2026-10-29). Training data is open question §12 q26: de-identified or synthetic only, unless the user decides otherwise | X3, X4 |
 | Persona baselines | Teacher-approved eval baselines (D34) | A5b |
 
 ## v0.3 · Visuals and motivation
@@ -64,5 +64,5 @@ Idea Map ships in four versions (decision D45, user, 2026-10-29). Each task in `
 
 ## Open questions that shape the roadmap
 
-- §12 q26: may any model be trained on student data (v0.2 research)?
+- §12 q26: may any model be trained on student data (v0.2 research)? Undecided; contrastive learning (X4) is on hold.
 - Licence check for Khan Academy content (CC BY-NC-SA) before any Track 1 video uses it (v0.4).
