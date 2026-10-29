@@ -20,6 +20,8 @@ describe('UiReference', () => {
       'tag tag-neutral',
       'tag tag-outline',
       'class="table"',
+      'id="theme-ref-select"',
+      '--map-node-mastered',
     ]) {
       expect(html).toContain(cls);
     }

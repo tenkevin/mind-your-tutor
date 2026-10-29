@@ -26,7 +26,7 @@ const style = { color: cssVar('--color-accent') }; // 'var(--color-accent)'
 tokens['--radius-md']; // '8px'
 ```
 
-`apps/teacher/reference.html` renders every class below. Run `pnpm --filter
+`apps/teacher/reference.html` renders every class below, and every colour token with a theme switcher. `apps/student/udl-reference.html` has the same switcher. Run `pnpm --filter
 @ideamap/teacher dev` and open `/reference.html`.
 
 ## What changed from the prototype
@@ -50,8 +50,15 @@ tokens['--radius-md']; // '8px'
    and still reads dimmer than typed text. `opacity: 1` stops Firefox dimming it
    further.
 
+4. **Themes (F8, D46).** The `:root` tokens for colour, type, radius and shadow
+   move into a generated theme block (see Themes). The four focus outlines use
+   `--color-focus`, and the four secondary-text mixes (field labels, table
+   headers, `.text-muted`, `.card-meta`) use `--alpha-label`, `--alpha-th`,
+   `--alpha-muted` and `--alpha-meta`. Nocturne's values are the old literals
+   (the accent, 70, 60, 55 and 50%), so Nocturne looks exactly as before.
+
 `src/styles.test.ts` checks that every token and rule still matches the
-prototype, and fails if they drift apart.
+prototype (undoing change 4), and fails if they drift apart.
 
 ## Tokens
 
@@ -67,6 +74,62 @@ prototype, and fails if they drift apart.
 
 On this dark ground, use ramp steps 700–900 for tinted fills and borders, 500 as
 a role's base, and 100–300 for text on tints.
+
+## Themes
+
+D46: every colour, and the fonts, radii and shadows a theme may change, reaches
+the apps only through named tokens that a **theme file** defines. Nocturne is the
+default theme and is unchanged (D10).
+
+**The contract** is `src/themes/contract.ts`: one typed list of the tokens every
+theme must set.
+
+| Group    | Tokens                                                                                                                      |
+| -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Core     | `--color-bg`, `-surface`, `-text`, `-accent`, `-accent-2`, `-divider`, `-focus`, the three ramps, the three section grounds |
+| Map      | `--map-node-open`, `--map-node-locked`, `--map-node-mastered`, `--map-link`, `--map-centre`                                 |
+| Category | `--category-1` to `--category-6`: slot n is the n-th category in curriculum order, so no category name is hard-coded        |
+| State    | `--state-success`, `--state-warning`, `--state-danger`, `--state-info`                                                      |
+| Text mix | `--alpha-label`, `--alpha-th`, `--alpha-muted`, `--alpha-meta`: how strongly text mixes into its ground                     |
+| Shape    | `--font-heading`, `--font-heading-weight`, `--font-body`, `--radius-sm/md/lg`, `--shadow-sm/md/lg`                          |
+
+Spacing (`--space-*`) is the same in every theme and stays in `styles.css`.
+
+**Use:** take every colour from a token, for example `background:
+var(--map-node-mastered)`. A theme `defineTheme({...})` that misses a token or adds
+an unknown one fails to type-check, and `themeProblems()` rejects it at run time.
+
+**How it is applied.** `src/themes/<id>.ts` is generated into CSS: Nocturne into
+`styles.css` as `:root, [data-theme="nocturne"]`, every other registered theme
+into `themes.css` as `[data-theme="<id>"]`. With no attribute, or an unknown
+one, the page shows Nocturne. Switch at run time with no reload:
+
+```ts
+import { applyTheme } from '@ideamap/ui';
+applyTheme('daylight-test', document.documentElement); // unknown ids give Nocturne
+```
+
+Values come only from the typed theme files, never from user input or the
+network, and `themeProblems()` refuses values that could close a declaration or
+block (`;`, `{`, `}`, `url(`, comments).
+
+**Add a theme:** (1) create `src/themes/<id>.ts` that default-exports a
+`defineTheme({ id, name, values })` with every token; (2) add it to `themes` in
+`src/themes/index.ts`; (3) run `UPDATE_THEMES=1 pnpm --filter @ideamap/ui test` to
+regenerate `styles.css` and `themes.css`, and commit them. The drift test fails
+if they are stale. `src/themes/daylight-test.ts` is a test-only light theme
+(`testOnly: true`) that shows the shape. Choosing and unlocking themes is S14.
+
+**Contrast rule.** `styles.test.ts` measures every text pair (4.5:1) and every
+UI-component pair (3:1) on both grounds for every registered theme, including
+the map, category, state and focus tokens and each button state. Only Nocturne
+may have below-AA pairs, and only D10's nine. Any other theme must pass outright.
+
+**No raw colours.** `src/no-raw-colours.test.ts` (run by `pnpm test`, so by CI)
+scans `styles.css` outside theme blocks and the source of `apps/*` (CSS, TS, TSX,
+HTML) for hex, `rgb()`/`hsl()`/`oklch()` and named colours, and reports file and
+line. Only `transparent` and `currentcolor` are allowed. Raw colours belong in
+`src/themes/*.ts`.
 
 ## Classes
 
@@ -104,6 +167,8 @@ use `--color-neutral-600` or darker for text.
 
 The accepted contrast deviations (decision D10 in `docs/ARCHITECTURE.md`) are
 the only pairs below AA:
+
+These apply to Nocturne only (D46); other themes must pass AA outright.
 
 - the `.input` border, on both grounds
 - `.card-meta` on `--color-surface`
