@@ -166,13 +166,17 @@
   border-color: var(--map-node-hover-border);
 }
 
+.imap-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
 .imap-controls {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
   display: flex;
   gap: var(--space-2);
-  z-index: 3;
 }
 .imap-btn {
   min-width: 44px;
@@ -180,14 +184,9 @@
   background: var(--map-node-open);
 }
 .imap-hint {
-  position: absolute;
-  left: 14px;
-  top: 10px;
   margin: 0;
-  font-size: 11px;
+  font-size: 0.8125em;
   color: var(--map-hint);
-  pointer-events: none;
-  right: 14px;
 }
 .imap-status {
   min-height: 1.6em;

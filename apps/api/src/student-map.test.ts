@@ -1,4 +1,5 @@
 import {
+  LockedIdeaResponseSchema,
   StudentIdeaResponseSchema,
   StudentMapResponseSchema,
   type Pack,
@@ -123,6 +124,11 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
     const no = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/${locked.id}`);
     expect(no.statusCode).toBe(403);
     expect(no.body).not.toContain('explanation');
+    // It says what unlocks the idea, as the map card does (S10-F5).
+    expect(LockedIdeaResponseSchema.parse(no.json())).toMatchObject({
+      title: locked.title,
+      unlocksAfter: locked.unlocksAfter,
+    });
     const yes = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/${open.id}`);
     expect(yes.statusCode, yes.body).toBe(200);
     const page = StudentIdeaResponseSchema.parse(yes.json());

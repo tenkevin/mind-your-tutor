@@ -52,7 +52,20 @@ export function IdeaMap({
     const out = new Map<string, Node>();
     for (const idea of map.ideas) {
       const centre = idea.id === map.centre;
-      out.set(idea.id, { idea, ...toPixels(idea), ...halfSize(idea.title, centre), centre });
+      out.set(idea.id, {
+        idea,
+        ...toPixels(idea),
+        ...halfSize(
+          {
+            title: idea.title,
+            category: idea.category,
+            requires: idea.state === 'locked' ? unlockText(idea) : undefined,
+          },
+          centre,
+          idea.state === 'locked',
+        ),
+        centre,
+      });
     }
     return out;
   }, [map]);
@@ -109,7 +122,11 @@ export function IdeaMap({
   // Drag to pan, two fingers to pinch.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef({ moved: false, pinch: 0 });
+  // How the last input arrived: only the keyboard pans a focused card into view, so a
+  // click on a card near the edge isn't moved out from under the pointer.
+  const modality = useRef<'keyboard' | 'pointer'>('keyboard');
   const down = (e: React.PointerEvent) => {
+    modality.current = 'pointer';
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     gesture.current = { moved: false, pinch: 0 };
   };
@@ -124,9 +141,9 @@ export function IdeaMap({
       const r = box.current!.getBoundingClientRect();
       const cx = (pts[0]!.x + pts[1]!.x) / 2 - r.left;
       const cy = (pts[0]!.y + pts[1]!.y) / 2 - r.top;
-      if (gesture.current.pinch > 0) {
-        setView((v) => v && zoomAt(v, v.z * (dist / gesture.current.pinch), cx, cy));
-      }
+      // Read the last distance now: the state updater runs later, after it is replaced.
+      const last = gesture.current.pinch;
+      if (last > 0) setView((v) => v && zoomAt(v, v.z * (dist / last), cx, cy));
       gesture.current.pinch = dist;
       gesture.current.moved = true;
       return;
@@ -145,7 +162,7 @@ export function IdeaMap({
   const zoomBy = (k: number) => {
     if (view && size) setView(zoomAt(view, view.z * k, size.w / 2, size.h / 2));
   };
-  const fit = () => size && setView(fitView(size.w, size.h, extent));
+  const fit = () => size && setView(fitView(size.w, size.h, extent, true));
 
   // Bring a card into view when the keyboard reaches it.
   const reveal = (n: Node) => {
@@ -217,11 +234,40 @@ export function IdeaMap({
 
   return (
     <div className="imap-wrap">
+      <div className="imap-bar">
+        <p className="imap-hint">
+          Drag to move · scroll or pinch to zoom · Tab to move between ideas
+        </p>
+        <div className="imap-controls">
+          <button
+            type="button"
+            className="btn btn-secondary imap-btn"
+            onClick={() => zoomBy(1.25)}
+            disabled={!view || view.z >= MAX_ZOOM}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary imap-btn"
+            onClick={() => zoomBy(0.8)}
+            disabled={!view || view.z <= MIN_ZOOM}
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <button type="button" className="btn btn-secondary imap-btn" onClick={fit}>
+            Fit
+          </button>
+        </div>
+      </div>
       <div
         ref={box}
         className="imap"
         role="group"
         aria-label={`Idea map: ${map.topic}. ${map.ideas.length} ideas. Drag to move, scroll or pinch to zoom.`}
+        onKeyDown={() => (modality.current = 'keyboard')}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -278,7 +324,7 @@ export function IdeaMap({
                   onClick={() => click(n)}
                   onFocus={() => {
                     setActive(n.idea.id);
-                    reveal(n);
+                    if (modality.current === 'keyboard') reveal(n);
                   }}
                   onBlur={() => setActive(null)}
                   onMouseEnter={() => setActive(n.idea.id)}
@@ -298,32 +344,6 @@ export function IdeaMap({
             })}
           </div>
         )}
-        <div className="imap-controls">
-          <button
-            type="button"
-            className="btn btn-secondary imap-btn"
-            onClick={() => zoomBy(1.25)}
-            disabled={!view || view.z >= MAX_ZOOM}
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary imap-btn"
-            onClick={() => zoomBy(0.8)}
-            disabled={!view || view.z <= MIN_ZOOM}
-            aria-label="Zoom out"
-          >
-            −
-          </button>
-          <button type="button" className="btn btn-secondary imap-btn" onClick={fit}>
-            Fit
-          </button>
-        </div>
-        <p className="imap-hint">
-          Drag to move · scroll or pinch to zoom · Tab to move between ideas
-        </p>
       </div>
       <p className="imap-status" role="status" aria-live="polite">
         {message}

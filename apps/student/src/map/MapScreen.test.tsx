@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event';
-import type { StudentIdeaResponse, StudentMapResponse } from '@ideamap/contracts';
+import type { MeResponse, StudentIdeaResponse, StudentMapResponse } from '@ideamap/contracts';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../App';
 import { MapScreen } from './MapScreen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -53,10 +54,14 @@ let host: HTMLDivElement;
 let root: Root;
 let requests: string[];
 
-function serve(map: StudentMapResponse) {
+function serve(map: StudentMapResponse, locked?: unknown) {
   requests = [];
   vi.stubGlobal('fetch', async (url: string) => {
     requests.push(url);
+    // The app's own sign-in check never settles, so the signed-in view stays as given.
+    if (url === '/api/me') return new Promise<Response>(() => {});
+    if (locked && url.includes('/ideas/'))
+      return new Response(JSON.stringify(locked), { status: 403 });
     const body =
       url.startsWith('/api/classes/') && url.includes('/ideas/')
         ? page
@@ -90,6 +95,19 @@ afterEach(() => {
   host.remove();
   vi.unstubAllGlobals();
 });
+
+/** A touch or mouse event with a pointer id, which jsdom's plain events lack. */
+function pointer(target: Element, type: string, id: number, x: number, y: number) {
+  const e = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+  Object.defineProperty(e, 'pointerId', { value: id });
+  act(() => {
+    target.dispatchEvent(e);
+  });
+}
+const visibleH1 = () =>
+  [...host.querySelectorAll('h1')].find((h) => !h.closest('[hidden]'))?.textContent;
+const worldTransform = () => host.querySelector<HTMLElement>('.imap-world')!.style.transform;
+const scaleOf = () => Number(/scale\(([\d.]+)\)/.exec(worldTransform())![1]);
 
 describe('student map screen (S10)', () => {
   it("says the map isn't published, plainly (F2)", async () => {
@@ -158,5 +176,90 @@ describe('student map screen (S10)', () => {
     await show();
     expect(requests.every((r) => r.startsWith('/api/classes'))).toBe(true);
     expect(requests.some((r) => /event|track|analytics/i.test(r))).toBe(false);
+  });
+
+  // An idea on the outer ring, near the right edge of the box.
+  const edgeMap = () => {
+    const base = response();
+    base.map!.ideas.push({ ...idea('edge', 'Rain', 1, 2), ring: 1 });
+    return base;
+  };
+
+  it.each([
+    [1280, 800],
+    [400, 800],
+  ])(
+    'a pointer click on a card near the edge opens it the first time, at %i px (F6, U4)',
+    async (w, h) => {
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: w });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        value: h,
+      });
+      serve(edgeMap());
+      await show();
+      const before = worldTransform();
+      const card = host.querySelector<HTMLElement>('[data-idea="edge"]')!;
+      const user = userEvent.setup();
+      await act(async () => {
+        await user.click(card);
+      });
+      // Pointer focus must not pan the card out from under the pointer.
+      expect(worldTransform()).toBe(before);
+      expect(location.hash).toBe('#idea=edge');
+    },
+  );
+
+  it('the keyboard still pans a focused card into view (U1)', async () => {
+    serve(edgeMap());
+    await show();
+    const before = worldTransform();
+    await act(async () => {
+      host.querySelector<HTMLElement>('[data-idea="edge"]')!.focus();
+    });
+    expect(worldTransform()).not.toBe(before);
+  });
+
+  it('spreading two fingers zooms in, pinching zooms out (U4)', async () => {
+    serve(response());
+    await show();
+    const box = host.querySelector('.imap')!;
+    const start = scaleOf();
+    pointer(box, 'pointerdown', 1, 440, 300);
+    pointer(box, 'pointerdown', 2, 460, 300);
+    pointer(box, 'pointermove', 2, 520, 300);
+    pointer(box, 'pointermove', 2, 560, 300);
+    const spread = scaleOf();
+    expect(spread).toBeGreaterThan(start);
+    pointer(box, 'pointermove', 2, 480, 300);
+    expect(scaleOf()).toBeLessThan(spread);
+  });
+
+  it('a locked idea opened by URL says what unlocks it (F5)', async () => {
+    history.replaceState(null, '', '/#idea=cond');
+    serve(response(), {
+      error: 'Locked',
+      title: 'Condensation',
+      unlocksAfter: [{ id: 'evap', title: 'Evaporation' }],
+    });
+    await show();
+    expect(visibleH1()).toBe('Condensation is locked. Unlocks after Evaporation.');
+  });
+
+  it('the idea page has an h1 (U2)', async () => {
+    history.replaceState(null, '', '/#idea=evap');
+    serve(response());
+    await show();
+    expect(visibleH1()).toBe('Evaporation');
+  });
+
+  it('offers Text size and Calm screen in the header once signed in (U3)', async () => {
+    serve(response());
+    const me = { user: { name: 'Sam Student' } } as unknown as MeResponse;
+    await act(async () => {
+      root.render(<App initial={{ kind: 'signed-in', me }} />);
+    });
+    expect(host.textContent).toContain('Words on the page');
+    expect(host.textContent).toContain('Calm screen');
   });
 });

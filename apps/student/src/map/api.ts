@@ -1,5 +1,6 @@
 import {
   ClassesResponseSchema,
+  LockedIdeaResponseSchema,
   StudentIdeaResponseSchema,
   StudentMapResponseSchema,
   type StudentIdeaResponse,
@@ -10,6 +11,16 @@ import {
 // the student back to sign in. Nothing here records progress or sends analytics.
 
 export class SignedOut extends Error {}
+
+/** The server refused a locked idea and named what unlocks it. */
+export class IdeaLocked extends Error {
+  constructor(
+    readonly title: string,
+    readonly unlocksAfter: string[],
+  ) {
+    super('locked');
+  }
+}
 
 async function get(url: string): Promise<unknown> {
   const res = await fetch(url, { credentials: 'same-origin' });
@@ -35,7 +46,17 @@ export async function loadIdea(
   ideaId: string,
   preview: boolean,
 ): Promise<StudentIdeaResponse> {
-  return StudentIdeaResponseSchema.parse(
-    await get(`/api/classes/${classId}/ideas/${encodeURIComponent(ideaId)}${q(preview)}`),
-  );
+  const url = `/api/classes/${classId}/ideas/${encodeURIComponent(ideaId)}${q(preview)}`;
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (res.status === 401) throw new SignedOut();
+  if (res.status === 403) {
+    const body = LockedIdeaResponseSchema.safeParse(await res.json().catch(() => null));
+    if (body.success)
+      throw new IdeaLocked(
+        body.data.title,
+        body.data.unlocksAfter.map((u) => u.title),
+      );
+  }
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  return StudentIdeaResponseSchema.parse(await res.json());
 }

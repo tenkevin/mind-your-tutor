@@ -1,6 +1,6 @@
 import type { StudentIdeaResponse, StudentMapResponse } from '@ideamap/contracts';
 import { useCallback, useEffect, useState } from 'react';
-import { loadIdea, loadMap, chooseClass, SignedOut } from './api';
+import { IdeaLocked, loadIdea, loadMap, chooseClass, SignedOut } from './api';
 import { IdeaMap } from './IdeaMap';
 import { IdeaPage } from './IdeaPage';
 
@@ -27,7 +27,7 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
   const [openId, setOpenId] = useState<string | null>(ideaFromHash);
   const [loaded, setLoaded] = useState<{
     id: string;
-    value: StudentIdeaResponse | 'denied';
+    value: StudentIdeaResponse | 'denied' | { locked: string };
   } | null>(null);
   // Only the page for the idea now in the URL counts; an older answer is ignored.
   const idea = loaded && loaded.id === openId ? loaded.value : null;
@@ -64,7 +64,12 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
       .catch((e) => {
         if (!live) return;
         if (e instanceof SignedOut) onSignedOut();
-        else setLoaded({ id: openId, value: 'denied' });
+        else if (e instanceof IdeaLocked) {
+          setLoaded({
+            id: openId,
+            value: { locked: `${e.title} is locked. Unlocks after ${e.unlocksAfter.join(', ')}.` },
+          });
+        } else setLoaded({ id: openId, value: 'denied' });
       });
     return () => {
       live = false;
@@ -111,13 +116,23 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
       {showing && idea === null && <p className="mscreen-note">Loading…</p>}
       {showing && idea === 'denied' && (
         <div>
-          <p className="mscreen-note">This idea is locked or isn&rsquo;t on your map.</p>
+          <h1 className="mscreen-title">This idea is locked or isn&rsquo;t on your map.</h1>
           <button type="button" className="btn btn-secondary" onClick={back}>
             ← Back to the map
           </button>
         </div>
       )}
-      {showing && idea && idea !== 'denied' && <IdeaPage idea={idea} onBack={back} />}
+      {showing && idea && typeof idea === 'object' && 'locked' in idea && (
+        <div>
+          <h1 className="mscreen-title">{idea.locked}</h1>
+          <button type="button" className="btn btn-secondary" onClick={back}>
+            ← Back to the map
+          </button>
+        </div>
+      )}
+      {showing && idea && idea !== 'denied' && !('locked' in idea) && (
+        <IdeaPage idea={idea} onBack={back} />
+      )}
     </section>
   );
 }

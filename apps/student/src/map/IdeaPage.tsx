@@ -15,9 +15,9 @@ export function IdeaPage({ idea, onBack }: { idea: StudentIdeaResponse; onBack: 
           {idea.category} · Unit {idea.unit}
           {idea.unitName ? `: ${idea.unitName}` : ''}
         </p>
-        <h2 id="ipage-title" tabIndex={-1} className="ipage-title">
+        <h1 id="ipage-title" tabIndex={-1} className="ipage-title">
           {idea.title}
-        </h2>
+        </h1>
       </header>
       {idea.objective && (
         <section aria-labelledby="ipage-obj">

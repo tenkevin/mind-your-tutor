@@ -146,7 +146,15 @@ export function studentMapRoutes(app: FastifyInstance): void {
     const { pinned, idea, approved } = found;
     const lock = lockStates(pinned.pack.ideas).find((l) => l.idea_id === idea.idea_id)!;
     // A locked idea can't be opened by URL either (§8.4).
-    if (!preview && lock.state === 'locked') return reply.code(403).send({ error: 'Locked' });
+    if (!preview && lock.state === 'locked') {
+      // Says what unlocks it, as the map card does, and nothing else about the idea.
+      const titlesOf = new Map(pinned.pack.ideas.map((i) => [i.idea_id, i.title]));
+      return reply.code(403).send({
+        error: 'Locked',
+        title: idea.title,
+        unlocksAfter: lock.unlocks_after.map((id) => ({ id, title: titlesOf.get(id) ?? id })),
+      });
+    }
     const titles = new Map(pinned.pack.ideas.map((i) => [i.idea_id, i.title]));
     const kept = pinned.derived.ranked_links.kept;
     const link = (id: string, relation: string) => ({ id, title: titles.get(id) ?? id, relation });

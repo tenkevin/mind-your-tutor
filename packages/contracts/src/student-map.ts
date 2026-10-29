@@ -74,6 +74,13 @@ export const StudentIdeaResponseSchema = z.object({
   linksOut: z.array(IdeaLinkSchema),
 });
 
+/** The 403 body for a locked idea opened by URL: what unlocks it, as the map card says. */
+export const LockedIdeaResponseSchema = z.object({
+  error: z.literal('Locked'),
+  title: z.string(),
+  unlocksAfter: z.array(NamedIdeaSchema),
+});
+
 export type IdeaState = z.infer<typeof IdeaStateSchema>;
 export type StudentMapIdea = z.infer<typeof StudentMapIdeaSchema>;
 export type StudentMapLink = z.infer<typeof StudentMapLinkSchema>;

@@ -8,6 +8,7 @@ import {
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
 import { MapScreen } from './map/MapScreen';
+import { DisplaySettings } from './udl';
 
 // The session lives in an HttpOnly cookie; the app only asks /api/me who is signed in.
 
@@ -60,6 +61,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       <header className="student-bar">
         <span className="student-brand">Idea Map</span>
         <span className="student-who">{view.me.user.name}</span>
+        <DisplaySettings />
       </header>
       <MapScreen
         onSignedOut={() =>

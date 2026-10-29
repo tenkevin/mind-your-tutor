@@ -19,9 +19,15 @@ describe('map geometry', () => {
     expect((200 - next.y) / next.z).toBeCloseTo((200 - view.y) / view.z);
   });
 
-  it('fits a phone without shrinking text below a legible size', () => {
+  it('starts on a phone without shrinking text below a legible size', () => {
     expect(fitView(400, 600, { w: 1400, h: 900 }).z).toBe(0.55);
     expect(fitView(1600, 900, { w: 1400, h: 900 }).z).toBe(1);
+  });
+
+  it('Fit shows every card, even on a phone', () => {
+    const view = fitView(400, 600, { w: 1400, h: 900 }, true);
+    expect(view.z * 1400).toBeLessThanOrEqual(400);
+    expect(view.z * 900).toBeLessThanOrEqual(600);
   });
 
   it('pans only when a focused idea is out of view', () => {

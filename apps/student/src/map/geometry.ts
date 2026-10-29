@@ -11,11 +11,22 @@ export const toPixels = (p: { x: number; y: number }) => ({
   y: p.y * UNIT,
 });
 
-/** Half the size of an idea card, for trimming links where they meet its edge. */
-export function halfSize(title: string, centre: boolean) {
-  return centre
-    ? { hw: Math.max(70, title.length * 5.5 + 24), hh: 34 }
-    : { hw: Math.max(52, title.length * 3.6 + 20), hh: 22 };
+/**
+ * Half the size of an idea card, from its longest line of text (13px titles, 11px
+ * category and "Unlocks after" lines), so links stop at its edge and Fit never clips it.
+ */
+export function halfSize(
+  card: { title: string; category: string; requires?: string },
+  centre: boolean,
+  locked: boolean,
+) {
+  if (centre) return { hw: Math.max(70, card.title.length * 5.5 + 24), hh: 34 };
+  const widest = Math.max(
+    card.title.length * 7.4 + (locked ? 18 : 0),
+    card.category.length * 6.4 + 18,
+    (card.requires?.length ?? 0) * 6,
+  );
+  return { hw: Math.max(52, widest / 2 + 14), hh: locked ? 30 : 24 };
 }
 
 /** The point where a line from a card's centre toward (dx, dy) leaves the card. */
@@ -33,14 +44,22 @@ export interface View {
   z: number;
 }
 
-export const MIN_ZOOM = 0.3;
+export const MIN_ZOOM = 0.15;
 export const MAX_ZOOM = 2.5;
 export const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
 
-/** The view that centres the map in a box, zoomed to fit but never below a legible size. */
-export function fitView(width: number, height: number, extent: { w: number; h: number }): View {
-  const z = clampZoom(Math.min(1, Math.max(0.55, Math.min(width / extent.w, height / extent.h))));
-  return { x: width / 2, y: height / 2, z };
+/**
+ * The view that centres the map in a box. Zoomed to fit, but never below a legible size
+ * unless `whole` is set, which shrinks until every card is inside the box.
+ */
+export function fitView(
+  width: number,
+  height: number,
+  extent: { w: number; h: number },
+  whole = false,
+): View {
+  const fit = Math.min(1, width / extent.w, height / extent.h);
+  return { x: width / 2, y: height / 2, z: clampZoom(whole ? fit : Math.max(0.55, fit)) };
 }
 
 /** Zoom about a point in the box, keeping the map point under it still. */
