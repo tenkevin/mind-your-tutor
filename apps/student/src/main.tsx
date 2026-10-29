@@ -1,5 +1,6 @@
 import '@ideamap/ui/styles.css';
 import './udl/udl.css';
+import './map/map.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

@@ -236,12 +236,6 @@ function pairsFor(theme: Theme): Pair[] {
       // transparent field on either would still pass.
       [`input.input::placeholder on ${g}`, placeholder(), ground, 4.5],
       [`textarea.input::placeholder on ${g}`, placeholder(), ground, 4.5],
-      // Map nodes and links are UI parts (3:1); the node's state is also shown by shape (S10).
-      [`--map-node-open on ${g}`, hex('--map-node-open'), ground, 3],
-      [`--map-node-locked on ${g}`, hex('--map-node-locked'), ground, 3],
-      [`--map-node-mastered on ${g}`, hex('--map-node-mastered'), ground, 3],
-      [`--map-link on ${g}`, hex('--map-link'), ground, 3],
-      [`--map-centre on ${g}`, hex('--map-centre'), ground, 3],
     );
     for (let n = 1; n <= 6; n++)
       pairs.push([
@@ -266,6 +260,63 @@ function pairsFor(theme: Theme): Pair[] {
       );
     }
   }
+  // The student map (S10) is painted on --map-canvas, brightening to --map-canvas-glow at the
+  // centre, so marks are measured on both. Nodes are measured against their own fill (text 4.5,
+  // border 3) and against the canvas (border 3). --map-ring is a decorative guide and carries no
+  // information, so it has no pair.
+  type T = keyof Theme['values'];
+  const map = (t: string) => hex(`--map-${t}` as T);
+  const canvases = { canvas: map('canvas'), 'canvas-glow': map('canvas-glow') } as const;
+  const nodes = {
+    open: ['node-open', 'node-open-border', 'node-text'],
+    locked: ['node-locked', 'node-locked-border', 'node-locked-text'],
+    mastered: ['node-mastered', 'node-mastered-border', 'node-text'],
+    centre: ['node-centre', 'node-centre-border', 'node-text'],
+  } as const;
+  for (const [name, [fill, border, textTok]] of Object.entries(nodes)) {
+    pairs.push(
+      [`--map-${textTok} on ${fill} (${name})`, map(textTok), map(fill), 4.5],
+      [`--map-${border} on ${fill}`, map(border), map(fill), 3],
+      [`--map-node-hover-border on ${fill}`, map('node-hover-border'), map(fill), 3],
+      [`--map-focus on ${fill}`, map('focus'), map(fill), 3],
+    );
+    for (const [c, ground] of Object.entries(canvases))
+      pairs.push([`--map-${border} on ${c}`, map(border), ground, 3]);
+  }
+  for (const [c, ground] of Object.entries(canvases)) {
+    pairs.push(
+      [`--map-link on ${c}`, map('link'), ground, 3],
+      [`--map-link-active on ${c}`, map('link-active'), ground, 3],
+      [`--map-link-label on ${c}`, map('link-label'), ground, 4.5],
+      [`--map-hint on ${c}`, map('hint'), ground, 4.5],
+      [`--map-heading on ${c}`, map('heading'), ground, 4.5],
+      [`--map-focus on ${c}`, map('focus'), ground, 3],
+      [`--map-node-hover-border on ${c}`, map('node-hover-border'), ground, 3],
+      [`--map-banner-border on ${c}`, map('banner-border'), ground, 3],
+      [`--map-term-border on ${c}`, map('term-border'), ground, 3],
+      [`--map-placeholder-border on ${c}`, map('placeholder-border'), ground, 3],
+    );
+  }
+  pairs.push(
+    ['--map-banner-text on --map-banner', map('banner-text'), map('banner'), 4.5],
+    ['--map-banner-border on --map-banner', map('banner-border'), map('banner'), 3],
+    ['--map-heading on --map-term', map('heading'), map('term'), 4.5],
+    ['--map-term-border on --map-term', map('term-border'), map('term'), 3],
+    [
+      '--map-placeholder-text on --map-placeholder',
+      map('placeholder-text'),
+      map('placeholder'),
+      4.5,
+    ],
+    [
+      '--map-placeholder-border on --map-placeholder',
+      map('placeholder-border'),
+      map('placeholder'),
+      3,
+    ],
+    ['--map-hint on bg', map('hint'), bg, 4.5],
+    ['--map-heading on bg', map('heading'), bg, 4.5],
+  );
   pairs.push(
     ['.tag-accent', hex('--color-accent-100'), hex('--color-accent-800'), 4.5],
     ['.tag-accent-2', hex('--color-accent-2-100'), hex('--color-accent-2-800'), 4.5],

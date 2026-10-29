@@ -84,16 +84,22 @@ default theme and is unchanged (D10).
 **The contract** is `src/themes/contract.ts`: one typed list of the tokens every
 theme must set.
 
-| Group    | Tokens                                                                                                                      |
-| -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Core     | `--color-bg`, `-surface`, `-text`, `-accent`, `-accent-2`, `-divider`, `-focus`, the three ramps, the three section grounds |
-| Map      | `--map-node-open`, `--map-node-locked`, `--map-node-mastered`, `--map-link`, `--map-centre`                                 |
-| Category | `--category-1` to `--category-6`: slot n is the n-th category in curriculum order, so no category name is hard-coded        |
-| State    | `--state-success`, `--state-warning`, `--state-danger`, `--state-info`                                                      |
-| Text mix | `--alpha-label`, `--alpha-th`, `--alpha-muted`, `--alpha-meta`: how strongly text mixes into its ground                     |
-| Shape    | `--font-heading`, `--font-heading-weight`, `--font-body`, `--radius-sm/md/lg`, `--shadow-sm/md/lg`                          |
+| Group    | Tokens                                                                                                                                                                                                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core     | `--color-bg`, `-surface`, `-text`, `-accent`, `-accent-2`, `-divider`, `-focus`, the three ramps, the three section grounds                                                                                                                                                                                                                                 |
+| Map      | Fills `--map-canvas`, `-canvas-glow`, `--map-node-open/-locked/-mastered/-centre`, `-banner`, `-term`, `-placeholder`; marks and borders `--map-node-*-border`, `-hover-border`, `--map-link`, `-link-active`, `--map-focus`, `--map-ring`; text `--map-node-text`, `-locked-text`, `-link-label`, `-hint`, `-heading`, `-banner-text`, `-placeholder-text` |
+| Category | `--category-1` to `--category-6`: slot n is the n-th category in curriculum order, so no category name is hard-coded                                                                                                                                                                                                                                        |
+| State    | `--state-success`, `--state-warning`, `--state-danger`, `--state-info`                                                                                                                                                                                                                                                                                      |
+| Text mix | `--alpha-label`, `--alpha-th`, `--alpha-muted`, `--alpha-meta`: how strongly text mixes into its ground                                                                                                                                                                                                                                                     |
+| Shape    | `--font-heading`, `--font-heading-weight`, `--font-body`, `--radius-sm/md/lg`, `--shadow-sm/md/lg`                                                                                                                                                                                                                                                          |
 
 Spacing (`--space-*`) is the same in every theme and stays in `styles.css`.
+
+Map tokens come in three kinds, each with its own contrast rule: a **fill** is what
+a node or panel is painted (text on it needs 4.5:1); a **mark or border** needs
+3:1 against its fill and the canvas; **text** needs 4.5:1 against its fill.
+`--map-focus` is the map's focus ring, drawn over node fills and the canvas; the
+rest of the app uses `--color-focus`.
 
 **Use:** take every colour from a token, for example `background:
 var(--map-node-mastered)`. A theme `defineTheme({...})` that misses a token or adds
