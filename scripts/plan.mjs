@@ -96,13 +96,13 @@ function render() {
 // implied edges are dropped (transitive reduction over open tasks), and each task shows its slack:
 // how many weeks it can slip before the pilot does. Zero slack is the critical path.
 const LANES = [
-  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'A11', 'M6', 'M7']],
-  ['tracker', 'Tracker and insight', ['M1', 'M2', 'M3', 'M4', 'M5']],
-  ['curriculum', 'Curriculum and publishing', ['F6', 'C5', 'C6', 'C7']],
-  ['teacher', 'Teacher console', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'A3', 'A4', 'A6']],
-  ['student', 'Student app', ['S5', 'S1', 'S2', 'S3', 'S4']],
+  ['trust', 'Trust: privacy, feedback, fairness', ['A1', 'A2', 'A5', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'M6', 'M7']],
+  ['tracker', 'Tracker and insight', ['M1', 'M2', 'M3', 'M4', 'M5', 'M8', 'M9']],
+  ['curriculum', 'Curriculum and publishing', ['F6', 'C5', 'C6', 'C7', 'C10', 'C11', 'C12', 'C13', 'X2']],
+  ['teacher', 'Teacher console', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'A3', 'A4', 'A6']],
+  ['student', 'Student app', ['S5', 'S1', 'S2', 'S3', 'S4', 'S6', 'S7', 'S8']],
   ['launch', 'Pilot', ['L1']],
-  ['later', 'After the pilot', ['X1', 'X2']],
+  ['later', 'After the pilot', ['X1']],
 ];
 const PILOT = 'L1';
 // A fix task (<ID>cx<n>, <ID>b) sits in the lane of the task it fixes.

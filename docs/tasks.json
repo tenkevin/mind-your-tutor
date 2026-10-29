@@ -648,13 +648,13 @@
     },
     {
       "id": "S3",
-      "title": "Missions driven by due dates",
+      "title": "Teacher-assigned study track (missions) from due dates",
       "size": 1,
       "deps": [
         "S2",
         "T4"
       ],
-      "done_when": "Missions list uses teacher due dates",
+      "done_when": "Per D39: the teacher-assigned track lists work from teacher due dates and assignments and always takes priority over the self-paced track in the student UI",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -708,9 +708,21 @@
         "C5cx2",
         "C6cx1",
         "A11",
-        "C6cx2"
+        "C6cx2",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "T9",
+        "M8",
+        "M9",
+        "S6",
+        "S7",
+        "A12",
+        "A13",
+        "X2"
       ],
-      "done_when": "Two pilot classes share one curriculum through import, publish, a student run and teach-back",
+      "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -732,13 +744,12 @@
     },
     {
       "id": "X2",
-      "title": "Cloudinary media provider",
+      "title": "Self-hosted video and media provider",
       "size": 1,
       "deps": [
-        "C4",
-        "L1"
+        "C4"
       ],
-      "done_when": "media_url values that point to Cloudinary resolve through a MediaProvider",
+      "done_when": "Per D42: media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -939,6 +950,146 @@
       "status": "review",
       "owner": "agent-c6cx2",
       "updated": "2026-10-28"
+    },
+    {
+      "id": "C10",
+      "title": "Practice tab: spec, contracts, import, checks, diff and export",
+      "size": 2,
+      "deps": [],
+      "done_when": "Per D40/D8: the ninth tab (exercise_id, idea_id, group, standard_code, exercise_title, kind exercise|quiz, quiz_from, problem_type mc|number, question, choices, answer, answer_unit, explanation, visual, media_url, demo_video_url, demo_steps, plus the item's source bank, source id and licence/attribution) is in docs/spec, zod contracts, C1 import, C2 data checks (items must come from an allow-listed vetted bank), C5 diff and C6 export",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C12",
+      "title": "Two-layer conceptual graph in the pack",
+      "size": 1,
+      "deps": [],
+      "done_when": "Per D41: Ideas can mark the surface process layer and the causal-mechanism layer with standard codes; checks reject loops in the mechanism layer and trace-back targets only the mechanism layer; the water-cycle fixture gains its mechanism nodes",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C11",
+      "title": "Kinematics sub-pilot fixture from vetted items",
+      "size": 1,
+      "deps": [
+        "C10"
+      ],
+      "done_when": "Per D42: fixtures/kinematics holds a CSV, XLSX and pack JSON (procedural DAG from project/kinematics-graph.js, Practice rows from vetted banks with attribution) with a README of deliberate data errors, as for the water cycle",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C13",
+      "title": "Vault standards graph",
+      "size": 2,
+      "deps": [
+        "A3"
+      ],
+      "done_when": "Per D41: NGSS/CCSS standards nodes and their links are pre-loaded in the Vault; curricula link ideas to them; the graph is versioned and read-only to teachers",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "T9",
+      "title": "Prerequisite editing with district permissions and AI-proposed links",
+      "size": 2,
+      "deps": [
+        "T6",
+        "C5",
+        "C13"
+      ],
+      "done_when": "Per D41/D4: the Dependencies view (project/Kinematics Dependencies.dc.html) shows the graph; teacher edits follow the district setting (Locked, Direct edit, Admin review queue), always as a draft that is published; for an uploaded worksheet the AI proposes prerequisite links into the Vault graph and the teacher adjusts before publishing",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "M8",
+      "title": "Tracker rules v2: exercise levels, trace-back and diagnostics",
+      "size": 2,
+      "deps": [
+        "M3",
+        "C10",
+        "C12"
+      ],
+      "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "M9",
+      "title": "Teacher diagnostic views with disclaimers and suggestions",
+      "size": 1,
+      "deps": [
+        "M5",
+        "M8"
+      ],
+      "done_when": "Per D38/D21: knowledge gaps, baseline breakdowns and engagement indices appear only to the class's teacher, each with the disclaimer and an actionable suggestion; class trace-back counts as in project/Kinematics Dependencies.dc.html",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "S6",
+      "title": "Idea page and exercise player",
+      "size": 2,
+      "deps": [
+        "S2",
+        "C10",
+        "X2"
+      ],
+      "done_when": "Per D40/D42: an idea page with its self-hosted overview video, and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "S7",
+      "title": "Student profile and onboarding",
+      "size": 2,
+      "deps": [
+        "A2",
+        "A7",
+        "S2"
+      ],
+      "done_when": "Per D36: onboarding as in project/Student Onboarding.dc.html, stored server-side; K–10 uses dropdowns only, grade 11+ free text passes A2 and A7; no mood, focus or confidence data; sharing toggles for Ms. Ivy and Milo; the name never reaches a model",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "A12",
+      "title": "Dual-track study planner",
+      "size": 2,
+      "deps": [
+        "S7",
+        "T4",
+        "A5"
+      ],
+      "done_when": "Per D39/D37: the teacher-assigned track overrides the self-paced track; the rule-based planner (project/study-plan.js) is deterministic in packages/domain; the AI plan runs through the gateway with the skill prompt in packages/ai and A5 eval cases; plans keep a 30-instance FIFO cap",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "A13",
+      "title": "Tutor study-plan tools",
+      "size": 1,
+      "deps": [
+        "A12",
+        "S4"
+      ],
+      "done_when": "Ms. Ivy and Milo can call get_plan, get_today, prompt_reflection, log_session (no focus rating, D36), adjust_plan, schedule_reminder and check_goal through the gateway, each audited and bounded by the student's track and D39",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "S8",
+      "title": "Reminders and the notification hierarchy",
+      "size": 1,
+      "deps": [
+        "A12"
+      ],
+      "done_when": "Per D39: in-app reminders, and external reminders only as District > Teacher > Student allow, with district quiet hours; reflections keep the D37 cap",
+      "placeholder": true,
+      "status": "todo"
     }
   ]
 }
