@@ -1,4 +1,13 @@
-import { applyTheme, colourTokens, cssVar, defaultTheme, themes } from '@ideamap/ui';
+import {
+  alphaTokens,
+  applyTheme,
+  colourTokens,
+  cssVar,
+  defaultTheme,
+  resolveTheme,
+  shapeTokens,
+  themes,
+} from '@ideamap/ui';
 import { useState, type CSSProperties } from 'react';
 
 // Every colour token for the active theme, with a switcher, so a designer can
@@ -59,24 +68,44 @@ export function ThemeReference() {
           gap: 'var(--space-3)',
         }}
       >
-        {colourTokens
-          .filter((t) => t !== '--color-divider')
-          .map((t) => (
-            <div key={t} style={swatch}>
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 'var(--radius-sm)',
-                  background: cssVar(t),
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              />
-              <code>{t}</code>
-            </div>
-          ))}
+        {colourTokens.map((t) => (
+          <div key={t} style={swatch}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 'var(--radius-sm)',
+                background: cssVar(t),
+                boxShadow: 'var(--shadow-sm)',
+                // Forced colours replaces backgrounds; the border keeps the swatch visible.
+                border: '1px solid currentcolor',
+              }}
+            />
+            <code>{t}</code>
+          </div>
+        ))}
       </div>
+
+      <table className="table">
+        <caption style={{ textAlign: 'left' }}>Alpha, type, radius and shadow tokens</caption>
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...alphaTokens, ...shapeTokens].map((t) => (
+            <tr key={t}>
+              <td>
+                <code>{t}</code>
+              </td>
+              <td>{resolveTheme(id).values[t]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

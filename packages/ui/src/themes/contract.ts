@@ -104,7 +104,21 @@ export const themeIdPattern = /^[a-z][a-z0-9-]*$/;
 
 // Values are written straight into a stylesheet, so they are checked: no
 // declaration or block can be closed from inside a value (F8-S1).
-const unsafeValue = /[;{}<>\\]|\/\*|@|url\(|expression\(/i;
+const unsafeValue = /[;{}<>\\\n\r]|\/\*|@|url\(|expression\(|!\s*important/i;
+
+/** True when every quote is closed and every parenthesis matched. */
+function balanced(value: string): boolean {
+  let depth = 0;
+  let quote = '';
+  for (const ch of value) {
+    if (quote) {
+      if (ch === quote) quote = '';
+    } else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(') depth++;
+    else if (ch === ')' && --depth < 0) return false;
+  }
+  return depth === 0 && quote === '';
+}
 
 /** Problems with a theme, empty when it is valid. Checked at run time for themes built from untyped data. */
 export function themeProblems(theme: Theme): string[] {
@@ -117,7 +131,7 @@ export function themeProblems(theme: Theme): string[] {
   }
   for (const [name, value] of Object.entries(theme.values)) {
     if (!known.has(name)) problems.push(`unknown token ${name}`);
-    if (unsafeValue.test(value)) problems.push(`unsafe value for ${name}`);
+    if (unsafeValue.test(value) || !balanced(value)) problems.push(`unsafe value for ${name}`);
   }
   return problems;
 }

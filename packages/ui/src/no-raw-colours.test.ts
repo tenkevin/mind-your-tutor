@@ -31,6 +31,31 @@ describe('findRawColours', () => {
     expect(findRawColours(tsx, 'x.tsx').map((c) => c.text)).toEqual(['#abcdef', 'tomato', 'blue']);
   });
 
+  it.each([
+    "export const a = { border: '1px solid red' };",
+    "export const a = { boxShadow: '0 0 4px red' };",
+    "export const a = { background: 'linear-gradient(red, blue)' };",
+    'export const a = `.x{color:red}`;',
+    'const a = <p style="color: white" />;',
+    "const a = { 'border-color': 'tomato' };",
+    'const a = <p style={{ outline: `2px dashed ${w} gold` }} />;',
+    'const a = `\n  .x {\n    background: navy;\n  }`;',
+  ])('finds a named colour in a style-like string: %s', (src) => {
+    expect(findRawColours(src, 'x.tsx').length, src).toBeGreaterThan(0);
+  });
+
+  it.each([
+    "const a = 'red flags are green lights';",
+    'const msg = `Select a tan or white option`;',
+    "const a = { borderRadius: '4px', border: '1px solid var(--color-divider)' };",
+    "const a = { background: 'none', fill: 'currentcolor', color: 'inherit' };",
+    'const a = <p className="gold-card" title="Pink slip" />;',
+    "const a = { label: 'Red team', kind: 'white' };",
+    "const a = { background: 'linear-gradient(var(--a), transparent)' };",
+  ])('does not flag ordinary words: %s', (src) => {
+    expect(findRawColours(src, 'x.tsx'), src).toEqual([]);
+  });
+
   it('allows tokens, transparent, currentcolor, comments and font names', () => {
     const css =
       '/* #fff red */\n.a { color: var(--color-accent); background: transparent; border-color: currentcolor;\n  color: color-mix(in srgb, var(--color-text) 50%, transparent); font-family: "Inter", sans-serif; }';

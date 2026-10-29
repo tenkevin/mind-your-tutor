@@ -51,11 +51,34 @@ export function findRawColours(source: string, file: string): RawColour[] {
         if (named.has(w[0].toLowerCase())) add((d.index ?? 0) + d[0].indexOf(w[0]), w[0]);
     }
   } else {
-    // A colour name given to a colour property, as in style={{ color: 'red' }} or fill="red".
-    const prop =
-      /\b(?:color|background(?:Color)?|fill|stroke|border\w*|outline\w*|stopColor|floodColor)\b\s*[:=]\s*\{?\s*(["'`])([a-zA-Z]+)\1/g;
-    for (const s of text.matchAll(prop))
-      if (named.has((s[2] ?? '').toLowerCase())) add(s.index ?? 0, s[2] ?? '');
+    // Code: look only inside string and template literals, and only where they hold style.
+    const wordRe = /(?<![\w-])[a-z]+(?![\w-])(?!\()/gi;
+    const flagWords = (value: string, at: number) => {
+      for (const w of value.matchAll(wordRe))
+        if (named.has(w[0].toLowerCase())) add(at + (w.index ?? 0), w[0]);
+    };
+    const styleKey =
+      /(?:color|background\w*|border\w*|outline\w*|fill|stroke|\w*shadow|\w*gradient|filter|caret\w*|textDecoration\w*|style)["']?\s*[:=]\s*\{?\s*$/i;
+    for (const lit of text.matchAll(/(["'`])((?:\\[\s\S]|(?!\1)[^\\])*)\1/g)) {
+      const value = lit[2] ?? '';
+      const start = (lit.index ?? 0) + 1;
+      const before = text.slice(Math.max(0, (lit.index ?? 0) - 60), lit.index ?? 0);
+      if (
+        styleKey.test(before) ||
+        (/gradient\(|[\w-]+\s*:[^;{}]+(?:;|\})/.test(value) &&
+          /color|background|border|outline|fill|stroke|shadow|gradient/i.test(value))
+      ) {
+        // A CSS-looking string: `1px solid red`, `linear-gradient(red, blue)`, `.x{color:red}`, `color: white`.
+        // Only the value side of each declaration counts, never a property name.
+        const decl = /(?:^|[;{])\s*([\w-]+)\s*:\s*([^;{}]*)/g;
+        if (/[\w-]+\s*:/.test(value) && /[;{}:]/.test(value) && !styleKey.test(before)) {
+          for (const d of value.matchAll(decl)) {
+            const vstart = start + (d.index ?? 0) + d[0].lastIndexOf(d[2] ?? '');
+            flagWords(d[2] ?? '', vstart);
+          }
+        } else flagWords(value, start);
+      }
+    }
   }
   return found;
 }

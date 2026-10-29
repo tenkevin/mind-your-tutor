@@ -5,6 +5,7 @@ import {
   colourTokens,
   defaultTheme,
   defineTheme,
+  offeredThemes,
   resolveTheme,
   themeCss,
   themeProblems,
@@ -130,6 +131,27 @@ describe('switching at run time (F8-F3, F8-S1)', () => {
     });
     for (const v of ['red;}', '#fff} body{display:none', 'url(http://x)', '/* x */', 'a\\b'])
       expect(themeProblems(evil(v)), v).toContain('unsafe value for --color-bg');
+    for (const v of [
+      '"Inter',
+      "'x",
+      'rgb(1,2,3',
+      'a)',
+      'a\nb',
+      'a\rb',
+      '#fff !important',
+      '#fff ! important',
+    ])
+      expect(themeProblems(evil(v)), JSON.stringify(v)).toContain('unsafe value for --color-bg');
+    for (const v of ['"Inter", system-ui, sans-serif', 'color-mix(in srgb, #fff 16%, transparent)'])
+      expect(themeProblems(evil(v)), v).toEqual([]);
     expect(themeProblems({ ...daylight, id: 'A b' })).toContain('bad id "A b"');
+  });
+});
+
+describe('test-only themes (S14)', () => {
+  it('are registered but never offered', () => {
+    expect(themes.map((t) => t.id)).toContain('daylight-test');
+    expect(daylight.testOnly).toBe(true);
+    expect(offeredThemes.map((t) => t.id)).toEqual(['nocturne']);
   });
 });

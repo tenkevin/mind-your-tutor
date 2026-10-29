@@ -111,7 +111,9 @@ applyTheme('daylight-test', document.documentElement); // unknown ids give Noctu
 
 Values come only from the typed theme files, never from user input or the
 network, and `themeProblems()` refuses values that could close a declaration or
-block (`;`, `{`, `}`, `url(`, comments).
+block (`;`, `{`, `}`, `url(`, comments), unbalanced quotes or parentheses,
+newlines and `!important`. `offeredThemes` lists the registered themes without
+the `testOnly` ones; anything that offers themes to students (S14) must use it.
 
 **Add a theme:** (1) create `src/themes/<id>.ts` that default-exports a
 `defineTheme({ id, name, values })` with every token; (2) add it to `themes` in
@@ -128,7 +130,10 @@ may have below-AA pairs, and only D10's nine. Any other theme must pass outright
 **No raw colours.** `src/no-raw-colours.test.ts` (run by `pnpm test`, so by CI)
 scans `styles.css` outside theme blocks and the source of `apps/*` (CSS, TS, TSX,
 HTML) for hex, `rgb()`/`hsl()`/`oklch()` and named colours, and reports file and
-line. Only `transparent` and `currentcolor` are allowed. Raw colours belong in
+line. It finds named colours in CSS values and, in code, in style-like strings
+(a colour property's value, `style="…"`, gradients, shadows, and CSS inside
+template literals), so ordinary words are not flagged. Only `transparent` and
+`currentcolor` are allowed. Raw colours belong in
 `src/themes/*.ts`.
 
 ## Classes
@@ -166,9 +171,8 @@ headers, `input` and `textarea` placeholders, and every `.tag-*` variant. Don't
 use `--color-neutral-600` or darker for text.
 
 The accepted contrast deviations (decision D10 in `docs/ARCHITECTURE.md`) are
-the only pairs below AA:
-
-These apply to Nocturne only (D46); other themes must pass AA outright.
+the only pairs below AA, and they apply to Nocturne only (D46); other themes must
+pass AA outright:
 
 - the `.input` border, on both grounds
 - `.card-meta` on `--color-surface`

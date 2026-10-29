@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { colourTokens } from '@ideamap/ui';
+import { alphaTokens, colourTokens, shapeTokens } from '@ideamap/ui';
 import { fireEvent, screen } from '@testing-library/dom';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe('ThemeReference (F8-U1, F8-F3)', () => {
   it('shows every colour token', () => {
-    for (const t of colourTokens.filter((x) => x !== '--color-divider'))
+    for (const t of [...colourTokens, ...alphaTokens, ...shapeTokens])
       expect(screen.getByText(t)).toBeTruthy();
   });
 
