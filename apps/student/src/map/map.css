@@ -271,8 +271,11 @@
     padding: var(--space-3);
   }
 }
+/* The border eases in on hover and focus only. A resting transition would also animate
+   every node when the theme changes (F8), costing extra style recalculations. */
 @media (prefers-reduced-motion: no-preference) {
-  .imap-node {
+  .imap-node:hover,
+  .imap-node:focus-visible {
     transition: border-color 120ms;
   }
 }

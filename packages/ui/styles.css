@@ -6,7 +6,11 @@
       woff2, SIL OFL 1.1, see fonts/OFL.txt). Student IP addresses must not go
       to third parties (ARCHITECTURE.md §10).
    2. Two additions at the end of the file: .input:disabled and
-      .input::placeholder. */
+      .input::placeholder.
+   3. F8 (D46): the :root colour, type, radius and shadow tokens move into a
+      generated theme block (src/themes/nocturne.ts); the focus outlines use
+      --color-focus and the four secondary-text mixes use --alpha-* tokens, each
+      with Nocturne's old value, so Nocturne is pixel-identical. */
 @font-face {
   font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("./fonts/inter-latin-400-normal.woff2") format("woff2");
@@ -28,23 +32,28 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Theme blocks are generated from src/themes/*.ts (D46); do not edit by hand.
+   The default theme (Nocturne) is :root; others apply under [data-theme] from
+   themes.css. Spacing is the one group no theme changes. */
 :root {
+  --space-1: 2.8px;
+  --space-2: 5.6px;
+  --space-3: 8.4px;
+  --space-4: 11.2px;
+  --space-6: 16.8px;
+  --space-8: 22.4px;
+}
+
+/* theme:begin nocturne (generated from src/themes/nocturne.ts; run UPDATE_THEMES=1 pnpm --filter @ideamap/ui test) */
+:root,
+[data-theme="nocturne"] {
   --color-bg: #161826;
   --color-surface: #232532;
   --color-text: #e9e9ed;
-  --color-accent: #9184d9; /* review round 7 (Barron): the accent moves to
-     the product's blurple — OKLCH hue 289.2, the hue of the app's own Pro
-     accent (#9a8fe0, --om-accent-pro) — at the same lightness the steel
-     accent held (L 0.660, so the documented ratios survive) and chroma
-     in the product blurple's own range (its token sits at C 0.118; the
-     accent takes 0.125, from the old steel's 0.030):
-     the accent now reads as an accent rather than another neutral. */
-  --color-accent-2: #a7a1db; /* the machine-derived stand-in follows: same
-     hue, same L 0.734, chroma at the same 2:3 proportion it held */
+  --color-accent: #9184d9;
+  --color-accent-2: #a7a1db;
   --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
-
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role matches the others in visual value. */
+  --color-focus: #9184d9;
   --color-neutral-100: #f3f5fe;
   --color-neutral-200: #e4e7f5;
   --color-neutral-300: #cfd3e5;
@@ -54,7 +63,6 @@
   --color-neutral-700: #595d6c;
   --color-neutral-800: #3f424d;
   --color-neutral-900: #292b31;
-
   --color-accent-100: #f5f4ff;
   --color-accent-200: #e7e5fe;
   --color-accent-300: #d2cefd;
@@ -64,7 +72,6 @@
   --color-accent-700: #5d5294;
   --color-accent-800: #423a6a;
   --color-accent-900: #2b2741;
-
   --color-accent-2-100: #f5f4ff;
   --color-accent-2-200: #e7e5fe;
   --color-accent-2-300: #d2cefd;
@@ -74,38 +81,63 @@
   --color-accent-2-700: #5c5783;
   --color-accent-2-800: #423e5d;
   --color-accent-2-900: #2b293a;
-
-  /* Deck section-divider ground — review round 3: saturation as presence.
-     Dividers take a saturated deep indigo (hue 277, the neutral ramp's own
-     family; C 0.094 — written when the accent held C 0.030, before the
-     round-7 blurple raised it past the ground's) with a lighter bloom and
-     a ghost tint of the same hue, while the slide grounds stay
-     desaturated. Deck-scale fills only — not interface colors. */
   --color-section: #262a60;
   --color-section-glow: #353b80;
   --color-section-ghost: #4c5397;
-
+  --map-canvas: #161826;
+  --map-canvas-glow: #2b2741;
+  --map-node-open: #232532;
+  --map-node-locked: #161826;
+  --map-node-mastered: #1c2f29;
+  --map-node-centre: #2b2741;
+  --map-node-centre-glow: #423a6a;
+  --map-banner: #2b2741;
+  --map-term: #2b2741;
+  --map-placeholder: #232532;
+  --map-ring: #595d6c;
+  --map-node-open-border: #75798c;
+  --map-node-locked-border: #9397ab;
+  --map-node-mastered-border: #5fbf8a;
+  --map-node-centre-border: #9184d9;
+  --map-node-hover-border: #b5abfc;
+  --map-link: #9397ab;
+  --map-link-active: #b5abfc;
+  --map-focus: #d2cefd;
+  --map-banner-border: #968ae0;
+  --map-term-border: #968ae0;
+  --map-placeholder-border: #75798c;
+  --map-node-text: #e9e9ed;
+  --map-node-locked-text: #cfd3e5;
+  --map-link-label: #f5f4ff;
+  --map-hint: #cfd3e5;
+  --map-heading: #e7e5fe;
+  --map-banner-text: #f5f4ff;
+  --map-placeholder-text: #e4e7f5;
+  --category-1: #d2cefd;
+  --category-2: #8fd3c8;
+  --category-3: #e6c07a;
+  --category-4: #f0a5c0;
+  --category-5: #9fc5f8;
+  --category-6: #b2b6ca;
+  --state-success: #5fbf8a;
+  --state-warning: #e0b050;
+  --state-danger: #f0757a;
+  --state-info: #58b4e8;
+  --alpha-label: 70%;
+  --alpha-th: 60%;
+  --alpha-muted: 55%;
+  --alpha-meta: 50%;
   --font-heading: "Inter", system-ui, sans-serif;
   --font-heading-weight: 500;
   --font-body: "Inter", system-ui, sans-serif;
-
-  --space-1: 2.8px;
-  --space-2: 5.6px;
-  --space-3: 8.4px;
-  --space-4: 11.2px;
-  --space-6: 16.8px;
-  --space-8: 22.4px;
-
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 14px;
-
-  /* Elevation — derived from the ground: soft ink-tinted shadows on a
-     light theme, a hairline edge + ambient darkness on a dark one. */
   --shadow-sm: 0 0 0 1px #3f424d;
   --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
   --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
 }
+/* theme:end nocturne */
 
 body {
   background: var(--color-bg);
@@ -141,11 +173,11 @@ img { display: block; max-width: 100%; }
 figure { margin: 0; }
 figcaption {
   font-size: 11px; margin-top: var(--space-1);
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  color: color-mix(in srgb, var(--color-text) var(--alpha-muted), transparent);
 }
-.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.text-muted { color: color-mix(in srgb, var(--color-text) var(--alpha-muted), transparent); }
 :focus { outline: none; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 ::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
 
 /* — rules — */
@@ -188,7 +220,7 @@ figcaption {
 /* — forms — */
 .field > label {
   display: block; font-size: 12px; margin-bottom: 5px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  color: color-mix(in srgb, var(--color-text) var(--alpha-label), transparent);
 }
 .input {
   width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
@@ -197,7 +229,7 @@ figcaption {
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
-.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+.input:focus-visible { border-color: var(--color-focus); outline-offset: 0; }
 textarea.input { min-height: 90px; resize: vertical; }
 .radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
 .radio input, .seg-opt input {
@@ -212,7 +244,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   border-color: var(--color-accent); background: var(--color-accent);
   box-shadow: inset 0 0 0 4px var(--color-bg);
 }
-.radio input:focus-visible + .dot { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.radio input:focus-visible + .dot { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .seg {
   display: inline-flex; overflow: hidden;
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
@@ -224,7 +256,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 .seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
 .seg-opt:has(input:checked) { color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
 .seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-focus); outline-offset: -2px; }
 
 /* — cards — */
 .card {
@@ -239,7 +271,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 .card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
 .card-meta {
   display: flex; align-items: center; gap: 6px; font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  color: color-mix(in srgb, var(--color-text) var(--alpha-meta), transparent);
 }
 .elev-sm { box-shadow: var(--shadow-sm); }
 .elev-md { box-shadow: var(--shadow-md); }
@@ -273,7 +305,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th {
   text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  color: color-mix(in srgb, var(--color-text) var(--alpha-th), transparent);
   padding: var(--space-2); border-bottom: 1px solid transparent; /* keeps layout; the row paints the fading rule */
 }
 .table td {
@@ -328,46 +360,9 @@ textarea.input { min-height: 90px; resize: vertical; }
    as the design-system readme says disabled controls drop to 45% opacity. */
 .input:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* The prototype leaves placeholders to the browser default, rgb(117,117,117),
+/* The prototype leaves placeholders to the browser's default grey,
    which is 3.30:1 on the field's surface: below AA (Codex F2-E1). neutral-500
    is the dimmest neutral step that still clears 4.5:1 on both grounds, so
    a hint stays visibly dimmer than typed text. Firefox dims placeholders
    with opacity, hence opacity: 1. */
 .input::placeholder { color: var(--color-neutral-500); opacity: 1; }
-
-/* map and category tokens (S10; F8 moves them into the theme contract) */
-:root {
-  --map-canvas: #161826;
-  --map-canvas-glow: #2b2741;
-  --map-ring: #595d6c;
-  --map-node-open: #232532;
-  --map-node-open-border: #75798c;
-  --map-node-text: #e9e9ed;
-  --map-node-locked: #161826;
-  --map-node-locked-border: #9397ab;
-  --map-node-locked-text: #cfd3e5;
-  --map-node-centre: #2b2741;
-  --map-node-centre-border: #9184d9;
-  --map-node-centre-glow: #423a6a;
-  --map-node-hover-border: #b5abfc;
-  --map-link: #9397ab;
-  --map-link-active: #b5abfc;
-  --map-link-label: #f5f4ff;
-  --map-focus: #d2cefd;
-  --map-hint: #cfd3e5;
-  --map-banner: #2b2741;
-  --map-banner-border: #968ae0;
-  --map-banner-text: #f5f4ff;
-  --map-term: #2b2741;
-  --map-term-border: #968ae0;
-  --map-heading: #e7e5fe;
-  --map-placeholder: #232532;
-  --map-placeholder-border: #75798c;
-  --map-placeholder-text: #e4e7f5;
-  --category-1: #d2cefd;
-  --category-2: #8fd3c8;
-  --category-3: #e6c07a;
-  --category-4: #f0a5c0;
-  --category-5: #9fc5f8;
-  --category-6: #b2b6ca;
-}

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { classes, cssVar, tokens, type Token } from './index.js';
+import { classes, cssVar, defaultTheme, themes, tokens, type Theme, type Token } from './index.js';
 
 const pkg = new URL('../', import.meta.url);
 const css = readFileSync(new URL('styles.css', pkg), 'utf8');
@@ -14,30 +14,31 @@ const prototypeCss = readFileSync(new URL(`${dsName}/styles.css`, dsDir), 'utf8'
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '');
 const squash = (s: string) => stripComments(s).replace(/\s+/g, ' ').trim();
 
-/** The first :root block, or with `all` every one (S10 adds a map-token block at the end). */
-function rootTokens(source: string, all = false): Record<string, string> {
-  const blocks = [...source.matchAll(/:root\s*\{([\s\S]*?)\n\}/g)].map((m) => m[1]!);
+// Every custom property declared in a :root block (spacing, and the default theme's block).
+function rootTokens(source: string): Record<string, string> {
+  const blocks = [...source.matchAll(/(?:^|\n):root[^{]*\{([\s\S]*?)\n\}/g)].map((m) => m[1] ?? '');
   if (blocks.length === 0) throw new Error('no :root block');
-  const block = (all ? blocks : blocks.slice(0, 1)).join(';');
   const out: Record<string, string> = {};
-  for (const decl of stripComments(block).split(';')) {
-    const i = decl.indexOf(':');
-    if (i < 0) continue;
-    out[decl.slice(0, i).trim()] = decl
-      .slice(i + 1)
-      .trim()
-      .replace(/\s+/g, ' ');
+  for (const block of blocks) {
+    for (const decl of stripComments(block).split(';')) {
+      const i = decl.indexOf(':');
+      if (i < 0) continue;
+      out[decl.slice(0, i).trim()] = decl
+        .slice(i + 1)
+        .trim()
+        .replace(/\s+/g, ' ');
+    }
   }
   return out;
 }
 
 describe('tokens', () => {
-  it('match the prototype :root exactly', () => {
-    expect(rootTokens(css)).toEqual(rootTokens(prototypeCss));
+  it('keep every prototype :root token, with its value (F8 only adds tokens)', () => {
+    expect(rootTokens(css)).toMatchObject(rootTokens(prototypeCss));
   });
 
   it('are exported to TypeScript with the same values', () => {
-    expect(tokens).toEqual(rootTokens(css, true));
+    expect(tokens).toEqual(rootTokens(css));
   });
 
   it('cssVar wraps a token name', () => {
@@ -48,8 +49,23 @@ describe('tokens', () => {
 
 describe('stylesheet', () => {
   it('keeps every prototype rule verbatim, minus the Google Fonts import', () => {
+    // Token blocks are checked above. F8 swaps four literals for tokens that
+    // hold the same value in Nocturne; undo that to compare the rules.
+    const nocturne = defaultTheme.values;
+    const original = squash(css)
+      .replace(/var\(--color-focus\)/g, 'var(--color-accent)')
+      .replace(/var\(--alpha-(label|th|muted|meta)\)/g, (_, k: string) =>
+        k === 'label'
+          ? nocturne['--alpha-label']
+          : k === 'th'
+            ? nocturne['--alpha-th']
+            : k === 'muted'
+              ? nocturne['--alpha-muted']
+              : nocturne['--alpha-meta'],
+      );
+    const withoutRoot = (x: string) => x.replace(/:root[^{]*\{[^}]*\}/g, '');
     const prototypeRules = squash(prototypeCss.replace(/@import url\([^)]*\);/, ''));
-    expect(squash(css)).toContain(prototypeRules);
+    expect(withoutRoot(original)).toContain(withoutRoot(prototypeRules));
   });
 
   it('defines every exported class', () => {
@@ -126,10 +142,6 @@ describe('fonts', () => {
 
 // WCAG 2.1 contrast. color-mix(in srgb, X p%, transparent) over a ground is X at p% alpha.
 type Rgb = [number, number, number];
-const hex = (t: Token): Rgb => {
-  const v = tokens[t];
-  return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)) as Rgb;
-};
 const over = (fg: Rgb, bg: Rgb, alpha: number): Rgb =>
   fg.map((c, i) => c * alpha + (bg[i] ?? 0) * (1 - alpha)) as Rgb;
 const luminance = (rgb: Rgb) => {
@@ -144,51 +156,45 @@ const contrast = (a: Rgb, b: Rgb) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-describe('map and category tokens (S10, D46)', () => {
-  const MAP_TEXT: [Token, Token][] = [
-    ['--map-node-text', '--map-node-open'],
-    ['--map-node-locked-text', '--map-node-locked'],
-    ['--map-hint', '--map-canvas'],
-    ['--map-link-label', '--map-canvas'],
-    ['--map-banner-text', '--map-banner'],
-    ['--map-heading', '--map-canvas'],
-    ['--map-placeholder-text', '--map-placeholder'],
-  ];
-  const MAP_UI: [Token, Token][] = [
-    ['--map-node-open-border', '--map-canvas'],
-    ['--map-node-locked-border', '--map-canvas'],
-    ['--map-node-centre-border', '--map-node-centre'],
-    ['--map-link', '--map-canvas'],
-    ['--map-link-active', '--map-canvas'],
-    ['--map-focus', '--map-canvas'],
-    ['--map-banner-border', '--map-banner'],
-    ['--map-term-border', '--map-canvas'],
-    ['--map-placeholder-border', '--map-canvas'],
-  ];
-  const categories = [1, 2, 3, 4, 5, 6].map((n) => `--category-${n}` as Token);
+// The pairs below AA that D10 accepts for Nocturne only. Any other theme must pass outright.
+// Don't add to this list without a new decision.
+const acceptedBelowAA = [
+  '.input border on bg',
+  '.input border on surface',
+  '.card-meta on surface',
+  '.btn-primary:hover on surface',
+  '.btn-primary:active on bg',
+  '.btn-primary:active on surface',
+  '.btn-ghost:hover on surface',
+  '.btn-ghost:active on bg',
+  '.btn-ghost:active on surface',
+];
 
-  it.each(MAP_TEXT)('%s reads at 4.5:1 on %s', (fg, bgToken) => {
-    expect(contrast(hex(fg), hex(bgToken))).toBeGreaterThanOrEqual(4.5);
-  });
-  it.each(MAP_UI)('%s is a 3:1 UI colour on %s', (fg, bgToken) => {
-    expect(contrast(hex(fg), hex(bgToken))).toBeGreaterThanOrEqual(3);
-  });
-  it.each(categories)('%s reads at 4.5:1 on the map and on a card', (c) => {
-    expect(contrast(hex(c), hex('--map-canvas'))).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(hex(c), hex('--map-node-open'))).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(hex(c), hex('--map-node-locked'))).toBeGreaterThanOrEqual(4.5);
-  });
-  it('gives each category slot its own colour', () => {
-    expect(new Set(categories.map((c) => tokens[c])).size).toBe(6);
-  });
-});
+type Pair = [string, Rgb, Rgb, number];
 
-describe('contrast (WCAG AA)', () => {
+/** Every foreground/background pair a theme must get right, with its minimum ratio (4.5 text, 3 UI part). */
+function pairsFor(theme: Theme): Pair[] {
+  const v = theme.values;
+  const hex = (t: keyof Theme['values']): Rgb => {
+    const value = v[t];
+    if (!/^#[0-9a-f]{6}$/i.test(value))
+      throw new Error(`${theme.id} ${t} is not #rrggbb: ${value}`);
+    return [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16)) as Rgb;
+  };
+  const pct = (t: keyof Theme['values']) => Number.parseFloat(v[t]) / 100;
   const bg = hex('--color-bg');
   const surface = hex('--color-surface');
   const text = hex('--color-text');
   const accent = hex('--color-accent');
   const grounds = { bg, surface } as const;
+
+  // --color-divider is `color-mix(in srgb, #rrggbb N%, transparent)`.
+  const dm = /^color-mix\(in srgb, (#[0-9a-f]{6}) (\d+)%, transparent\)$/i.exec(
+    v['--color-divider'],
+  );
+  if (!dm) throw new Error(`${theme.id} --color-divider has an unexpected form`);
+  const dividerInk = [1, 3, 5].map((i) => parseInt((dm[1] ?? '').slice(i, i + 2), 16)) as Rgb;
+  const dividerAlpha = Number(dm[2]) / 100;
 
   // A state's background tint, read from styles.css so the test follows the CSS:
   // `<selector> { background: color-mix(in srgb, var(--token) N%, transparent); }`.
@@ -198,7 +204,7 @@ describe('contrast (WCAG AA)', () => {
       `${escaped} \\{ background: color-mix\\(in srgb, var\\((--[\\w-]+)\\) (\\d+)%, transparent\\); \\}`,
     ).exec(squash(css));
     if (!m) throw new Error(`no background tint for ${selector}`);
-    return over(hex(m[1] as Token), ground, Number(m[2]) / 100);
+    return over(hex(m[1] as keyof Theme['values']), ground, Number(m[2]) / 100);
   };
 
   // The placeholder colour, read from styles.css. It must be a token at full
@@ -206,14 +212,13 @@ describe('contrast (WCAG AA)', () => {
   const placeholder = (): Rgb => {
     const m = /\.input::placeholder \{ color: var\((--[\w-]+)\); opacity: 1; \}/.exec(squash(css));
     if (!m) throw new Error('no .input::placeholder { color: var(--token); opacity: 1; } rule');
-    return hex(m[1] as Token);
+    return hex(m[1] as keyof Theme['values']);
   };
 
   // Button text is 14px at weight 500, so it needs 4.5:1. Each variant's text colour:
   const buttons = { '.btn-primary': accent, '.btn-secondary': text, '.btn-ghost': accent };
 
-  // [name, foreground, background, minimum ratio]. 4.5 for text, 3 for UI parts.
-  const pairs: [string, Rgb, Rgb, number][] = [];
+  const pairs: Pair[] = [];
   for (const [g, ground] of Object.entries(grounds)) {
     pairs.push(
       [`--color-text on ${g}`, text, ground, 4.5],
@@ -221,17 +226,32 @@ describe('contrast (WCAG AA)', () => {
       [`--color-neutral-400 on ${g}`, hex('--color-neutral-400'), ground, 4.5],
       [`--color-neutral-500 on ${g}`, hex('--color-neutral-500'), ground, 4.5],
       [`.tag-outline / a on ${g}`, accent, ground, 4.5],
-      [`.field > label on ${g}`, over(text, ground, 0.7), ground, 4.5],
-      [`.table th on ${g}`, over(text, ground, 0.6), ground, 4.5],
-      [`.text-muted on ${g}`, over(text, ground, 0.55), ground, 4.5],
-      [`.card-meta on ${g}`, over(text, ground, 0.5), ground, 4.5],
-      [`:focus-visible ring on ${g}`, accent, ground, 3],
-      [`.input border on ${g}`, over(text, ground, 0.16), ground, 3],
+      [`.field > label on ${g}`, over(text, ground, pct('--alpha-label')), ground, 4.5],
+      [`.table th on ${g}`, over(text, ground, pct('--alpha-th')), ground, 4.5],
+      [`.text-muted on ${g}`, over(text, ground, pct('--alpha-muted')), ground, 4.5],
+      [`.card-meta on ${g}`, over(text, ground, pct('--alpha-meta')), ground, 4.5],
+      [`:focus-visible ring on ${g}`, hex('--color-focus'), ground, 3],
+      [`.input border on ${g}`, over(dividerInk, ground, dividerAlpha), ground, 3],
       // The field paints --color-surface itself; both grounds are measured so a
       // transparent field on either would still pass.
       [`input.input::placeholder on ${g}`, placeholder(), ground, 4.5],
       [`textarea.input::placeholder on ${g}`, placeholder(), ground, 4.5],
     );
+    for (let n = 1; n <= 6; n++)
+      pairs.push([
+        `--category-${n} on ${g}`,
+        hex(`--category-${n}` as keyof Theme['values']),
+        ground,
+        4.5,
+      ]);
+    // State colours may be used as text, so they need 4.5:1.
+    for (const s of ['success', 'warning', 'danger', 'info'])
+      pairs.push([
+        `--state-${s} on ${g}`,
+        hex(`--state-${s}` as keyof Theme['values']),
+        ground,
+        4.5,
+      ]);
     for (const [btn, fg] of Object.entries(buttons)) {
       pairs.push(
         [`${btn} on ${g}`, fg, ground, 4.5],
@@ -240,40 +260,97 @@ describe('contrast (WCAG AA)', () => {
       );
     }
   }
+  // The student map (S10) is painted on --map-canvas, brightening to --map-canvas-glow at the
+  // centre, so marks are measured on both. Nodes are measured against their own fill (text 4.5,
+  // border 3) and against the canvas (border 3). --map-ring is a decorative guide and carries no
+  // information, so it has no pair.
+  type T = keyof Theme['values'];
+  const map = (t: string) => hex(`--map-${t}` as T);
+  const canvases = { canvas: map('canvas'), 'canvas-glow': map('canvas-glow') } as const;
+  const nodes = {
+    open: ['node-open', 'node-open-border', 'node-text'],
+    locked: ['node-locked', 'node-locked-border', 'node-locked-text'],
+    mastered: ['node-mastered', 'node-mastered-border', 'node-text'],
+    centre: ['node-centre', 'node-centre-border', 'node-text'],
+  } as const;
+  for (const [name, [fill, border, textTok]] of Object.entries(nodes)) {
+    pairs.push(
+      [`--map-${textTok} on ${fill} (${name})`, map(textTok), map(fill), 4.5],
+      [`--map-${border} on ${fill}`, map(border), map(fill), 3],
+      [`--map-node-hover-border on ${fill}`, map('node-hover-border'), map(fill), 3],
+      [`--map-focus on ${fill}`, map('focus'), map(fill), 3],
+    );
+    for (const [c, ground] of Object.entries(canvases))
+      pairs.push([`--map-${border} on ${c}`, map(border), ground, 3]);
+  }
+  // Categories are drawn as text (11 px, so 4.5:1) on the page, on the canvas and on every node fill.
+  for (let n = 1; n <= 6; n++) {
+    const cat = hex(`--category-${n}` as T);
+    for (const [c, ground] of Object.entries(canvases))
+      pairs.push([`--category-${n} on ${c}`, cat, ground, 4.5]);
+    for (const [name, [fill]] of Object.entries(nodes))
+      pairs.push([`--category-${n} on ${fill} (${name})`, cat, map(fill), 4.5]);
+  }
+  for (const [c, ground] of Object.entries(canvases)) {
+    pairs.push(
+      [`--map-link on ${c}`, map('link'), ground, 3],
+      [`--map-link-active on ${c}`, map('link-active'), ground, 3],
+      [`--map-link-label on ${c}`, map('link-label'), ground, 4.5],
+      [`--map-hint on ${c}`, map('hint'), ground, 4.5],
+      [`--map-heading on ${c}`, map('heading'), ground, 4.5],
+      [`--map-focus on ${c}`, map('focus'), ground, 3],
+      [`--map-node-hover-border on ${c}`, map('node-hover-border'), ground, 3],
+      [`--map-banner-border on ${c}`, map('banner-border'), ground, 3],
+      [`--map-term-border on ${c}`, map('term-border'), ground, 3],
+      [`--map-placeholder-border on ${c}`, map('placeholder-border'), ground, 3],
+    );
+  }
+  pairs.push(
+    ['--map-banner-text on --map-banner', map('banner-text'), map('banner'), 4.5],
+    ['--map-banner-border on --map-banner', map('banner-border'), map('banner'), 3],
+    ['--map-heading on --map-term', map('heading'), map('term'), 4.5],
+    ['--map-term-border on --map-term', map('term-border'), map('term'), 3],
+    [
+      '--map-placeholder-text on --map-placeholder',
+      map('placeholder-text'),
+      map('placeholder'),
+      4.5,
+    ],
+    [
+      '--map-placeholder-border on --map-placeholder',
+      map('placeholder-border'),
+      map('placeholder'),
+      3,
+    ],
+    ['--map-hint on bg', map('hint'), bg, 4.5],
+    ['--map-heading on bg', map('heading'), bg, 4.5],
+  );
   pairs.push(
     ['.tag-accent', hex('--color-accent-100'), hex('--color-accent-800'), 4.5],
     ['.tag-accent-2', hex('--color-accent-2-100'), hex('--color-accent-2-800'), 4.5],
     ['.tag-neutral', hex('--color-neutral-100'), hex('--color-neutral-800'), 4.5],
   );
+  return pairs;
+}
 
-  // The only pairs allowed below AA: those accepted in docs/ARCHITECTURE.md D10.
-  // Any other pair below the bar fails. Don't add to this list without a new decision.
-  const acceptedBelowAA = [
-    '.input border on bg',
-    '.input border on surface',
-    '.card-meta on surface',
-    '.btn-primary:hover on surface',
-    '.btn-primary:active on bg',
-    '.btn-primary:active on surface',
-    '.btn-ghost:hover on surface',
-    '.btn-ghost:active on bg',
-    '.btn-ghost:active on surface',
-  ];
+describe.each(themes.map((t) => [t.id, t] as const))('contrast (WCAG AA) · %s', (id, theme) => {
+  const pairs = pairsFor(theme);
+  const exceptions = id === defaultTheme.id ? acceptedBelowAA : [];
+  const failing = pairs.filter(([, fg, back, min]) => contrast(fg, back) < min);
 
   it('measures every listed exception', () => {
     const names = pairs.map(([name]) => name);
-    for (const a of acceptedBelowAA) expect(names).toContain(a);
+    for (const a of exceptions) expect(names).toContain(a);
   });
 
-  it('has exactly the D10 pairs below AA', () => {
+  it(exceptions.length > 0 ? 'has exactly the D10 pairs below AA' : 'passes AA outright', () => {
     // A new failure, or a fixed exception still on the list, breaks this.
-    const failing = pairs.filter(([, fg, back, min]) => contrast(fg, back) < min);
-    expect(failing.map(([name]) => name).sort()).toEqual([...acceptedBelowAA].sort());
+    expect(failing.map(([name]) => name).sort()).toEqual([...exceptions].sort());
   });
 
   it.each(pairs)('%s', (name, fg, back, min) => {
     const ratio = contrast(fg, back);
-    if (!acceptedBelowAA.includes(name))
+    if (!exceptions.includes(name))
       expect(ratio, `${name} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(min);
   });
 });

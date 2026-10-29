@@ -1,93 +1,22 @@
-// Nocturne design tokens: the custom properties in :root of ../styles.css.
-// styles.test.ts fails if this list and the stylesheet drift apart.
-export const tokens = {
-  '--color-bg': '#161826',
-  '--color-surface': '#232532',
-  '--color-text': '#e9e9ed',
-  '--color-accent': '#9184d9',
-  '--color-accent-2': '#a7a1db',
-  '--color-divider': 'color-mix(in srgb, #e9e9ed 16%, transparent)',
-  '--color-neutral-100': '#f3f5fe',
-  '--color-neutral-200': '#e4e7f5',
-  '--color-neutral-300': '#cfd3e5',
-  '--color-neutral-400': '#b2b6ca',
-  '--color-neutral-500': '#9397ab',
-  '--color-neutral-600': '#75798c',
-  '--color-neutral-700': '#595d6c',
-  '--color-neutral-800': '#3f424d',
-  '--color-neutral-900': '#292b31',
-  '--color-accent-100': '#f5f4ff',
-  '--color-accent-200': '#e7e5fe',
-  '--color-accent-300': '#d2cefd',
-  '--color-accent-400': '#b5abfc',
-  '--color-accent-500': '#968ae0',
-  '--color-accent-600': '#796cbf',
-  '--color-accent-700': '#5d5294',
-  '--color-accent-800': '#423a6a',
-  '--color-accent-900': '#2b2741',
-  '--color-accent-2-100': '#f5f4ff',
-  '--color-accent-2-200': '#e7e5fe',
-  '--color-accent-2-300': '#d2cefd',
-  '--color-accent-2-400': '#b5afe8',
-  '--color-accent-2-500': '#9690c9',
-  '--color-accent-2-600': '#7972a9',
-  '--color-accent-2-700': '#5c5783',
-  '--color-accent-2-800': '#423e5d',
-  '--color-accent-2-900': '#2b293a',
-  '--color-section': '#262a60',
-  '--color-section-glow': '#353b80',
-  '--color-section-ghost': '#4c5397',
-  '--font-heading': '"Inter", system-ui, sans-serif',
-  '--font-heading-weight': '500',
-  '--font-body': '"Inter", system-ui, sans-serif',
+// Design tokens as TypeScript: Nocturne's values (the default theme) plus the
+// layout tokens no theme changes. styles.test.ts fails if this list and
+// styles.css drift apart.
+import nocturne from './themes/nocturne.js';
+import type { ThemeToken } from './themes/contract.js';
+
+/** Spacing is the same in every theme, so it lives in styles.css, not in a theme. */
+export const layoutTokens = {
   '--space-1': '2.8px',
   '--space-2': '5.6px',
   '--space-3': '8.4px',
   '--space-4': '11.2px',
   '--space-6': '16.8px',
   '--space-8': '22.4px',
-  '--radius-sm': '4px',
-  '--radius-md': '8px',
-  '--radius-lg': '14px',
-  '--shadow-sm': '0 0 0 1px #3f424d',
-  '--shadow-md': '0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55)',
-  '--shadow-lg': '0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65)',
-  '--map-canvas': '#161826',
-  '--map-canvas-glow': '#2b2741',
-  '--map-ring': '#595d6c',
-  '--map-node-open': '#232532',
-  '--map-node-open-border': '#75798c',
-  '--map-node-text': '#e9e9ed',
-  '--map-node-locked': '#161826',
-  '--map-node-locked-border': '#9397ab',
-  '--map-node-locked-text': '#cfd3e5',
-  '--map-node-centre': '#2b2741',
-  '--map-node-centre-border': '#9184d9',
-  '--map-node-centre-glow': '#423a6a',
-  '--map-node-hover-border': '#b5abfc',
-  '--map-link': '#9397ab',
-  '--map-link-active': '#b5abfc',
-  '--map-link-label': '#f5f4ff',
-  '--map-focus': '#d2cefd',
-  '--map-hint': '#cfd3e5',
-  '--map-banner': '#2b2741',
-  '--map-banner-border': '#968ae0',
-  '--map-banner-text': '#f5f4ff',
-  '--map-term': '#2b2741',
-  '--map-term-border': '#968ae0',
-  '--map-heading': '#e7e5fe',
-  '--map-placeholder': '#232532',
-  '--map-placeholder-border': '#75798c',
-  '--map-placeholder-text': '#e4e7f5',
-  '--category-1': '#d2cefd',
-  '--category-2': '#8fd3c8',
-  '--category-3': '#e6c07a',
-  '--category-4': '#f0a5c0',
-  '--category-5': '#9fc5f8',
-  '--category-6': '#b2b6ca',
 } as const;
 
-export type Token = keyof typeof tokens;
+export const tokens = { ...nocturne.values, ...layoutTokens } as const;
+
+export type Token = ThemeToken | keyof typeof layoutTokens;
 
 /** `var(--token)` for use in inline styles, e.g. `{ color: cssVar('--color-accent') }`. */
 export function cssVar(token: Token): `var(${Token})` {
