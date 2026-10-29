@@ -14,7 +14,7 @@ Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task ca
 |---|---|---|---|---|
 | X2 | Self-hosted video and media provider | Later | ≤1 wk | [criteria](qa/X2.md) |
 
-- **X2 done when:** Per D42: media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it
+- **X2 done when:** Per D42 (after the pilot, user 2026-10-29): media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it
 
 ## In progress
 
@@ -51,7 +51,7 @@ Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task ca
 | S2 | Student explorer reads published version and class config | S1, M4 |
 | S3 | Teacher-assigned study track (missions) from due dates | S2, T4 |
 | S4 | Tutor and peer chat through the gateway | S2, A2, A7, A8 |
-| L1 | Pilot: one curriculum shared by two classes | T5, T6, T7, T8, A4, A5, S3, S4, C7, M5, A6, A7, A9, A10, M6, C5cx2, A11, C6cx2, C10, C11, C12, C13, T9, M8, M9, S6, S7, A12, A13, X2, F1e |
+| L1 | Pilot: one curriculum shared by two classes | T5, T6, T7, T8, A4, A5, S3, S4, C7, M5, A6, A7, A9, A10, M6, C5cx2, A11, C6cx2, C10, C11, C12, C13, T9, M8, M9, S6, S7, A12, A13, F1e |
 | X1 | Google Drive import picker | L1 |
 | A8 | Dual memory: conversation history and long-term learning summary | A7 |
 | A9 | Explained feedback, Challenge this and teacher review queue | A2, M2, A7 |
@@ -64,7 +64,7 @@ Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task ca
 | T9 | Prerequisite editing with district permissions and AI-proposed links | T6, C13 |
 | M8 | Tracker rules v2: exercise levels, trace-back and diagnostics | M3, C10, C12 |
 | M9 | Teacher diagnostic views with disclaimers and suggestions | M5, M8 |
-| S6 | Idea page and exercise player | S2, C10, X2 |
+| S6 | Idea page and exercise player | S2, C10 |
 | S7 | Student profile and onboarding | A2, A7, S2 |
 | A12 | Dual-track study planner | S7, T4, A5 |
 | A13 | Tutor study-plan tools | A12, S4 |
@@ -146,7 +146,7 @@ flowchart LR
   subgraph curriculum["Curriculum and publishing"]
     direction LR
     C7["C7 · Progress migration rules on publish<br/><small>+6 wk slack</small>"]
-    X2["X2 · Self-hosted video and media provider<br/><small>+8 wk slack</small>"]
+    X2["X2 · Self-hosted video and media provider<br/><small>after the pilot</small>"]
     C5cx2["C5cx2 · Fix Codex error C5-E2: concurrent publishes cache stale draft status and one returns 500<br/><small>+19 wk slack</small>"]
     C6cx2["C6cx2 · Fix Codex error C6cx1-E1: CRLF inside a cell changes when an export opens in LibreOffice<br/><small>+18 wk slack</small>"]
     C10["C10 · Practice tab: spec, contracts, import, checks, diff and export<br/><small>+12 wk slack</small>"]
@@ -245,7 +245,6 @@ flowchart LR
   M8 --> M9
   S2 --> S6
   C10 --> S6
-  X2 --> S6
   A2 --> S7
   A7 --> S7
   S2 ==> S7
@@ -262,7 +261,7 @@ flowchart LR
   tracker --> L1
   other --> L1
   linkStyle default stroke:#8b8fa3,stroke-width:1.3px
-  linkStyle 24,26,33,60,61,64 stroke:#e5484d,stroke-width:3px
+  linkStyle 24,26,33,59,60,63 stroke:#e5484d,stroke-width:3px
   style trust fill:#161826,stroke:#3a3d52,color:#b2b6ca
   style tracker fill:#161826,stroke:#3a3d52,color:#b2b6ca
   style curriculum fill:#161826,stroke:#3a3d52,color:#b2b6ca

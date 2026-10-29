@@ -720,7 +720,6 @@
         "S7",
         "A12",
         "A13",
-        "X2",
         "F1e"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
@@ -750,7 +749,7 @@
       "deps": [
         "C4"
       ],
-      "done_when": "Per D42: media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it",
+      "done_when": "Per D42 (after the pilot, user 2026-10-29): media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -1041,10 +1040,9 @@
       "size": 2,
       "deps": [
         "S2",
-        "C10",
-        "X2"
+        "C10"
       ],
-      "done_when": "Per D40/D42: an idea page with its self-hosted overview video, and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
+      "done_when": "Per D40/D42: an idea page with a placeholder card for its overview video until X2 lands after the pilot (D42 amended), and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
       "placeholder": false,
       "status": "todo"
     },
