@@ -77,6 +77,8 @@ Rule (user, 2026-10-29): when a task's QA fails on a **design aspect** (colour v
 |---|---|---|---|---|
 | _none_ | | F8 passed on run 4 within the limit; nothing deferred | | |
 
+**Logic the design session asked for (2026-10-29):** the split of locked ideas into "next up" and "far" comes from the server (task S10b, then M4), never from the browser. Draw the two states once S10b merges. Whether far ideas hide their titles, as the prototype's "Hidden idea" does, is the user's call; titles stay visible until the user decides.
+
 Should findings from QA that the design session should also take up:
 - S10 run 2 #2 and #5: on a phone, the first view of the map is clipped or tiny, and the header is too tall (also S2-U3).
 - S10 run 2 #3: "Words on the page" doesn't enlarge map card text (S2-U4).

@@ -423,9 +423,10 @@
       "size": 2,
       "deps": [
         "C3",
-        "M3"
+        "M3",
+        "S10b"
       ],
-      "done_when": "generateMap reads tracker state, stores each MapView with an id, records map.shown, and never shows a locked idea as open (§8.4)",
+      "done_when": "generateMap reads tracker state, stores each MapView with an id, records map.shown, and never shows a locked idea as open (§8.4); next-up and far states come from S10b's domain function and are stored in the MapView",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -769,7 +770,8 @@
         "C17",
         "S9",
         "S10",
-        "F8"
+        "F8",
+        "S10b"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -1489,6 +1491,18 @@
       "version": "0.1",
       "owner": "agent-f8",
       "updated": "2026-10-29"
+    },
+    {
+      "id": "S10b",
+      "title": "Next-up and far states from the map API",
+      "size": 1,
+      "deps": [
+        "S10"
+      ],
+      "done_when": "For each locked idea the map API returns next (every prerequisite still needed is open) or far (needs a still-locked prerequisite), from a deterministic, unit-tested function in packages/domain; the map draws them distinctly with theme tokens; M4 later reuses the same function in its stored MapView (section 8.4)",
+      "placeholder": false,
+      "status": "todo",
+      "version": "0.1"
     }
   ],
   "versions": [
