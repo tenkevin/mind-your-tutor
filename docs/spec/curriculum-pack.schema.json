@@ -165,7 +165,7 @@
               "string",
               "null"
             ],
-            "description": "process | mechanism · Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer · If missing: process · Edited in: both"
+            "description": "process | mechanism · Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer · If missing: process · Edited in: sheet"
           },
           "media_url": {
             "type": [

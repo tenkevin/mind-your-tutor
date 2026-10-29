@@ -114,7 +114,7 @@ export const PACK_SPEC: readonly TabSpec[] = [
         'layer',
         'process | mechanism',
         false,
-        'both',
+        'sheet',
         'process',
         'Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer',
       ),
