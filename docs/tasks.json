@@ -847,9 +847,10 @@
       "deps": [
         "M3",
         "A9",
-        "F6"
+        "F6",
+        "M8"
       ],
-      "done_when": "Per D16/D23: demographic parity difference, disparate impact ratio (flag under 0.8) and teacher-agreement and challenge-upheld rates per question, compared across schools and districts, with groups under 10 suppressed and D24 opt-outs excluded; the sampled audit exports pseudonymous outcomes for the district to join and accepts aggregates back; Idea Map never stores race",
+      "done_when": "Per D16/D23: demographic parity difference, disparate impact ratio (flag under 0.8) and teacher-agreement and challenge-upheld rates per question, compared across schools and districts, with groups under 10 suppressed and D24 opt-outs excluded; the sampled audit exports pseudonymous outcomes for the district to join and accepts aggregates back; Idea Map never stores race; per D16 the D38 engagement indices and baseline breakdowns are audited too, subgroups only through the district-run sample (D23)",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -956,7 +957,7 @@
       "title": "Practice tab: spec, contracts, import, checks, diff and export",
       "size": 2,
       "deps": [],
-      "done_when": "Per D40/D8: the ninth tab (exercise_id, idea_id, group, standard_code, exercise_title, kind exercise|quiz, quiz_from, problem_type mc|number, question, choices, answer, answer_unit, explanation, visual, media_url, demo_video_url, demo_steps, plus the item's source bank, source id and licence/attribution) is in docs/spec, zod contracts, C1 import, C2 data checks (items must come from an allow-listed vetted bank), C5 diff and C6 export",
+      "done_when": "Per D40/D8: the ninth tab (exercise_id, idea_id, group, standard_code, exercise_title, kind exercise|quiz, quiz_from, problem_type mc|number, question, choices, answer, answer_unit, explanation, visual, media_url, demo_video_url, demo_steps, source_bank_id, license_type, attribution_string) is in docs/spec, zod contracts, C1 import, C2 data checks (allow-listed banks and licences), C5 diff and C6 export",
       "placeholder": false,
       "status": "todo"
     },
@@ -987,7 +988,7 @@
       "deps": [
         "A3"
       ],
-      "done_when": "Per D41: NGSS/CCSS standards nodes and their links are pre-loaded in the Vault; curricula link ideas to them; the graph is versioned and read-only to teachers",
+      "done_when": "Per D41: NGSS/CCSS standards nodes and their links are pre-loaded in the Vault; curricula link ideas to them; the graph is versioned and read-only to teachers; curriculum module metadata carries interest_tags: string[] (D41)",
       "placeholder": false,
       "status": "todo"
     },
@@ -1013,7 +1014,7 @@
         "C10",
         "C12"
       ],
-      "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels",
+      "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels; time-to-answer to the whole second (D19)",
       "placeholder": false,
       "status": "todo"
     },
@@ -1051,7 +1052,7 @@
         "A7",
         "S2"
       ],
-      "done_when": "Per D36: onboarding as in project/Student Onboarding.dc.html, stored server-side; K–10 uses dropdowns only, grade 11+ free text passes A2 and A7; no mood, focus or confidence data; sharing toggles for Ms. Ivy and Milo; the name never reaches a model",
+      "done_when": "Per D36: onboarding as in project/Student Onboarding.dc.html, stored server-side; K–10 uses dropdowns only, grade 11+ free text passes A2 and A7; no mood, focus or confidence data; sharing toggles for Ms. Ivy and Milo; the name never reaches a model; at most 5 active interests; K–10 reflections use tags or sentence stems",
       "placeholder": false,
       "status": "todo"
     },
@@ -1087,8 +1088,8 @@
       "deps": [
         "A12"
       ],
-      "done_when": "Per D39: in-app reminders, and external reminders only as District > Teacher > Student allow, with district quiet hours; reflections keep the D37 cap",
-      "placeholder": true,
+      "done_when": "Per D39: in-app reminders for both tracks; web push only for the student's self-paced track, within district disable and quiet hours and the teacher's setting; no SMS or automated email; no family contact details stored; teacher-led due dates exported for the district LMS or portal (§12 q24); push subscriptions deleted on opt-out or sign-out",
+      "placeholder": false,
       "status": "todo"
     }
   ]

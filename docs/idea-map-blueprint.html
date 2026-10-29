@@ -175,13 +175,13 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>On-device name model (D33)</td><td>An ML name-recognition model on the device finds names and places from sentence context, so no class roster ever reaches a student device. Pattern rules still catch contact details.</td></tr>
           <tr><td>Teacher-approved evals (D34)</td><td>Persona evals are judged against replies teachers have approved, a living set of evidence. How approvals follow template versions is still open.</td></tr>
           <tr><td>Sparring partner, not oracle (D35)</td><td>No internet. When the class's verified materials don't cover a question, Ms. Ivy states no facts of her own; she says so and guides the student's reasoning with questions instead.</td></tr>
-          <tr><td>Student profile (D36)</td><td>Stored on the server. K–10 picks goals and preferences from dropdowns; grade 11+ and adults may type, filtered by safety and the anonymous layer. No mood, focus or confidence ratings. The name never reaches a model.</td></tr>
-          <tr><td>Retention (D37)</td><td>Session transcripts purge after 90 days; study plans and reflections keep the newest 30 per student.</td></tr>
+          <tr><td>Student profile (D36)</td><td>Stored on the server, up to 5 interests. K–10 picks goals, preferences and reflections from lists; grade 11+ and adults may type, filtered by safety and the anonymous layer. No mood, focus or confidence ratings. The name never reaches a model.</td></tr>
+          <tr><td>Retention (D37)</td><td>Session transcripts purge after the district's window (90 days by default); study plans and reflections each keep their newest 30 per student.</td></tr>
           <tr><td>Diagnostics (D38)</td><td>Knowledge gaps, baseline breakdowns and engagement indices (Active Choice, Persistence, Mental Effort), teacher-only, each with a disclaimer and a suggestion. Still no clicks, rankings or labels.</td></tr>
-          <tr><td>Dual-track plans (D39)</td><td>Teacher-assigned work always comes first; a self-paced track runs when the teacher allows. External reminders follow District &gt; Teacher &gt; Student.</td></tr>
-          <tr><td>Practice tab (D40)</td><td>The ninth pack tab, filled only from vetted item banks. No AI-written practice questions.</td></tr>
+          <tr><td>Dual-track plans (D39)</td><td>Teacher-assigned work always comes first; a self-paced track runs when the teacher allows. External reminders follow District &gt; Teacher &gt; Student: web push for self-paced plans only, teacher reminders through the district's LMS, and no family contact details stored.</td></tr>
+          <tr><td>Practice tab (D40)</td><td>The ninth pack tab, filled only from vetted item banks, each row with its source bank, licence and a visible attribution. No AI-written practice questions.</td></tr>
           <tr><td>Vault graph (D41)</td><td>Procedural units are a strict prerequisite graph; conceptual cycles add a causal-mechanism layer tied to NGSS/CCSS. Trace-back goes to the weakest prerequisite. Teacher edits follow district permissions, always draft then publish.</td></tr>
-          <tr><td>Pilot (D42)</td><td>Water Cycle first, Kinematics as a sub-pilot. Videos are self-hosted so they play behind school firewalls.</td></tr>
+          <tr><td>Pilot (D42)</td><td>Water Cycle first, Kinematics as a sub-pilot. Videos are self-hosted on our own storage and domain, with captions, so they play behind school firewalls.</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -339,6 +339,8 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
           <tr><td>Embedding model</td><td>Which model the library search uses. Changing it later re-indexes from the stored originals, with no re-upload.</td></tr>
           <tr><td>Privacy layer</td><td>Check the design against the SoulSpeak paper; choose which on-device name model to use, and measure it on children's writing.</td></tr>
           <tr><td>Verified sources</td><td>Should a teacher's class uploads ground the tutor's factual answers, or only the curriculum and the official vault?</td></tr>
+          <tr><td>LMS due dates</td><td>How teacher due dates reach the district's LMS without live connections or LTI: an export, or a calendar feed?</td></tr>
+          <tr><td>Interest context</td><td>Should interests reword vetted practice items, or only shape the tutors' examples and hints?</td></tr>
           <tr><td>Eval approvals</td><td>How teacher-approved eval replies are tagged to persona template versions, so old approvals don't clash with new templates.</td></tr>
           <tr><td>Scale-out</td><td>Sign-in state and rate limits are per server process until the app runs on several servers.</td></tr>
         </tbody>
@@ -384,7 +386,7 @@ select { font: 12px var(--font-body); color: var(--text); background: var(--surf
 
 <script>
 const PLAN = {
- "snapshot": "2026-10-29 01:30 UTC",
+ "snapshot": "2026-10-29 02:30 UTC",
  "phases": [
   {
    "id": "F",
@@ -1065,7 +1067,8 @@ const PLAN = {
    "deps": [
     "M3",
     "A9",
-    "F6"
+    "F6",
+    "M8"
    ],
    "status": "todo",
    "owner": null
@@ -1259,8 +1262,7 @@ const PLAN = {
    "deps": [
     "A12"
    ],
-   "status": "todo",
-   "placeholder": true
+   "status": "todo"
   }
  ]
 };
