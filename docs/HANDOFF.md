@@ -10,7 +10,7 @@
 
 The earlier Codex-thread coordinator (`01a1662b-…`) and its C9 stop boundary are history; they no longer apply. Sections 5–8 are live-state snapshots, so re-check before acting. Live queue: `docs/qa/STATUS.md`.
 
-**Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 8-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either.
+**Idea Map**, in one paragraph: a K-12 mind-map learning tool. A teacher imports a curriculum spreadsheet (the 9-tab "Curriculum Pack"). Students explore it as a map, master ideas through quizzes, and teach Milo, a virtual classmate, at the end of each unit. Ms. Ivy is the AI tutor and Atlas the teacher-facing helper. It's a TypeScript pnpm monorepo on branch `idea-map` of `tenkevin/mind-your-tutor`. `main` and `init` there belong to a **different project** (MindyourTutor, Python, with its own CANON), so never touch them, or the `tenkevin-wireframe` branch either.
 
 > **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D30 and the §8 spec v1 exactly; see AGENTS.md.
 
@@ -42,7 +42,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 - **D1–D5:** TypeScript; publishing is separate from import (drafts); one curriculum shared by many classes; import and export only, no live database connections; K-12 privacy (COPPA, FERPA).
 - **D6:** only the **tracker** is deterministic, as a replay of events (`packages/tracker`: no clock, randomness, I/O or model calls). Map generation and AI may vary, but anything shown to a student is stored and logged.
-- **D7:** QA criteria are written before a task is claimed, and an independent reviewer tests every PR. **D8:** the Curriculum Pack (8 tabs) is the import format.
+- **D7:** QA criteria are written before a task is claimed, and an independent reviewer tests every PR. **D8:** the Curriculum Pack (9 tabs; Practice added by D40) is the import format.
 - **D9:** idea explanations come from the sheet, with an AI draft as fallback that a teacher must approve. **D10:** the Nocturne colours stay as designed; 9 named contrast pairs are accepted exceptions, and nothing else is.
 - **D11:** each class can set how the AI uses each shared library doc (agent/tutor/both/off) and upload its own. **D12:** an empty unit objective or assessment question doesn't block an import; it's flagged, and Atlas drafts one for approval. **D13:** the built-in personas live only in `packages/ai`; an empty Personas tab means "use the built-ins".
 - **D14:** the publish preview's "Students receiving this update" counts all unique students enrolled in the selected classes.
