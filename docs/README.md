@@ -7,7 +7,7 @@ Start with [ROADMAP.md](ROADMAP.md) for where the product is going and [PLAN.md]
 | File | What it is |
 |---|---|
 | [ROADMAP.md](ROADMAP.md) | Versions v0.1–v0.4: goals, scope, and what each leaves out (D45) |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Settled decisions D1–D46 (§1), system design (§2–§11) and open questions (§12) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Settled decisions D1–D47 (§1), system design (§2–§11) and open questions (§12) |
 | [decisions/](decisions/) | The user's longer decision records: the prototype spec and the Water Cycle pilot graph (D44) |
 | [spec/](spec/) | The Curriculum Pack format, field by field (fields JSON, JSON Schema) |
 | [privacy/data-inventory.md](privacy/data-inventory.md) | What data is held, where, and for how long |
