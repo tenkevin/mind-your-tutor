@@ -1265,7 +1265,7 @@
       ],
       "done_when": "The student app draws the class's pinned published version (layout, ideas, kept links, categories) as in Idea Map Explorer v2, and clicking or pressing Enter on an idea opens a read-only idea page (title, objective, explanation, key terms, links, media placeholder). Lock state comes from the server at zero progress; a teacher's Preview as student can open every idea. No tracker events yet (S2 adds them)",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "version": "0.1",
       "owner": "agent-s10",
       "updated": "2026-10-29"
