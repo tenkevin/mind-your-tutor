@@ -147,8 +147,7 @@ export async function classHistory(
 export const REMOVED_TEXT = { status: 'removed' } as const;
 
 export type ResolvedText =
-  | { status: 'present'; kind: string; body: string; createdAt: Date }
-  | typeof REMOVED_TEXT;
+  { status: 'present'; kind: string; body: string; createdAt: Date } | typeof REMOVED_TEXT;
 
 /**
  * Look up the typed text that events refer to. Text deleted by retention or a FERPA
