@@ -270,6 +270,9 @@ describe('Publish store (T8)', () => {
       ],
     });
     await s.load();
+    // A newer or the current version isn't offered and can't be asked for.
+    s.askRepin(CLASS1, V2);
+    expect(s.getState().repinning).toBeNull();
     s.askRepin(CLASS1, V1);
     expect(calls.some((c) => c.url.endsWith('/pin'))).toBe(false);
     await s.confirmRepin();

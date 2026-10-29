@@ -266,7 +266,7 @@ function History({
       <ul className="pub-history-list" aria-labelledby="pub-history-h">
         {classes.map((c) => {
           const current = c.pinned_version!;
-          const others = options.published_versions.filter((v) => v.id !== current.id);
+          const earlier = options.published_versions.filter((v) => v.number < current.number);
           const ask = state.repinning?.classId === c.id ? state.repinning : null;
           const target = ask && options.published_versions.find((v) => v.id === ask.versionId);
           return (
@@ -275,15 +275,13 @@ function History({
                 <span className="cdata-strong">{c.name}</span>{' '}
                 <span className="cdata-muted">is on version {current.number}</span>
               </p>
-              <ul className="pub-versions" aria-label={`Other versions for ${c.name}`}>
-                {others.map((v) => (
+              {earlier.length === 0 && (
+                <p className="cdata-muted">No earlier version to go back to.</p>
+              )}
+              <ul className="pub-versions" aria-label={`Earlier versions for ${c.name}`}>
+                {earlier.map((v) => (
                   <li key={v.id}>
-                    <span>
-                      {versionText(v, fmt)}
-                      <span className="cdata-muted">
-                        {v.number < current.number ? ' · earlier' : ' · newer'}
-                      </span>
-                    </span>
+                    <span>{versionText(v, fmt)}</span>
                     <button
                       type="button"
                       className="btn btn-secondary"

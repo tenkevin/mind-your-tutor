@@ -177,7 +177,7 @@ describe('Publish screen (T8)', () => {
     expect(t).not.toContain('Changes from version');
   });
 
-  it('T8-F6: offers only published versions other than the current one, and asks before re-pinning', () => {
+  it('T8-F6: offers only earlier published versions, and asks before re-pinning', () => {
     const options = {
       classes: [{ id: CLASS1, name: 'Period 1', pinned_version: { id: V2P, number: 2 } }],
       published_versions: [
@@ -188,9 +188,22 @@ describe('Publish screen (T8)', () => {
     const html = render(state({ options, latest: null, diff: null }));
     const t = text(html);
     expect(t).toContain('Period 1 is on version 2');
-    expect(t).toContain('Version 1 · published Oct 20, 2026 · earlier');
+    expect(t).toContain('Version 1 · published Oct 20, 2026');
     expect(t).not.toContain('Version 2 · published');
     expect(html).toContain('aria-label="Put Period 1 on version 1"');
+    // A class already on the oldest version has nothing to go back to.
+    const oldest = render(
+      state({
+        options: {
+          ...options,
+          classes: [{ ...options.classes[0]!, pinned_version: { id: V1, number: 1 } }],
+        },
+        latest: null,
+        diff: null,
+      }),
+    );
+    expect(text(oldest)).toContain('No earlier version to go back to.');
+    expect(oldest).not.toContain('Put Period 1 on version');
     const asking = render(
       state({ options, latest: null, diff: null, repinning: { classId: CLASS1, versionId: V1 } }),
     );

@@ -287,6 +287,10 @@ export function createPublishStore(deps: StoreDeps): PublishStore {
 
     askRepin(classId, versionId) {
       if (state.repinBusy) return;
+      // Only an earlier published version than the class's own (T8-F6).
+      const pinned = state.options?.classes.find((c) => c.id === classId)?.pinned_version;
+      const target = state.options?.published_versions.find((v) => v.id === versionId);
+      if (!pinned || !target || target.number >= pinned.number) return;
       set({ repinning: { classId, versionId }, repinned: null, problem: null });
     },
     cancelRepin() {
