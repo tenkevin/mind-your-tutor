@@ -720,7 +720,11 @@
         "S7",
         "A12",
         "A13",
-        "F1e"
+        "F1e",
+        "C14",
+        "C15",
+        "C16",
+        "C17"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -1105,6 +1109,69 @@
       "status": "review",
       "owner": "agent-f1e",
       "updated": "2026-10-29"
+    },
+    {
+      "id": "C14",
+      "title": "Idea scope and key terms in the pack",
+      "size": 1,
+      "deps": [
+        "C10",
+        "C12"
+      ],
+      "done_when": "Per D43: Ideas carry scope (prerequisite, core, extension; missing means core) and key_terms, in docs/spec, zod contracts, C1 import, C2 checks, C5 diff and C6 export; packs without the columns behave exactly as before",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C15",
+      "title": "Vault provenance: source, licence and attribution",
+      "size": 2,
+      "deps": [
+        "A3",
+        "C10"
+      ],
+      "done_when": "Per D31 (amended 2026-10-29): Library rows and vault items keep source, license_type and attribution_string; missing provenance blocks publishing; NC or SA items need admin approval before retrieval; attribution shows in the tutor's citations",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C16",
+      "title": "Lay out each idea scope separately",
+      "size": 1,
+      "deps": [
+        "C14"
+      ],
+      "done_when": "Per D43: derivation runs the unchanged ranking and layout on each scope, so the main map is laid out from core ideas only; prerequisite and extension layouts and cross-scope links are stored for zoom; packs without scope derive as before",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "C17",
+      "title": "Water Cycle pilot pack",
+      "size": 1,
+      "deps": [
+        "C12",
+        "C14",
+        "C15",
+        "C16"
+      ],
+      "done_when": "Per D44: fixtures/water-cycle-pilot holds the pilot's 10 ideas and 12 links (scopes, layers, standards, requires, key terms) and the OpenSciEd 6.3 reference with provenance, as CSV, XLSX and pack JSON; imports with no errors and publishes",
+      "placeholder": false,
+      "status": "todo"
+    },
+    {
+      "id": "S9",
+      "title": "Remediation zoom and sandbox views",
+      "size": 2,
+      "deps": [
+        "S2",
+        "C16",
+        "C13",
+        "M8"
+      ],
+      "placeholder": true,
+      "done_when": "Later version (D43): zooming in from a core idea shows its prerequisite ideas and Vault standards for remediation, prompted by the trace-back; a sandbox view shows extension ideas and the C12 process and mechanism layers for free exploration",
+      "status": "todo"
     }
   ]
 }
