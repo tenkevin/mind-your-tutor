@@ -1485,7 +1485,7 @@
       ],
       "done_when": "Per D46: every colour reaches the apps only through tokens defined by a theme file; Nocturne is the default theme (D10 unchanged); map, category and state colours are tokens; a second theme swaps in at runtime without code changes; no raw colours outside theme files (checked in CI); every non-Nocturne theme passes WCAG AA outright",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "version": "0.1",
       "owner": "agent-f8",
       "updated": "2026-10-29"

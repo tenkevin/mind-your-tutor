@@ -11,6 +11,7 @@ Start with [ROADMAP.md](ROADMAP.md) for where the product is going and [PLAN.md]
 | [decisions/](decisions/) | The user's longer decision records: the prototype spec and the Water Cycle pilot graph (D44) |
 | [spec/](spec/) | The Curriculum Pack format, field by field (fields JSON, JSON Schema) |
 | [privacy/data-inventory.md](privacy/data-inventory.md) | What data is held, where, and for how long |
+| [design/README.md](design/README.md) | Brief and starting prompt for a Claude Code design session that changes the look in the codebase |
 | [idea-map-blueprint.html](idea-map-blueprint.html) | Visual blueprint (also published as an artifact) |
 
 ## Work
