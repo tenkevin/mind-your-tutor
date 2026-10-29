@@ -242,7 +242,7 @@ function pairsFor(theme: Theme): Pair[] {
         `--category-${n} on ${g}`,
         hex(`--category-${n}` as keyof Theme['values']),
         ground,
-        3,
+        4.5,
       ]);
     // State colours may be used as text, so they need 4.5:1.
     for (const s of ['success', 'warning', 'danger', 'info'])
@@ -282,6 +282,14 @@ function pairsFor(theme: Theme): Pair[] {
     );
     for (const [c, ground] of Object.entries(canvases))
       pairs.push([`--map-${border} on ${c}`, map(border), ground, 3]);
+  }
+  // Categories are drawn as text (11 px, so 4.5:1) on the page, on the canvas and on every node fill.
+  for (let n = 1; n <= 6; n++) {
+    const cat = hex(`--category-${n}` as T);
+    for (const [c, ground] of Object.entries(canvases))
+      pairs.push([`--category-${n} on ${c}`, cat, ground, 4.5]);
+    for (const [name, [fill]] of Object.entries(nodes))
+      pairs.push([`--category-${n} on ${fill} (${name})`, cat, map(fill), 4.5]);
   }
   for (const [c, ground] of Object.entries(canvases)) {
     pairs.push(

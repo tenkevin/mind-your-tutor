@@ -38,4 +38,21 @@ describe('ThemeReference (F8-U1, F8-F3)', () => {
     });
     expect(document.documentElement.dataset['theme']).toBe('nocturne');
   });
+
+  it('draws state markers with fill, border and text tokens, never a fill as text (F8-U1)', () => {
+    const markers = [...document.querySelectorAll('[data-state]')];
+    expect(markers.map((m) => m.getAttribute('data-state'))).toEqual([
+      'open',
+      'locked',
+      'mastered',
+    ]);
+    for (const m of markers) {
+      const name = m.getAttribute('data-state');
+      const style = (m.getAttribute('style') ?? '').replace(/\s+/g, '');
+      expect(style).toContain(`background:var(--map-node-${name})`);
+      expect(style).toContain(`border:1pxsolidvar(--map-node-${name}-border)`);
+      expect(style).toMatch(/color:var\(--map-node-(locked-)?text\)/);
+      expect(style).not.toMatch(new RegExp(`[^-]color:var\\(--map-node-${name}\\)`));
+    }
+  });
 });

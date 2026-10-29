@@ -22,6 +22,8 @@ describe('UiReference', () => {
       'class="table"',
       'id="theme-ref-select"',
       '--map-node-mastered',
+      'var(--map-node-open-border)',
+      'var(--map-node-locked-text)',
     ]) {
       expect(html).toContain(cls);
     }

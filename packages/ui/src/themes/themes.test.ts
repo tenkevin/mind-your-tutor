@@ -157,3 +157,56 @@ describe('test-only themes (S14)', () => {
     expect(offeredThemes.map((t) => t.id)).toEqual(['nocturne']);
   });
 });
+
+describe('theme switch frame (F8-P1)', () => {
+  it('zeroes transitions for the switch frame, flushes once, then restores them', () => {
+    const log: string[] = [];
+    const dataset: Record<string, string | undefined> = { theme: 'nocturne' };
+    const root = {
+      dataset: new Proxy(dataset, {
+        set(t, k: string, v: string) {
+          log.push(`set ${k}=${v}`);
+          t[k] = v;
+          return true;
+        },
+        deleteProperty(t, k: string) {
+          log.push(`delete ${k}`);
+          delete t[k];
+          return true;
+        },
+      }),
+    };
+    let frame: (() => void) | undefined;
+    const env = {
+      requestAnimationFrame: (cb: () => void) => (frame = cb),
+      getComputedStyle: () => ({ getPropertyValue: () => (log.push('flush'), '') }),
+    };
+    applyTheme('daylight-test', root, env);
+    expect(log).toEqual(['set themeSwitching=', 'set theme=daylight-test', 'flush']);
+    expect(dataset['themeSwitching']).toBe('');
+    frame?.();
+    expect(dataset['themeSwitching']).toBeUndefined();
+    expect(dataset['theme']).toBe('daylight-test');
+  });
+
+  it('does nothing extra when the theme is unchanged or there is no browser', () => {
+    const root = { dataset: { theme: 'nocturne' } as Record<string, string | undefined> };
+    applyTheme('nocturne', root, {
+      requestAnimationFrame: () => {
+        throw new Error('no frame needed');
+      },
+      getComputedStyle: () => {
+        throw new Error('no flush needed');
+      },
+    });
+    applyTheme('daylight-test', root, {});
+    expect(root.dataset).toEqual({ theme: 'daylight-test' });
+  });
+
+  it('styles.css switches every transition off while data-theme-switching is set', () => {
+    const css = readFileSync(new URL('styles.css', pkg), 'utf8');
+    expect(css).toMatch(
+      /:root\[data-theme-switching\] \*[^{]*\{ transition-duration: 0s !important; \}/,
+    );
+  });
+});

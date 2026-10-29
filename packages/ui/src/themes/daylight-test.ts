@@ -77,7 +77,7 @@ export default defineTheme({
     '--map-placeholder-text': '#433f37',
     '--category-1': '#07504a',
     '--category-2': '#974d0c',
-    '--category-3': '#7e6607',
+    '--category-3': '#6e5906',
     '--category-4': '#a82466',
     '--category-5': '#1855aa',
     '--category-6': '#39721d',

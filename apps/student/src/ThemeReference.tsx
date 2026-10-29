@@ -22,10 +22,13 @@ const swatch: CSSProperties = {
   fontSize: 12,
 };
 
+// A state marker is a node as the map draws it: the fill, a border and a shape in the
+// border colour (marks, 3:1 on the fill), and the label in the text colour (4.5:1). The
+// fill tokens are never used as a text colour.
 const states = [
-  { token: '--map-node-open', label: 'Open', shape: '○' },
-  { token: '--map-node-locked', label: 'Locked', shape: '▣' },
-  { token: '--map-node-mastered', label: 'Mastered', shape: '★' },
+  { name: 'open', label: 'Open', shape: '○', text: '--map-node-text' },
+  { name: 'locked', label: 'Locked', shape: '▣', text: '--map-node-locked-text' },
+  { name: 'mastered', label: 'Mastered', shape: '★', text: '--map-node-text' },
 ] as const;
 
 export function ThemeReference() {
@@ -50,10 +53,34 @@ export function ThemeReference() {
         </select>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <div
+        data-testid="map-states"
+        style={{
+          display: 'flex',
+          gap: 'var(--space-6)',
+          flexWrap: 'wrap',
+          padding: 'var(--space-4)',
+          background: 'var(--map-canvas)',
+        }}
+      >
         {states.map((s) => (
-          <span key={s.token} style={{ ...swatch, color: cssVar(s.token), fontSize: 15 }}>
-            <span aria-hidden="true" style={{ fontSize: 24 }}>
+          <span
+            key={s.name}
+            data-state={s.name}
+            style={{
+              ...swatch,
+              padding: 'var(--space-2) var(--space-4)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 15,
+              background: `var(--map-node-${s.name})`,
+              border: `1px solid var(--map-node-${s.name}-border)`,
+              color: `var(${s.text})`,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{ fontSize: 24, color: `var(--map-node-${s.name}-border)` }}
+            >
               {s.shape}
             </span>
             {s.label}

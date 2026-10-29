@@ -366,3 +366,9 @@ textarea.input { min-height: 90px; resize: vertical; }
    a hint stays visibly dimmer than typed text. Firefox dims placeholders
    with opacity, hence opacity: 1. */
 .input::placeholder { color: var(--color-neutral-500); opacity: 1; }
+
+/* F8: while a theme switch is applied (applyTheme sets data-theme-switching for
+   one frame), nothing animates, so the switch is one style recalculation. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after { transition-duration: 0s !important; }
