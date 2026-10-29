@@ -5,7 +5,8 @@ import { isZip, ZipReader } from './zip.js';
 // trusted: a PNG renamed to .xlsx is still a PNG.
 
 export type Detected =
-  { kind: 'xlsx' | 'csv-zip' | 'csv' | 'json' } | { kind: 'refused'; message: string };
+  | { kind: 'xlsx' | 'csv-zip' | 'csv' | 'json' }
+  | { kind: 'refused'; message: string };
 
 const SIGNATURES: [string, number[]][] = [
   ['a PNG image', [0x89, 0x50, 0x4e, 0x47]],

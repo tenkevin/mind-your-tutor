@@ -14,7 +14,8 @@ import {
 } from './spec.js';
 
 export type ParseResult<T> =
-  { ok: true; value: T; issues: PackIssue[] } | { ok: false; value: null; issues: PackIssue[] };
+  | { ok: true; value: T; issues: PackIssue[] }
+  | { ok: false; value: null; issues: PackIssue[] };
 
 export type TabRow<T extends TabName> = z.infer<(typeof TAB_ROW_SCHEMAS)[T]>;
 
