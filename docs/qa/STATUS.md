@@ -29,6 +29,8 @@ Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA re
 | 13 | T8 #40 (agent-t8) | `18d6e07` | 3 | `T8.md` (2026-10-24) | None yet. New API route `GET /api/curricula/:id/publishing` (F5 policy, in the sweep). Rollback lists every other published version, earlier or newer (criteria say earlier); not browser-run | Codex review |
 | 14 | T6 #41 (agent-t6) | `0223f39` | 2 | `T6.md` (2026-10-24) | None yet. Mapping edits author/admin only; picker options from headers the newest import recorded; server-side paging (100 rows) | Codex review |
 | 15 | A6 #42 (agent-a6) | `0b0b1d4` | 1 | `A6.md` (2026-10-24) | None yet. Drafting runs in the API process (holds the key) via an injected writer; bypasses the student rate limiter, bounded by job concurrency 4; new student read route `GET /api/classes/:id/content`; library passages wait for A3 | Codex review |
+| 16 | C10 #43 (agent-c10) | `ea9ef53` | 0 | `C10.md` (2026-10-29) | None yet. Fixture Practice rows use a test-only `fixture` bank (production config reports them as errors); D40 columns optional in the parser so the data check blocks publishing with a located error; allow-list via `PRACTICE_SOURCES_FILE`; Practice is tab index 9. Earlier red CI not reproduced (likely timing, F1e) | Codex review |
+| 17 | C12 #44 (agent-c12) | `be530f5` | 0 | `C12.md` (2026-10-29, F1 corrected: `layer` sheet-only) | None yet. Uses existing `standard_codes`; `traceTargets` stops at mastered ideas; C3 parity expectations updated for the new fixture. Builder making `layer` sheet-only | Codex review after that push |
 
 **Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 

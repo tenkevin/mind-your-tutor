@@ -7,7 +7,7 @@ Read this before starting any task.
 - **Architecture:** `docs/ARCHITECTURE.md`. Decisions there are settled. Raise a question instead of working around them.
 - **Living to-do list and dependency map:** `docs/PLAN.md`, generated from `docs/tasks.json`.
 - **Independent QA:** `docs/qa/README.md` and `docs/qa/<ID>.md`. Each task's criteria cover functional, security, performance and usability testing, and are written before the task can be claimed.
-- **Import format spec:** `docs/spec/` (the Curriculum Pack: eight tabs, field by field).
+- **Import format spec:** `docs/spec/` (the Curriculum Pack: nine tabs, field by field).
 - **Sample curriculum for tests:** `fixtures/water-cycle/` (CSV, XLSX and pack JSON; read its README for the deliberate data errors).
 - **Design reference:** `project/` (Claude Design export, HTML prototypes) and `chats/chat1.md` for intent. The prototypes show what to build, not how. Match the visuals; don't copy their structure.
 
