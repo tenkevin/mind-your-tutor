@@ -218,7 +218,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(body.from_version).toBeNull();
     expect(body.to_version.id).toBe(versionA);
     expect(body.diff.first_publish).toBe(true);
-    expect(body.diff.ideas_added).toHaveLength(18);
+    expect(body.diff.ideas_added).toHaveLength(23);
   });
 
   it('C5-F5, U2: errors block publishing, naming the tab and column to fix', async () => {
@@ -299,6 +299,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       ideas_renamed: 1,
       prerequisites_changed: 1,
       units_changed: 1,
+      layers_changed: 0,
       assessment_changed: 1,
     });
     expect(first.diff.ideas_renamed).toEqual([
