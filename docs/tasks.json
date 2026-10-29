@@ -720,7 +720,8 @@
         "S7",
         "A12",
         "A13",
-        "X2"
+        "X2",
+        "F1e"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -1095,6 +1096,17 @@
       "done_when": "Per D39: in-app reminders for both tracks; web push only for the student's self-paced track, within district disable and quiet hours and the teacher's setting; no SMS or automated email; no family contact details stored; teacher-led due dates offered to the district LMS or portal as a per-class CSV and iCalendar export and calendar feed (D39); push subscriptions deleted on opt-out or sign-out",
       "placeholder": false,
       "status": "todo"
+    },
+    {
+      "id": "F1e",
+      "title": "Make wall-clock tests reliable under CI load without loosening budgets",
+      "size": 1,
+      "deps": [],
+      "done_when": "Every test that asserts elapsed time passes consistently on CI's runners and under a loaded parallel `pnpm test`, with every criteria budget unchanged: performance checks run where load can't distort them (serially, in their own Vitest project or CI step), measure what the budget means (median or best of N after warm-up, or CPU time where that is the quantity), and a failure names the test and its timings",
+      "placeholder": false,
+      "status": "doing",
+      "owner": "agent-f1e",
+      "updated": "2026-10-29"
     }
   ]
 }
