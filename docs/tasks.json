@@ -1104,7 +1104,7 @@
       "deps": [],
       "done_when": "Every test that asserts elapsed time passes consistently on CI's runners and under a loaded parallel `pnpm test`, with every criteria budget unchanged: performance checks run where load can't distort them (serially, in their own Vitest project or CI step), measure what the budget means (median or best of N after warm-up, or CPU time where that is the quantity), and a failure names the test and its timings",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "owner": "agent-f1e",
       "updated": "2026-10-29"
     }
