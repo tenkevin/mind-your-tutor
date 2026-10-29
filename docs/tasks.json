@@ -768,7 +768,8 @@
         "C16",
         "C17",
         "S9",
-        "S10"
+        "S10",
+        "F8"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -1404,9 +1405,10 @@
       "size": 2,
       "deps": [
         "S2",
-        "M4"
+        "M4",
+        "F8"
       ],
-      "done_when": "Regions of the map light up on mastery; surprise unlocks; cosmetic map themes unlocked by progress. Personal only, never ranked against other students (D20)",
+      "done_when": "Regions of the map light up on mastery; surprise unlocks; cosmetic map themes unlocked by progress. Personal only, never ranked against other students (D20); themes use the F8 theme contract",
       "placeholder": true,
       "status": "todo",
       "version": "0.3"
@@ -1473,6 +1475,18 @@
       "placeholder": true,
       "status": "todo",
       "version": "0.4"
+    },
+    {
+      "id": "F8",
+      "title": "Theme contract: semantic tokens and swappable themes",
+      "size": 1,
+      "deps": [
+        "S5"
+      ],
+      "done_when": "Per D46: every colour reaches the apps only through tokens defined by a theme file; Nocturne is the default theme (D10 unchanged); map, category and state colours are tokens; a second theme swaps in at runtime without code changes; no raw colours outside theme files (checked in CI); every non-Nocturne theme passes WCAG AA outright",
+      "placeholder": false,
+      "status": "todo",
+      "version": "0.1"
     }
   ],
   "versions": [

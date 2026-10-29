@@ -54,7 +54,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 - **D31:** the vault (official company assets, kept and versioned, each item keeping source, licence and attribution; NC or SA items need admin approval) and disposable class uploads. **D32:** safety flags are alerts, not the school's record. **D33:** on-device names come from an ML NER model. **D34:** persona eval baselines are teacher-approved.
 - **D35:** no verified source, no facts: the tutor becomes a Socratic sparring partner. **D36:** the student profile is age-bifurcated, with no mood data. **D37:** retention for sessions, plans and reflections. **D38:** diagnostic events, not clickstreams. **D39:** dual-track study plans and the notification hierarchy.
 - **D40:** Practice is the ninth tab, from vetted item banks only. It stays strict: a teacher's own uploads never enter Practice. **D41:** the Vault standards graph and the two-layer trace-back. **D42:** pilot scope; self-hosted video, moved to v0.4.
-- **D43:** Ideas gain `scope` (prerequisite, core, extension) and `key_terms`; the unchanged layout runs per scope. **D44:** the Water Cycle pilot graph (`docs/decisions/2026-10-29-water-cycle-pilot-graph.md`). **D45:** versions v0.1–v0.4; a task depends only on its own or an earlier version.
+- **D43:** Ideas gain `scope` (prerequisite, core, extension) and `key_terms`; the unchanged layout runs per scope. **D44:** the Water Cycle pilot graph (`docs/decisions/2026-10-29-water-cycle-pilot-graph.md`). **D45:** versions v0.1–v0.4; a task depends only on its own or an earlier version. **D46:** themeable tokens: every colour comes from a theme file; Nocturne is the default; other themes must pass AA outright (F8).
 
 ## 3. Rules you enforce
 
@@ -68,7 +68,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 5. **Fix tasks:** QA or Codex errors on merged work become `<ID>b` or `<ID>cx<n>` tasks, with must-only criteria. They start before other work and may exceed the 4-agent build limit by 2.
 6. **Suggestions** go into the next related task's criteria as should checks, or into `docs/qa/CXB.md`.
 7. Agents never edit `Codex-*` files, and never merge their own PRs. Never claim placeholder tasks (CXB and the v0.2–v0.4 placeholders).
-8. Ask the user only about genuinely new product or design decisions. Everything else follows the settled decisions (D1–D45). Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
+8. Ask the user only about genuinely new product or design decisions. Everything else follows the settled decisions (D1–D46). Record unresolved decisions in architecture §12; update settled decisions in the relevant architecture sections before dependent implementation.
 9. Enforce the stop/resume and handoff protocol in `AGENTS.md`. Documentation maintenance does not authorize restarting implementation or QA.
 
 ## 4. Gotchas (each one has bitten us)
@@ -102,7 +102,8 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 3. For each PR with a Codex PASS on its current head: sync with `idea-map`, wait for exact-head CI, run any full-suite must locally, then merge **one per pass** and confirm merge CI.
 4. Fix-task priority (rule 5): F1e, C5cx2 and C6cx2 merge ahead of feature PRs once they pass.
 5. Merging C10 and C12 unblocks C14 → C16 → C17 (pilot pack) and M8; merging A3 unblocks C13 and C15; merging T2-dependent PRs unblocks A4.
-6. Open with the user: §12 q26 (training data for v0.2 research), undecided; X4 (contrastive learning) is on hold. Don't raise it again until the user does.
+6. **Design loop (user, 2026-10-29):** when S10 (and later S2/S6) lands, put the screens into Claude Design for the user to iterate on: a Design artifact of the real screens, and the Nocturne tokens and themes as a Design System artifact (or `/design-sync`, which the user starts, to sync `packages/ui`). Turn the approved design changes into criteria and a builder task. Standalone claude.ai/design closes on 2026-12-14; Design now lives in Claude.
+7. Open with the user: §12 q26 (training data for v0.2 research), undecided; X4 (contrastive learning) is on hold. Don't raise it again until the user does.
 
 **Model policy (user, 2026-10-24):** Sonnet for build and fix agents; Haiku for triage, classification and high-volume sub-agent work; no new Opus sessions. Scheduled tasks "Idea Map swarm coordinator" (`trig_01UfngiANJA5GmTBDxkwSyKg`) and "Idea Map Codex watch" (`trig_013q6W2EPEsp9TJdPvNF8xpw`) are **disabled**; the coordinator runs on demand.
 
