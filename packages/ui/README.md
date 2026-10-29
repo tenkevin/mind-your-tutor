@@ -121,12 +121,26 @@ block (`;`, `{`, `}`, `url(`, comments), unbalanced quotes or parentheses,
 newlines and `!important`. `offeredThemes` lists the registered themes without
 the `testOnly` ones; anything that offers themes to students (S14) must use it.
 
+**Switching does not animate.** A switch is one attribute change, so the browser
+does one style recalculation, but only if nothing animates in response. A colour
+transition declared on an element at rest would run on every such element when a
+theme changes. So a colour transition may be declared only on an interaction
+state (`:hover`, `:focus`, `:focus-visible`, `:active`), as the map's node border
+is: it eases in on hover, and un-hovering is instant.
+`src/no-resting-transitions.test.ts` fails on any CSS under `packages/ui` or
+`apps` that breaks the rule, apart from a short allowed list. Measured on the
+60-idea student map at 4x CPU throttle: 1 recalculation per switch, at most 41 ms.
+
 **Add a theme:** (1) create `src/themes/<id>.ts` that default-exports a
 `defineTheme({ id, name, values })` with every token; (2) add it to `themes` in
 `src/themes/index.ts`; (3) run `UPDATE_THEMES=1 pnpm --filter @ideamap/ui test` to
 regenerate `styles.css` and `themes.css`, and commit them. The drift test fails
 if they are stale. `src/themes/daylight-test.ts` is a test-only light theme
 (`testOnly: true`) that shows the shape. Choosing and unlocking themes is S14.
+
+**Category text.** The map draws a category label as 11 px text on every node fill,
+so each `--category-N` must reach 4.5:1 on the page, both canvas grounds and the
+open, locked, mastered and centre node fills, in every theme.
 
 **Contrast rule.** `styles.test.ts` measures every text pair (4.5:1) and every
 UI-component pair (3:1) on both grounds for every registered theme, including

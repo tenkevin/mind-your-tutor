@@ -24,38 +24,14 @@ export function resolveTheme(id: unknown): Theme {
   return themes.find((t) => t.id === id) ?? defaultTheme;
 }
 
-/** What applyTheme needs from the page. `root` is normally `document.documentElement`. */
-export interface ThemeRoot {
-  dataset: Record<string, string | undefined>;
-}
-/** The browser's `window`, or anything with the same two functions; omitted outside a browser. */
-export interface ThemeEnv {
-  requestAnimationFrame?: (callback: () => void) => unknown;
-  getComputedStyle?: (root: never) => { getPropertyValue: (name: string) => string };
-}
-
 /**
  * Switches the page's theme without a reload. Unknown ids fall back to Nocturne.
- *
- * Colour transitions (the map's node borders, for one) would animate across
- * several frames and cost extra style recalculations, so for the switch frame
- * `data-theme-switching` on the root zeroes every transition (styles.css). The
- * theme is applied, one style flush settles it with no transition running, and
- * the attribute is removed on the next frame. Hover and focus transitions are
- * untouched at every other time.
+ * `root` is normally `document.documentElement`. It changes one attribute, so the
+ * browser recalculates style once. Nothing animates because no element carries a
+ * resting transition on a colour (see the README); `no-resting-transitions.test.ts` checks.
  */
-export function applyTheme(id: unknown, root: ThemeRoot, env: ThemeEnv = globalThis as ThemeEnv) {
+export function applyTheme(id: unknown, root: { dataset: Record<string, string | undefined> }) {
   const theme = resolveTheme(id);
-  const { requestAnimationFrame, getComputedStyle } = env;
-  if (root.dataset['theme'] === theme.id || !requestAnimationFrame || !getComputedStyle) {
-    root.dataset['theme'] = theme.id;
-    return theme;
-  }
-  root.dataset['themeSwitching'] = '';
   root.dataset['theme'] = theme.id;
-  getComputedStyle(root as never).getPropertyValue('--color-bg');
-  requestAnimationFrame(() => {
-    delete root.dataset['themeSwitching'];
-  });
   return theme;
 }
