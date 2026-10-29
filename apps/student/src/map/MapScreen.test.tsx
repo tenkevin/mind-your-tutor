@@ -131,6 +131,51 @@ describe('student map screen (S10)', () => {
     expect(host.textContent).not.toContain('Preview:');
   });
 
+  it("quiets links between locked ideas and lights up a focused idea's neighbours", async () => {
+    const base = response().map!;
+    const ideas = [
+      ...base.ideas,
+      idea('prec', 'Precipitation', 1, -1, true),
+      idea('rain', 'Rain', 1, 0.5, true),
+    ];
+    ideas[3] = {
+      ...ideas[3]!,
+      unlocksAfter: ['Condensation', 'Precipitation', 'Clouds', 'Sleet'].map((t) => ({
+        id: t,
+        title: t,
+      })),
+    };
+    const links = [
+      ...base.links,
+      { from: 'cond', to: 'prec', relation: 'leads to', importance: 3 },
+      { from: 'prec', to: 'rain', relation: 'falls as', importance: 3 },
+    ];
+    serve(response({ map: { ...base, ideas, links } }));
+    await show();
+    const edge = (key: string) =>
+      host.querySelectorAll('.imap-edge')[key === 'evap>cond' ? 0 : key === 'cond>prec' ? 1 : 2]!;
+    expect(edge('evap>cond').classList.contains('imap-edge-quiet')).toBe(false);
+    expect(edge('cond>prec').classList.contains('imap-edge-quiet')).toBe(true);
+
+    const prec = host.querySelector<HTMLButtonElement>('[data-idea="prec"]')!;
+    act(() => prec.focus());
+    expect(edge('cond>prec').classList.contains('imap-edge-hot')).toBe(true);
+    expect(edge('evap>cond').classList.contains('imap-edge-faded')).toBe(true);
+    const near = [...host.querySelectorAll('.imap-near')].map(
+      (n) => (n as HTMLElement).dataset.idea,
+    );
+    expect(near.sort()).toEqual(['cond', 'rain']);
+
+    // A long "Unlocks after" list is shortened on the card; the label keeps all of it.
+    const rain = host.querySelector<HTMLButtonElement>('[data-idea="rain"]')!;
+    expect(rain.querySelector('.imap-req-short')!.textContent).toBe(
+      'Unlocks after Condensation, Precipitation +2 more',
+    );
+    expect(rain.getAttribute('aria-label')).toContain(
+      'Unlocks after Condensation, Precipitation, Clouds, Sleet.',
+    );
+  });
+
   it('opens an open idea with Enter, and Back returns to the map (F6, U1)', async () => {
     serve(response());
     await show();

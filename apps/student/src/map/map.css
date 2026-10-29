@@ -96,6 +96,16 @@
 .imap-edge-hot polygon {
   fill: var(--map-link-active);
 }
+/* A link between two locked ideas steps back: thinner and dashed. 70% strength keeps it
+   at 3:1 or more on the canvas, its glow and a card (WCAG 1.4.11). */
+.imap-edge-quiet line {
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+.imap-edge-quiet,
+.imap-edge-faded {
+  opacity: 0.7;
+}
 .imap-edge text {
   fill: var(--map-link-label);
   font-size: 13px;
@@ -158,12 +168,40 @@
 .imap-locked {
   background: var(--map-node-locked);
   border-style: dashed;
-  border-color: var(--map-node-locked-border);
+  /* Quieter than an open card's border, still 3:1 on the canvas. */
+  border-color: color-mix(in srgb, var(--map-node-locked-border) 70%, transparent);
   color: var(--map-node-locked-text);
   cursor: not-allowed;
 }
-.imap-locked:hover {
+.imap-locked:hover,
+.imap-near {
   border-color: var(--map-node-hover-border);
+}
+.imap-node:hover {
+  z-index: 1;
+}
+.imap-req-full {
+  display: none;
+}
+.imap-node:hover .imap-req-full,
+.imap-node:focus-visible .imap-req-full {
+  display: inline;
+}
+.imap-node:hover .imap-req-short,
+.imap-node:focus-visible .imap-req-short {
+  display: none;
+}
+
+/* Zoomed far out, card text is too small to read: one line with the lock, the title and
+   the category icon. Hover or focus shows the whole card. */
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-cat-name,
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-req {
+  display: none;
 }
 
 .imap-bar {

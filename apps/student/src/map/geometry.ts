@@ -11,16 +11,27 @@ export const toPixels = (p: { x: number; y: number }) => ({
   y: p.y * UNIT,
 });
 
+/** Below this zoom, cards show only their title and icons (card text is under 5px). */
+export const COMPACT_ZOOM = 0.45;
+
 /**
  * Half the size of an idea card, from its longest line of text (13px titles, 11px
  * category and "Unlocks after" lines), so links stop at its edge and Fit never clips it.
+ * A compact card is one line: the lock, the title and the category icon.
  */
 export function halfSize(
   card: { title: string; category: string; requires?: string },
   centre: boolean,
   locked: boolean,
+  compact = false,
 ) {
   if (centre) return { hw: Math.max(70, card.title.length * 5.5 + 24), hh: 34 };
+  if (compact) {
+    return {
+      hw: Math.max(36, (card.title.length * 7.4 + (locked ? 18 : 0) + 18) / 2 + 14),
+      hh: 22,
+    };
+  }
   const widest = Math.max(
     card.title.length * 7.4 + (locked ? 18 : 0),
     card.category.length * 6.4 + 18,
