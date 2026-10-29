@@ -331,6 +331,8 @@ describe.skipIf(!hasDatabase)('course details (T3)', () => {
       .select(['action', 'actor_id', 'detail'])
       .where('at', '>=', since)
       .where('target_type', 'in', ['class_config', 'curriculum_defaults'])
+      // The setup deletes above audit too; their row can land on either side of `since`.
+      .where('action', 'in', ['class_config.updated', 'curriculum_defaults.updated'])
       .orderBy('at')
       .execute();
     expect(rows).toEqual([
