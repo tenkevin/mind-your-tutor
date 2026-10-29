@@ -1039,7 +1039,7 @@
         "C10",
         "X2"
       ],
-      "done_when": "Per D40/D42: an idea page with its self-hosted overview video, and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser",
+      "done_when": "Per D40/D42: an idea page with its self-hosted overview video, and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
       "placeholder": false,
       "status": "todo"
     },
@@ -1088,7 +1088,7 @@
       "deps": [
         "A12"
       ],
-      "done_when": "Per D39: in-app reminders for both tracks; web push only for the student's self-paced track, within district disable and quiet hours and the teacher's setting; no SMS or automated email; no family contact details stored; teacher-led due dates exported for the district LMS or portal (§12 q24); push subscriptions deleted on opt-out or sign-out",
+      "done_when": "Per D39: in-app reminders for both tracks; web push only for the student's self-paced track, within district disable and quiet hours and the teacher's setting; no SMS or automated email; no family contact details stored; teacher-led due dates offered to the district LMS or portal as a per-class CSV and iCalendar export and calendar feed (D39); push subscriptions deleted on opt-out or sign-out",
       "placeholder": false,
       "status": "todo"
     }
