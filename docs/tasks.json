@@ -959,7 +959,9 @@
       "deps": [],
       "done_when": "Per D40/D8: the ninth tab (exercise_id, idea_id, group, standard_code, exercise_title, kind exercise|quiz, quiz_from, problem_type mc|number, question, choices, answer, answer_unit, explanation, visual, media_url, demo_video_url, demo_steps, source_bank_id, license_type, attribution_string) is in docs/spec, zod contracts, C1 import, C2 data checks (allow-listed banks and licences), C5 diff and C6 export",
       "placeholder": false,
-      "status": "todo"
+      "status": "doing",
+      "owner": "agent-c10",
+      "updated": "2026-10-29"
     },
     {
       "id": "C12",
