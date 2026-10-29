@@ -250,7 +250,7 @@ describe('C1-S4 zip paths cannot escape', () => {
     ]);
     const r = await importPack(file('pack.zip', archive));
     expect(r.ok).toBe(true);
-    expect(r.pack!.ideas).toHaveLength(18);
+    expect(r.pack!.ideas).toHaveLength(23);
     const skipped = r.issues.filter((i) => i.code === 'tab_ignored' && i.severity === 'warning');
     expect(skipped.map((i) => i.source)).toEqual([
       'pack.zip › ../../etc/passwd',

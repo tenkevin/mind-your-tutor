@@ -160,6 +160,13 @@
             },
             "description": "list of idea_id · If missing: Unlocks from a mastered neighbour · Edited in: sheet"
           },
+          "layer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "process | mechanism · Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer · If missing: process · Edited in: both"
+          },
           "media_url": {
             "type": [
               "string",

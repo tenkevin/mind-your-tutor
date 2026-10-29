@@ -89,6 +89,7 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
     ideas_renamed: [],
     prerequisites_changed: [],
     units_changed: [],
+    layers_changed: [],
     assessment_changed: [],
   };
 
@@ -129,6 +130,9 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
         to: unit(nextUnits, now.unit),
       });
     }
+    if (was.layer !== now.layer) {
+      diff.layers_changed.push({ ...ref(id), from: was.layer, to: now.layer });
+    }
     const q = { before: prevQuestions.get(id) ?? [], after: nextQuestions.get(id) ?? [] };
     const removed = minus(q.before, q.after);
     const added = minus(q.after, q.before);
@@ -150,6 +154,7 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
       diff.ideas_renamed.length +
       diff.prerequisites_changed.length +
       diff.units_changed.length +
+      diff.layers_changed.length +
       diff.assessment_changed.length ===
     0;
   return diff;

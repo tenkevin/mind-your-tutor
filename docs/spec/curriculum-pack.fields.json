@@ -190,6 +190,15 @@
         "note": ""
       },
       {
+        "name": "layer",
+        "type": "process | mechanism",
+        "req": false,
+        "edit": "both",
+        "missing": "process",
+        "example": "mechanism",
+        "note": "Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer"
+      },
+      {
         "name": "media_url",
         "type": "url or file",
         "req": false,

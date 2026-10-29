@@ -22,13 +22,27 @@ describe('the water-cycle pack parses in every form (F3-F3)', () => {
 
   it('has the counts the fixture README gives', () => {
     const pack = parsePack(readPackJson()).value as Pack;
-    expect(pack.ideas).toHaveLength(18);
-    expect(pack.links).toHaveLength(31);
+    expect(pack.ideas).toHaveLength(23);
+    expect(pack.links).toHaveLength(43);
     expect(pack.units).toHaveLength(3);
     expect(pack.categories).toHaveLength(3);
-    expect(pack.assessment).toHaveLength(18);
+    expect(pack.assessment).toHaveLength(23);
     expect(pack.personas).toHaveLength(3);
     expect(pack.library).toHaveLength(5);
+  });
+
+  it('has the five mechanism ideas, each with an NGSS code (C12)', () => {
+    const pack = parsePack(readPackJson()).value as Pack;
+    const mechanisms = pack.ideas.filter((i) => i.layer === 'mechanism');
+    expect(mechanisms.map((i) => i.idea_id)).toEqual([
+      'thermal',
+      'phase',
+      'gravity',
+      'dropmass',
+      'topo',
+    ]);
+    for (const idea of mechanisms) expect(idea.standard_codes[0], idea.idea_id).toMatch(/^MS-/);
+    expect(pack.ideas.filter((i) => i.layer === 'process')).toHaveLength(18);
   });
 
   it('keeps the deliberate data problems for C2', () => {

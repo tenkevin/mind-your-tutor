@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { LIMITS } from './fields.js';
-import { TAB_NAMES } from './spec.js';
+import { LAYERS, TAB_NAMES } from './spec.js';
 import { VERSION_STATUSES } from './curriculum-version.js';
 
 // Reviewing and publishing a draft (ARCHITECTURE.md §7, task C5): the diff against
@@ -57,6 +57,10 @@ export const CurriculumDiffSchema = z.object({
   ),
   /** The idea moved to another unit. */
   units_changed: z.array(DiffIdeaRefSchema.extend({ from: DiffUnitSchema, to: DiffUnitSchema })),
+  /** The idea moved between the process and mechanism layers (D41). */
+  layers_changed: z
+    .array(DiffIdeaRefSchema.extend({ from: z.enum(LAYERS), to: z.enum(LAYERS) }))
+    .default([]),
   /**
    * The idea's accepted Assessment questions changed. `before` and `after` are all of
    * its accepted questions (the ones the data check keeps), sorted by code point, so

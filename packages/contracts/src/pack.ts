@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { LIMITS, columns, documented, normalizeRow } from './fields.js';
 import {
   AUDIENCES,
+  LAYERS,
   PERSONA_IDS,
   RARITIES,
   TONES,
@@ -77,6 +78,7 @@ const ideas = tab('Ideas', (c) => ({
   explanation: c.text('explanation', LIMITS.explanation).nullable().default(null),
   standard_codes: c.list('standard_codes', LIMITS.code).default([]),
   requires: c.slugList('requires').default([]),
+  layer: c.oneOf('layer', LAYERS).default('process'),
   media_url: c.url('media_url').nullable().default(null),
   rarity: c.oneOf('rarity', RARITIES).default('auto'),
   notes: c.text('notes', LIMITS.longText).nullable().default(null),

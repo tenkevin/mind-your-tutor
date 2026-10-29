@@ -109,6 +109,15 @@ export const PACK_SPEC: readonly TabSpec[] = [
       ),
       col('standard_codes', 'list', false, 'sheet', 'Flagged in data checks'),
       col('requires', 'list of idea_id', false, 'sheet', 'Unlocks from a mastered neighbour'),
+      // Decision D41 (ARCHITECTURE.md).
+      col(
+        'layer',
+        'process | mechanism',
+        false,
+        'both',
+        'process',
+        'Conceptual domains only: process is the surface loop, mechanism is the cause underneath (with NGSS or CCSS standard_codes). Trace-back goes to the mechanism layer',
+      ),
       col('media_url', 'url or file', false, 'sheet', 'Placeholder card', 'Video or image'),
       col(
         'rarity',
@@ -215,6 +224,9 @@ export function missingEffect(column: ColumnSpec): MissingEffect {
   return 'uses_fallback';
 }
 
+/** D41: `process` is the surface idea, `mechanism` the causal idea beneath it. */
+export const LAYERS = ['process', 'mechanism'] as const;
+export type Layer = (typeof LAYERS)[number];
 export const RARITIES = ['auto', 'Common', 'Rare', 'Legendary'] as const;
 export const TONES = ['warm', 'calm', 'playful', 'socratic'] as const;
 export const PERSONA_IDS = ['tutor', 'peer', 'agent', 'custom'] as const;

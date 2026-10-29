@@ -71,7 +71,7 @@ describe('parseCsv', () => {
     expect(r.issues.find((i) => i.code === 'csv_quote')).toMatchObject({
       severity: 'warning',
       tab: 'Ideas',
-      row: 20,
+      row: 25,
     });
   });
 });

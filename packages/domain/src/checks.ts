@@ -142,6 +142,25 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     }
   }
 
+  // Layers (D41): a mechanism underlies a process, never the other way round. Only the
+  // process loop is allowed to circle, and that lives in Links; `requires` stays
+  // acyclic in both layers, which the loop check above already enforces.
+  for (const idea of ideas.values()) {
+    if (idea.layer !== 'mechanism') continue;
+    const upward = unique(idea.requires).filter((r) => ideas.get(r)?.layer === 'process');
+    if (upward.length === 0) continue;
+    add(
+      'layer_requires',
+      'warning',
+      `${idea.title} is a mechanism idea but requires the process ${upward.length === 1 ? 'idea' : 'ideas'} ` +
+        `${titles(upward)}. Mechanisms underlie the process, not the other way round. ` +
+        `Remove ${upward.length === 1 ? 'it' : 'them'} from Ideas → requires, or change ${idea.title}'s layer to process.`,
+      [idea.idea_id, ...upward],
+      'Ideas',
+      'requires',
+    );
+  }
+
   // Knock-on blocks: ideas that need a broken idea, directly or through others.
   // Multi-source BFS over "is required by", so each idea gets its nearest cause.
   const requiredBy = ids.map((): number[] => []);

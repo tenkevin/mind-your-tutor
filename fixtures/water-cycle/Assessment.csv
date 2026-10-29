@@ -17,3 +17,8 @@ unit,idea_id,question,key_points
 3,ice,What happens to water when it freezes?,When it gets cold enough it turns into solid ice
 3,glacier,How can a glacier store water for a long time and then give it back?,"Ice builds up over years, it melts slowly into rivers"
 3,cycle,"Can you walk me through the whole water cycle, step by step?",Evaporation and condensation and precipitation and collection and and it repeats
+1,thermal,What happens to water particles when they gain thermal energy?,"They move faster, heat is the energy of moving particles"
+1,phase,What happens to water when it gains enough thermal energy?,"It changes phase, liquid water becomes a gas (vapour)"
+1,gravity,Why does water fall and flow downhill?,"Gravity pulls it toward the Earth, water follows the pull"
+2,dropmass,Why do tiny cloud drops stay up until they grow?,"Tiny drops are light, they fall only when heavy enough for gravity to win"
+3,topo,How does the shape of the land change where water goes?,"Water flows downhill, it gathers in low places like rivers and lakes"

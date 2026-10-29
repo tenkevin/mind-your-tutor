@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { LIMITS, columns, documented } from './fields.js';
-import { AUDIENCES, PERSONA_IDS, RARITIES, TONES, columnSpec, type TabName } from './spec.js';
+import {
+  AUDIENCES,
+  LAYERS,
+  PERSONA_IDS,
+  RARITIES,
+  TONES,
+  columnSpec,
+  type TabName,
+} from './spec.js';
 
 // A class's overrides of its curriculum's defaults (ARCHITECTURE.md §2 and §6).
 // It holds exactly the pack columns whose spec `edit` is `app` or `both`, except
@@ -44,6 +52,7 @@ export const UnitOverrideSchema = z.object(
 export const IdeaOverrideSchema = z.object(
   documented(ideas.lookup, {
     idea_id: ideas.c.slug('idea_id'),
+    layer: ideas.c.oneOf('layer', LAYERS).optional(),
     rarity: ideas.c.oneOf('rarity', RARITIES).optional(),
   }),
 );
