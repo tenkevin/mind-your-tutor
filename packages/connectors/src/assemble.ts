@@ -34,6 +34,7 @@ const TAB_DEFAULTS = {
   Assessment: { rows: (): unknown[] => [], note: 'units have no fixed teach-back questions' },
   Personas: { rows: (): unknown[] => [], note: 'Using the built-in personas' },
   Library: { rows: (): unknown[] => [], note: 'the library is empty' },
+  Practice: { rows: (): unknown[] => [], note: 'ideas have no practice exercises' },
 } as const satisfies Partial<Record<RowTab, unknown>>;
 
 const isOptionalTab = (tab: RowTab): tab is keyof typeof TAB_DEFAULTS => tab in TAB_DEFAULTS;
@@ -46,6 +47,7 @@ const ROW_TABS: readonly RowTab[] = [
   'Assessment',
   'Personas',
   'Library',
+  'Practice',
 ];
 
 interface Fallback {
@@ -93,6 +95,21 @@ const REQUIRED_FALLBACKS: Partial<
       value: SKIP,
       note: 'The row was skipped and the built-in persona is used.',
     }),
+  },
+  Practice: {
+    group: () => ({ value: 'Practice', note: 'The group is shown as “Practice”.' }),
+    exercise_title: (row) =>
+      typeof row.exercise_id === 'string' && row.exercise_id.trim() !== ''
+        ? {
+            value: row.exercise_id.trim(),
+            note: `The exercise is shown by its exercise_id, ${row.exercise_id.trim()}.`,
+          }
+        : undefined,
+    // The spec shows the answer only; the answer itself is never changed.
+    explanation: (row) =>
+      typeof row.answer === 'string' || typeof row.answer === 'number'
+        ? { value: String(row.answer).trim(), note: 'Students see the answer only.' }
+        : undefined,
   },
   Library: {
     title: (row) => {

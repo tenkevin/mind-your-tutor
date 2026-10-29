@@ -116,6 +116,18 @@ describe('rowLocator (T2-U3)', () => {
     expect(locate('Ideas', 'aquifer')).toBeNull();
   });
 
+  it('finds a Practice item (exercise_id#n) by its sheet row (C10-U1)', () => {
+    const withPractice = {
+      ...pack,
+      practice: [{ exercise_id: 'e1' }, { exercise_id: 'e2' }, { exercise_id: 'e1' }],
+    };
+    const locate = rowLocator(withPractice, { ...rows, Practice: [2, 3, 7] });
+    expect(locate('Practice', 'e1#1')).toEqual({ tab: 'Practice', row: 2 });
+    expect(locate('Practice', 'e1#2')).toEqual({ tab: 'Practice', row: 7 });
+    expect(locate('Practice', 'e2#1')).toEqual({ tab: 'Practice', row: 3 });
+    expect(locate('Practice', 'e9#1')).toBeNull();
+  });
+
   it('knows nothing for versions without rows', () => {
     expect(rowLocator(pack, undefined)('Ideas', 'a')).toBeNull();
     const [group] = groupVersionIssues(

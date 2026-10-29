@@ -12,6 +12,7 @@ export const TABS = [
   'Assessment',
   'Personas',
   'Library',
+  'Practice',
 ];
 
 export function fixtureBytes(name: string): Uint8Array {

@@ -1,4 +1,9 @@
-import { QUEUES, type ImportJobView, type ImportStepName } from '@ideamap/contracts';
+import {
+  QUEUES,
+  TEST_PRACTICE_SOURCES,
+  type ImportJobView,
+  type ImportStepName,
+} from '@ideamap/contracts';
 import { sql } from 'kysely';
 import type { PgBoss } from 'pg-boss';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -97,7 +102,13 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     t = await freshDatabase();
     boss = await startBoss(t.url);
     objects = store();
-    deps = { scope: appScope(t.db), boss, store: objects };
+    // The fixture's Practice rows name the test-only `fixture` bank (C10).
+    deps = {
+      scope: appScope(t.db),
+      boss,
+      store: objects,
+      practiceSources: TEST_PRACTICE_SOURCES,
+    };
     await registerWorkers({
       ...deps,
       boss,
@@ -533,7 +544,12 @@ describe.skipIf(!hasDatabase)('large imports (C4-P2)', () => {
   });
 
   it('a 2,000-idea XLSX imports in under 30 seconds, under 512 MB', async () => {
-    const deps: ImportDeps = { scope: appScope(t.db), boss, store: store() };
+    const deps: ImportDeps = {
+      scope: appScope(t.db),
+      boss,
+      store: store(),
+      practiceSources: TEST_PRACTICE_SOURCES,
+    };
     await registerWorkers({ ...deps, boss, pollingIntervalSeconds: 0.5 });
     const org = await seedOrg(t.db, 'large');
     const bytes = bigWorkbook(2000);

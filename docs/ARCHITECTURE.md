@@ -60,7 +60,7 @@ The prototype already draws the line that drives everything else:
 |---|---|---|
 | Owner | Curriculum author (teacher, department, district) | Teacher of one class |
 | Edited in | The spreadsheet or database export, then re-imported | The app |
-| Contents | Ideas, links, units, categories, prerequisites (`requires`), standards codes, media URLs, assessment questions, library list; plus starting values for course details, due dates, rarity and personas | Overrides of the course details, pass mark, persona prompts, due dates and card rarity; column mapping |
+| Contents | Ideas, links, units, categories, prerequisites (`requires`), standards codes, media URLs, assessment questions, library list, Practice problems from vetted item banks (D40); plus starting values for course details, due dates, rarity and personas | Overrides of the course details, pass mark, persona prompts, due dates and card rarity; column mapping |
 | Versioned as | Immutable `CurriculumVersion` snapshots | Mutable config rows with an audit trail |
 
 The app never writes curriculum data back to the source. Atlas drafts rows; the teacher pastes or exports them and re-imports.

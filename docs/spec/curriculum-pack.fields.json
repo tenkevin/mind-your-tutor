@@ -441,5 +441,192 @@
         "note": "Who can retrieve it"
       }
     ]
+  },
+  {
+    "tab": "Practice",
+    "kind": "rows",
+    "desc": "Standards-aligned exercises shown under “Practice for mastery” on each idea page. One row per problem; rows with the same exercise_id form one exercise. Items come only from vetted item banks and are shown as written, with their attribution.",
+    "cols": [
+      {
+        "name": "exercise_id",
+        "type": "slug",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "v4",
+        "note": "Groups problems into one exercise"
+      },
+      {
+        "name": "idea_id",
+        "type": "Ideas.idea_id",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "vel",
+        "note": ""
+      },
+      {
+        "name": "group",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Shows “Practice”",
+        "example": "Velocity as a rate of change",
+        "note": "Heading on the idea page"
+      },
+      {
+        "name": "standard_code",
+        "type": "code",
+        "req": false,
+        "edit": "sheet",
+        "missing": "No code shown",
+        "example": "HSF-IF.B.6",
+        "note": "One code per group"
+      },
+      {
+        "name": "exercise_title",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Uses exercise_id",
+        "example": "Velocity from position–time graphs",
+        "note": ""
+      },
+      {
+        "name": "kind",
+        "type": "exercise | quiz",
+        "req": false,
+        "edit": "sheet",
+        "missing": "exercise",
+        "example": "exercise",
+        "note": "Quiz rows list exercise_ids in quiz_from"
+      },
+      {
+        "name": "quiz_from",
+        "type": "list of exercise_id",
+        "req": false,
+        "edit": "sheet",
+        "missing": "—",
+        "example": "v1, v2, v4",
+        "note": ""
+      },
+      {
+        "name": "problem_type",
+        "type": "mc | number",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "number",
+        "note": ""
+      },
+      {
+        "name": "question",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "What is the velocity of this object?",
+        "note": ""
+      },
+      {
+        "name": "choices",
+        "type": "list",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Required for mc",
+        "example": "At rest | 10 m/s | Speeding up",
+        "note": "Pipe-separated; first is correct, app shuffles"
+      },
+      {
+        "name": "answer",
+        "type": "number or text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Row skipped",
+        "example": "-5",
+        "note": ""
+      },
+      {
+        "name": "answer_unit",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "No unit shown",
+        "example": "m/s",
+        "note": ""
+      },
+      {
+        "name": "explanation",
+        "type": "text",
+        "req": true,
+        "edit": "sheet",
+        "missing": "Shows the answer only",
+        "example": "Slope = (0 − 30) ÷ 6 = −5 m/s.",
+        "note": ""
+      },
+      {
+        "name": "visual",
+        "type": "graph: x,y; x,y | table: t…; x…",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Text-only problem",
+        "example": "graph: 0,30; 6,0",
+        "note": "Drawn by the app"
+      },
+      {
+        "name": "media_url",
+        "type": "url or file",
+        "req": false,
+        "edit": "sheet",
+        "missing": "—",
+        "example": "v4-hint.mp4",
+        "note": "Optional hint video"
+      },
+      {
+        "name": "demo_video_url",
+        "type": "url or file",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Empty video frame",
+        "example": "v4-worked-example.mp4",
+        "note": "Worked example video on the exercise’s “Worked example” tab. Read from the exercise’s first row"
+      },
+      {
+        "name": "demo_steps",
+        "type": "list",
+        "req": false,
+        "edit": "sheet",
+        "missing": "First problem’s explanation",
+        "example": "Velocity is the slope | Rise 20 m, run 4 s | 20 ÷ 4 | 5 m/s",
+        "note": "Pipe-separated steps shown under the demo video"
+      },
+      {
+        "name": "source_bank_id",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Blocks publishing",
+        "example": "OpenStax",
+        "note": "Vetted item bank the problem comes from (D40). Must be on the allow-list; the item is shown with this source"
+      },
+      {
+        "name": "license_type",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Blocks publishing",
+        "example": "CC-BY-4.0",
+        "note": "Licence of the item. Must be on the allow-list"
+      },
+      {
+        "name": "attribution_string",
+        "type": "text",
+        "req": false,
+        "edit": "sheet",
+        "missing": "Blocks publishing for CC-BY items",
+        "example": "Example Authors, Example Book, OpenStax, CC BY 4.0",
+        "note": "Shown with the item. Required for CC-BY licences"
+      }
+    ]
   }
 ]

@@ -73,6 +73,34 @@ export const CurriculumDiffSchema = z.object({
       added: z.array(z.string().max(LIMITS.question)),
     }),
   ),
+  /**
+   * Practice items that changed (D40), by `exercise_id`, sorted by it. Problems are matched
+   * within an exercise by their question text, so row order never matters. An exercise
+   * that is new or gone lists all its problems as added or removed; a changed one lists the
+   * problems added, removed and edited, with the columns that changed and their old and new
+   * values (lists joined with " | "). Rows for an idea that isn't in the Ideas tab are skipped,
+   * as the data check skips them.
+   */
+  practice_changed: z
+    .array(
+      z.object({
+        exercise_id: IdeaId,
+        title: z.string().max(LIMITS.title),
+        idea_id: IdeaId,
+        change: z.enum(['added', 'removed', 'changed']),
+        problems_added: z.array(z.object({ question: z.string().max(LIMITS.question) })),
+        problems_removed: z.array(z.object({ question: z.string().max(LIMITS.question) })),
+        problems_changed: z.array(
+          z.object({
+            question: z.string().max(LIMITS.question),
+            fields: z.array(z.string().max(LIMITS.id)),
+            before: z.record(z.string(), z.string().max(LIMITS.longText)),
+            after: z.record(z.string(), z.string().max(LIMITS.longText)),
+          }),
+        ),
+      }),
+    )
+    .default([]),
 });
 export type CurriculumDiff = z.infer<typeof CurriculumDiffSchema>;
 export type DiffUnit = z.infer<typeof DiffUnitSchema>;

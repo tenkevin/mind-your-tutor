@@ -1,9 +1,11 @@
-import type {
-  DataCheckIssue,
-  DataCheckKind,
-  DataCheckLevel,
-  Pack,
-  TabName,
+import {
+  DEFAULT_PRACTICE_SOURCES,
+  type DataCheckIssue,
+  type DataCheckKind,
+  type DataCheckLevel,
+  type Pack,
+  type PracticeSourcePolicy,
+  type TabName,
 } from '@ideamap/contracts';
 
 // Data checks on a parsed pack (ARCHITECTURE.md §7), ported from `issues()` in
@@ -12,7 +14,15 @@ import type {
 // hostile pack can't overflow the stack.
 
 /** The tabs the checks read. A parsed `Pack` fits. */
-export type CheckedPack = Pick<Pack, 'ideas' | 'links' | 'units' | 'categories' | 'assessment'>;
+export type CheckedPack = Pick<Pack, 'ideas' | 'links' | 'units' | 'categories' | 'assessment'> & {
+  /** Packs built before the Practice tab have none. */
+  practice?: Pack['practice'];
+};
+
+export interface CheckOptions {
+  /** The item banks and licences Practice rows may name (D40). Defaults to production's. */
+  practiceSources?: PracticeSourcePolicy;
+}
 
 const LEVEL_ORDER: Record<DataCheckLevel, number> = { error: 0, warning: 1, info: 2 };
 
@@ -20,7 +30,7 @@ const LEVEL_ORDER: Record<DataCheckLevel, number> = { error: 0, warning: 1, info
 const MAX_NAMES = 12;
 
 /** Runs every data check. Errors come first, then warnings, then info. */
-export function checkPack(pack: CheckedPack): DataCheckIssue[] {
+export function checkPack(pack: CheckedPack, options: CheckOptions = {}): DataCheckIssue[] {
   const out: DataCheckIssue[] = [];
   const add = (
     kind: DataCheckKind,
@@ -311,6 +321,13 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     asked.set(item.unit, set);
   }
 
+  checkPractice(
+    pack.practice ?? [],
+    ideas,
+    options.practiceSources ?? DEFAULT_PRACTICE_SOURCES,
+    add,
+  );
+
   // Ideas in no link.
   for (const idea of ideas.values()) {
     if (linked.has(idea.idea_id)) continue;
@@ -418,6 +435,248 @@ export function checkPack(pack: CheckedPack): DataCheckIssue[] {
     .map((issue, i) => ({ issue, i }))
     .sort((a, b) => LEVEL_ORDER[a.issue.level] - LEVEL_ORDER[b.issue.level] || a.i - b.i)
     .map(({ issue }) => issue);
+}
+
+type AddIssue = (
+  kind: DataCheckKind,
+  level: DataCheckLevel,
+  message: string,
+  items: string[],
+  tab: TabName,
+  column: string | readonly [string, ...string[]],
+  draftable?: boolean,
+) => void;
+
+const NUMERIC_ANSWER = /^[+-]?\d+(\.\d+)?$/;
+
+/** The item key a Practice issue names: the exercise and the problem's place within it. */
+export const practiceItem = (exerciseId: string, problem: number) => `${exerciseId}#${problem}`;
+
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Practice checks (D40). Every item is located by `practiceItem` (exercise id and the
+ * problem's number within it, in sheet order). Nothing here writes or changes a question:
+ * a problem that can't be used is reported, never repaired.
+ */
+function checkPractice(
+  rows: Pack['practice'],
+  ideas: ReadonlyMap<string, Pack['ideas'][number]>,
+  sources: PracticeSourcePolicy,
+  add: AddIssue,
+) {
+  if (rows.length === 0) return;
+  const seen = new Map<string, number>();
+  const keyed = rows.map((row) => {
+    const n = (seen.get(row.exercise_id) ?? 0) + 1;
+    seen.set(row.exercise_id, n);
+    return { row, n, item: practiceItem(row.exercise_id, n) };
+  });
+  const where = ({ row, n }: { row: Pack['practice'][number]; n: number }) =>
+    `problem ${n} of exercise "${row.exercise_id}"`;
+  const banks = sources.banks;
+  const bankList = banks.length > 0 ? banks.join(', ') : 'none';
+  const licenseList = sources.licenses.map((l) => l.id).join(', ') || 'none';
+
+  // The first row of each exercise says what the exercise is.
+  const firstOf = new Map<string, (typeof keyed)[number]>();
+  for (const entry of keyed)
+    if (!firstOf.has(entry.row.exercise_id)) firstOf.set(entry.row.exercise_id, entry);
+
+  const standards = new Map<string, Map<string, string>>(); // idea|group → code → first item
+  const disagreed = new Set<string>();
+
+  for (const entry of keyed) {
+    const { row, item } = entry;
+    const at = where(entry);
+    if (!ideas.has(row.idea_id)) {
+      add(
+        'practice_unknown_idea',
+        'warning',
+        `The Practice ${at} is skipped, because "${row.idea_id}" isn't an idea_id in the Ideas tab. ` +
+          `Fix it in Practice → idea_id.`,
+        [item],
+        'Practice',
+        'idea_id',
+      );
+    }
+
+    // Vetted sources only (D40): a bank and a licence from the allow-list, and an
+    // attribution wherever the licence asks for one.
+    const bank = row.source_bank_id?.trim() ?? '';
+    if (bank === '') {
+      add(
+        'practice_source',
+        'error',
+        `The Practice ${at} has no source_bank_id. Practice items come only from vetted item banks ` +
+          `(${bankList}) and are shown with their source. Add the bank in Practice → source_bank_id.`,
+        [item],
+        'Practice',
+        'source_bank_id',
+      );
+    } else if (!banks.some((b) => same(b, bank))) {
+      add(
+        'practice_source',
+        'error',
+        `The Practice ${at} comes from "${bank}", which isn't an allowed item bank (${bankList}). ` +
+          `Use an item from an allowed bank in Practice → source_bank_id, or ask your administrator to allow this bank.`,
+        [item],
+        'Practice',
+        'source_bank_id',
+      );
+    }
+    const licenseName = row.license_type?.trim() ?? '';
+    const license = sources.licenses.find((l) => same(l.id, licenseName));
+    if (licenseName === '') {
+      add(
+        'practice_license',
+        'error',
+        `The Practice ${at} has no license_type. Add its licence (${licenseList}) in Practice → license_type.`,
+        [item],
+        'Practice',
+        'license_type',
+      );
+    } else if (!license) {
+      add(
+        'practice_license',
+        'error',
+        `The Practice ${at} has the licence "${licenseName}", which isn't an allowed licence (${licenseList}). ` +
+          `Fix it in Practice → license_type, or ask your administrator to allow this licence.`,
+        [item],
+        'Practice',
+        'license_type',
+      );
+    } else if (license.attribution_required && !row.attribution_string?.trim()) {
+      add(
+        'practice_attribution',
+        'error',
+        `The Practice ${at} is licensed ${license.id}, which needs an attribution. ` +
+          `Add an attribution for this ${license.id} item in Practice → attribution_string.`,
+        [item],
+        'Practice',
+        'attribution_string',
+      );
+    }
+
+    if (row.problem_type === 'mc') {
+      if (row.choices.length < 2) {
+        add(
+          'practice_choices',
+          'error',
+          `The Practice ${at} is multiple choice but has ${row.choices.length === 0 ? 'no choices' : 'only one choice'}. ` +
+            `Add the choices in Practice → choices, separated by | with the correct one first.`,
+          [item],
+          'Practice',
+          'choices',
+        );
+      } else if (!same(row.answer, row.choices[0]!)) {
+        add(
+          'practice_answer',
+          'error',
+          `The answer to the Practice ${at} ("${row.answer}") isn't its first choice ("${row.choices[0]}"). ` +
+            `The first choice is the correct one; the app shuffles them. Make Practice → answer match the first choice.`,
+          [item],
+          'Practice',
+          'answer',
+        );
+      }
+    } else if (!NUMERIC_ANSWER.test(row.answer.trim())) {
+      add(
+        'practice_answer',
+        'error',
+        `The answer to the Practice ${at} ("${row.answer}") isn't a number, but the problem asks for one. ` +
+          `Write just the number, like -5, in Practice → answer, and the unit in Practice → answer_unit.`,
+        [item],
+        'Practice',
+        'answer',
+      );
+    }
+
+    if (row.standard_code) {
+      const key = `${row.idea_id}\n${row.group}`;
+      const codes = standards.get(key) ?? new Map<string, string>();
+      if (!codes.has(row.standard_code)) codes.set(row.standard_code, item);
+      standards.set(key, codes);
+    }
+
+    const first = firstOf.get(row.exercise_id)!;
+    if (
+      first.item !== item &&
+      !disagreed.has(row.exercise_id) &&
+      (first.row.idea_id !== row.idea_id || first.row.kind !== row.kind)
+    ) {
+      disagreed.add(row.exercise_id);
+      add(
+        'practice_exercise',
+        'warning',
+        `The Practice ${at} has ${first.row.idea_id !== row.idea_id ? `the idea "${row.idea_id}"` : `the kind "${row.kind}"`}, ` +
+          `but the exercise's first row has ${first.row.idea_id !== row.idea_id ? `"${first.row.idea_id}"` : `"${first.row.kind}"`}. ` +
+          `Rows with the same exercise_id form one exercise, so they should agree. Fix it in Practice → ${first.row.idea_id !== row.idea_id ? 'idea_id' : 'kind'}.`,
+        [item],
+        'Practice',
+        first.row.idea_id !== row.idea_id ? 'idea_id' : 'kind',
+      );
+    }
+  }
+
+  for (const codes of standards.values()) {
+    if (codes.size < 2) continue;
+    const [firstCode] = [...codes.keys()];
+    const group = keyed.find((k) => k.item === codes.get(firstCode!))!.row.group;
+    add(
+      'practice_standard',
+      'warning',
+      `The Practice group "${group}" has more than one standard_code (${list([...codes.keys()])}), ` +
+        `but a group has one. Use one code per group in Practice → standard_code, or split the group.`,
+      [...codes.values()],
+      'Practice',
+      'standard_code',
+    );
+  }
+
+  // Quizzes are built from exercises, never from another quiz.
+  const quizzes = new Set(keyed.filter((k) => k.row.kind === 'quiz').map((k) => k.row.exercise_id));
+  const reported = new Set<string>();
+  for (const entry of keyed) {
+    const { row, item } = entry;
+    if (row.kind !== 'quiz' || reported.has(row.exercise_id)) continue;
+    reported.add(row.exercise_id);
+    const name = `The Practice quiz "${row.exercise_id}"`;
+    if (row.quiz_from.length === 0) {
+      add(
+        'practice_quiz',
+        'error',
+        `${name} lists no exercises. Add the exercise_ids it draws from in Practice → quiz_from.`,
+        [item],
+        'Practice',
+        'quiz_from',
+      );
+      continue;
+    }
+    for (const id of unique(row.quiz_from)) {
+      if (quizzes.has(id)) {
+        add(
+          'practice_quiz',
+          'error',
+          `${name} draws from "${id}", which is a quiz. A quiz can only draw from exercises. ` +
+            `Remove "${id}" from Practice → quiz_from, or list its exercises instead.`,
+          [item],
+          'Practice',
+          'quiz_from',
+        );
+      } else if (!firstOf.has(id)) {
+        add(
+          'practice_quiz',
+          'error',
+          `${name} draws from "${id}", which isn't an exercise_id in the Practice tab. ` +
+            `Fix it in Practice → quiz_from, or add the exercise.`,
+          [item],
+          'Practice',
+          'quiz_from',
+        );
+      }
+    }
+  }
 }
 
 /** Errors block publishing; warnings and info don't (ARCHITECTURE.md §7). */

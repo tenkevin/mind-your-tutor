@@ -10,6 +10,7 @@ export const TAB_NAMES = [
   'Assessment',
   'Personas',
   'Library',
+  'Practice',
 ] as const;
 export type TabName = (typeof TAB_NAMES)[number];
 
@@ -23,6 +24,7 @@ export const TAB_KEYS = {
   Assessment: 'assessment',
   Personas: 'personas',
   Library: 'library',
+  Practice: 'practice',
 } as const satisfies Record<TabName, string>;
 export type TabKey = (typeof TAB_KEYS)[TabName];
 
@@ -190,6 +192,89 @@ export const PACK_SPEC: readonly TabSpec[] = [
       col('use_for', 'agent | tutor | both', false, 'both', 'agent', 'Who can retrieve it'),
     ],
   },
+  {
+    tab: 'Practice',
+    kind: 'rows',
+    desc: 'Standards-aligned exercises shown under “Practice for mastery” on each idea page. One row per problem; rows with the same exercise_id form one exercise. Items come only from vetted item banks and are shown as written, with their attribution.',
+    cols: [
+      col('exercise_id', 'slug', true, 'sheet', 'Row skipped', 'Groups problems into one exercise'),
+      col('idea_id', 'Ideas.idea_id', true, 'sheet', 'Row skipped'),
+      col('group', 'text', true, 'sheet', 'Shows “Practice”', 'Heading on the idea page'),
+      col('standard_code', 'code', false, 'sheet', 'No code shown', 'One code per group'),
+      col('exercise_title', 'text', true, 'sheet', 'Uses exercise_id'),
+      col(
+        'kind',
+        'exercise | quiz',
+        false,
+        'sheet',
+        'exercise',
+        'Quiz rows list exercise_ids in quiz_from',
+      ),
+      col('quiz_from', 'list of exercise_id', false, 'sheet', '—'),
+      col('problem_type', 'mc | number', true, 'sheet', 'Row skipped'),
+      col('question', 'text', true, 'sheet', 'Row skipped'),
+      col(
+        'choices',
+        'list',
+        false,
+        'sheet',
+        'Required for mc',
+        'Pipe-separated; first is correct, app shuffles',
+      ),
+      col('answer', 'number or text', true, 'sheet', 'Row skipped'),
+      col('answer_unit', 'text', false, 'sheet', 'No unit shown'),
+      col('explanation', 'text', true, 'sheet', 'Shows the answer only'),
+      col(
+        'visual',
+        'graph: x,y; x,y | table: t…; x…',
+        false,
+        'sheet',
+        'Text-only problem',
+        'Drawn by the app',
+      ),
+      col('media_url', 'url or file', false, 'sheet', '—', 'Optional hint video'),
+      col(
+        'demo_video_url',
+        'url or file',
+        false,
+        'sheet',
+        'Empty video frame',
+        'Worked example video on the exercise’s “Worked example” tab. Read from the exercise’s first row',
+      ),
+      col(
+        'demo_steps',
+        'list',
+        false,
+        'sheet',
+        'First problem’s explanation',
+        'Pipe-separated steps shown under the demo video',
+      ),
+      col(
+        'source_bank_id',
+        'text',
+        false,
+        'sheet',
+        'Blocks publishing',
+        'Vetted item bank the problem comes from (D40). Must be on the allow-list; the item is shown with this source',
+      ),
+      col(
+        'license_type',
+        'text',
+        false,
+        'sheet',
+        'Blocks publishing',
+        'Licence of the item. Must be on the allow-list',
+      ),
+      col(
+        'attribution_string',
+        'text',
+        false,
+        'sheet',
+        'Blocks publishing for CC-BY items',
+        'Shown with the item. Required for CC-BY licences',
+      ),
+    ],
+  },
 ];
 
 export function tabSpec(tab: TabName): TabSpec {
@@ -220,6 +305,12 @@ export const TONES = ['warm', 'calm', 'playful', 'socratic'] as const;
 export const PERSONA_IDS = ['tutor', 'peer', 'agent', 'custom'] as const;
 export const AUDIENCES = ['Students', 'Teachers'] as const;
 export const USE_FOR = ['agent', 'tutor', 'both'] as const;
+export const EXERCISE_KINDS = ['exercise', 'quiz'] as const;
+export const PROBLEM_TYPES = ['mc', 'number'] as const;
+/** Practice columns whose list cells are separated by `|` (choices and steps hold commas). */
+export const PIPE_LIST_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  Practice: ['choices', 'demo_steps'],
+};
 export const GRADES = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] as const;
 
 /** Variables a persona prompt template may use, from the Personas.prompt_template note. */

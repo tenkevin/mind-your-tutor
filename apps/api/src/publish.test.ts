@@ -1,4 +1,4 @@
-import { VersionIssuesSchema, type Pack } from '@ideamap/contracts';
+import { TEST_PRACTICE_SOURCES, VersionIssuesSchema, type Pack } from '@ideamap/contracts';
 import { json } from '@ideamap/db';
 import { checkPack } from '@ideamap/domain';
 import type { Caller } from '@ideamap/worker';
@@ -73,7 +73,9 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
         curriculum_id: curriculumId,
         number: (last?.n ?? 0) + 1,
         pack: json(pack),
-        issues: json(VersionIssuesSchema.parse(checkPack(pack))),
+        issues: json(
+          VersionIssuesSchema.parse(checkPack(pack, { practiceSources: TEST_PRACTICE_SOURCES })),
+        ),
         source: json({
           kind: 'json',
           file_ref: null,

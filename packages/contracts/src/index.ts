@@ -9,6 +9,9 @@ export {
   isSafeMediaRef,
   isSlug,
   splitList,
+  splitPipeList,
+  parseVisual,
+  type Visual,
   normalizeCell,
   type CellKind,
 } from './fields.js';
@@ -17,6 +20,7 @@ export * from './curriculum-version.js';
 export * from './derived.js';
 export * from './explanation.js';
 export * from './data-checks.js';
+export * from './practice-sources.js';
 export * from './auth.js';
 export * from './import-job.js';
 export * from './curriculum-data.js';

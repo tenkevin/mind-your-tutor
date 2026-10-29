@@ -22,6 +22,16 @@ const VALID: Record<TabName, Record<string, unknown>> = {
   Assessment: { unit: '1', idea_id: 'evap', question: 'What is evaporation?' },
   Personas: { persona_id: 'tutor', name: 'Ms. Ivy' },
   Library: { title: 'Unit plan', file_url: 'unit-plan.pdf' },
+  Practice: {
+    exercise_id: 'e1',
+    idea_id: 'evap',
+    group: 'Evaporation and heat',
+    exercise_title: 'What speeds up evaporation?',
+    problem_type: 'number',
+    question: 'How many degrees warmer is 30 than 20?',
+    answer: '10',
+    explanation: '30 − 20 = 10.',
+  },
 };
 
 function parseWith<T extends TabName>(tab: T, changes: Record<string, unknown>) {
@@ -44,6 +54,7 @@ describe('each tab accepts a valid row and rejects a bad one (F3-F12)', () => {
     Assessment: { unit: 'one' },
     Personas: { tone: 'grumpy' },
     Library: { file_url: 'javascript:alert(1)' },
+    Practice: { problem_type: 'essay' },
   };
   it('allows optional unit objectives and assessment questions while keeping their identifiers required', () => {
     expect(parseWith('Units', { objective: '' })).toMatchObject({

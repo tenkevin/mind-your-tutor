@@ -32,7 +32,9 @@ export type FieldKind =
   | { kind: 'enum'; values: readonly [string, ...string[]] }
   | { kind: 'url' }
   | { kind: 'list'; itemMax: number }
-  | { kind: 'slugList' };
+  | { kind: 'pipeList'; itemMax: number }
+  | { kind: 'slugList' }
+  | { kind: 'visual' };
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const NUMBER = /^[+-]?\d+(\.\d+)?$/;
@@ -96,8 +98,66 @@ export function splitList(value: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+/** Splits a pipe list cell: `|` separates entries (they may hold commas), trimmed, empties dropped. */
+export function splitPipeList(value: string): string[] {
+  return value
+    .split('|')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+const COORDINATE = /^[+-]?\d+(\.\d+)?$/;
+
+/** A Practice `visual` the app can draw: points for a graph, or labelled rows of a table. */
+export type Visual =
+  | { type: 'graph'; points: [number, number][] }
+  | { type: 'table'; rows: { label: string; values: number[] }[] };
+
+const MAX_VISUAL_POINTS = 200;
+
+/**
+ * Reads a Practice `visual`: `graph: 0,30; 6,0` (points as x,y) or
+ * `table: t: 0, 2, 4; x: 0, 6, 12` (rows of a label and numbers, all the same length).
+ * Returns null for anything else.
+ */
+export function parseVisual(text: string): Visual | null {
+  const match = /^(graph|table)\s*:\s*(.*)$/s.exec(text.trim());
+  if (!match) return null;
+  const parts = match[2]!.split(';').map((p) => p.trim());
+  if (parts.length === 0 || parts.length > MAX_VISUAL_POINTS || parts.some((p) => p === '')) {
+    return null;
+  }
+  if (match[1] === 'graph') {
+    const points: [number, number][] = [];
+    for (const part of parts) {
+      const xy = part.split(',').map((n) => n.trim());
+      if (xy.length !== 2 || !xy.every((n) => COORDINATE.test(n))) return null;
+      points.push([Number(xy[0]), Number(xy[1])]);
+    }
+    return { type: 'graph', points };
+  }
+  const rows: { label: string; values: number[] }[] = [];
+  for (const part of parts) {
+    const colon = part.indexOf(':');
+    if (colon < 1) return null;
+    const label = part.slice(0, colon).trim();
+    const numbers = part
+      .slice(colon + 1)
+      .split(',')
+      .map((n) => n.trim());
+    if (label === '' || label.length > LIMITS.shortText) return null;
+    if (numbers.length > MAX_VISUAL_POINTS || !numbers.every((n) => COORDINATE.test(n))) {
+      return null;
+    }
+    rows.push({ label, values: numbers.map(Number) });
+  }
+  return rows.every((r) => r.values.length === rows[0]!.values.length)
+    ? { type: 'table', rows }
+    : null;
+}
+
 /** How a raw cell is converted before validation. */
-export type CellKind = 'text' | 'number' | 'percent' | 'date' | 'list';
+export type CellKind = 'text' | 'number' | 'percent' | 'date' | 'list' | 'pipeList';
 
 /**
  * Turns a raw cell (CSV text, an XLSX value or a JSON value) into the shape the
@@ -108,7 +168,7 @@ export function normalizeCell(kind: CellKind, value: unknown): unknown {
   if (value === undefined || value === null) return undefined;
   if (typeof value === 'string') {
     const text = value.trim();
-    if (text === '') return kind === 'list' ? [] : undefined;
+    if (text === '') return kind === 'list' || kind === 'pipeList' ? [] : undefined;
     switch (kind) {
       case 'number':
         return NUMBER.test(text) ? Number(text) : text;
@@ -118,19 +178,21 @@ export function normalizeCell(kind: CellKind, value: unknown): unknown {
       }
       case 'list':
         return splitList(text);
+      case 'pipeList':
+        return splitPipeList(text);
       default:
         return text;
     }
   }
   if (typeof value === 'number') {
-    if (kind === 'list') return [String(value)];
+    if (kind === 'list' || kind === 'pipeList') return [String(value)];
     if (kind === 'text' && Number.isFinite(value)) return String(value);
     return value;
   }
   if (value instanceof Date && kind === 'date') {
     return Number.isNaN(value.getTime()) ? value : value.toISOString().slice(0, 10);
   }
-  if (Array.isArray(value) && kind === 'list') {
+  if (Array.isArray(value) && (kind === 'list' || kind === 'pipeList')) {
     return value
       .map((item) =>
         typeof item === 'string' ? item.trim() : typeof item === 'number' ? String(item) : item,
@@ -194,6 +256,10 @@ export function invalidMessage(name: string, field: FieldKind, value: unknown): 
     case 'list':
     case 'slugList':
       return `${name} must be a list of entries separated by commas${got(value)}.`;
+    case 'pipeList':
+      return `${name} must be a list of entries separated by | (a vertical bar)${got(value)}.`;
+    case 'visual':
+      return `${name} must be graph: followed by x,y points separated by semicolons (graph: 0,30; 6,0), or table: followed by rows of a label and numbers (table: t: 0, 2, 4; x: 0, 6, 12)${got(value)}.`;
   }
 }
 
@@ -309,6 +375,32 @@ export function columns(lookup: (name: string) => ColumnSpec) {
         .max(LIMITS.listEntries, {
           error: () => `${name} can have at most ${LIMITS.listEntries} entries.`,
         });
+    },
+    pipeList(name: string, itemMax: number) {
+      const column = cell(name, 'pipeList');
+      return z
+        .array(
+          z
+            .string({ error: (iss) => `Each entry in ${name} must be text${got(iss.input)}.` })
+            .max(itemMax, {
+              error: (iss) =>
+                `Each entry in ${name} can have at most ${itemMax} characters (got one with ${
+                  typeof iss.input === 'string' ? iss.input.length : 'more'
+                }).`,
+            }),
+          { error: typeError(column, { kind: 'pipeList', itemMax }) },
+        )
+        .max(LIMITS.listEntries, {
+          error: () => `${name} can have at most ${LIMITS.listEntries} entries.`,
+        });
+    },
+    visual(name: string) {
+      const column = cell(name, 'text');
+      const field: FieldKind = { kind: 'visual' };
+      return z
+        .string({ error: typeError(column, field) })
+        .max(LIMITS.longText, { error: tooLong(name, LIMITS.longText) })
+        .refine((v) => parseVisual(v) !== null, { error: checkError(column, field) });
     },
     slugList(name: string) {
       const column = cell(name, 'list');

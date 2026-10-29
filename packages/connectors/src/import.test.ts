@@ -638,7 +638,7 @@ describe('C1-U1 problems point to the cell', () => {
 });
 
 describe('C1-U2 a wrong file says what was expected', () => {
-  it('a spreadsheet with no matching tabs gives one message listing the eight tabs', async () => {
+  it('a spreadsheet with no matching tabs gives one message listing the nine tabs', async () => {
     const r = await importPack(
       file(
         'budget.xlsx',
