@@ -302,6 +302,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       prerequisites_changed: 1,
       units_changed: 1,
       assessment_changed: 1,
+      practice_changed: 0,
     });
     expect(first.diff.ideas_renamed).toEqual([
       { idea_id: 'vap', before: 'Water vapour', after: 'Vapour' },
