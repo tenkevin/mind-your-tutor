@@ -1,0 +1,278 @@
+/* The student map and idea page (S10). Nocturne tokens from @ideamap/ui; sizes in rem/em
+   so the browser's text size and the S5 "Words on the page" setting (--udl-scale) apply. */
+
+.student-main {
+  padding: var(--space-4) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.student-bar {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.student-brand {
+  font: var(--font-heading-weight) 1.1rem var(--font-heading);
+}
+.student-who {
+  color: var(--color-neutral-300);
+  font-size: 0.875rem;
+}
+
+.mscreen {
+  font-size: calc(0.9375rem * var(--udl-scale));
+}
+.mscreen-title {
+  font: var(--font-heading-weight) 1.4em/1.2 var(--font-heading);
+  margin: 0 0 var(--space-4);
+}
+.mscreen-title span {
+  color: var(--color-neutral-300);
+  font-size: 0.7em;
+}
+.mscreen-note {
+  color: var(--color-neutral-200);
+  padding: var(--space-6) 0;
+}
+.mscreen-banner {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--map-banner-border);
+  border-radius: var(--radius-md);
+  background: var(--map-banner);
+  color: var(--map-banner-text);
+}
+
+.imap-wrap {
+  position: relative;
+}
+.imap {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  height: clamp(420px, 68vh, 680px);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 50%, var(--map-canvas-glow), var(--map-canvas) 60%);
+}
+.imap:active {
+  cursor: grabbing;
+}
+.imap-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+.imap-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.imap-ring {
+  fill: none;
+  stroke: var(--map-ring);
+  stroke-dasharray: 6 6;
+  opacity: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+.imap-edge line {
+  stroke: var(--map-link);
+  stroke-width: 1.5;
+}
+.imap-edge polygon {
+  fill: var(--map-link);
+}
+.imap-edge-hot line {
+  stroke: var(--map-link-active);
+  stroke-width: 2.5;
+}
+.imap-edge-hot polygon {
+  fill: var(--map-link-active);
+}
+.imap-edge text {
+  fill: var(--map-link-label);
+  font-size: 13px;
+  paint-order: stroke;
+  stroke: var(--map-canvas);
+  stroke-width: 4px;
+}
+
+.imap-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+  color: var(--map-node-text);
+  font: 500 13px var(--font-body);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.imap-node:hover {
+  border-color: var(--map-node-hover-border);
+}
+.imap-node:focus-visible {
+  outline: 3px solid var(--map-focus);
+  outline-offset: 3px;
+  z-index: 2;
+}
+.imap-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.imap-cat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 400;
+}
+.imap-req {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--map-node-locked-text);
+}
+.imap-centre {
+  align-items: center;
+  padding: 14px 22px;
+  font: 500 18px var(--font-heading);
+  background: var(--map-node-centre);
+  border-color: var(--map-node-centre-border);
+  box-shadow: 0 0 32px var(--map-node-centre-glow);
+}
+.imap-locked {
+  background: var(--map-node-locked);
+  border-style: dashed;
+  border-color: var(--map-node-locked-border);
+  color: var(--map-node-locked-text);
+  cursor: not-allowed;
+}
+.imap-locked:hover {
+  border-color: var(--map-node-hover-border);
+}
+
+.imap-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.imap-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+.imap-btn {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--map-node-open);
+}
+.imap-hint {
+  margin: 0;
+  font-size: 0.8125em;
+  color: var(--map-hint);
+}
+.imap-status {
+  min-height: 1.6em;
+  margin: var(--space-3) 0 0;
+  color: var(--map-heading);
+}
+
+.ipage {
+  max-width: 46rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+  overflow-wrap: anywhere;
+}
+.ipage-back {
+  align-self: flex-start;
+  min-height: 44px;
+}
+.ipage-kicker {
+  margin: 0;
+  color: var(--color-neutral-300);
+  font-size: 0.875em;
+}
+.ipage-title {
+  margin: 0;
+  font: var(--font-heading-weight) 1.8em/1.15 var(--font-heading);
+}
+.ipage-title:focus {
+  outline: none;
+}
+.ipage h3 {
+  margin: 0 0 var(--space-2);
+  font: var(--font-heading-weight) 1em var(--font-heading);
+  color: var(--map-heading);
+}
+.ipage p {
+  margin: 0;
+  line-height: 1.55;
+}
+.ipage-quiet {
+  color: var(--color-neutral-200);
+}
+.ipage-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ipage-terms li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--map-term);
+  border: 1px solid var(--map-term-border);
+}
+.ipage-links {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--space-2);
+}
+.ipage-rel {
+  color: var(--map-heading);
+  font-style: italic;
+}
+.ipage-media {
+  display: grid;
+  place-items: center;
+  min-height: 9rem;
+  padding: var(--space-6);
+  border: 1px dashed var(--map-placeholder-border);
+  border-radius: var(--radius-md);
+  background: var(--map-placeholder);
+  color: var(--map-placeholder-text);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .student-main {
+    padding: var(--space-3);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .imap-node {
+    transition: border-color 120ms;
+  }
+}

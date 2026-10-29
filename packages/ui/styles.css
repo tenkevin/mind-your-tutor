@@ -334,3 +334,40 @@ textarea.input { min-height: 90px; resize: vertical; }
    a hint stays visibly dimmer than typed text. Firefox dims placeholders
    with opacity, hence opacity: 1. */
 .input::placeholder { color: var(--color-neutral-500); opacity: 1; }
+
+/* map and category tokens (S10; F8 moves them into the theme contract) */
+:root {
+  --map-canvas: #161826;
+  --map-canvas-glow: #2b2741;
+  --map-ring: #595d6c;
+  --map-node-open: #232532;
+  --map-node-open-border: #75798c;
+  --map-node-text: #e9e9ed;
+  --map-node-locked: #161826;
+  --map-node-locked-border: #9397ab;
+  --map-node-locked-text: #cfd3e5;
+  --map-node-centre: #2b2741;
+  --map-node-centre-border: #9184d9;
+  --map-node-centre-glow: #423a6a;
+  --map-node-hover-border: #b5abfc;
+  --map-link: #9397ab;
+  --map-link-active: #b5abfc;
+  --map-link-label: #f5f4ff;
+  --map-focus: #d2cefd;
+  --map-hint: #cfd3e5;
+  --map-banner: #2b2741;
+  --map-banner-border: #968ae0;
+  --map-banner-text: #f5f4ff;
+  --map-term: #2b2741;
+  --map-term-border: #968ae0;
+  --map-heading: #e7e5fe;
+  --map-placeholder: #232532;
+  --map-placeholder-border: #75798c;
+  --map-placeholder-text: #e4e7f5;
+  --category-1: #d2cefd;
+  --category-2: #8fd3c8;
+  --category-3: #e6c07a;
+  --category-4: #f0a5c0;
+  --category-5: #9fc5f8;
+  --category-6: #b2b6ca;
+}

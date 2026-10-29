@@ -38,6 +38,8 @@ const ROUTE_URLS = [
   '/api/session',
   '/api/classes',
   '/api/classes/:classId/header',
+  '/api/classes/:classId/map',
+  '/api/classes/:classId/ideas/:ideaId',
   '/api/classes/:classId/config',
   '/api/classes/:classId/roster',
   '/api/classes/:classId/library',
@@ -287,6 +289,16 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/classes/${classes.a1}/header`,
       },
       {
+        route: '/api/classes/:classId/map',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/map`,
+      },
+      {
+        route: '/api/classes/:classId/ideas/:ideaId',
+        method: 'GET',
+        url: `/api/classes/${classes.a1}/ideas/evap`,
+      },
+      {
         route: '/api/classes/:classId/config',
         method: 'GET',
         url: `/api/classes/${classes.a1}/config`,
@@ -441,6 +453,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       'otherOrgTeacher',
       'otherOrgAdmin',
     ],
+    // The map and idea routes: staff of the class and its students (S10-S1).
+    'GET /api/classes/:classId/map': ['admin', 'student'],
+    'GET /api/classes/:classId/ideas/:ideaId': ['admin', 'student'],
     'GET /api/classes': [
       'admin',
       'student',
@@ -486,7 +501,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         const res = await as(api, signed)(r.method, r.url, r.body, r.headers);
         const label = `${caller}: ${r.method} ${r.url} → ${res.statusCode} ${res.body}`;
         if (allowed.includes(caller)) {
-          expect(res.statusCode, label).toBeLessThan(300);
+          // The sample class has no pinned version, so its idea page is a 404 (S10).
+          const ceiling = r.route === '/api/classes/:classId/ideas/:ideaId' ? 405 : 300;
+          expect(res.statusCode, label).toBeLessThan(ceiling);
         } else {
           expect(res.statusCode, label).toBe(403);
         }
