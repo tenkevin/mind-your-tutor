@@ -39,14 +39,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
-      - name: Test (diagnostic)
-        shell: bash
-        run: |
-          set +e
-          pnpm -r --no-bail test 2>&1 | tee test.log
-          code=${PIPESTATUS[0]}
-          grep -E "FAIL|AssertionError|Error:|Unhandled|ELIFECYCLE|Tests  " test.log | head -40 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
-          exit $code
+      - run: pnpm test
       - run: pnpm build
       # Migrate the job's database from empty, then again to show it's a no-op.
       - name: Migrations
