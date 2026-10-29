@@ -970,7 +970,9 @@
       "deps": [],
       "done_when": "Per D41: Ideas can mark the surface process layer and the causal-mechanism layer with standard codes; checks reject loops in the mechanism layer and trace-back targets only the mechanism layer; the water-cycle fixture gains its mechanism nodes",
       "placeholder": false,
-      "status": "todo"
+      "status": "review",
+      "owner": "agent-c12",
+      "updated": "2026-10-29"
     },
     {
       "id": "C11",

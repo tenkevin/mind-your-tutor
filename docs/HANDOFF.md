@@ -105,7 +105,7 @@ All seven open PRs are CI green and mergeable, but each is now **8–22 commits 
 
 ## 6a. Builder prompt framework (user, 2026-10-28)
 
-A clean finish of a cloud builder session raises no event for the coordinator, so decisions in its final reply are lost unless the coordinator pulls them. Builders *can* reach the coordinator with `send_message` (A7 and A5 did on 2026-10-28), but don't rely on it. Every builder prompt therefore follows the framework below, which worked for T2, and adds the decisions heading. The coordinator reads each builder's final reply (`list_events`, kinds `["result"]`) and its PR body at every check-in.
+A clean finish of a cloud builder session raises no event for the coordinator, so decisions in its final reply are lost unless the coordinator pulls them. Builders *can* reach the coordinator with `send_message` (A7 and A5 did on 2026-10-28), but don't rely on it. Every builder prompt therefore follows the framework below, which worked for T2, and adds the decisions heading and (user, 2026-10-29) the rule that a builder stays on until CI passes on its exact head: C10 and C12 went idle on 2026-10-29 with CI red. The coordinator reads each builder's final reply (`list_events`, kinds `["result"]`) and its PR body at every check-in.
 
 > You are agent agent-<id>. Read AGENTS.md first and follow it exactly. Then read docs/qa/<ID>.md: an independent QA agent will test your PR against it, and the PR merges only if every must check passes. Read docs/ARCHITECTURE.md <relevant sections and decisions>.
 >
@@ -113,7 +113,7 @@ A clean finish of a cloud builder session raises no event for the coordinator, s
 >
 > Context: <where it lives; which merged tasks to build on; open §12 questions to build behind an interface; parallel tasks sharing files>.
 >
-> Before opening the PR and before each push, merge origin/idea-map. Run root lint, format:check, typecheck, test with DATABASE_URL (including function_binding.test.ts), build and plan check. Open a PR into idea-map and mark it review with scripts/plan.mjs. Put every decision, assumption or deviation from the criteria under a "## Decisions for the coordinator" heading in the PR body. Don't merge, never edit Codex-* files, and don't schedule follow-ups or triggers. Reply with the PR URL. If blocked, stop and say why.
+> Before opening the PR and before each push, merge origin/idea-map. Run root lint, format:check, typecheck, test with DATABASE_URL (including function_binding.test.ts), build and plan check. Open a PR into idea-map and mark it review with scripts/plan.mjs. Put every decision, assumption or deviation from the criteria under a "## Decisions for the coordinator" heading in the PR body. **Don't finish (go idle) until CI has completed and passed on your exact head:** watch `gh api repos/tenkevin/mind-your-tutor/commits/<sha>/check-runs` until every run is completed; if one fails, diagnose and fix it and push again, then watch again. Job logs are Forbidden through the proxy, so use the failing step name and the check run's annotations, and reproduce locally in CI's own order (`.github/workflows/ci.yml`: install, lint, format:check, typecheck, test, build) on a fresh database. A local pass is not a CI pass. Don't merge, never edit Codex-* files, and don't schedule follow-ups or triggers. Reply with the PR URL, head SHA and CI result. If blocked, stop and say why.
 
 ## 7. Re-check state
 
