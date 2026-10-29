@@ -101,7 +101,7 @@ Not claimable yet. A person writes the spec, then sets `placeholder` to false in
 | A16 | v0.2 | Interest-shaped examples and answers | S7, A8 |
 | F7 | v0.2 | Isolated model sandboxes and storage branches | — |
 | X3 | v0.2 | Research: specialised math model and evaluation model | A5 |
-| X4 | v0.2 | Research: multi-view contrastive learning | A5 |
+| X4 | v0.2 | Research: multi-view contrastive learning (on hold) | A5 |
 | S11 | v0.3 | Sandbox exploration view | S2, C16, C12 |
 | S12 | v0.3 | Milo's avatar and peer reactions | S4 |
 | S13 | v0.3 | Student experience polish | S6, S4, T5 |
