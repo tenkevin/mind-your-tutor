@@ -6,7 +6,7 @@
 |---|---|
 | Coordinator | Claude session `session_017xAqLcBw3ZrNAbTTGfVg5K` (took over from `session_015Pb4Y1xEbgHXnNwxXnH8pZ` on 2026-10-28), checkout `/home/user/mind-your-tutor`. Owns claims, criteria, routing, the coordinator's local gate checks, merges and task state |
 | Independent reviewer | **Codex** (brought in by the user). A `Codex-*` file reviewing a PR's current head is that PR's QA report. Independent Claude QA is paused (user, 2026-10-24) |
-| Builders | Sonnet **cloud sessions** started by the coordinator with `create_session`, one task each (tag `idea-map:build-<ID>`). Builders so far: A2 `session_017xAqLdhaHMuRWJHE4HsReH`, A3 `session_017xAqLcx4eLwDN9TPBQiSqU`, A5 `session_017xAqLbNcxTazVTF9QNhJsT`, A7 `session_017xAqLeh1LQDBNjR1hqeg4g`, C6cx2 `session_017xAqLdSXeqAbajTY6ZkKTt`, T6 `session_017xAqLeZk1bsftUkwLhohPZ`, T8 `session_017xAqLdDixwDkAPmR9K3S6x`, A6 `session_017xAqLcfpqKbHaMUjExdX2P`, C10 `session_017xAqLbwmkmFLWmDaNLDtEb`, C12 `session_017xAqLf8ayBuL3QVwTWefLX`, F1e `session_017xAqLfHoqmHNyH4SntSVhn`; syncs for T2 and M2 are done. X2 was stopped by the user on 2026-10-29 (X2 is now v0.4). All of these have finished; each PR waits for Codex. Never use local subagents for parallel builds |
+| Builders | Sonnet **cloud sessions** started by the coordinator with `create_session`, one task each (tag `idea-map:build-<ID>`). Builders so far: A2 `session_017xAqLdhaHMuRWJHE4HsReH`, A3 `session_017xAqLcx4eLwDN9TPBQiSqU`, A5 `session_017xAqLbNcxTazVTF9QNhJsT`, A7 `session_017xAqLeh1LQDBNjR1hqeg4g`, C6cx2 `session_017xAqLdSXeqAbajTY6ZkKTt`, T6 `session_017xAqLeZk1bsftUkwLhohPZ`, T8 `session_017xAqLdDixwDkAPmR9K3S6x`, A6 `session_017xAqLcfpqKbHaMUjExdX2P`, C10 `session_017xAqLbwmkmFLWmDaNLDtEb`, C12 `session_017xAqLf8ayBuL3QVwTWefLX`, F1e `session_017xAqLfHoqmHNyH4SntSVhn`; syncs for T2 and M2 are done. X2 was stopped by the user on 2026-10-29 (X2 is now v0.4). All of these have finished; each PR waits for Codex. **Running:** S10 `session_017xAqLds9FKso3p8pufxtJy` (launched 2026-10-29 19:40 UTC; the user asked to move the student map forward). Never use local subagents for parallel builds |
 
 The earlier Codex-thread coordinator (`01a1662b-…`) and its C9 stop boundary are history; they no longer apply. Sections 5–8 are live-state snapshots, so re-check before acting. Live queue: `docs/qa/STATUS.md`.
 
@@ -91,7 +91,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 | Status | Tasks |
 |---|---|
 | In review, waiting for Codex (all CI green, 0 behind at last check) | F1e #45 (fix, merge first), C5cx2 #34, C6cx2 #39, M2 #30, M3 #31, T3 #29, T6 #41, T8 #40, A2 #37, A3 #38, A5 #35, A6 #42, A7 #36, C10 #43, C12 #44 |
-| Ready (v0.1) | S10, the student map preview (criteria `docs/qa/S10.md`) |
+| Building (v0.1) | S10, the student map preview, in session `session_017xAqLds9FKso3p8pufxtJy` |
 | Blocked (v0.1) | the rest of v0.1, ending at L1 |
 | Later versions | v0.2–v0.4: mostly placeholders without criteria; never launch them before v0.1 needs nothing more |
 
