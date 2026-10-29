@@ -18,6 +18,7 @@ Idea Map ships in four versions (decision D45, user, 2026-10-29). Each task in `
 | Feedback loop | The reason is shown with every piece of feedback, with **Challenge this** to flag it for teacher review. Summative feedback waits for the teacher. Before sending, a separate verifier and tone and reading-level checks run, and low confidence goes to the teacher | A9, A10 (D15, D16) |
 | Fairness | Demographic parity difference and disparate impact ratio (flagged under 0.8), compared across schools and districts, with a district-run sampled audit | M6 (D16, D23) |
 | UDL | CAST UDL 3.0 is acceptance criteria for every student screen (the S5 checklist) | S5 (done), every S task (D17) |
+| Themes | Every colour comes from a theme file through named tokens; Nocturne is the default; new themes swap in without code changes | F8 (D46) |
 | Privacy | The anonymous layer blurs names on the device with ML NER plus pattern rules before text leaves it. Dual memory: the anonymised conversation plus long-term learning summaries | A7, A8 (D26–D29, D33) |
 | Grounded AI | Facts come only from verified sources (curriculum, vault, class uploads), with citations. Otherwise the tutor becomes a Socratic sparring partner. Safety and moderation | A2, A3, A11 (D35) |
 | Curriculum data | The Practice tab from vetted item banks only. `scope`, `key_terms` and `oer_reference`. Vault provenance (source, licence, attribution). The two-layer graph. The Vault standards graph. Per-scope layout. The pilot packs | C10–C17 (D40, D41, D43, D31) |
