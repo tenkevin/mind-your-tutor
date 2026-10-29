@@ -751,9 +751,9 @@
       ],
       "done_when": "Per D42: media_url and demo_video_url resolve through a MediaProvider served from our own domain (no third-party players), with captions (D17); Cloudinary only as an optional backend behind it",
       "placeholder": false,
-      "status": "todo",
-      "owner": null,
-      "updated": null
+      "status": "doing",
+      "owner": "agent-x2",
+      "updated": "2026-10-29"
     },
     {
       "id": "C1cx1",
