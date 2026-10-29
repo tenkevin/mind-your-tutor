@@ -181,6 +181,7 @@ describe('Publish screen (T8)', () => {
     const options = {
       classes: [{ id: CLASS1, name: 'Period 1', pinned_version: { id: V2P, number: 2 } }],
       published_versions: [
+        { id: V3P, number: 3, published_at: '2026-10-29T10:00:00.000Z' },
         { id: V2P, number: 2, published_at: '2026-10-28T10:00:00.000Z' },
         { id: V1, number: 1, published_at: '2026-10-20T10:00:00.000Z' },
       ],
@@ -189,7 +190,10 @@ describe('Publish screen (T8)', () => {
     const t = text(html);
     expect(t).toContain('Period 1 is on version 2');
     expect(t).toContain('Version 1 · published Oct 20, 2026');
+    // Class on v2 with v1 and v3 published: only v1 is offered.
+    expect(t).not.toContain('Version 3 · published');
     expect(t).not.toContain('Version 2 · published');
+    expect(html).not.toContain('aria-label="Put Period 1 on version 3"');
     expect(html).toContain('aria-label="Put Period 1 on version 1"');
     // A class already on the oldest version has nothing to go back to.
     const oldest = render(
@@ -202,7 +206,7 @@ describe('Publish screen (T8)', () => {
         diff: null,
       }),
     );
-    expect(text(oldest)).toContain('No earlier version to go back to.');
+    expect(text(oldest)).toContain('No earlier version to roll back to.');
     expect(oldest).not.toContain('Put Period 1 on version');
     const asking = render(
       state({ options, latest: null, diff: null, repinning: { classId: CLASS1, versionId: V1 } }),
@@ -240,4 +244,5 @@ describe('Publish screen (T8)', () => {
   });
 });
 
+const V3P = '33333333-3333-4333-8333-333333333333';
 const V2P = '22222222-2222-4222-8222-222222222222';

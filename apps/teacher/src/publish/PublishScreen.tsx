@@ -276,7 +276,7 @@ function History({
                 <span className="cdata-muted">is on version {current.number}</span>
               </p>
               {earlier.length === 0 && (
-                <p className="cdata-muted">No earlier version to go back to.</p>
+                <p className="cdata-muted">No earlier version to roll back to.</p>
               )}
               <ul className="pub-versions" aria-label={`Earlier versions for ${c.name}`}>
                 {earlier.map((v) => (
