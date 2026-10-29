@@ -1,5 +1,5 @@
 {
-  "note": "Source of truth for the plan. Agents: read AGENTS.md, and change status only through scripts/plan.mjs. size: 1 = up to a week, 2 = one to two weeks, 3 = two to three weeks. placeholder: true means the spec is not written yet, so the task cannot be claimed. Every task needs docs/qa/<ID>.md (independent QA criteria) before it can be claimed; see docs/qa/README.md.",
+  "note": "Source of truth for the plan. Agents: read AGENTS.md, and change status only through scripts/plan.mjs. size: 1 = up to a week, 2 = one to two weeks, 3 = two to three weeks. placeholder: true means the spec is not written yet, so the task cannot be claimed. Every task needs docs/qa/<ID>.md (independent QA criteria) before it can be claimed; see docs/qa/README.md. version: the release a task belongs to (D45, docs/ROADMAP.md); a task may depend only on its own or an earlier version.",
   "phases": [
     {
       "id": "F",
@@ -23,7 +23,7 @@
     },
     {
       "id": "S",
-      "name": "Student app hooks"
+      "name": "Student app"
     },
     {
       "id": "L",
@@ -31,7 +31,7 @@
     },
     {
       "id": "X",
-      "name": "Later"
+      "name": "Extras & research"
     }
   ],
   "tasks": [
@@ -44,7 +44,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f1",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "F1b",
@@ -55,7 +56,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f1b",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "F1c",
@@ -68,7 +70,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f1c",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F2",
@@ -81,7 +84,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f2",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "F2cx1",
@@ -92,7 +96,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f2cx1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F3",
@@ -105,7 +110,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f3",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "F4",
@@ -118,7 +124,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f4",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F4b",
@@ -131,7 +138,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f4b",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F4cx3",
@@ -142,7 +150,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f4cx3",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F4cx1",
@@ -155,7 +164,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-f4cx1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F5",
@@ -168,7 +178,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f5",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F6",
@@ -181,7 +192,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-f6",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "C1",
@@ -195,7 +207,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "C2",
@@ -208,7 +221,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c2",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "C2cx5",
@@ -221,7 +235,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-c2cx5",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "C3",
@@ -234,7 +249,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c3",
-      "updated": "2026-10-22"
+      "updated": "2026-10-22",
+      "version": "0.1"
     },
     {
       "id": "C4",
@@ -251,7 +267,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c4",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "C5",
@@ -264,7 +281,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c5",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "C6",
@@ -278,7 +296,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c6",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "C7",
@@ -292,7 +311,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "C8",
@@ -306,7 +326,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c8",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "C9",
@@ -320,7 +341,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-c9",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "CXB",
@@ -331,7 +353,8 @@
       "placeholder": true,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "MD",
@@ -342,7 +365,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "user",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "M1",
@@ -356,7 +380,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-m1",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "M2",
@@ -372,7 +397,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-m2b",
-      "updated": "2026-10-27"
+      "updated": "2026-10-27",
+      "version": "0.1"
     },
     {
       "id": "M3",
@@ -388,7 +414,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-m3",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "M4",
@@ -402,7 +429,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "M5",
@@ -417,7 +445,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "T1",
@@ -431,7 +460,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-t1",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "T2",
@@ -445,7 +475,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-t2",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "T3",
@@ -459,7 +490,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-t3",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "T4",
@@ -472,7 +504,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "T5",
@@ -486,7 +519,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.3"
     },
     {
       "id": "T6",
@@ -500,7 +534,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-t6",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "T7",
@@ -514,7 +549,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.4"
     },
     {
       "id": "T8",
@@ -528,7 +564,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-t8",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A1",
@@ -542,7 +579,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-a1",
-      "updated": "2026-10-27"
+      "updated": "2026-10-27",
+      "version": "0.1"
     },
     {
       "id": "A2",
@@ -555,7 +593,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-a2",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A3",
@@ -570,7 +609,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-a3",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A4",
@@ -585,7 +625,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "A5",
@@ -598,7 +639,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-a5",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A6",
@@ -613,7 +655,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-a6",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "S1",
@@ -627,7 +670,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "S2",
@@ -638,13 +682,15 @@
         "C5",
         "F2",
         "M4",
-        "S5"
+        "S5",
+        "S10"
       ],
       "done_when": "The student explorer draws the MapView for the class's pinned version and sends interaction events",
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "S3",
@@ -658,7 +704,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "S4",
@@ -674,16 +721,15 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "L1",
       "title": "Pilot: one curriculum shared by two classes",
       "size": 2,
       "deps": [
-        "T5",
         "T6",
-        "T7",
         "T8",
         "A4",
         "A5",
@@ -713,24 +759,23 @@
         "C11",
         "C12",
         "C13",
-        "T9",
         "M8",
         "M9",
         "S6",
-        "S7",
-        "A12",
-        "A13",
         "F1e",
         "C14",
         "C15",
         "C16",
-        "C17"
+        "C17",
+        "S9",
+        "S10"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "X1",
@@ -744,7 +789,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.4"
     },
     {
       "id": "X2",
@@ -757,7 +803,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": "2026-10-29"
+      "updated": "2026-10-29",
+      "version": "0.4"
     },
     {
       "id": "C1cx1",
@@ -770,7 +817,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-c1cx1",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "F1d",
@@ -783,7 +831,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "codex-f1d",
-      "updated": "2026-10-23"
+      "updated": "2026-10-23",
+      "version": "0.1"
     },
     {
       "id": "A7",
@@ -797,7 +846,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-a7",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A8",
@@ -811,7 +861,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "A9",
@@ -827,7 +878,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "A10",
@@ -842,7 +894,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "M6",
@@ -858,7 +911,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.1"
     },
     {
       "id": "M7",
@@ -872,7 +926,8 @@
       "placeholder": false,
       "status": "todo",
       "owner": null,
-      "updated": null
+      "updated": null,
+      "version": "0.4"
     },
     {
       "id": "S5",
@@ -885,7 +940,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-s5",
-      "updated": "2026-10-24"
+      "updated": "2026-10-24",
+      "version": "0.1"
     },
     {
       "id": "C5cx1",
@@ -896,7 +952,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c5cx1",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "C5cx2",
@@ -907,7 +964,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-c5cx2",
-      "updated": "2026-10-27"
+      "updated": "2026-10-27",
+      "version": "0.1"
     },
     {
       "id": "C6cx1",
@@ -918,7 +976,8 @@
       "placeholder": false,
       "status": "done",
       "owner": "agent-c6cx1",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "A5b",
@@ -929,7 +988,8 @@
       ],
       "done_when": "Per D34, replies a teacher approves become eval ground truth in a living evidence set, tagged to persona template versions per §12 q14 once settled",
       "placeholder": true,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
     },
     {
       "id": "A11",
@@ -941,7 +1001,8 @@
       ],
       "done_when": "Per D35, Ms. Ivy answers factual questions only from verified assets, citing the passage; when none covers the question she states that and guides the student's reasoning with questions instead of stating facts. Covered by A5 eval cases",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "C6cx2",
@@ -954,7 +1015,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-c6cx2",
-      "updated": "2026-10-28"
+      "updated": "2026-10-28",
+      "version": "0.1"
     },
     {
       "id": "C10",
@@ -965,7 +1027,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-c10",
-      "updated": "2026-10-29"
+      "updated": "2026-10-29",
+      "version": "0.1"
     },
     {
       "id": "C12",
@@ -976,7 +1039,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-c12",
-      "updated": "2026-10-29"
+      "updated": "2026-10-29",
+      "version": "0.1"
     },
     {
       "id": "C11",
@@ -987,7 +1051,8 @@
       ],
       "done_when": "Per D42: fixtures/kinematics holds a CSV, XLSX and pack JSON (procedural DAG from project/kinematics-graph.js, Practice rows from vetted banks with attribution) with a README of deliberate data errors, as for the water cycle",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "C13",
@@ -998,7 +1063,8 @@
       ],
       "done_when": "Per D41: NGSS/CCSS standards nodes and their links are pre-loaded in the Vault; curricula link ideas to them; the graph is versioned and read-only to teachers; curriculum module metadata carries interest_tags: string[] (D41)",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "T9",
@@ -1011,7 +1077,8 @@
       ],
       "done_when": "Per D41/D4: the Dependencies view (project/Kinematics Dependencies.dc.html) shows the graph; teacher edits follow the district setting (Locked, Direct edit, Admin review queue), always as a draft that is published; for an uploaded worksheet the AI proposes prerequisite links into the Vault graph and the teacher adjusts before publishing",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.4"
     },
     {
       "id": "M8",
@@ -1024,7 +1091,8 @@
       ],
       "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels; time-to-answer to the whole second (D19)",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "M9",
@@ -1036,7 +1104,8 @@
       ],
       "done_when": "Per D38/D21: knowledge gaps, baseline breakdowns and engagement indices appear only to the class's teacher, each with the disclaimer and an actionable suggestion; class trace-back counts as in project/Kinematics Dependencies.dc.html",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "S6",
@@ -1048,7 +1117,8 @@
       ],
       "done_when": "Per D40/D42: an idea page with a placeholder card for its overview video until X2 lands after the pilot (D42 amended), and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "S7",
@@ -1061,7 +1131,8 @@
       ],
       "done_when": "Per D36: onboarding as in project/Student Onboarding.dc.html, stored server-side; K–10 uses dropdowns only, grade 11+ free text passes A2 and A7; no mood, focus or confidence data; sharing toggles for Ms. Ivy and Milo; the name never reaches a model; at most 5 active interests; K–10 reflections use tags or sentence stems",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
     },
     {
       "id": "A12",
@@ -1074,7 +1145,8 @@
       ],
       "done_when": "Per D39/D37: the teacher-assigned track overrides the self-paced track; the rule-based planner (project/study-plan.js) is deterministic in packages/domain; the AI plan runs through the gateway with the skill prompt in packages/ai and A5 eval cases; plans keep a 30-instance FIFO cap",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
     },
     {
       "id": "A13",
@@ -1086,7 +1158,8 @@
       ],
       "done_when": "Ms. Ivy and Milo can call get_plan, get_today, prompt_reflection, log_session (no focus rating, D36), adjust_plan, schedule_reminder and check_goal through the gateway, each audited and bounded by the student's track and D39",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
     },
     {
       "id": "S8",
@@ -1097,7 +1170,8 @@
       ],
       "done_when": "Per D39: in-app reminders for both tracks; web push only for the student's self-paced track, within district disable and quiet hours and the teacher's setting; no SMS or automated email; no family contact details stored; teacher-led due dates offered to the district LMS or portal as a per-class CSV and iCalendar export and calendar feed (D39); push subscriptions deleted on opt-out or sign-out",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
     },
     {
       "id": "F1e",
@@ -1108,7 +1182,8 @@
       "placeholder": false,
       "status": "review",
       "owner": "agent-f1e",
-      "updated": "2026-10-29"
+      "updated": "2026-10-29",
+      "version": "0.1"
     },
     {
       "id": "C14",
@@ -1118,9 +1193,10 @@
         "C10",
         "C12"
       ],
-      "done_when": "Per D43: Ideas carry scope (prerequisite, core, extension; missing means core) and key_terms, in docs/spec, zod contracts, C1 import, C2 checks, C5 diff and C6 export; packs without the columns behave exactly as before",
+      "done_when": "Per D43: Ideas carry scope (prerequisite, core, extension; missing means core) and key_terms, and Units and Ideas carry oer_reference, in docs/spec, zod contracts, C1 import, C2 checks, C5 diff and C6 export; packs without the columns behave exactly as before",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "C15",
@@ -1132,7 +1208,8 @@
       ],
       "done_when": "Per D31 (amended 2026-10-29): Library rows and vault items keep source, license_type and attribution_string; missing provenance blocks publishing; NC or SA items need admin approval before retrieval; attribution shows in the tutor's citations",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "C16",
@@ -1143,7 +1220,8 @@
       ],
       "done_when": "Per D43: derivation runs the unchanged ranking and layout on each scope, so the main map is laid out from core ideas only; prerequisite and extension layouts and cross-scope links are stored for zoom; packs without scope derive as before",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "C17",
@@ -1157,11 +1235,12 @@
       ],
       "done_when": "Per D44: fixtures/water-cycle-pilot holds the pilot's 10 ideas and 12 links (scopes, layers, standards, requires, key terms) and the OpenSciEd 6.3 reference with provenance, as CSV, XLSX and pack JSON; imports with no errors and publishes",
       "placeholder": false,
-      "status": "todo"
+      "status": "todo",
+      "version": "0.1"
     },
     {
       "id": "S9",
-      "title": "Remediation zoom and sandbox views",
+      "title": "Remediation zoom",
       "size": 2,
       "deps": [
         "S2",
@@ -1169,9 +1248,255 @@
         "C13",
         "M8"
       ],
+      "placeholder": false,
+      "done_when": "Per D43/D41: zooming in from a core idea shows its prerequisite-scope ideas and Vault standards (C13) as a separate layer, offered when the M8 trace-back flags the student as stalled on a prerequisite; zooming out returns to the core map",
+      "status": "todo",
+      "version": "0.1"
+    },
+    {
+      "id": "S10",
+      "title": "Student map preview: draw and click the published map",
+      "size": 1,
+      "deps": [
+        "C5",
+        "F2",
+        "S5"
+      ],
+      "done_when": "The student app draws the class's pinned published version (layout, ideas, kept links, categories) as in Idea Map Explorer v2, and clicking or pressing Enter on an idea opens a read-only idea page (title, objective, explanation, key terms, links, media placeholder). Lock state comes from the server at zero progress; a teacher's Preview as student can open every idea. No tracker events yet (S2 adds them)",
+      "placeholder": false,
+      "status": "todo",
+      "version": "0.1"
+    },
+    {
+      "id": "A17",
+      "title": "Tutor context from anonymised memory summaries",
+      "size": 2,
+      "deps": [
+        "A8",
+        "A11"
+      ],
+      "done_when": "Per D28 (amended 2026-10-29): the tutor's context adds only the A8 long-term summaries (misconceptions, what helped, pace, interests) after the anonymous layer (A7); never names, never raw transcripts; retrieval stays bounded to verified sources and off-topic requests are redirected to the problem (D35)",
       "placeholder": true,
-      "done_when": "Later version (D43): zooming in from a core idea shows its prerequisite ideas and Vault standards for remediation, prompted by the trace-back; a sandbox view shows extension ideas and the C12 process and mechanism layers for free exploration",
-      "status": "todo"
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "A14",
+      "title": "Students critique AI output",
+      "size": 2,
+      "deps": [
+        "S4",
+        "A9"
+      ],
+      "done_when": "Students evaluate a tutor answer or a peer's reasoning by writing an explicit reasoning trace, a counterexample or an uncertainty note; the tracker records it (D19 event list to be extended by the user)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "A15",
+      "title": "Graded hints, enforced delays and reflection loops",
+      "size": 2,
+      "deps": [
+        "S4",
+        "M8",
+        "A13"
+      ],
+      "done_when": "Hints come in graded steps with enforced wait times, and sessions end in reflection loops, so the student builds self-regulation instead of bypassing thinking; all timing rules are deterministic and configurable",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "A16",
+      "title": "Interest-shaped examples and answers",
+      "size": 1,
+      "deps": [
+        "S7",
+        "A8"
+      ],
+      "done_when": "Per D40 q25 and D41 interest_tags: Ms. Ivy's and Milo's examples and hints, and the formative generated content, use the student's chosen interests; vetted Practice items stay verbatim",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "F7",
+      "title": "Isolated model sandboxes and storage branches",
+      "size": 2,
+      "deps": [
+        "A1"
+      ],
+      "done_when": "Each model or agent has its own development sandbox and its own storage branch engineered for its context; agents have no internet access (D35)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "X3",
+      "title": "Research: specialised math model and evaluation model",
+      "size": 2,
+      "deps": [
+        "A5"
+      ],
+      "done_when": "Evaluate a math-specialised model and a model that evaluates whole-picture understanding (directional sequence) against A5's eval harness; training data per §12 q26",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "X4",
+      "title": "Research: multi-view contrastive learning",
+      "size": 2,
+      "deps": [
+        "A5"
+      ],
+      "done_when": "Prototype multi-view contrastive learning for representing student understanding; training data per §12 q26",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.2"
+    },
+    {
+      "id": "S11",
+      "title": "Sandbox exploration view",
+      "size": 2,
+      "deps": [
+        "S2",
+        "C16",
+        "C12"
+      ],
+      "done_when": "Per D43: a sandbox view shows extension-scope ideas and the C12 process and mechanism layers for free exploration, outside the graded path",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "S12",
+      "title": "Milo's avatar and peer reactions",
+      "size": 2,
+      "deps": [
+        "S4"
+      ],
+      "done_when": "Milo has an avatar (project/Milo.dc.html) that reacts and thanks the student after a teach-back",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "S13",
+      "title": "Student experience polish",
+      "size": 3,
+      "deps": [
+        "S6",
+        "S4",
+        "T5"
+      ],
+      "done_when": "Cards and combo effects, practice, teach-back, the chat panel and the teacher's Preview as student match the prototypes (project/*.dc.html)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "S14",
+      "title": "Map light-up, mystery unlocks and themes",
+      "size": 2,
+      "deps": [
+        "S2",
+        "M4"
+      ],
+      "done_when": "Regions of the map light up on mastery; surprise unlocks; cosmetic map themes unlocked by progress. Personal only, never ranked against other students (D20)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "S15",
+      "title": "Levels and perks",
+      "size": 1,
+      "deps": [
+        "M8"
+      ],
+      "done_when": "Personal levels and perks from tracker state; never leaderboards or rankings (D20)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "A18",
+      "title": "Relational custom examples",
+      "size": 1,
+      "deps": [
+        "A16"
+      ],
+      "done_when": "Examples relate new ideas to ones the student already mastered and to their interests",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "A19",
+      "title": "Productive struggle",
+      "size": 1,
+      "deps": [
+        "A15"
+      ],
+      "done_when": "Tutor and practice keep the student in productive struggle: hints arrive only after a genuine attempt, calibrated by M8's diagnostics",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.3"
+    },
+    {
+      "id": "A20",
+      "title": "Atlas file ingestion into an idea",
+      "size": 2,
+      "deps": [
+        "A4",
+        "T9",
+        "C15"
+      ],
+      "done_when": "A teacher asks Atlas to add a file to an idea; Atlas asks for source and licence, shows what it parsed for review, and saves it as a draft. Files from vetted banks may fill Practice; a teacher's own material goes only to class uploads as formative practice (D40 strict)",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.4"
+    },
+    {
+      "id": "A21",
+      "title": "Draft explanations from teacher uploads (Track 2)",
+      "size": 1,
+      "deps": [
+        "A6",
+        "A3"
+      ],
+      "done_when": "A6 drafts explanations from the teacher's own uploads as well as objectives and links; nothing reaches students until the teacher approves it",
+      "placeholder": true,
+      "status": "todo",
+      "version": "0.4"
+    }
+  ],
+  "versions": [
+    {
+      "id": "0.1",
+      "name": "Pilot (MVP)",
+      "goal": "Everything the app can't live without: the Water Cycle and Kinematics pilot (D42, D44) with grounded tutoring, explained and challengeable feedback, fairness safeguards, the anonymous layer, the two-layer trace-back and the student map",
+      "milestone": "L1"
+    },
+    {
+      "id": "0.2",
+      "name": "AI design principles",
+      "goal": "How the AI reasons and teaches: bounded context from anonymised memory summaries, metacognition (students critique AI output; graded hints, delays and reflection), interests, the study planner, isolated model sandboxes, and model research",
+      "milestone": null
+    },
+    {
+      "id": "0.3",
+      "name": "Visuals and motivation",
+      "goal": "The student experience: Milo's avatar, cards and combos, map light-up and rewards, levels and perks, sandbox exploration, relational examples and productive struggle",
+      "milestone": null
+    },
+    {
+      "id": "0.4",
+      "name": "Curriculum building",
+      "goal": "Authoring tools: Atlas as the editing interface, drafting from teacher uploads, prerequisite editing, the persona editor, self-hosted video (X2), Drive import and research export",
+      "milestone": null
     }
   ]
 }
