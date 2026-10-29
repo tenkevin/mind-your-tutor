@@ -38,10 +38,10 @@
 .mscreen-banner {
   margin: 0 0 var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-accent-600);
+  border: 1px solid var(--map-banner-border);
   border-radius: var(--radius-md);
-  background: var(--color-accent-900);
-  color: var(--color-accent-100);
+  background: var(--map-banner);
+  color: var(--map-banner-text);
 }
 
 .imap-wrap {
@@ -55,7 +55,7 @@
   cursor: grab;
   height: clamp(420px, 68vh, 680px);
   border-radius: var(--radius-lg);
-  background: radial-gradient(circle at 50% 50%, var(--color-accent-900), var(--color-bg) 60%);
+  background: radial-gradient(circle at 50% 50%, var(--map-canvas-glow), var(--map-canvas) 60%);
 }
 .imap:active {
   cursor: grabbing;
@@ -77,34 +77,30 @@
 }
 .imap-ring {
   fill: none;
-  stroke: var(--color-neutral-600);
+  stroke: var(--map-ring);
   stroke-dasharray: 6 6;
   opacity: 0.5;
   vector-effect: non-scaling-stroke;
 }
 .imap-edge line {
-  stroke: var(--color-neutral-500);
+  stroke: var(--map-link);
   stroke-width: 1.5;
-  opacity: 0.55;
 }
 .imap-edge polygon {
-  fill: var(--color-neutral-500);
-  opacity: 0.7;
+  fill: var(--map-link);
 }
 .imap-edge-hot line {
-  stroke: var(--color-accent-400);
+  stroke: var(--map-link-active);
   stroke-width: 2.5;
-  opacity: 1;
 }
 .imap-edge-hot polygon {
-  fill: var(--color-accent-400);
-  opacity: 1;
+  fill: var(--map-link-active);
 }
 .imap-edge text {
-  fill: var(--color-accent-100);
+  fill: var(--map-link-label);
   font-size: 13px;
   paint-order: stroke;
-  stroke: var(--color-bg);
+  stroke: var(--map-canvas);
   stroke-width: 4px;
 }
 
@@ -118,19 +114,19 @@
   min-height: 44px;
   padding: 8px 12px;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-neutral-700);
-  color: var(--color-text);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+  color: var(--map-node-text);
   font: 500 13px var(--font-body);
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
 }
 .imap-node:hover {
-  border-color: var(--color-accent-500);
+  border-color: var(--map-node-hover-border);
 }
 .imap-node:focus-visible {
-  outline: 3px solid var(--color-accent-300);
+  outline: 3px solid var(--map-focus);
   outline-offset: 3px;
   z-index: 2;
 }
@@ -149,25 +145,25 @@
 .imap-req {
   font-size: 11px;
   font-weight: 400;
-  color: var(--color-neutral-300);
+  color: var(--map-node-locked-text);
 }
 .imap-centre {
   align-items: center;
   padding: 14px 22px;
   font: 500 18px var(--font-heading);
-  background: var(--color-accent-900);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 32px var(--color-accent-800);
+  background: var(--map-node-centre);
+  border-color: var(--map-node-centre-border);
+  box-shadow: 0 0 32px var(--map-node-centre-glow);
 }
 .imap-locked {
-  background: var(--color-bg);
+  background: var(--map-node-locked);
   border-style: dashed;
-  border-color: var(--color-neutral-500);
-  color: var(--color-neutral-200);
+  border-color: var(--map-node-locked-border);
+  color: var(--map-node-locked-text);
   cursor: not-allowed;
 }
 .imap-locked:hover {
-  border-color: var(--color-accent-500);
+  border-color: var(--map-node-hover-border);
 }
 
 .imap-controls {
@@ -181,7 +177,7 @@
 .imap-btn {
   min-width: 44px;
   min-height: 44px;
-  background: var(--color-surface);
+  background: var(--map-node-open);
 }
 .imap-hint {
   position: absolute;
@@ -189,14 +185,14 @@
   top: 10px;
   margin: 0;
   font-size: 11px;
-  color: var(--color-neutral-300);
+  color: var(--map-hint);
   pointer-events: none;
   right: 14px;
 }
 .imap-status {
   min-height: 1.6em;
   margin: var(--space-3) 0 0;
-  color: var(--color-accent-200);
+  color: var(--map-heading);
 }
 
 .ipage {
@@ -226,7 +222,7 @@
 .ipage h3 {
   margin: 0 0 var(--space-2);
   font: var(--font-heading-weight) 1em var(--font-heading);
-  color: var(--color-accent-200);
+  color: var(--map-heading);
 }
 .ipage p {
   margin: 0;
@@ -246,8 +242,8 @@
 .ipage-terms li {
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--color-accent-900);
-  border: 1px solid var(--color-accent-700);
+  background: var(--map-term);
+  border: 1px solid var(--map-term-border);
 }
 .ipage-links {
   margin: 0;
@@ -256,7 +252,7 @@
   gap: var(--space-2);
 }
 .ipage-rel {
-  color: var(--color-accent-300);
+  color: var(--map-heading);
   font-style: italic;
 }
 .ipage-media {
@@ -264,10 +260,10 @@
   place-items: center;
   min-height: 9rem;
   padding: var(--space-6);
-  border: 1px dashed var(--color-neutral-600);
+  border: 1px dashed var(--map-placeholder-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-neutral-200);
+  background: var(--map-placeholder);
+  color: var(--map-placeholder-text);
   text-align: center;
 }
 

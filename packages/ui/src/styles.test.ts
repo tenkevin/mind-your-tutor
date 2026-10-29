@@ -14,9 +14,11 @@ const prototypeCss = readFileSync(new URL(`${dsName}/styles.css`, dsDir), 'utf8'
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '');
 const squash = (s: string) => stripComments(s).replace(/\s+/g, ' ').trim();
 
-function rootTokens(source: string): Record<string, string> {
-  const block = /:root\s*\{([\s\S]*?)\n\}/.exec(source)?.[1];
-  if (!block) throw new Error('no :root block');
+/** The first :root block, or with `all` every one (S10 adds a map-token block at the end). */
+function rootTokens(source: string, all = false): Record<string, string> {
+  const blocks = [...source.matchAll(/:root\s*\{([\s\S]*?)\n\}/g)].map((m) => m[1]!);
+  if (blocks.length === 0) throw new Error('no :root block');
+  const block = (all ? blocks : blocks.slice(0, 1)).join(';');
   const out: Record<string, string> = {};
   for (const decl of stripComments(block).split(';')) {
     const i = decl.indexOf(':');
@@ -35,7 +37,7 @@ describe('tokens', () => {
   });
 
   it('are exported to TypeScript with the same values', () => {
-    expect(tokens).toEqual(rootTokens(css));
+    expect(tokens).toEqual(rootTokens(css, true));
   });
 
   it('cssVar wraps a token name', () => {
@@ -141,6 +143,45 @@ const contrast = (a: Rgb, b: Rgb) => {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 };
+
+describe('map and category tokens (S10, D46)', () => {
+  const MAP_TEXT: [Token, Token][] = [
+    ['--map-node-text', '--map-node-open'],
+    ['--map-node-locked-text', '--map-node-locked'],
+    ['--map-hint', '--map-canvas'],
+    ['--map-link-label', '--map-canvas'],
+    ['--map-banner-text', '--map-banner'],
+    ['--map-heading', '--map-canvas'],
+    ['--map-placeholder-text', '--map-placeholder'],
+  ];
+  const MAP_UI: [Token, Token][] = [
+    ['--map-node-open-border', '--map-canvas'],
+    ['--map-node-locked-border', '--map-canvas'],
+    ['--map-node-centre-border', '--map-node-centre'],
+    ['--map-link', '--map-canvas'],
+    ['--map-link-active', '--map-canvas'],
+    ['--map-focus', '--map-canvas'],
+    ['--map-banner-border', '--map-banner'],
+    ['--map-term-border', '--map-canvas'],
+    ['--map-placeholder-border', '--map-canvas'],
+  ];
+  const categories = [1, 2, 3, 4, 5, 6].map((n) => `--category-${n}` as Token);
+
+  it.each(MAP_TEXT)('%s reads at 4.5:1 on %s', (fg, bgToken) => {
+    expect(contrast(hex(fg), hex(bgToken))).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(MAP_UI)('%s is a 3:1 UI colour on %s', (fg, bgToken) => {
+    expect(contrast(hex(fg), hex(bgToken))).toBeGreaterThanOrEqual(3);
+  });
+  it.each(categories)('%s reads at 4.5:1 on the map and on a card', (c) => {
+    expect(contrast(hex(c), hex('--map-canvas'))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(hex(c), hex('--map-node-open'))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(hex(c), hex('--map-node-locked'))).toBeGreaterThanOrEqual(4.5);
+  });
+  it('gives each category slot its own colour', () => {
+    expect(new Set(categories.map((c) => tokens[c])).size).toBe(6);
+  });
+});
 
 describe('contrast (WCAG AA)', () => {
   const bg = hex('--color-bg');

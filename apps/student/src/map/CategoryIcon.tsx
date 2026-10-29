@@ -9,16 +9,11 @@ const paths: Record<string, string> = {
   dot: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
 };
 
-/** Nocturne tokens, one per category in the order the pack lists them. */
-const COLOURS = [
-  'var(--color-accent-300)',
-  'var(--color-accent-2-300)',
-  'var(--color-neutral-200)',
-  'var(--color-accent-400)',
-  'var(--color-neutral-400)',
-];
+/** The category palette from @ideamap/ui (--category-1 to -6), by category order. */
+const SLOTS = 6;
 
-export const categoryColour = (index: number) => COLOURS[Math.max(0, index) % COLOURS.length]!;
+export const categoryColour = (index: number) =>
+  `var(--category-${(Math.max(0, index) % SLOTS) + 1})`;
 
 export function CategoryIcon({ slug, size = 14 }: { slug: string | null; size?: number }) {
   return (
