@@ -83,7 +83,7 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
     expect(body.preview).toBe(false);
     expect(map.centre).toBe(derived.layout.centre);
     expect(map.ideas).toHaveLength(derived.layout.positions.length);
-    for (const idea of map.ideas) {
+    for (const idea of map.ideas.filter((i) => i.state !== 'far')) {
       const pos = derived.layout.positions.find((p) => p.idea_id === idea.id)!;
       expect([idea.ring, idea.x, idea.y]).toEqual([pos.ring, pos.x, pos.y]);
     }
@@ -92,11 +92,82 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
     expect(map.links).toHaveLength(derived.ranked_links.kept.length);
     const open = map.ideas.filter((i) => i.state === 'open');
     expect(open.length).toBeGreaterThan(0);
-    const locked = map.ideas.filter((i) => i.state === 'locked');
+    const locked = map.ideas.filter((i) => i.state !== 'open');
     expect(locked.length).toBeGreaterThan(0);
-    for (const idea of locked) expect(idea.unlocksAfter.length).toBeGreaterThan(0);
+    for (const idea of locked.filter((i) => i.state === 'next'))
+      expect(idea.unlocksAfter.length).toBeGreaterThan(0);
     // One request, small (S10-P2).
     expect(res.body.length).toBeLessThan(100_000);
+  });
+
+  it('says which locked ideas are next up and which are far (S10b-F2)', async () => {
+    const map = (await as(api, sam)('GET', mapUrl())).json().map;
+    const count = (state: string) =>
+      map.ideas.filter((i: { state: string }) => i.state === state).length;
+    // Worked out by hand from the fixture's `requires` column, not from the code:
+    // open evap, sun, ocean, plants; next cond, trans, temp, vap; the other ten are far.
+    expect([count('open'), count('next'), count('far')]).toEqual([4, 4, 10]);
+    const names = (state: string) =>
+      map.ideas
+        .filter((i: { state: string }) => i.state === state)
+        .map((i: { id: string }) => i.id)
+        .sort();
+    expect(names('open')).toEqual(['evap', 'ocean', 'plants', 'sun']);
+    expect(names('next')).toEqual(['cond', 'temp', 'trans', 'vap']);
+  });
+
+  it('hides far ideas completely (S10b-F6, S10b-S1, D47)', async () => {
+    const res = await as(api, sam)('GET', mapUrl());
+    const map = res.json().map;
+    const far = map.ideas.filter((i: { state: string }) => i.state === 'far');
+    expect(far).toHaveLength(10);
+    const farRealIds = [
+      'prec',
+      'coll',
+      'cycle',
+      'ice',
+      'climate',
+      'clouds',
+      'rain',
+      'rivers',
+      'glacier',
+      'ground',
+    ];
+    for (const idea of far) {
+      expect(idea).toMatchObject({ title: null, category: null, unit: null, unlocksAfter: [] });
+      expect(farRealIds).not.toContain(idea.id);
+    }
+    // Nothing in the body names a far idea: not its id, nor its title.
+    const pack = baseVersion.pack;
+    for (const id of farRealIds) {
+      expect(res.body).not.toContain(`"${id}"`);
+      expect(res.body).not.toContain(pack.ideas.find((i) => i.idea_id === id)!.title);
+    }
+    // Links to a far idea use its opaque id; every link end is an idea on the map.
+    const ids = new Set(map.ideas.map((i: { id: string }) => i.id));
+    expect(map.links.length).toBeGreaterThan(0);
+    for (const l of map.links) expect(ids.has(l.from) && ids.has(l.to)).toBe(true);
+    // The opaque id is stable within a response, and not the same in the next one.
+    const again = (await as(api, sam)('GET', mapUrl())).json().map;
+    const opaque = (m: { ideas: { id: string; state: string }[] }) =>
+      m.ideas.filter((i) => i.state === 'far').map((i) => i.id);
+    expect(new Set(opaque(map)).size).toBe(10);
+    expect(opaque(again).some((id: string) => opaque(map).includes(id))).toBe(false);
+    // Next-up ideas keep their title and what unlocks them.
+    const cond = map.ideas.find((i: { id: string }) => i.id === 'cond');
+    expect(cond).toMatchObject({ title: 'Condensation', unlocksAfter: [{ id: 'evap' }] });
+    // A page request for a far idea, by real or opaque id, is refused and says nothing.
+    for (const id of ['prec', opaque(map)[0]]) {
+      const no = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/${id}`);
+      expect([403, 404]).toContain(no.statusCode);
+      expect(no.body).not.toContain('Precipitation');
+    }
+    const real = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/prec`);
+    expect(real.statusCode).toBe(403);
+    expect(real.json()).toEqual({ error: 'Locked' });
+    // A teacher's preview still shows everything.
+    const prev = (await as(api, terry)('GET', mapUrl('?preview=1'))).json().map;
+    expect(prev.ideas.every((i: { title: string | null }) => i.title)).toBe(true);
   });
 
   it('sends nothing a student should not see (S10-S3)', async () => {
@@ -119,10 +190,13 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
 
   it('refuses a locked idea by URL, but opens an open one (S10-F5, S10-F6)', async () => {
     const map = (await as(api, sam)('GET', mapUrl())).json().map;
-    const locked = map.ideas.find((i: { state: string }) => i.state === 'locked');
+    const locked = map.ideas.find((i: { state: string }) => i.state === 'next');
+    const next = map.ideas.find((i: { state: string }) => i.state === 'next');
     const open = map.ideas.find((i: { state: string }) => i.state === 'open');
     const no = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/${locked.id}`);
     expect(no.statusCode).toBe(403);
+    const noNext = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/${next.id}`);
+    expect(noNext.statusCode).toBe(403);
     expect(no.body).not.toContain('explanation');
     // It says what unlocks the idea, as the map card does (S10-F5).
     expect(LockedIdeaResponseSchema.parse(no.json())).toMatchObject({
@@ -149,7 +223,7 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
       (await as(api, terry)('GET', mapUrl())).json(),
     );
     expect(normalTeacher.preview).toBe(false);
-    const locked = normalTeacher.map!.ideas.find((i) => i.state === 'locked')!;
+    const locked = normalTeacher.map!.ideas.find((i) => i.state === 'next')!;
     const page = await as(api, terry)(
       'GET',
       `/api/classes/${classId()}/ideas/${locked.id}?preview=1`,
@@ -160,7 +234,7 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
       (await as(api, sam)('GET', mapUrl('?preview=1'))).json(),
     );
     expect(sneaky.preview).toBe(false);
-    expect(sneaky.map!.ideas.some((i) => i.state === 'locked')).toBe(true);
+    expect(sneaky.map!.ideas.some((i) => i.state !== 'open')).toBe(true);
     const sneakyPage = await as(api, sam)(
       'GET',
       `/api/classes/${classId()}/ideas/${locked.id}?preview=1`,
