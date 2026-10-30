@@ -5,7 +5,9 @@ Read this before starting any task.
 **Base branch: `idea-map`.** All Idea Map work branches from `idea-map` and merges back into it. Never push to `main` or `init`. Those hold MindyourTutor, a separate project with its own `CANON.md`. Its rules don't apply here, and these don't apply there.
 
 - **Architecture:** `docs/ARCHITECTURE.md`. Decisions there are settled. Raise a question instead of working around them.
-- **Living to-do list and dependency map:** `docs/PLAN.md`, generated from `docs/tasks.json`.
+- **Versions:** `docs/ROADMAP.md`. Work ships as v0.1 (pilot) to v0.4, and every task carries a `version`. Build only tasks of the current version, v0.1, unless the coordinator says otherwise; a task may depend only on its own or an earlier version.
+- **Living to-do list and dependency map:** `docs/PLAN.md`, generated from `docs/tasks.json`. It shows progress per version.
+- **Map of the docs:** `docs/README.md`.
 - **Independent QA:** `docs/qa/README.md` and `docs/qa/<ID>.md`. Each task's criteria cover functional, security, performance and usability testing, and are written before the task can be claimed.
 - **Import format spec:** `docs/spec/` (the Curriculum Pack: nine tabs, field by field).
 - **Sample curriculum for tests:** `fixtures/water-cycle/` (CSV, XLSX and pack JSON; read its README for the deliberate data errors).
@@ -20,7 +22,7 @@ On an authorized resume, fetch current state, verify PR heads/CI and outstanding
 ## Picking up work
 
 1. `git fetch origin idea-map && git checkout idea-map && git pull`, then `node scripts/plan.mjs ready`.
-2. Choose one ready task. Prefer tasks marked critical in `docs/PLAN.md`.
+2. Choose one ready task from the earliest version. Prefer tasks marked critical in `docs/PLAN.md`.
 3. Claim it on `idea-map`, and push the claim **before** writing any code:
    ```
    node scripts/plan.mjs claim <ID> <your-agent-name>
@@ -48,7 +50,7 @@ One coordinator session runs the swarm:
 
 ## Decisions and architecture updates
 
-Resolve routine implementation and integration choices using the settled architecture and task criteria. Do not reopen D1–D30. For a genuinely new product/design decision, record the question in architecture §12, ask the user and continue only independent work within the authorized scope. When a decision is settled, update the relevant architecture section and decision record before dependent implementation; remove only the resolved question by subject and preserve unrelated questions. Status, CI outcomes and parked work belong in the handoff/QA documents, not new architecture decisions. C9 implemented existing D12/D13; the C5 count question is settled as D14.
+Resolve routine implementation and integration choices using the settled architecture and task criteria. Do not reopen settled decisions (D1–D47). For a genuinely new product/design decision, record the question in architecture §12, ask the user and continue only independent work within the authorized scope. When a decision is settled, update the relevant architecture section and decision record before dependent implementation; remove only the resolved question by subject and preserve unrelated questions. Status, CI outcomes and parked work belong in the handoff/QA documents, not new architecture decisions. C9 implemented existing D12/D13; the C5 count question is settled as D14.
 
 On completion or handoff, publish task status, immutable-report references, exact reviewed/base/merged heads, actual CI evidence, pending checks, deferred suggestions, parked branches and worker state. Record whether schedules were actually stopped; do not claim control of inaccessible sessions or schedules.
 
