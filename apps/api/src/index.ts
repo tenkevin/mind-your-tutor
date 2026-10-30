@@ -12,6 +12,7 @@ import { anthropicProvider } from './ai/anthropic.js';
 import { loadAiConfig } from './ai/config.js';
 import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
 import { loadConfig, type AuthConfig } from './config.js';
+import { eventRoutes, type EventRoutesOptions } from './events.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
 import { registerPolicies } from './policy.js';
 import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
@@ -45,6 +46,7 @@ export {
   type PublishDeps,
 } from './publishing.js';
 export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
+export { EVENTS_POLICY, VERSION_GRACE_MS, type EventRoutesOptions } from './events.js';
 
 export interface ServerOptions {
   db: Db;
@@ -53,7 +55,7 @@ export interface ServerOptions {
   providers?: Map<string, IdentityProvider>;
   /** The clock, for session limits; tests move it forward. */
   now?: () => Date;
-  /** Fastify's logger: true, or options such as a destination stream (tests read it). */
+  /** Fastify's logger: on, off, or its options (tests pass a stream to read the logs). */
   logger?: FastifyServerOptions['logger'];
   /** Curriculum imports (C4); left out, the routes aren't registered. */
   imports?: Pick<ImportRoutesOptions, 'deps'>;
@@ -61,6 +63,8 @@ export interface ServerOptions {
   publish?: Pick<PublishRoutesOptions, 'deps'>;
   /** FERPA student export and delete (F6); left out, the routes aren't registered. */
   privacy?: PrivacyRoutes;
+  /** Event ingest settings (M2). */
+  events?: EventRoutesOptions;
   /** The AI gateway (A1); left out, its routes aren't registered. */
   ai?: AiGatewayOptions;
 }
@@ -90,6 +94,8 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
   studentMapRoutes(app);
+  // Students' learning events (M2).
+  eventRoutes(app, deps, options.events);
   // The caller of C4's and C5's routes is the signed-in session.
   const authenticate = (req: FastifyRequest) =>
     req.session

@@ -63,7 +63,11 @@ const page: StudentIdeaResponse = {
   explanation: 'Water becomes vapour.',
   keyTerms: [],
   linksIn: [],
-  linksOut: [{ id: 'cond', title: 'Condensation', relation: 'leads to' }],
+  linksOut: [
+    { id: 'cond', title: 'Condensation', relation: 'leads to' },
+    // A far idea stays hidden on the idea page (D47, S10c).
+    { id: null, title: null, relation: 'is a stage of' },
+  ],
 };
 
 let host: HTMLDivElement;
@@ -217,6 +221,7 @@ describe('student map screen (S10)', () => {
     expect(host.textContent).toContain('Water becomes vapour.');
     expect(host.textContent).toContain('A picture or video for this idea will appear here.');
     expect(host.textContent).toContain('leads to');
+    expect(host.textContent).toContain('This idea is a stage of a hidden idea');
     // The map stays mounted behind the page, so its view survives.
     expect(host.querySelector('.imap')).not.toBeNull();
   });

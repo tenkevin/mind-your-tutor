@@ -315,11 +315,13 @@ describe.skipIf(!hasDatabase)("the app role's privileges (F4b-S1)", () => {
       ORDER BY 1
     `.execute(t.db);
     // The audit triggers (F6) run as the caller and call current_actor_id and
-    // redact_secrets.
+    // redact_secrets. A FERPA delete or unenrolment (M2, D22) calls
+    // purge_student_events, which checks the caller is an admin of the org itself.
     expect(rows.map((r) => r.fn)).toEqual([
       'app.current_actor_id()',
       'app.current_class_id()',
       'app.current_org_id()',
+      'app.purge_student_events(uuid)',
       'app.redact_secrets(jsonb)',
       'app.sso_tenant_org(text,text)',
     ]);

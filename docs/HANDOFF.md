@@ -1,10 +1,10 @@
 # Handoff: Idea Map coordinator
 
-**Snapshot 2026-10-29.** Coordination is **active** under the user's resume of 2026-10-23 03:00 UTC ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent review and the integration gate. Work is planned in versions v0.1–v0.4 (D45, `docs/ROADMAP.md`); **v0.1 is the pilot and the only version being built.**
+**Snapshot 2026-10-30.** Coordination is **active** under the user's resume of 2026-10-23 03:00 UTC ("continue to a new agent swarm"). Normal coordination applies: claims, criteria-first, independent review and the integration gate. Work is planned in versions v0.1–v0.4 (D45, `docs/ROADMAP.md`); **v0.1 is the pilot and the only version being built.**
 
 | Role | Who |
 |---|---|
-| Coordinator | Claude session `session_017xAqLcBw3ZrNAbTTGfVg5K` (took over from `session_015Pb4Y1xEbgHXnNwxXnH8pZ` on 2026-10-28), checkout `/home/user/mind-your-tutor`. Owns claims, criteria, routing, the coordinator's local gate checks, merges and task state |
+| Coordinator | Claude session `session_01KbXtJ4C5cRRdJDCKn84ohK` (took over 2026-10-30 17:00; earlier sessions not reachable from it). Before: `session_017xAqLcBw3ZrNAbTTGfVg5K` (took over from `session_015Pb4Y1xEbgHXnNwxXnH8pZ` on 2026-10-28), checkout `/home/user/mind-your-tutor`. Owns claims, criteria, routing, the coordinator's local gate checks, merges and task state |
 | Independent reviewer | **Codex** (brought in by the user). A `Codex-*` file reviewing a PR's current head is that PR's QA report. Independent Claude QA is paused (user, 2026-10-24) |
 | Builders | Sonnet **cloud sessions** started by the coordinator with `create_session`, one task each (tag `idea-map:build-<ID>`). Builders so far: A2 `session_017xAqLdhaHMuRWJHE4HsReH`, A3 `session_017xAqLcx4eLwDN9TPBQiSqU`, A5 `session_017xAqLbNcxTazVTF9QNhJsT`, A7 `session_017xAqLeh1LQDBNjR1hqeg4g`, C6cx2 `session_017xAqLdSXeqAbajTY6ZkKTt`, T6 `session_017xAqLeZk1bsftUkwLhohPZ`, T8 `session_017xAqLdDixwDkAPmR9K3S6x`, A6 `session_017xAqLcfpqKbHaMUjExdX2P`, C10 `session_017xAqLbwmkmFLWmDaNLDtEb`, C12 `session_017xAqLf8ayBuL3QVwTWefLX`, F1e `session_017xAqLfHoqmHNyH4SntSVhn`; syncs for T2 and M2 are done. X2 was stopped by the user on 2026-10-29 (X2 is now v0.4). All of these have finished; each PR waits for Codex. **Running:** S10 `session_017xAqLds9FKso3p8pufxtJy` (launched 2026-10-29 19:40 UTC; the user asked to move the student map forward; told on launch to put map colours in `packages/ui` tokens per D46) and F8, first `session_017xAqLcV3C4ymbeAJoEqWWG` (19:56 UTC; stopped by the coordinator at the user's request on 2026-10-29 22:24 after QA run 3), now `session_017xAqLbnQCAvLCMwvdC8HBr` (agent-f8b; F8 merged as `eff7d02`). S10b `session_017xAqLan17Bz3tvN6ZxeizD` (2026-10-29 23:22 UTC; next-up and far states, asked for by the design session). Never use local subagents for parallel builds |
 
@@ -84,30 +84,32 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 - **Builders need their own containers.** Use cloud sessions (`create_session`) when the tool is offered. Local subagents, even with `isolation: "remote"`, ran in the coordinator's checkout on 2026-10-28 and switched branches under each other.
 - `plan.mjs release` accepts `review` as well as `doing`, so a stalled task in review can return to todo.
 
-## 5. State at snapshot (2026-10-29, check before acting)
+## 5. State at snapshot (2026-10-30 16:50 UTC, check before acting)
 
-`idea-map` CI green. **31 of 100 tasks done; v0.1 is 31 of 73 (39% by size).** `docs/PLAN.md` has the per-version table; `docs/qa/STATUS.md` has every open PR's head and next action.
+**idea-map CI is RED** since `9f0f771` (S10b merge, 2026-10-30 02:39): `pnpm test` flakes on load-sensitive tests (connectors `storage.test.ts` zip bomb past the 5 s default timeout; api `imports.test.ts` T2-F2/F5/F7 from a real read skew in `getCurriculumData`; domain `lock.test.ts` S10b-P1; api `policy.test.ts` p95). **Merging is paused** (integration gate) except for the fix, **F1e #45**, which the user approved to merge on Claude QA. Merged today: S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771` (all on Claude QA, user-approved). Done: 34 of 103 tasks (16 in review).
 
-| Status | Tasks |
-|---|---|
-| In review, waiting for Codex (all CI green, 0 behind at last check) | F1e #45 (fix, merge first), C5cx2 #34, C6cx2 #39, M2 #30, M3 #31, T3 #29, T6 #41, T8 #40, A2 #37, A3 #38, A5 #35, A6 #42, A7 #36, C10 #43, C12 #44 |
-| Building (v0.1) | S10 (student map preview) and F8 (theme contract), sessions in the roles table |
-| Blocked (v0.1) | the rest of v0.1, ending at L1 |
-| Later versions | v0.2–v0.4: mostly placeholders without criteria; never launch them before v0.1 needs nothing more |
+| Item | State | Next |
+|---|---|---|
+| F1e #45 | QA run 1 FAIL at `bccb5be`. Fix head `531ad93` (CI green) still misses F1e-F9 (ordering, not one snapshot): change request issuecomment-6528480435 | Fixer `session_01KbXtJ4MG19qRoe65pjxdm7` (Sonnet) on the same branch; then a fresh Claude QA run 2, CI green twice, merge (user-approved), confirm idea-map green |
+| S10c #49 (coordinator-written D47 leak fixes) | Claude QA run 2 PASS at `69c2fe5` (`session_017xAqLb4r7YvGMWBQtzre1s`) | After F1e: sync, fix copy "A hidden idea flow into" → "flows", merge, report, `plan.mjs done S10c` |
+| Design PRs #50 `7aa9a7b`, #51 `081fb1f` (stacked on #50), #52 `eafcbb5` | Claude design QA PASS (`session_017xAqLcNqdUxEoYFENFHR6U`) | User approved merging on Claude QA (2026-10-30); order #50, #51, #52 after S10c |
+| Design session `session_017xAqLciuNohCywzAy8sdeo` (user-started; coordinator may message it) | Waiting | Decisions given (§7a: link option A, keep Ms. Ivy copy); next it styles next/far after the design PRs merge |
+| Other open PRs (Codex queue, Codex reviews on 2026-11-01) | T3 #29, M2 #30, M3 #31, C5cx2 #34, A5 #35, A7 #36, A2 #37, A3 #38, C6cx2 #39, T8 #40, T6 #41, A6 #42, C10 #43, C12 #44 | Codex; then normal gate |
 
 ## 6. Next actions, in order
 
-1. **Student map first (user, 2026-10-29: "I want to see the maps and click them like a student").** S10 needs nothing unmerged; build it now. Then push the chain S10 → S1 and M4 → S2 → S6 → S9: ask Codex to review **M2 and M3 right after the fix tasks**, because they unblock S1 and M4.
-2. Process new `Codex-*` files (§7 command) into `codex-ledger.json`; route errors to `<ID>cx<n>` tasks and suggestions to criteria or CXB.
-3. For each PR with a Codex PASS on its current head: sync with `idea-map`, wait for exact-head CI, run any full-suite must locally, then merge **one per pass** and confirm merge CI.
-4. Fix-task priority (rule 5): F1e, C5cx2 and C6cx2 merge ahead of feature PRs once they pass.
-5. Merging C10 and C12 unblocks C14 → C16 → C17 (pilot pack) and M8; merging A3 unblocks C13 and C15; merging T2-dependent PRs unblocks A4.
-5a. **Design-aspect QA failures (user, 2026-10-29):** when a task's QA fails on a design aspect (palette values, contrast of a theme's colours, visual treatment, layout, legibility) a third time, stop iterating: merge once every other must passes, list the deferred design checks in `docs/design/README.md` §7, and the design session fixes them first. Functional, security, performance and privacy failures never defer.
-5b. **S10 and F8 (user, 2026-10-29):** independent Claude QA sessions (`session_017xAqLb4r7YvGMWBQtzre1s` for S10, `session_017xAqLeYapB4WFhDLCfuKG7` for F8) review them now; merge S10 first on PASS, then have the F8 builder (`session_017xAqLcV3C4ymbeAJoEqWWG`) merge `idea-map` and fold S10's map tokens into `nocturne.ts`, have QA re-run F8-P1/U2 on that head, and merge F8. Codex reviews both after merge on 2026-11-01.
-6. **Design hand-off (user, 2026-10-29): done.** S10 (`3ad9110`) and F8 (`eff7d02`) merged; the user was given the prompt in `docs/design/README.md` §8, with the two merge SHAs filled in. The user starts the design session themselves, and its PRs go through normal review. Don't start the session yourself.
-7. Open with the user: §12 q26 (training data for v0.2 research), undecided; X4 (contrastive learning) is on hold. Don't raise it again until the user does.
+> **User, 2026-10-30 18:45:** no new building (build or fix sessions) until Codex has reviewed the queue; reviews are piling up.
 
-**Model policy (user, 2026-10-24):** Sonnet for build and fix agents; Haiku for triage, classification and high-volume sub-agent work; no new Opus sessions. Scheduled tasks "Idea Map swarm coordinator" (`trig_01UfngiANJA5GmTBDxkwSyKg`) and "Idea Map Codex watch" (`trig_013q6W2EPEsp9TJdPvNF8xpw`) are **disabled**; the coordinator runs on demand.
+> **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP = all of v0.1, target about 2 weeks (around 2026-11-13), no fixed pilot date, S6 requires vetted items; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
+
+1. F1e: receive the builder's head, send to QA run 2, merge on PASS (user-approved), confirm idea-map CI green.
+2. S10c: sync, small copy fix, merge, `plan.mjs done S10c`, save the report.
+3. Design PRs #50, #51, #52: **user approved merging on Claude design QA (2026-10-30)**, in that order, after F1e makes idea-map green and S10c #49 merges; sync each (docs-only syncs keep the PASS) and confirm merge CI. (Settled 2026-10-30: link option A; keep the Ms. Ivy placeholder, `docs/design/README.md` §7a.)
+4. Process Codex reviews on 2026-11-01 (including post-merge reviews of S10, F8, S10b; errors become `<ID>cx<n>`).
+5. Rule (user, 2026-10-29): a design-aspect QA failure on its third occurrence defers to the design session (`docs/design/README.md` §7); functional, security, performance and privacy never defer.
+6. Open with the user: §12 q26 (training data), on hold; don't raise it until the user does.
+
+**Model policy (user, 2026-10-24):** Sonnet for build and fix agents; Haiku for triage; no new Opus sessions. Scheduled tasks `trig_01UfngiANJA5GmTBDxkwSyKg` and `trig_013q6W2EPEsp9TJdPvNF8xpw` stay **disabled**. No coordinator check-ins are scheduled at this snapshot.
 
 ## 6a. Builder prompt framework (user, 2026-10-28)
 
@@ -128,6 +130,7 @@ cd <repo> && git checkout idea-map && git pull --rebase origin idea-map
 gh api "repos/tenkevin/mind-your-tutor/actions/runs?branch=idea-map&per_page=2" --jq '.workflow_runs[]|"\(.name) \(.conclusion) \(.head_sha[0:7])"'
 gh api "repos/tenkevin/mind-your-tutor/pulls?base=idea-map&state=open" --jq '.[]|"#\(.number) \(.head.ref) \(.head.sha[0:7])"'
 node scripts/plan.mjs ready        # what can start (needs criteria)
+node scripts/qa-queue.mjs          # every open PR: behind, conflicts, CI, last QA verdict and whether task code changed since
 grep -A16 "## In progress" docs/PLAN.md
 git ls-files | grep Codex- | sort > /tmp/c; jq -r '.processed[].file' docs/qa/codex-ledger.json | sort | comm -23 /tmp/c -   # unprocessed Codex files
 ```

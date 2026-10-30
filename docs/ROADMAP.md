@@ -11,6 +11,8 @@ Idea Map ships in four versions (decision D45, user, 2026-10-29). Each task in `
 
 ## v0.1 · Pilot (MVP)
 
+**Minimum lovable product (user, 2026-10-30).** v0.1 *is* the MLP, all of it, with a target of about two weeks (around 2026-11-13). There is no fixed pilot date. The pilot subject is the Water Cycle. Idea pages carry quizzes and **vetted Practice items, which are required** (C10; S6 does not ship without them). Ms. Ivy is the tutor; her name and personality are variables, set through personas (D13: built-ins, then the pack's Personas tab, then class overrides).
+
 **Goal.** Run the pilot (D42, D44) with every safeguard in place: a student explores the Water Cycle map, learns from grounded tutoring, practises with vetted items, teaches Milo, and receives feedback that is explained, challengeable and checked for fairness.
 
 | Area | What ships | Tasks |

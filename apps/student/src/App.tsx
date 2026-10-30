@@ -7,6 +7,7 @@ import {
 } from '@ideamap/contracts';
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
+import { TrackerProvider } from './tracker/TrackerProvider';
 import { MapScreen } from './map/MapScreen';
 import { DisplaySettings } from './udl';
 
@@ -57,19 +58,21 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     );
   }
   return (
-    <main className="student-main">
-      <header className="student-bar">
-        <span className="student-brand">Idea Map</span>
-        <span className="student-who">{view.me.user.name}</span>
-        <DisplaySettings />
-      </header>
-      <MapScreen
-        onSignedOut={() =>
-          location.assign(
-            `/sign-in?returnTo=${encodeURIComponent(safeReturnTo(`${location.pathname}${location.search}${location.hash}`))}`,
-          )
-        }
-      />
-    </main>
+    <TrackerProvider me={view.me}>
+      <main className="student-main">
+        <header className="student-bar">
+          <span className="student-brand">Idea Map</span>
+          <span className="student-who">{view.me.user.name}</span>
+          <DisplaySettings />
+        </header>
+        <MapScreen
+          onSignedOut={() =>
+            location.assign(
+              `/sign-in?returnTo=${encodeURIComponent(safeReturnTo(`${location.pathname}${location.search}${location.hash}`))}`,
+            )
+          }
+        />
+      </main>
+    </TrackerProvider>
   );
 }
