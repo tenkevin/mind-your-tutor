@@ -98,6 +98,8 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 6. Next actions, in order
 
+> **2026-10-30 evening:** F1e, M2, M3, S10c and design #50–#52 merged (SHAs in `docs/qa/STATUS.md`); idea-map green. Next: on 2026-10-31, run `node scripts/qa-queue.mjs` and sync every conflicting PR in the Codex queue (C12, A6, T6, A7, T3 seen on 10-30) so Codex never reviews a conflicted head; then Codex on 11-01, in queue order. Building stays paused until Codex has worked through the queue.
+
 > **User, 2026-10-30 18:45:** no new building (build or fix sessions) until Codex has reviewed the queue; reviews are piling up.
 
 > **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP = all of v0.1, target about 2 weeks (around 2026-11-13), no fixed pilot date, S6 requires vetted items; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
