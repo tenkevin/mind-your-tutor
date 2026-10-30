@@ -6,8 +6,9 @@ import { CategoryIcon } from './CategoryIcon';
 // The read-only idea page (S10): title, category, unit, objective, explanation
 // (read-aloud, D17), key terms, links by idea name and relation, and a placeholder where
 // video arrives with X2. Laid out as Idea Map Explorer v2's idea page: the idea on the
-// left, and where it sits on the map on the right (one column on narrow screens). It
-// grows out of the card that was opened, so the move from the map feels continuous.
+// left, and on the right the place where Ms. Ivy's chat arrives with S4 (one column on
+// narrow screens). It grows out of the card that was opened, so the move from the map
+// feels continuous.
 
 export function IdeaPage({
   idea,
@@ -80,6 +81,44 @@ export function IdeaPage({
           <section className="ipage-media" aria-label="Picture or video">
             <p>A picture or video for this idea will appear here.</p>
           </section>
+          {connected && (
+            <section className="ipage-connects" aria-labelledby="ipage-links">
+              <h2 id="ipage-links">How it connects</h2>
+              {idea.linksIn.length > 0 && (
+                <section className="ipage-from" aria-labelledby="ipage-in">
+                  <h3 id="ipage-in" className="ipage-label">
+                    Comes from
+                  </h3>
+                  <ul className="ipage-conn">
+                    {idea.linksIn.map((l) => (
+                      <li key={`in-${l.id}`}>
+                        <strong>{l.title}</strong>
+                        <span className="ipage-rel">{l.relation} this idea</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <p className="ipage-here" aria-hidden="true">
+                {idea.title}
+              </p>
+              {idea.linksOut.length > 0 && (
+                <section className="ipage-to" aria-labelledby="ipage-out">
+                  <h3 id="ipage-out" className="ipage-label">
+                    Leads to
+                  </h3>
+                  <ul className="ipage-conn">
+                    {idea.linksOut.map((l) => (
+                      <li key={`out-${l.id}`}>
+                        <span className="ipage-rel">This idea {l.relation}</span>
+                        <strong>{l.title}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </section>
+          )}
           {idea.keyTerms.length > 0 && (
             <section aria-labelledby="ipage-terms">
               <h2 id="ipage-terms">Key terms</h2>
@@ -91,44 +130,7 @@ export function IdeaPage({
             </section>
           )}
         </div>
-        {connected && (
-          <aside className="ipage-side" aria-labelledby="ipage-links">
-            <h2 id="ipage-links">How it connects</h2>
-            {idea.linksIn.length > 0 && (
-              <section aria-labelledby="ipage-in">
-                <h3 id="ipage-in" className="ipage-label">
-                  Comes from
-                </h3>
-                <ul className="ipage-conn">
-                  {idea.linksIn.map((l) => (
-                    <li key={`in-${l.id}`}>
-                      <strong>{l.title}</strong>
-                      <span className="ipage-rel">{l.relation} this idea</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <p className="ipage-here" aria-hidden="true">
-              {idea.title}
-            </p>
-            {idea.linksOut.length > 0 && (
-              <section aria-labelledby="ipage-out">
-                <h3 id="ipage-out" className="ipage-label">
-                  Leads to
-                </h3>
-                <ul className="ipage-conn">
-                  {idea.linksOut.map((l) => (
-                    <li key={`out-${l.id}`}>
-                      <span className="ipage-rel">This idea {l.relation}</span>
-                      <strong>{l.title}</strong>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </aside>
-        )}
+        <TutorPlaceholder title={idea.title} />
       </div>
     </article>
   );
@@ -151,6 +153,52 @@ function TargetIcon() {
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="5" />
       <circle cx="12" cy="12" r="1" />
+    </svg>
+  );
+}
+
+/**
+ * Where Ms. Ivy's chat goes (S4). Only a card for now: no input, no AI and nothing sent,
+ * so it can't look like a chat that doesn't answer.
+ */
+function TutorPlaceholder({ title }: { title: string }) {
+  return (
+    <aside className="ipage-tutor" aria-labelledby="ipage-tutor-name">
+      <div className="ipage-tutor-head">
+        <span className="ipage-tutor-avatar">
+          <TutorIcon />
+        </span>
+        <div>
+          <h2 id="ipage-tutor-name" className="ipage-tutor-name">
+            Ms. Ivy
+          </h2>
+          <p className="ipage-tutor-role">AI tutor</p>
+        </div>
+      </div>
+      <p className="ipage-tutor-note">
+        Soon you can ask Ms. Ivy about {title} here. She will explain it another way, give you an
+        example, or ask you a question to check what you know.
+      </p>
+      <p className="ipage-tutor-soon">Coming soon</p>
+    </aside>
+  );
+}
+
+function TutorIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 4h18v12H3zM8 20l4-4 4 4M12 8a2 2 0 1 0 0 .01M9 13a3 3 0 0 1 6 0" />
     </svg>
   );
 }
