@@ -32,7 +32,7 @@
   font-size: 0.7em;
 }
 .mscreen-note {
-  color: var(--color-neutral-200);
+  color: var(--map-hint);
   padding: var(--space-6) 0;
 }
 .mscreen-banner {
@@ -281,7 +281,7 @@
   line-height: 1.6;
 }
 .ipage-quiet {
-  color: var(--color-neutral-200);
+  color: var(--map-hint);
 }
 /* The objective as a card with a target, as in the prototype. */
 .ipage-goal {
@@ -454,13 +454,13 @@
 @media (prefers-reduced-motion: no-preference) {
   .ipage {
     transform-origin: var(--ipage-from-x, 50%) var(--ipage-from-y, 0);
-    animation: ipage-open 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: ipage-open 280ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
   .mscreen-map:not([hidden]) {
-    animation: mscreen-fade 240ms ease-out both;
+    animation: mscreen-fade 240ms ease-out backwards;
   }
   .mscreen-wait {
-    animation: mscreen-fade 200ms ease-out 250ms both;
+    animation: mscreen-fade 200ms ease-out 250ms backwards;
   }
 }
 @keyframes ipage-open {
