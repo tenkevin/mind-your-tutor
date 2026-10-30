@@ -78,18 +78,23 @@
 .imap-ring {
   fill: none;
   stroke: var(--map-ring);
-  stroke-dasharray: 6 6;
+  /* Dots rather than dashes: the rings guide the eye without drawing a hard edge. */
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 9;
   opacity: 0.5;
   vector-effect: non-scaling-stroke;
 }
-.imap-edge line {
+.imap-edge path {
+  fill: none;
   stroke: var(--map-link);
   stroke-width: 1.5;
+  stroke-linecap: round;
 }
 .imap-edge polygon {
   fill: var(--map-link);
 }
-.imap-edge-hot line {
+.imap-edge-hot path {
   stroke: var(--map-link-active);
   stroke-width: 2.5;
 }
@@ -98,7 +103,7 @@
 }
 /* A link between two locked ideas steps back: thinner and dashed. 70% strength keeps it
    at 3:1 or more on the canvas, its glow and a card (WCAG 1.4.11). */
-.imap-edge-quiet line {
+.imap-edge-quiet path {
   stroke-width: 1;
   stroke-dasharray: 5 5;
 }
@@ -123,7 +128,7 @@
   gap: 2px;
   min-height: 44px;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--map-node-open);
   border: 1px solid var(--map-node-open-border);
   color: var(--map-node-text);
@@ -159,7 +164,8 @@
 }
 .imap-centre {
   align-items: center;
-  padding: 14px 22px;
+  padding: 14px 26px;
+  border-radius: 999px;
   font: 500 18px var(--font-heading);
   background: var(--map-node-centre);
   border-color: var(--map-node-centre-border);
@@ -309,11 +315,50 @@
     padding: var(--space-3);
   }
 }
-/* The border eases in on hover and focus only. A resting transition would also animate
-   every node when the theme changes (F8), costing extra style recalculations. */
+/* Motion, all off with reduced motion or Calm screen (udl.css).
+   Transitions apply only while the pointer is on the map (or a card has focus), so a
+   theme change elsewhere still restyles every card in one recalculation (F8), while
+   leaving a card eases out instead of snapping. */
 @media (prefers-reduced-motion: no-preference) {
-  .imap-node:hover,
+  .imap:hover .imap-node,
   .imap-node:focus-visible {
-    transition: border-color 120ms;
+    transition:
+      border-color 160ms ease-out,
+      transform 160ms ease-out;
+  }
+  .imap:hover .imap-edge,
+  .imap:hover .imap-edge path,
+  .imap:hover .imap-edge polygon {
+    transition:
+      opacity 160ms ease-out,
+      stroke 160ms ease-out,
+      fill 160ms ease-out;
+  }
+  /* An open card lifts a little under the pointer; a locked one stays put. */
+  .imap-node:not(.imap-locked):hover {
+    transform: translate(-50%, -50%) translateY(-2px);
+  }
+  /* Zoom buttons, Fit and keyboard moves glide; drag, wheel and pinch stay direct. */
+  .imap-world-glide {
+    transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* The map arrives from the centre outwards: centre, then each ring, then the links. */
+  .imap-node {
+    animation: imap-arrive 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--ring, 0) * 90ms);
+  }
+  .imap-svg {
+    animation: imap-fade 520ms ease-out 140ms both;
+  }
+}
+@keyframes imap-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+@keyframes imap-fade {
+  from {
+    opacity: 0;
   }
 }
