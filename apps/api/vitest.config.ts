@@ -8,6 +8,8 @@ export default defineConfig({
     // The default reporter hides a passing test's console output; the M2-P1 timing
     // summary and timeline are for the CI log, so CI uses the verbose reporter.
     reporters: process.env.CI ? ['verbose'] : ['default'],
+    // Timing tests assert latency budgets, so test files never share the CPU (F1e).
+    fileParallelism: false,
     // Database tests migrate their own database; give slow CI runners room.
     testTimeout: 60_000,
     hookTimeout: 120_000,

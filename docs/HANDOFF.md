@@ -98,6 +98,8 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 6. Next actions, in order
 
+> **User, 2026-10-30 18:45:** no new building (build or fix sessions) until Codex has reviewed the queue; reviews are piling up.
+
 > **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP = all of v0.1, target about 2 weeks (around 2026-11-13), no fixed pilot date, S6 requires vetted items; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
 
 1. F1e: receive the builder's head, send to QA run 2, merge on PASS (user-approved), confirm idea-map CI green.
@@ -128,6 +130,7 @@ cd <repo> && git checkout idea-map && git pull --rebase origin idea-map
 gh api "repos/tenkevin/mind-your-tutor/actions/runs?branch=idea-map&per_page=2" --jq '.workflow_runs[]|"\(.name) \(.conclusion) \(.head_sha[0:7])"'
 gh api "repos/tenkevin/mind-your-tutor/pulls?base=idea-map&state=open" --jq '.[]|"#\(.number) \(.head.ref) \(.head.sha[0:7])"'
 node scripts/plan.mjs ready        # what can start (needs criteria)
+node scripts/qa-queue.mjs          # every open PR: behind, conflicts, CI, last QA verdict and whether task code changed since
 grep -A16 "## In progress" docs/PLAN.md
 git ls-files | grep Codex- | sort > /tmp/c; jq -r '.processed[].file' docs/qa/codex-ledger.json | sort | comm -23 /tmp/c -   # unprocessed Codex files
 ```
