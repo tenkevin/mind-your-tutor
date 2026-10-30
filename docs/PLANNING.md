@@ -74,7 +74,8 @@ Changing a contract means editing its entry in the same PR, and the reviewer che
 | Command | Does |
 |---|---|
 | `node scripts/plan.mjs` | Regenerates `PLAN.md` |
-| `node scripts/plan.mjs check` | Validates everything above (runs in CI) |
+| `node scripts/plan-map.mjs` | Renders `PLAN.md`'s dependency map to `docs/plan-map.png` (headless Chromium). Run it after every plan change and commit both files |
+| `node scripts/plan.mjs check` | Validates everything above, including that `plan-map.png` matches the current map (runs in CI) |
 | `node scripts/plan.mjs ready` / `show <ID>` | Lists what can start / shows one task with what it provides, consumes and unblocks |
 | `node scripts/plan.mjs claim <ID> <agent>` · `review <ID>` · `done <ID>` · `release <ID>` | State changes (only through these) |
 | `node scripts/plan.mjs qa <ID> <mode> <verdict> <head> <report>` | Records a QA verdict (new) |
@@ -85,11 +86,20 @@ Changing a contract means editing its entry in the same PR, and the reviewer che
 
 ## 5. What `PLAN.md` shows, in this order
 
-1. **Milestone:** the date, each slice's done count, and a projection: open effort ÷ build capacity (4 builders), plus pending review rounds ÷ review capacity (assumed: 1 Codex pass a day, plus approved Claude QA; to confirm). Marked *on track* or *at risk*.
+1. **Milestone:** the date, each slice's done count, and a projection: open effort ÷ build capacity (4 builders), plus tasks awaiting review ÷ review capacity (Codex about 10 tasks a day, plus approved Claude QA). Marked *on track* or *at risk*.
 2. **Review queue:** every task in review or owing a Codex review, with mode, verdict, head and report.
 3. **Ready**, **in progress**, **blocked** (with what's missing: a dependency, a provider or an open question).
 4. **Log:** the last 15 dated lines.
 5. **Done**, and the dependency map.
+
+## 5a. The plan map (`docs/plan-map.png`)
+
+Agents plan best from the picture, so the map is part of the process, not decoration. **Read it before choosing, claiming or assigning work.**
+
+- One lane per slice (A–F, then the pilot); each box is a task with its state colour (green ready, purple doing, amber review, grey waiting, red border critical path) and effort.
+- Arrows are dependencies, labelled with the contract when one is consumed (`M3 → S1 · unlocked-set`). A box with an open question or a missing provider shows a ⚠ mark.
+- Done work collapses into one box per slice, so the picture shows only what's left.
+- `plan.mjs` stores a hash of the map source; `check` fails if `plan-map.png` wasn't re-rendered after a change, so the picture can't go stale.
 
 ## 6. Boundaries
 
@@ -99,6 +109,6 @@ Changing a contract means editing its entry in the same PR, and the reviewer che
 
 ## 7. Migration (one coordinator pass, no builds)
 
-1. Extend `plan.mjs` (fields, ready rule, `qa`, `codex`, `log`, milestone projection), with `node --test` tests in CI's plan job.
+1. Extend `plan.mjs` (fields, ready rule, `qa`, `codex`, `log`, milestone projection, slice lanes and contract labels in the map, map hash), add `scripts/plan-map.mjs`, with `node --test` tests in CI's plan job.
 2. Fill `slice`, `effort`, `provides`, `consumes` and `open_questions` for the 38 open v0.1 tasks, plus the initial contracts. Record the qa state for tasks in review and for merged tasks that owe Codex. Gaps found become open questions for the user.
 3. Freeze `docs/qa/STATUS.md` as history and move live notes into `plan.mjs log`. `HANDOFF.md` keeps only sessions and gotchas, and points here for process.
