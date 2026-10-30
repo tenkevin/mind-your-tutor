@@ -58,7 +58,8 @@ export function IdeaMap({
   restoreFocus,
 }: {
   map: StudentMap;
-  onOpen: (id: string) => void;
+  /** Opens an idea's page; `at` is the card's centre on screen, for the transition. */
+  onOpen: (id: string, at?: { x: number; y: number }) => void;
   /** The idea whose page was just closed; its card takes focus again. */
   restoreFocus: string | null;
 }) {
@@ -264,7 +265,10 @@ export function IdeaMap({
       return;
     }
     setMessage('');
-    onOpen(n.idea.id);
+    const r = box.current
+      ?.querySelector(`[data-idea="${CSS.escape(n.idea.id)}"]`)
+      ?.getBoundingClientRect();
+    onOpen(n.idea.id, r && { x: r.left + r.width / 2, y: r.top + r.height / 2 });
   };
 
   const edges = useMemo(

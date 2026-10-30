@@ -221,9 +221,46 @@ describe('student map screen (S10)', () => {
     expect(host.textContent).toContain('Water becomes vapour.');
     expect(host.textContent).toContain('A picture or video for this idea will appear here.');
     expect(host.textContent).toContain('leads to');
-    expect(host.textContent).toContain('This idea is a stage of a hidden idea');
+    // A link to a far idea names no idea (S10c, D47); #52's layout puts the relation
+    // and the idea in separate elements.
+    const hidden = [...host.querySelectorAll('.ipage-to li')].map((li) => [
+      li.querySelector('.ipage-rel')?.textContent,
+      li.querySelector('strong')?.textContent,
+    ]);
+    expect(hidden).toContainEqual(['This idea is a stage of', 'a hidden idea']);
     // The map stays mounted behind the page, so its view survives.
     expect(host.querySelector('.imap')).not.toBeNull();
+  });
+
+  it('lays the idea page out as the prototype: tags, objective, how it connects, a place for Ms. Ivy', async () => {
+    serve(response());
+    await show();
+    act(() => host.querySelector<HTMLButtonElement>('[data-idea="evap"]')!.click());
+    await act(async () => {});
+    const page = host.querySelector('.ipage')!;
+    // Headings go h1, then h2 sections (h3 inside "How it connects"), then Ms. Ivy.
+    expect([...page.querySelectorAll('h1, h2, h3')].map((h) => h.tagName)).toEqual([
+      'H1',
+      'H2',
+      'H2',
+      'H2',
+      'H3',
+      'H2',
+    ]);
+    expect([...page.querySelectorAll('.ipage-tag')].map((t) => t.textContent)).toEqual([
+      'Process',
+      'Unit 1: Water',
+    ]);
+    expect(page.querySelector('.ipage-goal')?.textContent).toContain('Explain evaporation.');
+    const side = page.querySelector('.ipage-connects')!;
+    expect(side.textContent).toContain('Leads to');
+    expect(side.textContent).toContain('This idea leads toCondensation');
+    expect(side.textContent).not.toContain('Comes from');
+    // Ms. Ivy's place is a card only: no input, no button, nothing sent.
+    const tutor = page.querySelector('.ipage-tutor')!;
+    expect(tutor.textContent).toContain('Ms. Ivy');
+    expect(tutor.textContent).toContain('Coming soon');
+    expect(tutor.querySelectorAll('input, textarea, button')).toHaveLength(0);
   });
 
   it('a locked idea does not open, and says why (F5, U1)', async () => {
