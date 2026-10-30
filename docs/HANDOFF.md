@@ -86,7 +86,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 5. State at snapshot (2026-10-30 16:50 UTC, check before acting)
 
-**idea-map CI is RED** since `9f0f771` (S10b merge, 2026-10-30 02:39): `pnpm test` flakes on load-sensitive tests (connectors `storage.test.ts` zip bomb past the 5 s default timeout; api `imports.test.ts` T2-F2/F5/F7 from a real read skew in `getCurriculumData`; domain `lock.test.ts` S10b-P1; api `policy.test.ts` p95). **Merging is paused** (integration gate) except for the fix, **F1e #45**, which the user approved to merge on Claude QA. Merged today: S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771` (all on Claude QA, user-approved). Done: 34 of 106 tasks.
+**idea-map CI is RED** since `9f0f771` (S10b merge, 2026-10-30 02:39): `pnpm test` flakes on load-sensitive tests (connectors `storage.test.ts` zip bomb past the 5 s default timeout; api `imports.test.ts` T2-F2/F5/F7 from a real read skew in `getCurriculumData`; domain `lock.test.ts` S10b-P1; api `policy.test.ts` p95). **Merging is paused** (integration gate) except for the fix, **F1e #45**, which the user approved to merge on Claude QA. Merged today: S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771` (all on Claude QA, user-approved). Done: 34 of 103 tasks (16 in review).
 
 | Item | State | Next |
 |---|---|---|
