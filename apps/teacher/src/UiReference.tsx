@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { ThemeReference } from './ThemeReference';
 
 // Every @ideamap/ui component class in one page, marked up as in
 // project/Teacher Settings.dc.html. Served at /reference.html.
@@ -33,6 +34,8 @@ export function UiReference() {
       }}
     >
       <h1>UI reference</h1>
+
+      <ThemeReference />
 
       <Section title="Buttons">
         <div style={row}>

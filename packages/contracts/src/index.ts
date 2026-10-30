@@ -19,5 +19,8 @@ export * from './explanation.js';
 export * from './data-checks.js';
 export * from './auth.js';
 export * from './import-job.js';
+export * from './curriculum-data.js';
+export * from './ai.js';
 export * from './publish.js';
 export * from './events.js';
+export * from './student-map.js';

@@ -4,7 +4,17 @@ import type { SectionIcon } from './sections';
 // a CDN; the apps load nothing from third parties (ARCHITECTURE.md §10), so these are
 // inline. Decorative only: every icon sits beside its text label.
 
-export type IconName = SectionIcon | 'eye' | 'check' | 'spinner' | 'warning';
+export type IconName =
+  | SectionIcon
+  | 'eye'
+  | 'check'
+  | 'spinner'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'upload'
+  | 'pending'
+  | 'failed';
 
 const PATHS: Record<IconName, string> = {
   table: 'M2.5 3.5h11v9h-11zM2.5 6.5h11M2.5 9.5h11M6.5 6.5v6',
@@ -17,6 +27,11 @@ const PATHS: Record<IconName, string> = {
   check: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM5.25 8.25l1.75 1.75 3.75-3.75',
   spinner: 'M8 1.5A6.5 6.5 0 1 1 1.5 8',
   warning: 'M8 2 14.5 13.5h-13zM8 6.5v3.25M8 11.5v.25',
+  error: 'M5.3 1.5h5.4l3.8 3.8v5.4l-3.8 3.8H5.3l-3.8-3.8V5.3zM8 4.75v3.75M8 11v.25',
+  info: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 7.25v4M8 4.75V5',
+  upload: 'M8 10.5V2.5M5 5.5l3-3 3 3M2.5 10v3.5h11V10',
+  pending: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z',
+  failed: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM5.75 5.75l4.5 4.5M10.25 5.75l-4.5 4.5',
 };
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {

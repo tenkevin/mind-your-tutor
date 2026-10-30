@@ -90,6 +90,21 @@ export interface ExportTarget {
 
 // ---- CSV -------------------------------------------------------------------
 
+/** A carriage return not followed by a line feed (CRLF pairs are kept as they are). */
+const LONE_CR = /\r(?!\n)/;
+
+/** The idea a row is about, for a message: ` (idea "evap")`, or '' when the sheet names none. */
+function ideaOf(sheet: ExportSheet, r: number): string {
+  if (r === 0 || sheet.name !== 'Ideas') return '';
+  const row = sheet.rows[r - 1];
+  for (const key of ['title', 'id']) {
+    const v = row?.[sheet.header.indexOf(key)];
+    if (typeof v === 'string' && v.trim())
+      return ` (idea "${v.replace(/\s+/g, ' ').trim().slice(0, 60)}")`;
+  }
+  return '';
+}
+
 const BOM = '﻿';
 
 function csvCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): string {
@@ -100,6 +115,16 @@ function csvCell(sheet: ExportSheet, r: number, c: number, cell: ExportCell): st
     const at = where(sheet, r, c);
     throw new ExportRefused(
       `${at.text} has a broken character (half of an emoji or symbol) that UTF-8 can't store, so the export stopped. Retype that text, or export as XLSX.`,
+      at,
+    );
+  }
+  if (LONE_CR.test(text)) {
+    // LibreOffice reads a bare carriage return inside a quoted CSV cell as a line feed, so the
+    // text would change on opening. XLSX keeps it exactly (C6-E4).
+    const at = where(sheet, r, c);
+    const idea = ideaOf(sheet, r);
+    throw new ExportRefused(
+      `${at.text}${idea} has a lone carriage return (a line break typed as Return on its own) that a CSV file can't keep as it is, so the export stopped. Use the XLSX export, which keeps it exactly, or retype the line break in that cell.`,
       at,
     );
   }

@@ -4,65 +4,77 @@ Routine coordination lives here, in `docs/PLAN.md`, and in `docs/HANDOFF.md`. Fe
 
 Direct cross-session messages are for urgent findings/actionable blockers, or a startup assignment when an idle reviewer needs to be activated. Do not send repeated acknowledgments or routine status messages. Save detailed reports and evidence in files; batch routine publication, preserving immutable Codex reports. Never infer QA PASS from an agent launch or a builder's own tests.
 
-## Queue
+> **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D30 and the §8 spec v1 exactly; see AGENTS.md.
 
-> **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D29 and the §8 spec v1 exactly; see AGENTS.md.
+> **Design-aspect failures (user, 2026-10-29):** a third QA failure on a design aspect defers that check to the design session (`docs/design/README.md` §7) and the task merges once every other must passes; functional, security, performance and privacy failures never defer. **S10 and F8 merged** 2026-10-29 (S10 squash `3ad9110`, F8 squash `eff7d02`, merge CI green; reports `reports/S10.md`, `reports/F8.md`). Formerly: **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
 
-**Update 2026-10-23 20:05 UTC (user-approved):** independent Claude QA sessions are now reviewing all six PRs (F6 #20, T1 #24, C5 #23, C6 #21, M1 #25, S5 #26), so merges can start this weekend under the normal gates. On Monday, Codex reviews the merged work; its errors become `<ID>cx<n>` fix tasks as before. Stacked builds wait until Monday's QA. Criteria now exist for every open task except X1 and X2 (after the pilot).
+> **User directives (2026-10-30 17:25):** (1) **Claude QA for M2 #30 and M3 #31, focused on structural integrity**: structural errors that could collapse later work block the merge; smaller findings go to Codex (Nov 1). QA sessions: M2 `session_01KbXtJ3tUT8NeveW1McTk35`, M3 `session_01KbXtJ5TJRQPfJEZJBuRDmF`. Verdicts are STRUCTURAL PASS / STRUCTURAL FAIL / BLOCKED, and each PR's merge on that verdict still needs the user's go-ahead. (2) **The MLP is all of v0.1, target about 2 weeks** (around 2026-11-13; user, revised 17:40); no fixed pilot date; S6 requires vetted Practice items (C10); see `docs/ROADMAP.md`. (3) **Builders stay idle** until merges unblock M4, S1 and A9; no new build sessions until then.
 
-## Monday QA queue (as of 2026-10-23 17:00 UTC)
+> **Coordinator handover (2026-10-30 17:00):** coordinator is now `session_01KbXtJ4C5cRRdJDCKn84ohK`; the earlier coordinator's sessions are not reachable from it. **F1e #45** at `531ad93` (CI green, behind docs only) still does not meet F1e-F9: `getCurriculumData` reorders READ COMMITTED reads instead of one snapshot. Change request posted (issuecomment-6528480435); Sonnet fixer `session_01KbXtJ4MG19qRoe65pjxdm7` works on the same branch. QA run 2 starts after its head goes green twice. **Design re-run (relayed by the user, 17:00):** the design QA again passed all three heads merged with `11d5bb7`, with no must regressing. Disclosed: on a machine about 2x slower, idea-page open measured 340 ms on merged map-smooth + idea-page (budget 300 ms), but 342 ms on the unchanged base in the same state, so it is attributed to the environment and not yet re-measured on normal hardware. The idea-page API still names far ideas until S10c #49 lands.
 
-Merged since resume, with QA: F1d, C2cx5, F2cx1 (waived), F4cx1, C4, F5 (`ab906a1`).
+> **Design PRs (2026-10-30 16:43):** independent Claude design QA (`session_017xAqLcNqdUxEoYFENFHR6U`) **PASS** on all three final heads: #50 map-emphasis `7aa9a7b`, #51 map-smooth `081fb1f` (stacked on #50), #52 idea-page `eafcbb5`. F8-P1 (1 recalc, 0 transitions with the pointer over the map) is fixed; S10b and D47 hold; full suite solo green except wall-clock flakes. The user approved merging them on this Claude QA (2026-10-30). They wait for idea-map to be green (F1e), in the order #50, #51, #52, after S10c #49.
+>
+> **Timing-test gaps for F1e (2026-10-30 16:15):** besides the tests F1e already hardens, CI has also flaked on connectors `storage.test.ts` zip bomb (F1e only changed `security.test.ts`), api `imports.test.ts` T2-F2/F5/F7 (newest-job race not fully fixed: T2-F5 failed once under load in F1e's QA), and domain `lock.test.ts` S10b-P1 (2,000 ideas under 5 ms, on #52). F1e must cover all of them before merge.
+>
+> **idea-map CI RED since 2026-10-30 02:39 UTC — merging paused (integration gate).** Three `pnpm test` failures on `9f0f771` (S10b merge) and `fe9479c`, each a known load-sensitive test: connectors `storage.test.ts` zip-bomb timing (×2) and api `imports.test.ts` T2-F2 (latest import read as null, the newest-job race). Every tree passes locally in CI order on a fresh database. Fix task **F1e #45** is under independent Claude QA (`session_017xAqLeYapB4WFhDLCfuKG7`); it needs the user's approval to merge on that review. Job logs are readable through the GitHub connector's `get_job_logs` (the `logs_url` downloads with curl).
+>
+> **S10b merged** 2026-10-30 (squash `9f0f771`, user-approved on Claude QA PASS; merge CI red as above, not S10b-specific). **S10c #49** (coordinator-written D47 leak fixes, user request) is under Claude QA (`session_017xAqLb4r7YvGMWBQtzre1s`). **Design branches** `design/map-emphasis`, `design/map-smooth`, `design/idea-page` (user's design session `session_017xAqLciuNohCywzAy8sdeo`) are under regression QA (`session_017xAqLcNqdUxEoYFENFHR6U`); map-smooth conflicts with S10b.
 
-**Needs independent QA, highest priority first:**
-1. **F6 #20 at `9583e75`.** Re-integrated with F5: privacy routes moving into F5's policy registry, migrations 0014_auth + 0015_privacy, and an inventory covering F5's tables. Review the new head when it's pushed; the earlier F6 checks passed on d498f5c.
-2. **T1 #24 at `9089d2c`**: the teacher shell; unlocks T2 and T3.
-3. **C5 #23** at `6f43575`: first run; criteria in docs/qa/C5.md (D14 count).
-4. **C6 #21** at `750a50b`: re-run after the C6-E1/E2/E3 fixes; C6-F7 reconciled.
+## Queue (snapshot 2026-10-29 17:00 UTC)
 
-Coordinator note: Codex's runner excludes `function_binding.test.ts`. The coordinator closes that gate locally (Postgres 16 + pgvector) before merging, as it did for F4cx1 and F5.
+**Order (user, 2026-10-29):** fix tasks first (F1e, C5cx2, C6cx2), then **M2 and M3**, which unblock the student map (S1, M4 → S2), then C10 and C12 (they unblock the pilot pack C14–C17 and M8), then A3 (it unblocks C13 and C15), then the rest. Every PR below is v0.1. "Behind" counts are live as of this snapshot and are mostly docs commits; sync before merge, not before review.
 
-**Criteria ready, waiting on merges:** A1 (F6), T2 (T1), T3 (T1), T4 (T3), T5 (T3), T6 (T2), T7 (T3, A1), T8 (T2, C5), A2 (A1), A5 (A1).
-**Blocked on a human spec:** M1–M5 (ARCHITECTURE §8.6); S1–S4 and C7 wait on them.
+Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA report. Codex's runner excludes `packages/db/src/function_binding.test.ts`; the coordinator closes any full-suite must locally (Postgres 16 + pgvector, PR synced with current `idea-map`) before merging, as it did for F4cx1, F5 and A1.
 
-**Resumed 2026-10-23 03:00 UTC.** Since resume:
-- F1d #16 merged `d040362` (independent PASS on 0dd326d, carried through idea-map-only merges).
-- C2cx5 #18 merged `1e0e348` (Codex PASS on 7dd6511; reports/C2cx5.md).
-- F5 #15: Codex FAIL F5-U3 / F5-E1 (replay drops unsaved edits; reports/F5-run1.md), sent to agent-f5 (session_01AYeTudGSKkBJvcQNYGhdaK, currently waiting on a user permission prompt).
-- F4cx1 #17: still UNVERIFIED (shadow-table probes not run by the reviewer); merge blocked, decision with the user.
-- F2cx1 #13: QA waived by the user; merges once synced and CI green.
-- Started: C4 (session_01P6h1XLCiwhqAA3bZfrZ1vc), C6 (session_01LLC8sn3PT6WN32yeD5MBbG); F6 asked to resume (session_013Z7VfQwMGUwAwFob4Ra6U1).
-The table below is the pre-resume snapshot.
+**Criteria are ready for every PR below:** each `docs/qa/<ID>.md` exists and the copy on each PR branch matches `idea-map` (checked 2026-10-28 04:15). Review a PR against the criteria version named in its row and its current head. A PR more than 0 behind needs a sync and fresh exact-head CI before merge; a sync that changes no task code keeps a PASS (`git diff <reviewed> <head> -- <task paths>`). Fix tasks (`cx`) merge first.
 
-| Task / PR | Evidence and state | Next action / owner |
-|---|---|---|
-| F4cx3 / #14 | Merged at `3f4d845`; independent premerge PASS and actual merge CI/plan both green. Saved [completion report](reports/F4cx3.md). | Complete; coordinator marked done. |
-| F4b / #12 | Independent QA PASS on `252f5fa`, DB 161/161; carried to `8e8f58c` after empty task-path diff and green CI. Merged at `fbb453d`. | Actual merge CI/plan green; completion recorded in [F4b report](reports/F4b.md). Local independent report: `/home/kevin/codex-qa-2026-10-22/reports/Codex-F4b-review-252f5fa.md`. |
-| C1cx1 + C1 / #8 | Independent PASS; merged at `649f46a` after unchanged-code verification and exact-head CI. Actual merge CI/plan green; both tasks done. [Combined completion report](reports/C1.md). | Complete; C9 is also done. C4 remains deferred and also needs C2cx5. |
-| F2cx1 / #13 | Frozen head `c7883aa53bf1ece835d9725ed5c8a40665d831bb`; no UI changes during synchronization. Builder browser measurements pass, but independent review did not run. | **Unverified:** delegated QA turn failed with automated cybersecurity-risk block. Do not treat builder results as independent QA or retry/reroute the blocked review. Evidence: `/home/kevin/codex-qa-2026-10-22/evidence/pr13-review-launch-block.md`. |
-| C8 / #11 | Independent PASS on `4098239`, including DB 161/161; carried to `1ddf542` with empty task diff and green CI. Merged at `9269dd2`. First derive timing failure and successful unchanged retry retained in independent report. | Actual merge CI/plan green; marked done, [completion report](reports/C8.md). C2cx5 PR #18 is parked pending independent QA. |
-| F1c / #10 | Merged at `834a340`; actual merge CI/plan green. [Completion and independent report](reports/F1c.md). | Done. Mandatory ambient-global/process follow-up remains [F1d](F1d.md), independently passing but unmerged at PR #16; M3 depends on it. |
-| F5 / #15 | Integration frozen at `a827f1c12db0c21bba21a29f288847c24331f4aa`, base `738b4f8`. Local full checks, DB 165/API 65, and exact-head CI passed. Includes landed 0011 isolation then auth 0012; no blocked PR17 code/tests. | Parked for later current-base synchronization and independent QA. Evidence: `/home/kevin/coordinator-takeover-2026-10-22/F5-integration-handoff-a827f1c.md`. |
-| F4cx1 / #17 | **QA coverage blocked:** frozen head `3e97696f49816aa9a487d9efbc1fca2acbf6381a` CI green, but required dynamic shadow-table tests repeat probes stopped by the original automated security-filter interruption (Codex-F4-database.md). | Keep unverified. Independent reviewer cannot certify F1/F2/F4/S1 or full-suite F5; source/permitted evidence only. Do not rerun or delegate the blocked tests through another path; builder/CI results are not independent PASS. |
-| C2cx5 / #18 | Builder complete at `4762bf0d8e2d32e42e9b9604dbd793fcd7258747`: contracts 212, domain 94, connectors 101, DB 161; root checks passed. No migration changed; import level is derived consistently from severity. | Exact-head CI passed. Independent review deferred by the C9 stop boundary; future current-base synchronization required before merge. |
-| F1d / #16 | Fresh independent all-must PASS at `0dd326d` + base `738b4f8`, integrated tree `76e6f81`; 210 ambient cases, tracker 172, DB 161. Published [report](codex/Codex-F1d-review-0dd326d.md). Frozen remote head `a56c820225f4d7bac77f893f9019279c4f88ea7f` is a metadata-only synchronization. | Parked unmerged at the user C9-only stopping boundary; future merge requires latest-base synchronization and exact-head CI. |
-| C9 / #19 | Independent all-must PASS on `2ae52d4`, final head `79e4494`; merged `73feaab` with actual build/plan green. Full root checks/DB 161 pass. [Completion report](reports/C9.md). | Done; coordinator stopped. Suggestions deferred in CXB. |
+| Priority | Task / PR | Head | Behind | Criteria (version) | Review history | Next action |
+|---|---|---|---|---|---|---|
+| 1 | **F1e #45 (fix task, merge first)** | `bccb5be` | 7 | `F1e.md` (2026-10-29) | None yet. Serial `pnpm test` (~5.5 min on 2 CPUs); new test-only `@ideamap/testing` best-of-N/median latency helper; no budgets changed, nothing skipped or retried; fixed `imports.test.ts` T2-F5 newest-job race; F1e-F6 (artificial delay on a real test) not run, helper self-tests instead. CI green twice on head; 10/10 loaded local runs | Codex review |
+| 2 | C5cx2 #34 (agent-c5cx2) | `0c56a73` | 83 | `C5cx2.md` (2026-10-27) | None yet | Codex review; then sync and merge |
+| 3 | C6cx2 #39 (agent-c6cx2) | `5b23c8b` | 37 | `C6cx2.md` (2026-10-28) | None yet. Canonical LF on import (`assemblePack`) and on export, so legacy CRLF packs export as a fresh import would store them; lone CR still refused in CSV (C6cx1); LibreOffice matrix run by the builder with ad hoc scripts (no soffice in CI) | Codex review (fix task: merge first) |
+| 4 | M2 #30 (agent-m2b) | `97018f5` | 35 | `M2.md` (2026-10-24) | Codex `Codex-M2-integration-38c0782-63855ef.md`: BLOCKED (conflicts). Synced by session_017xAqLf6Rjogb9biR2BjA9c: one backstop (A1's), routes and policies kept. Post-merge CI M2-P1 ran 316–980 ms p95 on a busy shared CI database; fix waits for autovacuum and CHECKPOINTs before measuring (bar unchanged): p95 8.5 ms client / 7.9 ms server on `97018f5` | Codex review of `97018f5` |
+| 5 | M3 #31 (agent-m3) | `a022010` | 94 | `M3.md` (2026-10-24) | None yet | Codex review |
+| 6 | C10 #43 (agent-c10) | `ea9ef53` | 10 | `C10.md` (2026-10-29) | None yet. Fixture Practice rows use a test-only `fixture` bank (production config reports them as errors); D40 columns optional in the parser so the data check blocks publishing with a located error; allow-list via `PRACTICE_SOURCES_FILE`; Practice is tab index 9. Earlier red CI not reproduced (likely timing, F1e) | Codex review |
+| 7 | C12 #44 (agent-c12) | `b84777d` | 8 | `C12.md` (2026-10-29, F1 corrected: `layer` sheet-only) | None yet. Uses existing `standard_codes`; `traceTargets` stops at mastered ideas; C3 parity expectations updated for the new fixture. `layer` now sheet-only (not a class override), CI green on `b84777d` | Codex review |
+| 8 | A3 #38 (agent-a3) | `0ec9c58` | 24 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | Synced (T2's import tests and every route kept; dev CLI passes the hash embedder); D31 rework included; CI green | Codex review of `0ec9c58` |
+| 9 | A2 #37 (agent-a2) | `bea1b71` | 24 | `A2.md` (2026-10-28: A2-S4 per-district flag window, D32) | Synced (one AI setup path: T2's `loadAiConfig(env)` + shared provider/moderation) and Codex's audit suggestion applied with tests (stale view, 4-way concurrent resolve → one audit); CI green | Codex review of `bea1b71` |
+| 10 | A7 #36 (agent-a7) | `cf41793` | 49 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
+| 11 | A5 #35 (agent-a5) | `49be775` | 53 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
+| 12 | A6 #42 (agent-a6) | `0b0b1d4` | 28 | `A6.md` (2026-10-24) | None yet. Drafting runs in the API process (holds the key) via an injected writer; bypasses the student rate limiter, bounded by job concurrency 4; new student read route `GET /api/classes/:id/content`; library passages wait for A3 | Codex review |
+| 13 | T3 #29 (agent-t3) | `aa67890` | 24 | `T3.md` (2026-10-24) | Synced (shell holds T3's Course details and T2's Curriculum data; both CSS imports); CI green | Codex review of `aa67890` |
+| 14 | T6 #41 (agent-t6) | `0223f39` | 29 | `T6.md` (2026-10-24) | None yet. Mapping edits author/admin only; picker options from headers the newest import recorded; server-side paging (100 rows) | Codex review |
+| 15 | T8 #40 (agent-t8) | `6f8a8f9` | 3 | `T8.md` (2026-10-24) | None yet. New API route `GET /api/curricula/:id/publishing` (F5 policy, in the sweep). **Coordinator change request 2026-10-29, done at `38ee4a4`, wording and test aligned at `6f8a8f9`:** publish routes now wired into `startServer` and `dev/cli.ts`, with `index.test.ts` asserting 401/403 (not 404); rollback offers earlier published versions only (user decision 2026-10-29, T8-F6), and the store refuses newer or current ones. CI green on head; builder's local full suite in CI order passed (function_binding 4/4); not browser-run | Codex review |
 
-## Reviewer and builder boundaries
+**Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 
-- Coordinator: Codex thread `01a1662b-d926-7331-be84-5327b29f9d3e`; owns claims, criteria, routing, integration checks and merges.
-- Independent QA coordinator: Codex thread `01a165ed-292f-7d71-8826-a8193dd72a3e`; owns independent evidence and new immutable reports, not implementation or task-state changes.
-- C9 primary builder (completed/stopped): local Luna agent `/root/c1_memory_fix`, worktree `/home/kevin/coordinator-worktrees/c9`; earlier C1cx1 and F1d work is handed off.
-- C9 persona component (completed/stopped): local Luna agent `/root/f2_ci_fix`, worktree `/home/kevin/coordinator-worktrees/c9-personas`; component and null-default follow-up merged with C9. Its C2cx5 work is frozen at the head above.
+**Builder decisions (2026-10-28), read from the sessions' final replies, which cloud sessions don't send back on their own:**
+- **A2:** only the new student message is moderated on input (earlier turns are client-held, as in A1). A `safety_flag` is deleted with its transcript at the district's AI retention period (90-day default, D22/§10). The moderator defaults to the gateway's own model and fails closed. **Settled as D32:** deleted at the retention period, or 30 days after resolution if sooner (new must A2-S4, sent to the builder).
+- **A3:** the uploaded original is deleted once its passages are stored. That means a future embedding vendor (§12 q6) can't re-embed without re-upload. **Settled as D31:** materials are kept permanently and never deleted (A3-S3 revised; the FERPA-delete request to the builder is withdrawn). Scanned PDFs are reported as unreadable, not OCR'd. Missing teacher-level FERPA delete (A3-S3) is a must gap, sent back to the builder.
+- **A5:** CI replays recorded replies, not the A1 mock model (the mock lives in `apps/api`; A5-F4 allows recorded or mock). Recordings are hand-written; someone with a model key must run `eval:live -- --record`, and every template edit needs a re-record. Uses stand-in guardrails until A2 merges. **D34:** ground truth will be teacher-approved replies (placeholder A5b, §12 q14 open); the hand-written recordings are an interim seed.
+- **A7:** recorded in ARCHITECTURE §12 q12 on its branch as assumptions, not settled: the device layer is rules plus word lists behind `EntityRecognizer`; the device never receives the roster. **Settled as D33:** an on-device ML NER model, never a roster on the device (new must A7-F10, sent to the builder). Which model is still open.
 
-## Pending design clarification
+**Criteria ready, waiting on merges:** T4, T5, T7 (T3); T6, T8, A6 (T2); A4 (A3, T2); A8 (A7); A9 (A2, M2, A7); M4 (M3); M5, S1 (M2, M3); M6 (M3, A9); M7 (M3); A10 (A9, A5, M6); C7 (S1); S2 (S1, M4); S3 (S2, T4); S4 (S2, A2, A7, A8); L1 (the pilot set). **After the pilot:** X1 and X2 have no criteria yet.
 
-C5's affected-student count is not defined precisely in architecture §7. The user has been asked whether it means all enrolled students in selected classes or only students whose recorded progress changes; see architecture §12. C5 criteria remain a local draft pending this clarification. It remains deferred; no task is being started while coordination is stopped.
+## Recent completions
 
-## C9 performance evidence clarification
+| Task | PR | Merge | Evidence |
+|---|---|---|---|
+| A1 | #28 | `438a939` (done `6d573f0`) | Codex scoped PASS at `070cb66` plus the coordinator's A1-F9 full-suite run, `function_binding.test.ts` 4/4: [report](reports/A1.md). A1 QA suggestions went to A7-F8/F9 (`bd3dc97`) and CXB |
+| C5 | #23 | `956c515` | [report](reports/C5.md); Codex C5 errors became C5cx1 and C5cx2 |
+| S5 | #26 | `5325cb3` | [report](reports/S5.md) |
+| C6 | #21 | `3715aa6` | [report](reports/C6.md); Codex C6-E4 became C6cx1 |
+| M1 | #25 | `7ebd9fe` | [report](reports/M1.md) |
+| T1 | #24 | `1e87d66` | [report](reports/T1.md) |
 
-The builder withdrew its unsubstantiated C2 6.12ms-versus-9.3ms comparison. Independent paired same-input measurements preserve the 10% regression budget; [C9-P1](C9.md) documents the method and required historical-input limitation. Independent full-suite verdict is PASS; historical comparison remains unverified as recorded in the immutable report.
+Older completions (F-, C1–C4, C8, C9 and fix tasks) have reports in `reports/`, and their history is in git (`git log -- docs/qa/STATUS.md`).
 
-## Resume contract
+## Retained branches
 
-Follow `AGENTS.md` stop/resume protocol. A future explicit resume requires live branch/CI checks, reconciliation of F6 ownership, and current-base synchronization of parked PRs before any merge. Ready/dependent tasks and historical claims are not active assignments. Routine updates remain document-first; the QA coordinator is idle and should receive a startup message only for an authorized concrete review.
+`wip/M2-ingest-perf` and `wip/M2-one-statement` stay (user, 2026-10-27). They hold earlier M2 performance experiments; the root cause turned out to be missing planner statistics, not Docker's port proxy.
+
+## Policy update (user, 2026-10-24)
+
+- **Claude QA pauses after the current runs.** Independent Claude QA finishes on A1 (#28), T2 (#27) and T3 (#29). No new Claude QA sessions after that. From Monday, Codex reviews PRs and merged work; a Codex file reviewing a PR's current head is its QA report for the integration gate. PRs opened before then (M2 #30, M3) wait for Codex.
+- **Cheaper models for new sessions.** Builders use Sonnet for everyday implementation. Haiku is for high-volume, classification, triage and fast sub-agent work. Sessions already running keep their model until they finish.
+- **Question 13 settled as D30:** feedback teaching events carry the acting teacher's pseudonymous id, used so each teacher's labelled examples weigh equally. Built in A9 (criteria A9-F7, A9-F8, A9-S4).

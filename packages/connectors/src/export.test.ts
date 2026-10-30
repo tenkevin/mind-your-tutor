@@ -269,16 +269,17 @@ const HOSTILE = [
 ];
 
 describe('formula injection (C6-S1)', () => {
-  async function hostilePack(): Promise<Pack> {
+  // CSV refuses a lone carriage return (C6cx1), so its formula checks leave that one out.
+  async function hostilePack(csv = false): Promise<Pack> {
     const pack = structuredClone(await fixturePack());
     HOSTILE.slice(0, 4).forEach((title, i) => (pack.ideas[i]!.title = title));
     pack.ideas[4]!.notes = HOSTILE[4]!;
-    pack.ideas[5]!.notes = HOSTILE[5]!;
+    if (!csv) pack.ideas[5]!.notes = HOSTILE[5]!;
     return pack;
   }
 
-  const payloads = async (): Promise<ExportPayload[]> => {
-    const pack = await hostilePack();
+  const payloads = async (csv = false): Promise<ExportPayload[]> => {
+    const pack = await hostilePack(csv);
     return [
       packReport(pack, DATE),
       dataCheckReport(pack, checkPack(pack), DATE),
@@ -291,7 +292,7 @@ describe('formula injection (C6-S1)', () => {
 
   it('CSV cells that start like a formula get a leading apostrophe', async () => {
     const seen = new Set<string>();
-    for (const payload of await payloads()) {
+    for (const payload of await payloads(true)) {
       for (const sheet of payload.sheets) {
         const rows = parseCsv(sheetToCsv(sheet).slice(1), 1e7, 1e4, 'x').rows;
         for (const cell of rows.flat()) {
@@ -479,6 +480,33 @@ describe('formats (C6-F7, F8, U1, U2)', () => {
       name: 'ExportRefused',
       at: { sheet: 'Ideas', row: 3, column: 'notes' },
     });
+  });
+
+  it('refuses a lone carriage return in CSV, locating the cell and pointing to XLSX (C6cx1)', async () => {
+    const pack = structuredClone(await fixturePack());
+    pack.ideas[0]!.notes = 'one\rtwo';
+    const failure = await csvExport.write(packReport(pack, DATE)).then(
+      () => null,
+      (e: unknown) => e as ExportRefused,
+    );
+    expect(failure).toBeInstanceOf(ExportRefused);
+    expect(failure!.at).toMatchObject({ sheet: 'Ideas', row: 2, column: 'notes' });
+    expect(failure!.message).toMatch(
+      /^Ideas, row 2, notes \(idea ".+"\) has a lone carriage return/,
+    );
+    expect(failure!.message).toMatch(/Use the XLSX export/);
+    // A leading CR (with a formula-like title) is refused too, never written half-way.
+    pack.ideas[0]!.notes = 'fine';
+    pack.ideas[1]!.title = '\r=1+1';
+    await expect(csvExport.write(packReport(pack, DATE))).rejects.toMatchObject({
+      at: { sheet: 'Ideas', row: 3, column: 'title' },
+    });
+    // CRLF and LF inside cells still export, and XLSX keeps the lone CR.
+    pack.ideas[1]!.title = 'ok';
+    pack.ideas[0]!.notes = 'a\r\nb\nc';
+    expect((await reimport(await csvExport.write(packReport(pack, DATE)))).pack).toEqual(pack);
+    pack.ideas[0]!.notes = 'one\rtwo';
+    expect((await reimport(await xlsxExport.write(packReport(pack, DATE)))).pack).toEqual(pack);
   });
 
   it('refuses a cell longer than a spreadsheet can hold, rather than cutting it', async () => {
