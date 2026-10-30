@@ -158,6 +158,12 @@ const SAMPLES = {
       [SAMPLE_CONFIG, SAMPLE_STATE, '2026-03-30T12:00:00-04:00'],
     ],
   },
+  teacherProgress: {
+    calls: [
+      [SAMPLE_CONFIG, SAMPLE_STATE],
+      [SAMPLE_CONFIG, SAMPLE_STATE, '2026-03-30T12:00:00-04:00'],
+    ],
+  },
   classDate: { calls: [[SAMPLE_CONFIG, '2026-03-09T03:30:00Z']] },
 } satisfies Record<keyof Tracker, Sample>;
 

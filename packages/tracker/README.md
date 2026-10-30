@@ -11,7 +11,7 @@ The same events must always give the same numbers. Tracker code therefore has no
 ## Using it
 
 ```ts
-import { progress, replay, xpLedger, type TrackerConfig } from '@ideamap/tracker';
+import { progress, replay, teacherProgress, xpLedger, type TrackerConfig } from '@ideamap/tracker';
 
 const config: TrackerConfig = {
   rulesVersion: 1,
@@ -20,6 +20,7 @@ const config: TrackerConfig = {
   timeZone: 'EST5EDT,M3.2.0,M11.1.0', // the class time zone, as a POSIX TZ rule
   nonSchoolDates: ['2026-11-26'], // holidays; school days default to Monday–Friday
   optedOut: false, // D24
+  currentVersionId: versionId, // optional: the version the class is pinned to now
   versions: {
     [versionId]: { ideas: [{ id, unit, requires, rarity }], units: [{ unit, dueDate }] },
   },
@@ -28,7 +29,8 @@ const config: TrackerConfig = {
 const state = replay(config, events); // one student's events, in seq order
 const snapshot = JSON.stringify(state); // ProgressSnapshot: the state plus its lastSeq
 const later = replay(config, newerEvents, JSON.parse(snapshot)); // only seq > lastSeq is applied
-const view = progress(config, later, asOf); // asOf: ISO time to evaluate time-based rules at
+const view = progress(config, later, asOf); // the student view; asOf: ISO time to evaluate time-based rules at
+const teacher = teacherProgress(config, later, asOf); // the same plus mayNeedHelp (D21)
 const xp = xpLedger(config, events); // every XP award and the event that earned it
 ```
 
@@ -36,6 +38,10 @@ const xp = xpLedger(config, events); // every XP award and the event that earned
 - **Time zone.** `Intl` is banned in tracker code, so the class zone arrives as a POSIX TZ rule, the footer line of the IANA tzdata file (`tail -n1 /usr/share/zoneinfo/America/New_York`). Examples: `EST5EDT,M3.2.0,M11.1.0` (New York), `GMT0BST,M3.5.0/1,M10.5.0` (London), `AEST-10AEDT,M10.1.0,M4.1.0/3` (Sydney), `<+0530>-5:30` (Kolkata), `UTC0`. `src/calendar.test.ts` checks these against `Intl` hour by hour.
 - **State** is plain JSON. A snapshot is `JSON.stringify(state)`, and replaying from it is byte-identical to replaying from scratch (property-tested). `apply` and `replay` never change the state they are given.
 - **`asOf`.** Rules that depend on time passing without events (a streak broken by a missed day, a prerequisite stalled for 5 school days) are evaluated at the `asOf` the caller passes, which defaults to the last event's time. The tracker never reads a clock.
+- **Student and teacher views (D21).** `progress` is what a student may see: ideas, units, XP, streak, cards. `mayNeedHelp` is only in `teacherProgress`, which is `progress` plus that field, so a student-facing response built from `progress` cannot carry it.
+- **Current version.** Without `currentVersionId`, the version of the latest event is current, so a late event stamped with an older version (a student holding an old map after a publish) moves `archived`, rarity and `state.versionId` back. Set `currentVersionId` (a key of `versions`) to the class's pinned version and the late event is still applied, but cannot change which version is current.
+- **Snapshots belong to their config.** The state records a fingerprint of the settings that change results (rulesVersion, pass mark, quiz length, time zone, school days, non-school dates) and of each curriculum version it has used. Continuing a snapshot under different settings, or after a version it used was edited, throws `TrackerConfigError` like a `rulesVersion` mismatch: rebuild it by replaying events. Publishing a new version (a new key in `versions`) and changing `optedOut` or `currentVersionId` do not invalidate a snapshot.
+- **One source of unlocks (§8.4 rule 5).** `progress().ideas[].unlocked` is the only authority on whether an idea is open. `@ideamap/domain` `mapStates`/`lockStates` take the unlocked ids as a plain `Set` (the tracker and domain do not import each other); an idea unlocked before a publish added a prerequisite stays open on the map. A `requires` naming an id outside the version (or the idea itself) never unlocks in the tracker, and the domain agrees when given the tracker's set. `src/unlocks.test.ts` checks the agreement on random graphs, publishes and event logs.
 - **Errors.** An event for another student or for a version missing from the config, an unknown `rulesVersion` and an invalid config throw `TrackerConfigError`.
 
 ## Rules: rulesVersion 1 (ARCHITECTURE.md §8.3)
@@ -56,7 +62,7 @@ Every output carries the ids of the events that produced it (§8.1, traceable). 
 | May need help (b) | The next mission is the uncompleted mission (no `mission.completed`) with the earliest due date. An idea it depends on (in its unit, or required by one in its unit) that is unlocked, not passed, and unlocked 5 or more school days before `asOf`. School days are the class's weekdays minus `nonSchoolDates`, counted after the unlock day up to the `asOf` day. Cleared by a pass | the events that unlocked it                                               |
 | Opt-out (D24)     | Same outputs; `excludedFromAuditsAndResearch: true`                                                                                                                                                                                                                                                                                                                                    | —                                                                         |
 
-Signals are teacher-only (D21) and always carry a readable `reason`, e.g. `3 wrong answers on "evap" questions after asking for a hint.` or `"sun" is needed for mission 1, unlocked on 2026-10-19, and has no pass after 5 school days.`
+Signals are teacher-only (D21; only `teacherProgress` returns them) and always carry a readable `reason`, e.g. `3 wrong answers on "evap" questions after asking for a hint.` or `"sun" is needed for mission 1, unlocked on 2026-10-19, and has no pass after 5 school days.`
 
 Events with no rule in v1 (`idea.opened`, `idea.active_time`, `teachback.done`, `feedback.*`, `teacher.feedback.*`, `map.shown`, `ai.output_shown`) still advance `lastSeq`. A `quiz.finished` with no `quiz.started` for its attempt is ignored, because its idea is unknown.
 
@@ -73,7 +79,7 @@ Events with no rule in v1 (`idea.opened`, `idea.active_time`, `teachback.done`, 
 A rule never changes in place: old results must stay reproducible (§8.1).
 
 1. Copy `src/rules-v1.ts` to `src/rules-v2.ts` and change it there. Keep `rules-v1.ts` exactly as it is.
-2. Add `2` to `RULES_VERSIONS` in `src/config.ts`, widen `TrackerState['rulesVersion']`, and dispatch on `config.rulesVersion` in `src/index.ts` (`initialState`, `run`, `progress`).
+2. Add `2` to `RULES_VERSIONS` in `src/config.ts`, widen `TrackerState['rulesVersion']`, and dispatch on `config.rulesVersion` in `src/index.ts` (`initialState`, `run`, `progress`, `teacherProgress`).
 3. A snapshot made under another version is rejected; rebuild it by replaying events. Never patch numbers.
 4. Add tests for v2 beside v1's, and keep every v1 test passing. Document the new version here, with what changed and why.
 5. What may be traced, inferred, shown or kept is a user decision (D19–D22): a new version may not add an output D20 forbids.

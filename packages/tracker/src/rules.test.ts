@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { progress, replay, xpLedger, type TrackerConfig } from './index.js';
+import { progress, teacherProgress, replay, xpLedger, type TrackerConfig } from './index.js';
 import {
   Log,
   NEW_YORK,
@@ -12,7 +12,8 @@ import {
 
 // §8.3 rulesVersion 1, one rule at a time (docs/qa/M3.md M3-F1 to M3-F7).
 
-const run = (c: TrackerConfig, log: Log, asOf?: string) => progress(c, replay(c, log.events), asOf);
+const run = (c: TrackerConfig, log: Log, asOf?: string) =>
+  teacherProgress(c, replay(c, log.events), asOf);
 const idea = (p: ReturnType<typeof progress>, id: string) => p.ideas.find((i) => i.ideaId === id);
 
 describe('mastery and pass mark (M3-F1)', () => {
@@ -363,11 +364,11 @@ describe('may need help (M3-F6)', () => {
     for (const id of ['evap', 'ocean', 'plants', 'trans', 'vap']) log.pass(id);
     const state = replay(c, log.events);
     // Four school days later (Fri 23 Oct): nothing yet.
-    expect(progress(c, state, '2026-10-23T20:00:00Z').mayNeedHelp).toEqual([]);
+    expect(teacherProgress(c, state, '2026-10-23T20:00:00Z').mayNeedHelp).toEqual([]);
     // Saturday and Sunday aren't school days.
-    expect(progress(c, state, '2026-10-25T20:00:00Z').mayNeedHelp).toEqual([]);
+    expect(teacherProgress(c, state, '2026-10-25T20:00:00Z').mayNeedHelp).toEqual([]);
     // Mon 26 Oct is the fifth school day: sun is stalled.
-    const signals = progress(c, state, '2026-10-26T13:00:00Z').mayNeedHelp;
+    const signals = teacherProgress(c, state, '2026-10-26T13:00:00Z').mayNeedHelp;
     expect(signals).toEqual([
       expect.objectContaining({
         kind: 'stalled-prerequisite',
@@ -384,7 +385,7 @@ describe('may need help (M3-F6)', () => {
 
     // A pass clears it.
     log.on('2026-10-26T14:00:00Z').pass('sun');
-    const later = progress(c, replay(c, log.events), '2026-10-26T15:00:00Z').mayNeedHelp;
+    const later = teacherProgress(c, replay(c, log.events), '2026-10-26T15:00:00Z').mayNeedHelp;
     expect(later.map((s) => s.ideaId)).not.toContain('sun');
   });
 
@@ -393,16 +394,16 @@ describe('may need help (M3-F6)', () => {
     log.add('idea.opened', { ideaId: 'sun' });
     const asOf = '2026-10-26T13:00:00Z';
     const holiday = config({ nonSchoolDates: ['2026-10-21'] });
-    expect(progress(holiday, replay(holiday, log.events), asOf).mayNeedHelp).toEqual([]);
+    expect(teacherProgress(holiday, replay(holiday, log.events), asOf).mayNeedHelp).toEqual([]);
 
     const c = config();
     expect(
-      progress(c, replay(c, log.events), asOf).mayNeedHelp.every((s) => s.missionId === 1),
+      teacherProgress(c, replay(c, log.events), asOf).mayNeedHelp.every((s) => s.missionId === 1),
     ).toBe(true);
     log.add('mission.completed', { missionId: 1 });
     // Mission 2's ideas (cond, prec, climate, clouds, rain) and their prerequisites (evap,
     // temp): only evap has no prerequisites of its own, so only it is unlocked and stalled.
-    const next = progress(c, replay(c, log.events), asOf).mayNeedHelp;
+    const next = teacherProgress(c, replay(c, log.events), asOf).mayNeedHelp;
     expect(next.map((s) => [s.ideaId, s.missionId])).toEqual([['evap', 2]]);
   });
 

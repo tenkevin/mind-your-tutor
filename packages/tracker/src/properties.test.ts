@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   apply,
   progress,
+  teacherProgress,
   replay,
   scorePercent,
   xpLedger,
@@ -171,7 +172,7 @@ describe('the generator', () => {
     const seen = new Set<string>();
     for (const events of fc.sample(logs, { numRuns: 300, seed: 3 })) {
       const state = replay(CONFIG, events);
-      const p = progress(CONFIG, state, '2026-12-01T12:00:00Z');
+      const p = teacherProgress(CONFIG, state, '2026-12-01T12:00:00Z');
       if (p.ideas.some((i) => i.mastered)) seen.add('mastered');
       if (
         p.ideas.some(
@@ -309,7 +310,7 @@ describe('traceability (M3-S3)', () => {
         const ids = new Set(events.map((e) => e.id));
         const state = replay(CONFIG, events);
         const asOf = new Date(Date.parse('2026-10-19T12:00:00Z') + days * 86_400_000).toISOString();
-        const p = progress(
+        const p = teacherProgress(
           CONFIG,
           state,
           state.lastAt && state.lastAt > asOf ? state.lastAt : asOf,
@@ -371,7 +372,6 @@ describe('nothing D20 forbids (M3-S2)', () => {
         'cards',
         'excludedFromAuditsAndResearch',
         'ideas',
-        'mayNeedHelp',
         'passMark',
         'quizLength',
         'rulesVersion',
@@ -379,6 +379,11 @@ describe('nothing D20 forbids (M3-S2)', () => {
         'units',
         'xp',
       ].sort(),
+    );
+    // D21: the student view has no teacher-only signal, and the teacher view adds only that.
+    expect(JSON.stringify(p)).not.toContain('mayNeedHelp');
+    expect(Object.keys(teacherProgress(CONFIG, replay(CONFIG, log.events))).sort()).toEqual(
+      [...Object.keys(p), 'mayNeedHelp'].sort(),
     );
     expect(Object.keys(p.ideas[0] ?? {}).sort()).toEqual([
       'archived',

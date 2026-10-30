@@ -55,6 +55,25 @@ export function initialState(config: TrackerConfig): TrackerState {
   return initialStateV1(compileConfig(config));
 }
 
+// A snapshot is only valid under the config it was built with (N2). Settings that
+// change results (pass mark, quiz length, calendar, rules version) must match; a version
+// the snapshot already used must be unchanged. A newly published version is fine: it
+// adds a key to `versions` and alters nothing already applied.
+function checkSnapshotConfig(config: CompiledConfig, from: TrackerState) {
+  if (from.settingsHash !== config.settingsHash) {
+    throw new TrackerConfigError(
+      'The snapshot was built under different class settings (pass mark, quiz length, time zone or calendar); rebuild it by replaying events.',
+    );
+  }
+  for (const [versionId, hash] of Object.entries(from.versionHashes)) {
+    if (config.versions.get(versionId)?.hash !== hash) {
+      throw new TrackerConfigError(
+        `The snapshot used version ${versionId}, which the config no longer matches; rebuild it by replaying events.`,
+      );
+    }
+  }
+}
+
 function run(
   config: CompiledConfig,
   events: readonly InteractionEvent[],
@@ -66,6 +85,7 @@ function run(
       `The snapshot is rulesVersion ${String(from.rulesVersion)}, the config ${config.rulesVersion}; rebuild it by replaying events.`,
     );
   }
+  if (from) checkSnapshotConfig(config, from);
   const state = from ? clone(from) : initialStateV1(config);
   for (const event of events) {
     // Already applied (a snapshot covers it, or the event was resent).
@@ -113,7 +133,7 @@ export type Card = {
   eventIds: string[];
 };
 
-/** Everything §8.3 rulesVersion 1 works out, each with the events behind it. */
+/** What a student may see of §8.3 rulesVersion 1, each output with the events behind it. */
 export type Progress = {
   rulesVersion: 1;
   asOf: string | null;
@@ -137,14 +157,18 @@ export type Progress = {
   xp: TrackerState['xp'];
   streak: { days: number; lastPassDate: string | null; eventIds: string[] };
   cards: Card[];
-  /** Teacher only (D21). */
-  mayNeedHelp: HelpSignal[];
   /** D24 */
   excludedFromAuditsAndResearch: boolean;
 };
 
+/** The teacher's view: everything the student sees, plus "may need help" (D21). */
+export type TeacherProgress = Progress & {
+  mayNeedHelp: HelpSignal[];
+};
+
 /**
- * Reads the outputs out of a state. `asOf` (ISO 8601) is the moment to evaluate
+ * Reads the student's outputs out of a state. Teacher-only signals are not in it
+ * (D21); use `teacherProgress`. `asOf` (ISO 8601) is the moment to evaluate
  * time-based rules at, such as a streak broken by a missed day or a prerequisite
  * stalled for 5 school days; it defaults to the last event's time. The caller
  * supplies it, so the result stays a pure function of its inputs.
@@ -189,10 +213,6 @@ export function progress(config: TrackerConfig, state: TrackerState, asOf?: stri
       archived: !idea.inCurrentVersion,
       eventIds: [idea.masteredEventId as string],
     }));
-  const mayNeedHelp = [
-    ...Object.values(state.helpSignals),
-    ...(at === null ? [] : stalledSignals(state, compiled, at)),
-  ];
   return {
     rulesVersion: state.rulesVersion,
     asOf: at,
@@ -203,9 +223,26 @@ export function progress(config: TrackerConfig, state: TrackerState, asOf?: stri
     xp: { ...state.xp },
     streak,
     cards,
-    mayNeedHelp,
     excludedFromAuditsAndResearch: compiled.optedOut,
   };
+}
+
+/**
+ * The teacher's reading of a state (D21): the student view plus `mayNeedHelp`, which
+ * must never reach a student-facing response. Same `asOf` rules as `progress`.
+ */
+export function teacherProgress(
+  config: TrackerConfig,
+  state: TrackerState,
+  asOf?: string,
+): TeacherProgress {
+  const student = progress(config, state, asOf);
+  const at = student.asOf;
+  const mayNeedHelp = [
+    ...Object.values(state.helpSignals),
+    ...(at === null ? [] : stalledSignals(state, compileConfig(config), at)),
+  ];
+  return { ...student, mayNeedHelp };
 }
 
 /** The class-time-zone date (`YYYY-MM-DD`) of an instant, as the streak counts days. */

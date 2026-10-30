@@ -69,6 +69,10 @@ export type TrackerState = {
   lastAt: string | null;
   lastEventId: string | null;
   versionId: string | null;
+  /** Fingerprint of the settings this state was built under; another config can't continue it. */
+  settingsHash: string;
+  /** Fingerprint of each curriculum version the state has used, by versionId. */
+  versionHashes: Record<string, string>;
   /** D24: same outputs, but excluded from D16 audits, aggregates and D25 research. */
   excludedFromAuditsAndResearch: boolean;
   ideas: Record<string, IdeaProgress>;
@@ -99,6 +103,8 @@ export function initialStateV1(config: CompiledConfig): TrackerState {
     lastAt: null,
     lastEventId: null,
     versionId: null,
+    settingsHash: config.settingsHash,
+    versionHashes: {},
     excludedFromAuditsAndResearch: config.optedOut,
     ideas: {},
     units: {},
@@ -275,12 +281,16 @@ export function applyV1(
     state.streak.eventIds = [];
   }
 
-  const versionChanged = state.versionId !== event.versionId;
-  if (versionChanged) {
-    state.versionId = event.versionId;
-    enterVersion(state, version);
-    refreshUnlocks(state, version, event);
-    refreshUnits(state, version, event, sink);
+  state.versionHashes[event.versionId] = version.hash;
+  // The pinned version when the config names one, else the latest event's.
+  const currentId = config.currentVersionId ?? event.versionId;
+  const current = config.versions.get(currentId) as CompiledVersion;
+  state.versionHashes[currentId] = current.hash;
+  if (state.versionId !== currentId) {
+    state.versionId = currentId;
+    enterVersion(state, current);
+    refreshUnlocks(state, current, event);
+    refreshUnits(state, current, event, sink);
   }
 
   switch (event.type) {
@@ -338,8 +348,8 @@ export function applyV1(
       if (!idea.mastered) {
         idea.mastered = true;
         idea.masteredEventId = event.id;
-        refreshUnlocks(state, version, event);
-        refreshUnits(state, version, event, sink);
+        refreshUnlocks(state, current, event);
+        refreshUnits(state, current, event, sink);
       }
       break;
     }
@@ -358,7 +368,7 @@ export function applyV1(
       const unit = unitOf(state, event.payload.unitId);
       unit.latestVerdict = event.payload.verdict;
       unit.latestVerdictEventId = event.id;
-      refreshUnits(state, version, event, sink);
+      refreshUnits(state, current, event, sink);
       break;
     }
     case 'mission.completed':
