@@ -111,6 +111,22 @@
 .imap-edge-faded {
   opacity: 0.7;
 }
+/* Forced colours (Windows high contrast) leave SVG strokes alone, so the quiet and faded
+   links would nearly vanish: draw every link in the system text colour at full strength.
+   The hot link still stands out by its thicker stroke and its label. */
+@media (forced-colors: active) {
+  .imap-edge line,
+  .imap-edge path {
+    stroke: CanvasText;
+  }
+  .imap-edge polygon {
+    fill: CanvasText;
+  }
+  .imap-edge-quiet,
+  .imap-edge-faded {
+    opacity: 1;
+  }
+}
 .imap-edge text {
   fill: var(--map-link-label);
   font-size: 13px;
