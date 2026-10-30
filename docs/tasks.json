@@ -1116,7 +1116,8 @@
       "size": 2,
       "deps": [
         "S2",
-        "C10"
+        "C10",
+        "M8"
       ],
       "done_when": "Per D40/D42: an idea page with a placeholder card for its overview video until X2 lands after the pilot (D42 amended), and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
       "placeholder": false,
