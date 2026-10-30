@@ -33,3 +33,32 @@ export function lockStates(
     };
   });
 }
+
+export type MapState = 'open' | 'next' | 'far';
+
+export interface IdeaMapState {
+  idea_id: string;
+  state: MapState;
+  /** The prerequisite ideas still to master, in the order the sheet lists them. */
+  unlocks_after: string[];
+}
+
+/**
+ * What the map shows for each idea (§8.4): `open`, `next` (locked, but every
+ * prerequisite still needed is itself open, so one step away) or `far` (needs at least
+ * one prerequisite that is still locked). Built on `lockStates`, so the lock rule
+ * stays in one place; M4's stored MapView calls this same function.
+ */
+export function mapStates(
+  ideas: readonly LockInput[],
+  mastered: ReadonlySet<string> = new Set(),
+): IdeaMapState[] {
+  const locks = lockStates(ideas, mastered);
+  const open = new Set(locks.filter((l) => l.state === 'open').map((l) => l.idea_id));
+  return locks.map((l) => ({
+    idea_id: l.idea_id,
+    state:
+      l.state === 'open' ? 'open' : l.unlocks_after.every((id) => open.has(id)) ? 'next' : 'far',
+    unlocks_after: l.unlocks_after,
+  }));
+}

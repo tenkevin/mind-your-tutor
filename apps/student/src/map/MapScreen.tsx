@@ -70,7 +70,11 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
         else if (e instanceof IdeaLocked) {
           setLoaded({
             id: openId,
-            value: { locked: `${e.title} is locked. Unlocks after ${e.unlocksAfter.join(', ')}.` },
+            value: {
+              locked: e.title
+                ? `${e.title} is locked. Unlocks after ${e.unlocksAfter.join(', ')}.`
+                : 'Hidden idea. Explore nearby to reveal.',
+            },
           });
         } else setLoaded({ id: openId, value: 'denied' });
       });

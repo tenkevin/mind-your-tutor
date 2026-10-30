@@ -155,14 +155,26 @@
   border-color: var(--map-node-centre-border);
   box-shadow: 0 0 32px var(--map-node-centre-glow);
 }
-.imap-locked {
+.imap-next,
+.imap-far {
   background: var(--map-node-locked);
-  border-style: dashed;
-  border-color: var(--map-node-locked-border);
   color: var(--map-node-locked-text);
   cursor: not-allowed;
 }
-.imap-locked:hover {
+/* Next up: dashed, in the open border colour, with an arrow. */
+.imap-next {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: var(--map-node-open-border);
+}
+/* Further away: dotted, in the locked border colour, with a lock. */
+.imap-far {
+  border-style: dotted;
+  border-width: 2px;
+  border-color: var(--map-node-locked-border);
+}
+.imap-next:hover,
+.imap-far:hover {
   border-color: var(--map-node-hover-border);
 }
 

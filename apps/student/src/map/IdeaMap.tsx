@@ -1,6 +1,6 @@
 import type { StudentMap, StudentMapIdea } from '@ideamap/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CategoryIcon, LockIcon, categoryColour } from './CategoryIcon';
+import { CategoryIcon, LockIcon, NextIcon, categoryColour } from './CategoryIcon';
 import {
   MAX_ZOOM,
   MIN_ZOOM,
@@ -29,6 +29,8 @@ interface Node {
   centre: boolean;
 }
 
+const HIDDEN = 'Hidden idea';
+const HINT = 'Explore nearby to reveal';
 const unlockText = (idea: StudentMapIdea) =>
   `Unlocks after ${idea.unlocksAfter.map((u) => u.title).join(', ')}`;
 
@@ -58,12 +60,13 @@ export function IdeaMap({
         ...toPixels(idea),
         ...halfSize(
           {
-            title: idea.title,
-            category: idea.category,
-            requires: idea.state === 'locked' ? unlockText(idea) : undefined,
+            title: idea.title ?? HIDDEN,
+            category: idea.category ?? '',
+            requires:
+              idea.state === 'next' ? unlockText(idea) : idea.state === 'far' ? HINT : undefined,
           },
           centre,
-          idea.state === 'locked',
+          idea.state !== 'open',
         ),
         centre,
       });
@@ -81,7 +84,8 @@ export function IdeaMap({
   }, [nodes]);
   const colours = useMemo(() => {
     const names = map.categories.map((c) => c.category);
-    for (const i of map.ideas) if (!names.includes(i.category)) names.push(i.category);
+    for (const i of map.ideas)
+      if (i.category && !names.includes(i.category)) names.push(i.category);
     return new Map(names.map((name, i) => [name, categoryColour(i)]));
   }, [map]);
   const icons = useMemo(() => new Map(map.categories.map((c) => [c.category, c.icon])), [map]);
@@ -176,16 +180,17 @@ export function IdeaMap({
     box.current?.querySelector<HTMLElement>(`[data-idea="${CSS.escape(restoreFocus)}"]`)?.focus();
   }, [restoreFocus]);
 
-  const titleOf = (id: string) => nodes.get(id)?.idea.title ?? id;
+  const titleOf = (id: string) => nodes.get(id)?.idea.title ?? 'a hidden idea';
   const label = (idea: StudentMapIdea) => {
     const out = map.links.filter((l) => l.from === idea.id);
     const into = map.links.filter((l) => l.to === idea.id);
     const part = (ls: typeof out, other: 'to' | 'from') =>
       ls.map((l) => `${titleOf(l[other])} (${l.relation})`).join(', ');
+    if (idea.state === 'far') return `${HIDDEN}. ${HINT}`;
     return [
       `${idea.title}.`,
       `${idea.category}.`,
-      idea.state === 'open' ? 'Open.' : `Locked. ${unlockText(idea)}.`,
+      idea.state === 'open' ? 'Open.' : `Next up. ${unlockText(idea)}.`,
       out.length ? `Leads to ${part(out, 'to')}.` : '',
       into.length ? `Comes from ${part(into, 'from')}.` : '',
     ]
@@ -195,8 +200,12 @@ export function IdeaMap({
 
   const click = (n: Node) => {
     if (gesture.current.moved) return;
-    if (n.idea.state === 'locked') {
-      setMessage(`${n.idea.title} is locked. ${unlockText(n.idea)}.`);
+    if (n.idea.state !== 'open') {
+      setMessage(
+        n.idea.state === 'far'
+          ? `${HIDDEN}. ${HINT}.`
+          : `${n.idea.title} is next up. ${unlockText(n.idea)}.`,
+      );
       return;
     }
     setMessage('');
@@ -312,14 +321,18 @@ export function IdeaMap({
               })}
             </svg>
             {[...nodes.values()].map((n) => {
-              const locked = n.idea.state === 'locked';
+              const locked = n.idea.state !== 'open';
               return (
                 <button
                   key={n.idea.id}
                   type="button"
                   data-idea={n.idea.id}
                   data-state={n.idea.state}
-                  className={['imap-node', n.centre && 'imap-centre', locked && 'imap-locked']
+                  className={[
+                    'imap-node',
+                    n.centre && 'imap-centre',
+                    locked && `imap-${n.idea.state}`,
+                  ]
                     .filter(Boolean)
                     .join(' ')}
                   style={{ left: n.x, top: n.y }}
@@ -335,14 +348,21 @@ export function IdeaMap({
                   onMouseLeave={() => setActive(null)}
                 >
                   <span className="imap-title">
-                    {locked && <LockIcon />}
-                    {n.idea.title}
+                    {n.idea.state === 'next' && <NextIcon />}
+                    {n.idea.state === 'far' && <LockIcon />}
+                    {n.idea.title ?? HIDDEN}
                   </span>
-                  <span className="imap-cat" style={{ color: colours.get(n.idea.category) }}>
-                    <CategoryIcon slug={icons.get(n.idea.category) ?? null} size={12} />
-                    {n.idea.category}
-                  </span>
-                  {locked && <span className="imap-req">{unlockText(n.idea)}</span>}
+                  {n.idea.category && (
+                    <span className="imap-cat" style={{ color: colours.get(n.idea.category) }}>
+                      <CategoryIcon slug={icons.get(n.idea.category) ?? null} size={12} />
+                      {n.idea.category}
+                    </span>
+                  )}
+                  {locked && (
+                    <span className="imap-req">
+                      {n.idea.state === 'far' ? HINT : unlockText(n.idea)}
+                    </span>
+                  )}
                 </button>
               );
             })}

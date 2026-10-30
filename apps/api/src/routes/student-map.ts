@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type {
   Pack,
   StudentIdeaResponse,
@@ -5,7 +6,7 @@ import type {
   StudentMapResponse,
   VersionDerived,
 } from '@ideamap/contracts';
-import { lockStates } from '@ideamap/domain';
+import { mapStates } from '@ideamap/domain';
 import type { FastifyInstance } from 'fastify';
 import { ALL_ROLES } from '../policy.js';
 import type { Trx } from '../db.js';
@@ -62,21 +63,42 @@ export function buildMap(p: Pinned, preview: boolean): StudentMap {
   const { pack, derived } = p;
   const byId = new Map(pack.ideas.map((i) => [i.idea_id, i]));
   const titles = (id: string) => byId.get(id)?.title ?? id;
-  const locks = new Map(lockStates(pack.ideas).map((l) => [l.idea_id, l]));
+  const locks = new Map(mapStates(pack.ideas).map((l) => [l.idea_id, l]));
   // Reading order: the centre, then each ring by angle.
   const positions = derived.layout.positions
     .filter((pos) => byId.has(pos.idea_id))
     .sort((a, b) => a.ring - b.ring || (a.angle ?? 0) - (b.angle ?? 0));
   const shown = new Set(positions.map((pos) => pos.idea_id));
+  // A far idea is hidden (D47): it goes out under a random id that is good for this
+  // response only, so nothing in the page source names it.
+  const hidden = (id: string) => !preview && locks.get(id)?.state === 'far';
+  const opaque = new Map<string, string>();
+  const wire = (id: string) => {
+    if (!hidden(id)) return id;
+    if (!opaque.has(id)) opaque.set(id, `hidden-${randomUUID()}`);
+    return opaque.get(id)!;
+  };
   return {
     versionNumber: p.versionNumber,
     subject: pack.course.subject,
     topic: pack.course.topic,
-    centre: derived.layout.centre,
+    centre: derived.layout.centre && wire(derived.layout.centre),
     ideas: positions.map((pos) => {
       const idea = byId.get(pos.idea_id)!;
       const lock = locks.get(idea.idea_id)!;
       const open = preview || lock.state === 'open';
+      if (hidden(idea.idea_id))
+        return {
+          id: wire(idea.idea_id),
+          title: null,
+          category: null,
+          unit: null,
+          ring: pos.ring,
+          x: pos.x,
+          y: pos.y,
+          state: 'far' as const,
+          unlocksAfter: [],
+        };
       return {
         id: idea.idea_id,
         title: idea.title,
@@ -85,15 +107,15 @@ export function buildMap(p: Pinned, preview: boolean): StudentMap {
         ring: pos.ring,
         x: pos.x,
         y: pos.y,
-        state: open ? ('open' as const) : ('locked' as const),
+        state: open ? ('open' as const) : lock.state,
         unlocksAfter: open ? [] : lock.unlocks_after.map((id) => ({ id, title: titles(id) })),
       };
     }),
     links: derived.ranked_links.kept
       .filter((l) => shown.has(l.from_id) && shown.has(l.to_id))
       .map((l) => ({
-        from: l.from_id,
-        to: l.to_id,
+        from: wire(l.from_id),
+        to: wire(l.to_id),
         relation: l.relation,
         importance: l.importance,
       })),
@@ -144,9 +166,11 @@ export function studentMapRoutes(app: FastifyInstance): void {
     });
     if (!found) return reply.code(404).send({ error: 'Not found' });
     const { pinned, idea, approved } = found;
-    const lock = lockStates(pinned.pack.ideas).find((l) => l.idea_id === idea.idea_id)!;
+    const lock = mapStates(pinned.pack.ideas).find((l) => l.idea_id === idea.idea_id)!;
     // A locked idea can't be opened by URL either (§8.4).
-    if (!preview && lock.state === 'locked') {
+    if (!preview && lock.state !== 'open') {
+      // A far idea stays hidden: no title, no prerequisites (D47).
+      if (lock.state === 'far') return reply.code(403).send({ error: 'Locked' });
       // Says what unlocks it, as the map card does, and nothing else about the idea.
       const titlesOf = new Map(pinned.pack.ideas.map((i) => [i.idea_id, i.title]));
       return reply.code(403).send({
