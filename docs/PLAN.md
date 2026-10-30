@@ -71,7 +71,7 @@ Pick from here. Claim with `node scripts/plan.mjs claim <ID> <agent>`. A task ca
 | C13 | v0.1 | Vault standards graph | A3 |
 | M8 | v0.1 | Tracker rules v2: exercise levels, trace-back and diagnostics | M3, C10, C12 |
 | M9 | v0.1 | Teacher diagnostic views with disclaimers and suggestions | M5, M8 |
-| S6 | v0.1 | Idea page and exercise player | S2, C10 |
+| S6 | v0.1 | Idea page and exercise player | S2, C10, M8 |
 | C14 | v0.1 | Idea scope and key terms in the pack | C10, C12 |
 | C15 | v0.1 | Vault provenance: source, licence and attribution | A3, C10 |
 | C16 | v0.1 | Lay out each idea scope separately | C14 |
@@ -269,7 +269,7 @@ flowchart LR
   M5 --> M9
   M8 --> M9
   S2 ==> S6
-  C10 --> S6
+  M8 --> S6
   C10 --> C14
   C12 --> C14
   A3 --> C15
