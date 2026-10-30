@@ -1501,9 +1501,23 @@
       ],
       "done_when": "For each locked idea the map API returns next (every prerequisite still needed is open) or far (needs a still-locked prerequisite), from a deterministic, unit-tested function in packages/domain; the map draws them distinctly with theme tokens; M4 later reuses the same function in its stored MapView (section 8.4); far ideas are hidden (D47): no title or identifying data sent, shown as Hidden idea, Explore nearby to reveal",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "version": "0.1",
       "owner": "agent-s10b",
+      "updated": "2026-10-30"
+    },
+    {
+      "id": "S10c",
+      "title": "Close two D47 leaks in the student map API",
+      "size": 1,
+      "deps": [
+        "S10b"
+      ],
+      "done_when": "A unit whose ideas are all hidden doesn't reveal its name, and a far idea by real id gets the same 404 as an unknown id (S10b QA should findings, D47)",
+      "placeholder": false,
+      "status": "doing",
+      "version": "0.1",
+      "owner": "coordinator",
       "updated": "2026-10-30"
     }
   ],
