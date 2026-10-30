@@ -149,6 +149,31 @@ describe('student map screen (S10)', () => {
     expect(host.querySelector('.imap')).not.toBeNull();
   });
 
+  it('lays the idea page out as the prototype: tags, objective card, and how it connects', async () => {
+    serve(response());
+    await show();
+    act(() => host.querySelector<HTMLButtonElement>('[data-idea="evap"]')!.click());
+    await act(async () => {});
+    const page = host.querySelector('.ipage')!;
+    // Headings go h1, then h2 sections, then h3 inside "How it connects".
+    expect([...page.querySelectorAll('h1, h2, h3')].map((h) => h.tagName)).toEqual([
+      'H1',
+      'H2',
+      'H2',
+      'H2',
+      'H3',
+    ]);
+    expect([...page.querySelectorAll('.ipage-tag')].map((t) => t.textContent)).toEqual([
+      'Process',
+      'Unit 1: Water',
+    ]);
+    expect(page.querySelector('.ipage-goal')?.textContent).toContain('Explain evaporation.');
+    const side = page.querySelector('.ipage-side')!;
+    expect(side.textContent).toContain('Leads to');
+    expect(side.textContent).toContain('This idea leads toCondensation');
+    expect(side.textContent).not.toContain('Comes from');
+  });
+
   it('a locked idea does not open, and says why (F5, U1)', async () => {
     serve(response());
     await show();

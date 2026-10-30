@@ -195,40 +195,100 @@
 }
 
 .ipage {
-  max-width: 46rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   padding-bottom: var(--space-8);
   overflow-wrap: anywhere;
 }
 .ipage-back {
   align-self: flex-start;
   min-height: 44px;
+  margin-left: calc(-1 * var(--space-3));
 }
-.ipage-kicker {
+/* The idea on the left, where it sits on the map on the right; one column when narrow. */
+.ipage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  gap: var(--space-8);
+  align-items: start;
+}
+.ipage-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+}
+.ipage-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ipage-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
-  color: var(--color-neutral-300);
-  font-size: 0.875em;
+}
+.ipage-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+  color: var(--map-node-text);
+  font-size: 0.8125em;
+}
+.ipage-tag-icon {
+  display: inline-flex;
 }
 .ipage-title {
   margin: 0;
-  font: var(--font-heading-weight) 1.8em/1.15 var(--font-heading);
+  font: var(--font-heading-weight) 2em/1.15 var(--font-heading);
 }
 .ipage-title:focus {
   outline: none;
 }
-.ipage h3 {
+.ipage h2 {
   margin: 0 0 var(--space-2);
-  font: var(--font-heading-weight) 1em var(--font-heading);
+  font: var(--font-heading-weight) 1.05em var(--font-heading);
   color: var(--map-heading);
+}
+.ipage h2.ipage-label,
+.ipage .ipage-label {
+  margin: 0 0 var(--space-1);
+  font: 500 0.75em var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--map-hint);
 }
 .ipage p {
   margin: 0;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 .ipage-quiet {
   color: var(--color-neutral-200);
+}
+/* The objective as a card with a target, as in the prototype. */
+.ipage-goal {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-goal-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--map-link-active);
+}
+.ipage-explain p {
+  max-width: 60ch;
+  font-size: 1.0625em;
 }
 .ipage-terms {
   display: flex;
@@ -239,31 +299,95 @@
   padding: 0;
 }
 .ipage-terms li {
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
   background: var(--map-term);
   border: 1px solid var(--map-term-border);
 }
-.ipage-links {
-  margin: 0;
-  padding-left: 1.2em;
-  display: grid;
-  gap: var(--space-2);
-}
-.ipage-rel {
-  color: var(--map-heading);
-  font-style: italic;
-}
 .ipage-media {
   display: grid;
   place-items: center;
-  min-height: 9rem;
+  min-height: 11rem;
   padding: var(--space-6);
   border: 1px dashed var(--map-placeholder-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--map-placeholder);
   color: var(--map-placeholder-text);
   text-align: center;
+}
+/* "How it connects": what leads in, this idea, and what it leads to, top to bottom. */
+.ipage-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 50%, var(--map-canvas-glow), var(--map-canvas) 75%);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-conn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ipage-conn li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-rel {
+  color: var(--map-hint);
+  font-size: 0.875em;
+  font-style: italic;
+}
+.ipage-here {
+  align-self: center;
+  padding: var(--space-2) var(--space-6);
+  border-radius: 999px;
+  background: var(--map-node-centre);
+  border: 1px solid var(--map-node-centre-border);
+  box-shadow: 0 0 24px var(--map-node-centre-glow);
+  font: var(--font-heading-weight) 1em var(--font-heading);
+}
+@media (max-width: 860px) {
+  .ipage-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+/* Moving between the map and an idea: the page grows out of the card that was opened,
+   and the map fades back in. A slow load shows "Loading…" only after a moment, so a fast
+   one doesn't flash it. All off with reduced motion or Calm screen (udl.css). */
+@media (prefers-reduced-motion: no-preference) {
+  .ipage {
+    transform-origin: var(--ipage-from-x, 50%) var(--ipage-from-y, 0);
+    animation: ipage-open 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .mscreen-map:not([hidden]) {
+    animation: mscreen-fade 240ms ease-out both;
+  }
+  .mscreen-wait {
+    animation: mscreen-fade 200ms ease-out 250ms both;
+  }
+}
+@keyframes ipage-open {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes mscreen-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 @media (max-width: 480px) {

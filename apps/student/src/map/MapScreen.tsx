@@ -1,6 +1,7 @@
 import type { StudentIdeaResponse, StudentMapResponse } from '@ideamap/contracts';
 import { useCallback, useEffect, useState } from 'react';
 import { IdeaLocked, loadIdea, loadMap, chooseClass, SignedOut } from './api';
+import { categoryColour } from './CategoryIcon';
 import { IdeaMap } from './IdeaMap';
 import { IdeaPage } from './IdeaPage';
 
@@ -32,6 +33,8 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
   // Only the page for the idea now in the URL counts; an older answer is ignored.
   const idea = loaded && loaded.id === openId ? loaded.value : null;
   const [lastOpened, setLastOpened] = useState<string | null>(null);
+  // Where the opened card was on screen; the idea page grows from there.
+  const [from, setFrom] = useState<{ x: number; y: number } | null>(null);
 
   const fail = useCallback(
     (e: unknown) => (e instanceof SignedOut ? onSignedOut() : setState({ kind: 'error' })),
@@ -80,8 +83,9 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
     if (idea && idea !== 'denied') document.getElementById('ipage-title')?.focus();
   }, [idea]);
 
-  const open = (id: string) => {
+  const open = (id: string, at?: { x: number; y: number }) => {
     setLastOpened(id);
+    setFrom(at ?? null);
     location.hash = `idea=${encodeURIComponent(id)}`;
   };
   const back = () => (history.length > 1 ? history.back() : (location.hash = ''));
@@ -100,6 +104,14 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
     );
   }
   const showing = openId !== null;
+  // The category's icon and colour, in the same order as the map: listed categories
+  // first, then any others in the order ideas use them.
+  const names = data.map.categories.map((c) => c.category);
+  for (const i of data.map.ideas) if (!names.includes(i.category)) names.push(i.category);
+  const look = (category: string) => ({
+    icon: data.map!.categories.find((c) => c.category === category)?.icon ?? null,
+    colour: categoryColour(names.indexOf(category)),
+  });
   return (
     <section className="mscreen">
       {data.preview && (
@@ -107,13 +119,13 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
           Preview: students see locked ideas until they unlock them
         </p>
       )}
-      <div hidden={showing}>
+      <div className="mscreen-map" hidden={showing}>
         <h1 className="mscreen-title">
           {data.map.topic} <span>· {data.className}</span>
         </h1>
         <IdeaMap map={data.map} onOpen={open} restoreFocus={showing ? null : lastOpened} />
       </div>
-      {showing && idea === null && <p className="mscreen-note">Loading…</p>}
+      {showing && idea === null && <p className="mscreen-note mscreen-wait">Loading…</p>}
       {showing && idea === 'denied' && (
         <div>
           <h1 className="mscreen-title">This idea is locked or isn&rsquo;t on your map.</h1>
@@ -131,7 +143,7 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
         </div>
       )}
       {showing && idea && idea !== 'denied' && !('locked' in idea) && (
-        <IdeaPage idea={idea} onBack={back} />
+        <IdeaPage idea={idea} onBack={back} from={from} {...look(idea.category)} />
       )}
     </section>
   );
