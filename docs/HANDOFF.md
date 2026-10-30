@@ -130,6 +130,7 @@ cd <repo> && git checkout idea-map && git pull --rebase origin idea-map
 gh api "repos/tenkevin/mind-your-tutor/actions/runs?branch=idea-map&per_page=2" --jq '.workflow_runs[]|"\(.name) \(.conclusion) \(.head_sha[0:7])"'
 gh api "repos/tenkevin/mind-your-tutor/pulls?base=idea-map&state=open" --jq '.[]|"#\(.number) \(.head.ref) \(.head.sha[0:7])"'
 node scripts/plan.mjs ready        # what can start (needs criteria)
+node scripts/qa-queue.mjs          # every open PR: behind, conflicts, CI, last QA verdict and whether task code changed since
 grep -A16 "## In progress" docs/PLAN.md
 git ls-files | grep Codex- | sort > /tmp/c; jq -r '.processed[].file' docs/qa/codex-ledger.json | sort | comm -23 /tmp/c -   # unprocessed Codex files
 ```

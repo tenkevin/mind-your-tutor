@@ -10,7 +10,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Codex queue for 2026-11-01 (coordinator, 2026-10-30)
 
-Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
+Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts with `node scripts/qa-queue.mjs` and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
 
 **A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
 
@@ -29,6 +29,8 @@ Built so that each Codex run reviews a head that merges cleanly into `idea-map` 
 | 11 | C5cx2 #34, C6cx2 #39 (fix tasks) | L1 | clean |
 
 **B. Post-merge reviews** (merged on a user-approved Claude QA PASS; Claude QA covered structure, so Codex reviews them in full): S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771`, then F1e, M2, M3, S10c and design #50–#52 as they merge (merge SHAs are recorded in the rows above as they land). Errors become `<ID>cx<n>` fix tasks as usual. Order: M2 and M3 first (S1, M4 and M5 build on them), then F1e, S10b, S10c, S10, F8 and the design PRs.
+
+**Reviewers start with `node scripts/qa-prep.mjs <PR>`** (docs/qa/README.md, "QA tooling"): it does the scratch merge, Postgres with pgvector, CI's steps and the report skeleton. With the new `.gitattributes`, C12 #44 and A6 #42 merge cleanly once synced locally, and T6 #41 keeps only its `apps/api/src/index.ts` conflict.
 
 **Known noise, not findings:** timing-only overruns under parallel load in domain C2-P2 and C3-P1/P2, and api F5-P1, beyond F1e's list. If they persist after F1e merges, the coordinator opens a fix task; reviewers re-run the package alone and record the result.
 
