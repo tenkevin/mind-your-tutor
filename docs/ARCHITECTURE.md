@@ -299,6 +299,7 @@ All outputs come from the rules alone, and changing one means a new `rulesVersio
 2. **Outputs are saved, not recomputed.** Each generated map view and AI output is stored with an id, and `map.shown` or `ai.output_shown` points to it.
 3. **Judgements become events.** A model's teach-back verdict is recorded as `teachback.judged`, and the rules use the recorded verdict.
 4. **Safety checks still apply.** A generated view that shows a locked idea as open is rejected.
+5. **One source of unlocks (M3 QA S-1, coordinator 2026-10-30, from §7 and rule 1).** The tracker's `unlocked` set is the only authority on whether an idea is open for a student. `packages/domain` `lockStates`/`mapStates` take that set as an input: an idea is `open` when the tracker has unlocked it, or when every one of its `requires` is mastered (which also covers zero progress, where the tracker lists no ideas yet). They never recompute a lock that the tracker has lifted, so an idea unlocked before a publish added a prerequisite stays open on the map (§7). The `next` and `far` states (D47) are derived from that `open` set. A `requires` naming an idea that isn't in the version can't be published (C2 error), and both functions treat it as unmet, so they agree on the never-published case too. Rule 4's check uses this same function.
 
 ### 8.5 Ingest and storage
 
