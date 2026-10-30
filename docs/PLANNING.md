@@ -86,7 +86,7 @@ Changing a contract means editing its entry in the same PR, and the reviewer che
 
 ## 5. What `PLAN.md` shows, in this order
 
-1. **Milestone:** the date, each slice's done count, and a projection: open effort ÷ build capacity (4 builders), plus tasks awaiting review ÷ review capacity (Codex about 10 tasks a day, plus approved Claude QA). Marked *on track* or *at risk*.
+1. **Milestone:** the date, each slice's done count, and a projection: open effort ÷ build capacity (4 builders), plus tasks awaiting review ÷ review capacity (Codex about 10 tasks a day, plus Claude QA about 10 a day on PRs the user approves). Marked *on track* or *at risk*.
 2. **Review queue:** every task in review or owing a Codex review, with mode, verdict, head and report.
 3. **Ready**, **in progress**, **blocked** (with what's missing: a dependency, a provider or an open question).
 4. **Log:** the last 15 dated lines.
