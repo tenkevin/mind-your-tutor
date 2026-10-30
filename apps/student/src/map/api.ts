@@ -15,7 +15,7 @@ export class SignedOut extends Error {}
 /** The server refused a locked idea and named what unlocks it. */
 export class IdeaLocked extends Error {
   constructor(
-    readonly title: string,
+    readonly title: string | null,
     readonly unlocksAfter: string[],
   ) {
     super('locked');
@@ -53,8 +53,8 @@ export async function loadIdea(
     const body = LockedIdeaResponseSchema.safeParse(await res.json().catch(() => null));
     if (body.success)
       throw new IdeaLocked(
-        body.data.title,
-        body.data.unlocksAfter.map((u) => u.title),
+        body.data.title ?? null,
+        (body.data.unlocksAfter ?? []).map((u) => u.title),
       );
   }
   if (!res.ok) throw new Error(`${url}: ${res.status}`);

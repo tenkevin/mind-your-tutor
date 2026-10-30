@@ -5,15 +5,17 @@ import { z } from 'zod';
 // data. Layout comes from the version's stored `derived.layout`; the browser lays
 // nothing out again. Lock state is worked out on the server (§8.4).
 
-export const IdeaStateSchema = z.enum(['open', 'locked']);
+export const IdeaStateSchema = z.enum(['open', 'next', 'far']);
 
 const NamedIdeaSchema = z.object({ id: z.string(), title: z.string() });
 
 export const StudentMapIdeaSchema = z.object({
+  /** The sheet's id, or for a far idea an opaque one that is stable only within this response (D47). */
   id: z.string(),
-  title: z.string(),
-  category: z.string(),
-  unit: z.number().int(),
+  /** title, category and unit are null for a far idea, which the map shows as hidden (D47). */
+  title: z.string().nullable(),
+  category: z.string().nullable(),
+  unit: z.number().int().nullable(),
   /** 0 is the centre, 1 the inner ring, 2 the outer ring (derived.layout). */
   ring: z.union([z.literal(0), z.literal(1), z.literal(2)]),
   /** Position with the ring radius as the unit (derived.layout). */
@@ -77,8 +79,9 @@ export const StudentIdeaResponseSchema = z.object({
 /** The 403 body for a locked idea opened by URL: what unlocks it, as the map card says. */
 export const LockedIdeaResponseSchema = z.object({
   error: z.literal('Locked'),
-  title: z.string(),
-  unlocksAfter: z.array(NamedIdeaSchema),
+  /** Absent for a far idea, which stays hidden (D47). */
+  title: z.string().optional(),
+  unlocksAfter: z.array(NamedIdeaSchema).optional(),
 });
 
 export type IdeaState = z.infer<typeof IdeaStateSchema>;
