@@ -74,7 +74,7 @@ Changing a contract means editing its entry in the same PR, and the reviewer che
 | Command | Does |
 |---|---|
 | `node scripts/plan.mjs` | Regenerates `PLAN.md` |
-| `node scripts/plan-map.mjs` | Renders `PLAN.md`'s dependency map to `docs/plan-map.png` (headless Chromium). Run it after every plan change and commit both files |
+| `node scripts/plan-map.mjs` | Renders `PLAN.md`'s dependency map to `docs/plan-map.png` with headless Chromium and a pinned local `mermaid` dev dependency (no network needed). Run it after every plan change and commit both files |
 | `node scripts/plan.mjs check` | Validates everything above, including that `plan-map.png` matches the current map (runs in CI) |
 | `node scripts/plan.mjs ready` / `show <ID>` | Lists what can start / shows one task with what it provides, consumes and unblocks |
 | `node scripts/plan.mjs claim <ID> <agent>` · `review <ID>` · `done <ID>` · `release <ID>` | State changes (only through these) |
