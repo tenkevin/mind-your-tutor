@@ -55,9 +55,10 @@ export const StudentMapResponseSchema = z.object({
   map: StudentMapSchema.nullable(),
 });
 
+/** id and title are null for a far idea, which stays hidden on the idea page too (D47). */
 const IdeaLinkSchema = z.object({
-  id: z.string(),
-  title: z.string(),
+  id: z.string().nullable(),
+  title: z.string().nullable(),
   relation: z.string(),
 });
 

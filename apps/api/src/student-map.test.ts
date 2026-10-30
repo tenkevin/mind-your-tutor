@@ -174,6 +174,29 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
       expect(a.statusCode).toBe(404);
       expect(a.json()).toEqual({ error: 'Not found' });
     }
+    // An open idea's page doesn't name a far idea it links to (D47): Evaporation is a
+    // stage of the water cycle, which is far at zero progress.
+    const evap = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/evap`);
+    expect(evap.statusCode).toBe(200);
+    expect(evap.json().linksOut).toContainEqual({
+      id: null,
+      title: null,
+      relation: 'is a stage of',
+    });
+    for (const id of farRealIds) {
+      expect(evap.body).not.toContain(`"${id}"`);
+      expect(evap.body).not.toContain(pack.ideas.find((i) => i.idea_id === id)!.title);
+    }
+    // In preview the same page names it.
+    const evapPreview = await as(api, terry)(
+      'GET',
+      `/api/classes/${classId()}/ideas/evap?preview=1`,
+    );
+    expect(evapPreview.json().linksOut).toContainEqual({
+      id: 'cycle',
+      title: 'Water cycle',
+      relation: 'is a stage of',
+    });
     // A next-up idea still says what unlocks it.
     const next = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/cond`);
     expect(next.statusCode).toBe(403);

@@ -188,7 +188,12 @@ export function studentMapRoutes(app: FastifyInstance): void {
     }
     const titles = new Map(pinned.pack.ideas.map((i) => [i.idea_id, i.title]));
     const kept = pinned.derived.ranked_links.kept;
-    const link = (id: string, relation: string) => ({ id, title: titles.get(id) ?? id, relation });
+    // A far idea is hidden here too (D47): the link keeps its relation but not who it is.
+    const states = new Map(mapStates(pinned.pack.ideas).map((l) => [l.idea_id, l.state]));
+    const link = (id: string, relation: string) =>
+      !preview && states.get(id) === 'far'
+        ? { id: null, title: null, relation }
+        : { id, title: titles.get(id) ?? id, relation };
     // key_terms arrive with the pack columns of C14/C16 (D43); none until then.
     const keyTerms = (idea as { key_terms?: string[] }).key_terms ?? [];
     const body: StudentIdeaResponse = {
