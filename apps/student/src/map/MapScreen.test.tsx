@@ -10,7 +10,13 @@ import { MapScreen } from './MapScreen';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const CLASS_ID = '11111111-1111-4111-8111-111111111111';
-const idea = (id: string, title: string, ring: 0 | 1, x: number, locked = false) => ({
+const idea = (
+  id: string,
+  title: string,
+  ring: 0 | 1,
+  x: number,
+  locked: 'next' | 'far' | false = false,
+) => ({
   id,
   title,
   category: 'Process',
@@ -18,7 +24,7 @@ const idea = (id: string, title: string, ring: 0 | 1, x: number, locked = false)
   ring,
   x,
   y: 0,
-  state: locked ? ('locked' as const) : ('open' as const),
+  state: locked || ('open' as const),
   unlocksAfter: locked ? [{ id: 'evap', title: 'Evaporation' }] : [],
 });
 const response = (over: Partial<StudentMapResponse> = {}): StudentMapResponse => ({
@@ -30,7 +36,17 @@ const response = (over: Partial<StudentMapResponse> = {}): StudentMapResponse =>
     subject: 'Science',
     topic: 'The water cycle',
     centre: 'evap',
-    ideas: [idea('evap', 'Evaporation', 0, 0), idea('cond', 'Condensation', 1, 1, true)],
+    ideas: [
+      idea('evap', 'Evaporation', 0, 0),
+      idea('cond', 'Condensation', 1, 1, 'next'),
+      {
+        ...idea('hidden-1', 'x', 1, 2, 'far'),
+        title: null,
+        category: null,
+        unit: null,
+        unlocksAfter: [],
+      },
+    ],
     links: [{ from: 'evap', to: 'cond', relation: 'leads to', importance: 3 }],
     units: [{ unit: 1, name: 'Water' }],
     categories: [{ category: 'Process', icon: 'arrows-clockwise' }],
@@ -121,12 +137,23 @@ describe('student map screen (S10)', () => {
     serve(response());
     await show();
     const buttons = [...host.querySelectorAll<HTMLButtonElement>('button[data-idea]')];
-    expect(buttons.map((b) => b.dataset.idea)).toEqual(['evap', 'cond']);
+    expect(buttons.map((b) => b.dataset.idea)).toEqual(['evap', 'cond', 'hidden-1']);
     expect(buttons[0]!.getAttribute('aria-label')).toBe(
       'Evaporation. Process. Open. Leads to Condensation (leads to).',
     );
-    expect(buttons[1]!.getAttribute('aria-label')).toContain('Locked. Unlocks after Evaporation.');
+    expect(buttons[1]!.getAttribute('aria-label')).toContain('Next up. Unlocks after Evaporation.');
     expect(buttons[1]!.getAttribute('aria-disabled')).toBe('true');
+    expect(buttons[2]!.getAttribute('aria-label')).toBe('Hidden idea. Explore nearby to reveal');
+    expect(buttons[2]!.textContent).toBe('Hidden ideaExplore nearby to reveal');
+    // Different shapes as well as colours (S10b-F4, D17): an arrow, a lock, dashed or dotted.
+    expect([...buttons].map((b) => b.className)).toEqual([
+      'imap-node imap-centre',
+      'imap-node imap-next',
+      'imap-node imap-far',
+    ]);
+    expect(buttons[1]!.querySelector('svg path')?.getAttribute('d')).not.toBe(
+      buttons[2]!.querySelector('svg path')?.getAttribute('d'),
+    );
     expect(requests.filter((r) => r.includes('/map'))).toHaveLength(1);
     expect(host.textContent).not.toContain('Preview:');
   });
@@ -135,11 +162,12 @@ describe('student map screen (S10)', () => {
     const base = response().map!;
     const ideas = [
       ...base.ideas,
-      idea('prec', 'Precipitation', 1, -1, true),
-      idea('rain', 'Rain', 1, 0.5, true),
+      idea('prec', 'Precipitation', 1, -1, 'next'),
+      idea('rain', 'Rain', 1, 0.5, 'next'),
     ];
-    ideas[3] = {
-      ...ideas[3]!,
+    const r = ideas.findIndex((i) => i.id === 'rain');
+    ideas[r] = {
+      ...ideas[r]!,
       unlocksAfter: ['Condensation', 'Precipitation', 'Clouds', 'Sleet'].map((t) => ({
         id: t,
         title: t,
@@ -152,8 +180,7 @@ describe('student map screen (S10)', () => {
     ];
     serve(response({ map: { ...base, ideas, links } }));
     await show();
-    const edge = (key: string) =>
-      host.querySelectorAll('.imap-edge')[key === 'evap>cond' ? 0 : key === 'cond>prec' ? 1 : 2]!;
+    const edge = (key: string) => host.querySelector(`.imap-edge[data-link="${key}"]`)!;
     expect(edge('evap>cond').classList.contains('imap-edge-quiet')).toBe(false);
     expect(edge('cond>prec').classList.contains('imap-edge-quiet')).toBe(true);
 
@@ -203,7 +230,13 @@ describe('student map screen (S10)', () => {
     });
     expect(location.hash).toBe('');
     expect(host.querySelector('[role="status"].imap-status')?.textContent).toBe(
-      'Condensation is locked. Unlocks after Evaporation.',
+      'Condensation is next up. Unlocks after Evaporation.',
+    );
+    await act(async () => {
+      await user.click(host.querySelector('[data-idea="hidden-1"]')!);
+    });
+    expect(host.querySelector('[role="status"].imap-status')?.textContent).toBe(
+      'Hidden idea. Explore nearby to reveal.',
     );
     expect(requests.some((r) => r.includes('/ideas/'))).toBe(false);
   });

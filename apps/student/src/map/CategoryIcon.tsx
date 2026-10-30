@@ -52,3 +52,23 @@ export function LockIcon({ size = 12 }: { size?: number }) {
     </svg>
   );
 }
+
+/** An arrow: one step away. The shape, as well as the colour, says "next up" (D17). */
+export function NextIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
