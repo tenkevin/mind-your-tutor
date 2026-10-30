@@ -11,16 +11,27 @@ export const toPixels = (p: { x: number; y: number }) => ({
   y: p.y * UNIT,
 });
 
+/** Below this zoom, cards show only their title and icons (card text is under 5px). */
+export const COMPACT_ZOOM = 0.45;
+
 /**
  * Half the size of an idea card, from its longest line of text (13px titles, 11px
  * category and "Unlocks after" lines), so links stop at its edge and Fit never clips it.
+ * A compact card is one line: the lock, the title and the category icon.
  */
 export function halfSize(
   card: { title: string; category: string; requires?: string },
   centre: boolean,
   locked: boolean,
+  compact = false,
 ) {
   if (centre) return { hw: Math.max(70, card.title.length * 5.5 + 24), hh: 34 };
+  if (compact) {
+    return {
+      hw: Math.max(36, (card.title.length * 7.4 + (locked ? 18 : 0) + 18) / 2 + 14),
+      hh: 22,
+    };
+  }
   const widest = Math.max(
     card.title.length * 7.4 + (locked ? 18 : 0),
     card.category.length * 6.4 + 18,
@@ -82,4 +93,37 @@ export function revealPoint(
   const dx = sx < margin ? margin - sx : sx > width - margin ? width - margin - sx : 0;
   const dy = sy < margin ? margin - sy : sy > height - margin ? height - margin - sy : 0;
   return dx === 0 && dy === 0 ? view : { ...view, x: view.x + dx, y: view.y + dy };
+}
+
+/** How far a link bows out, as a share of its length. */
+export const BEND = 0.12;
+
+/**
+ * A link as a gentle curve from card a to card b. It always bows the same way (to the
+ * left of a→b), so a pair of links in both directions draws two separate arcs. The ends
+ * stop at the card edges, the arrow follows the curve's last direction, and the label
+ * sits on the curve's midpoint.
+ */
+export function arc(
+  a: { x: number; y: number; hw: number; hh: number },
+  b: { x: number; y: number; hw: number; hh: number },
+) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  const c = { x: (a.x + b.x) / 2 + dy * BEND, y: (a.y + b.y) / 2 - dx * BEND };
+  const s = exitPoint(a.hw + 4, a.hh + 4, c.x - a.x, c.y - a.y);
+  const e = exitPoint(b.hw + 4, b.hh + 4, c.x - b.x, c.y - b.y);
+  const start = { x: a.x + s.x, y: a.y + s.y };
+  const end = { x: b.x + e.x, y: b.y + e.y };
+  return {
+    d: `M ${start.x} ${start.y} Q ${c.x} ${c.y} ${end.x} ${end.y}`,
+    end,
+    deg: (Math.atan2(end.y - c.y, end.x - c.x) * 180) / Math.PI,
+    mid: {
+      x: 0.25 * start.x + 0.5 * c.x + 0.25 * end.x,
+      y: 0.25 * start.y + 0.5 * c.y + 0.25 * end.y,
+    },
+    len,
+  };
 }

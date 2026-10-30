@@ -1,3 +1,4 @@
+import { expectTimingUnder, summarize } from '@ideamap/testing';
 import { readFileSync } from 'node:fs';
 import { CSRF_HEADER } from '@ideamap/contracts';
 import type { ExportStore } from '@ideamap/db';
@@ -47,6 +48,7 @@ const ROUTE_URLS = [
   '/api/curricula/:curriculumId/defaults',
   '/api/users/:userId/role',
   '/api/roster/import',
+  '/events',
 ];
 
 /** C4's routes, registered when the server is given import deps. */
@@ -66,6 +68,8 @@ const PUBLISH_ROUTE_URLS = [
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
+  '/api/privacy/students/:studentId/unenrol',
+  '/api/privacy/students/:studentId/tracing',
 ];
 /** A1's AI gateway routes, registered when the server is given a model provider. */
 const AI_ROUTE_URLS = [
@@ -196,6 +200,8 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
     expect(privacy.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
       'DELETE /api/privacy/students/:studentId',
       'POST /api/privacy/students/:studentId/export',
+      'POST /api/privacy/students/:studentId/unenrol',
+      'PUT /api/privacy/students/:studentId/tracing',
     ]);
     for (const route of privacy) {
       expect(route.policy).toEqual(STUDENT_PRIVACY_POLICY);
@@ -360,6 +366,24 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         body: PACK,
         headers: UPLOAD,
       },
+      // M2: a student posts their own learning events, in a class they're enrolled in.
+      {
+        route: '/events',
+        method: 'POST',
+        url: '/events',
+        body: {
+          events: [
+            {
+              id: '01JB8Y2C3D4E5F6G7H8J9K0M1N',
+              classId: classes.a1,
+              versionId: curricula.a,
+              at: new Date().toISOString(),
+              type: 'idea.opened',
+              payload: { ideaId: 'rain' },
+            },
+          ],
+        },
+      },
       {
         route: '/api/curricula/:curriculumId/imports/latest',
         method: 'GET',
@@ -400,6 +424,18 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         route: '/api/privacy/students/:studentId',
         method: 'DELETE',
         url: `/api/privacy/students/${users['student-a2']}`,
+      },
+      // M2: aimed at org A students the sweep doesn't sign in as.
+      {
+        route: '/api/privacy/students/:studentId/unenrol',
+        method: 'POST',
+        url: `/api/privacy/students/${users['unenrolled-a']}/unenrol`,
+      },
+      {
+        route: '/api/privacy/students/:studentId/tracing',
+        method: 'PUT',
+        url: `/api/privacy/students/${users['rostered-a']}/tracing`,
+        body: { optedOut: true },
       },
       // A1: one call per persona, aimed at class A1.
       ...['tutor', 'peer', 'agent'].map((persona) => ({
@@ -477,6 +513,8 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
     // T2: the same staff read the Curriculum data section.
     'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
+    // M2: students only; admins and teachers are refused (their events are server-side).
+    'POST /events': ['student'],
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
     'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],
@@ -731,14 +769,24 @@ describe.skipIf(!hasDatabase)('performance (F5-P1, A1-P1)', () => {
       return out.sort((a, b) => a - b);
     };
     await time(true); // warm up
-    const base = await time(false);
-    const authed = await time(true);
     const p95 = (xs: number[]) => xs[Math.floor(xs.length * 0.95)]!;
-    const overhead = p95(authed) - p95(base);
-    if (process.env.IDEAMAP_PERF_VERBOSE) {
-      console.log(`auth p95 ${p95(authed).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+    // Best of three rounds, each pairing a base and an authed run back to back (F1e).
+    const rounds: number[] = [];
+    for (let r = 0; r < 3; r++) {
+      const base = await time(false);
+      const authed = await time(true);
+      if (process.env.IDEAMAP_PERF_VERBOSE) {
+        console.log(`auth p95 ${p95(authed).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+      }
+      rounds.push(p95(authed) - p95(base));
     }
-    expect(overhead).toBeLessThan(5);
+    expectTimingUnder(
+      'auth p95 overhead (F5-P1)',
+      5,
+      Math.min(...rounds),
+      summarize(rounds),
+      'best round',
+    );
   });
 
   it('adds under 30 ms p95 of gateway work over a signed-in no-op, with an instant provider (A1-P1)', async () => {
@@ -755,12 +803,23 @@ describe.skipIf(!hasDatabase)('performance (F5-P1, A1-P1)', () => {
       return out.sort((a, b) => a - b);
     };
     await time(gateway, { message: 'warm up' });
-    const base = await time('/api/session');
-    const calls = await time(gateway, { message: 'What is condensation, Sam?' });
     const p95 = (xs: number[]) => xs[Math.floor(xs.length * 0.95)]!;
-    if (process.env.IDEAMAP_PERF_VERBOSE) {
-      console.log(`gateway p95 ${p95(calls).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+    // Best of three rounds, each pairing a base and a gateway run back to back (F1e).
+    const rounds: number[] = [];
+    for (let r = 0; r < 3; r++) {
+      const base = await time('/api/session');
+      const calls = await time(gateway, { message: 'What is condensation, Sam?' });
+      if (process.env.IDEAMAP_PERF_VERBOSE) {
+        console.log(`gateway p95 ${p95(calls).toFixed(2)} ms, base ${p95(base).toFixed(2)} ms`);
+      }
+      rounds.push(p95(calls) - p95(base));
     }
-    expect(p95(calls) - p95(base)).toBeLessThan(30);
+    expectTimingUnder(
+      'gateway p95 overhead (A1-P1)',
+      30,
+      Math.min(...rounds),
+      summarize(rounds),
+      'best round',
+    );
   });
 });

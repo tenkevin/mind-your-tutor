@@ -63,7 +63,11 @@ const page: StudentIdeaResponse = {
   explanation: 'Water becomes vapour.',
   keyTerms: [],
   linksIn: [],
-  linksOut: [{ id: 'cond', title: 'Condensation', relation: 'leads to' }],
+  linksOut: [
+    { id: 'cond', title: 'Condensation', relation: 'leads to' },
+    // A far idea stays hidden on the idea page (D47, S10c).
+    { id: null, title: null, relation: 'is a stage of' },
+  ],
 };
 
 let host: HTMLDivElement;
@@ -158,6 +162,51 @@ describe('student map screen (S10)', () => {
     expect(host.textContent).not.toContain('Preview:');
   });
 
+  it("quiets links between locked ideas and lights up a focused idea's neighbours", async () => {
+    const base = response().map!;
+    const ideas = [
+      ...base.ideas,
+      idea('prec', 'Precipitation', 1, -1, 'next'),
+      idea('rain', 'Rain', 1, 0.5, 'next'),
+    ];
+    const r = ideas.findIndex((i) => i.id === 'rain');
+    ideas[r] = {
+      ...ideas[r]!,
+      unlocksAfter: ['Condensation', 'Precipitation', 'Clouds', 'Sleet'].map((t) => ({
+        id: t,
+        title: t,
+      })),
+    };
+    const links = [
+      ...base.links,
+      { from: 'cond', to: 'prec', relation: 'leads to', importance: 3 },
+      { from: 'prec', to: 'rain', relation: 'falls as', importance: 3 },
+    ];
+    serve(response({ map: { ...base, ideas, links } }));
+    await show();
+    const edge = (key: string) => host.querySelector(`.imap-edge[data-link="${key}"]`)!;
+    expect(edge('evap>cond').classList.contains('imap-edge-quiet')).toBe(false);
+    expect(edge('cond>prec').classList.contains('imap-edge-quiet')).toBe(true);
+
+    const prec = host.querySelector<HTMLButtonElement>('[data-idea="prec"]')!;
+    act(() => prec.focus());
+    expect(edge('cond>prec').classList.contains('imap-edge-hot')).toBe(true);
+    expect(edge('evap>cond').classList.contains('imap-edge-faded')).toBe(true);
+    const near = [...host.querySelectorAll('.imap-near')].map(
+      (n) => (n as HTMLElement).dataset.idea,
+    );
+    expect(near.sort()).toEqual(['cond', 'rain']);
+
+    // A long "Unlocks after" list is shortened on the card; the label keeps all of it.
+    const rain = host.querySelector<HTMLButtonElement>('[data-idea="rain"]')!;
+    expect(rain.querySelector('.imap-req-short')!.textContent).toBe(
+      'Unlocks after Condensation, Precipitation +2 more',
+    );
+    expect(rain.getAttribute('aria-label')).toContain(
+      'Unlocks after Condensation, Precipitation, Clouds, Sleet.',
+    );
+  });
+
   it('opens an open idea with Enter, and Back returns to the map (F6, U1)', async () => {
     serve(response());
     await show();
@@ -172,6 +221,13 @@ describe('student map screen (S10)', () => {
     expect(host.textContent).toContain('Water becomes vapour.');
     expect(host.textContent).toContain('A picture or video for this idea will appear here.');
     expect(host.textContent).toContain('leads to');
+    // A link to a far idea names no idea (S10c, D47); #52's layout puts the relation
+    // and the idea in separate elements.
+    const hidden = [...host.querySelectorAll('.ipage-to li')].map((li) => [
+      li.querySelector('.ipage-rel')?.textContent,
+      li.querySelector('strong')?.textContent,
+    ]);
+    expect(hidden).toContainEqual(['This idea is a stage of', 'a hidden idea']);
     // The map stays mounted behind the page, so its view survives.
     expect(host.querySelector('.imap')).not.toBeNull();
   });

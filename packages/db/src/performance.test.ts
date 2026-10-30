@@ -172,6 +172,8 @@ describe.skipIf(!hasDatabase)('performance', () => {
     const seconds = (performance.now() - started) / 1000;
     const rate = 100_000 / seconds;
     console.log(`event inserts: ${Math.round(rate).toLocaleString('en')} rows/s`);
-    expect(rate).toBeGreaterThan(5_000);
+    expect(rate, `F4-P3 inserted ${Math.round(rate)} rows/s, budget 5000 rows/s`).toBeGreaterThan(
+      5_000,
+    );
   });
 });

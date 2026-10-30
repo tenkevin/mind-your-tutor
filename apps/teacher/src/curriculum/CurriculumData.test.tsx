@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import type { CurriculumDataResponse, IssueGroup } from '@ideamap/contracts';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -226,7 +227,7 @@ describe('Curriculum data section (T2)', () => {
     );
   });
 
-  it('T2-P1: renders a 2,000-idea draft with 300 issues in under a second, folding long groups', () => {
+  it('T2-P1: renders a 2,000-idea draft with 300 issues in under a second, folding long groups', async () => {
     const ids = Array.from({ length: 2000 }, (_, i) => `idea-${i}`);
     const groups: IssueGroup[] = [
       {
@@ -258,9 +259,9 @@ describe('Curriculum data section (T2)', () => {
     ];
     const base = data();
     const big: CurriculumDataResponse = { ...base, version: { ...base.version!, groups } };
-    const start = performance.now();
-    const html = render(state({ data: big }));
-    expect(performance.now() - start).toBeLessThan(1000);
+    const html = await expectBestUnder('renders 2,000 ideas, 300 issues (T2-P1)', 1000, () =>
+      render(state({ data: big })),
+    );
     expect(text(html)).toContain('Data checks · 1 error, 298 warnings, 1 info');
     expect(text(html)).toContain('Show 295 more ');
     expect(html).not.toContain('mores');

@@ -1116,7 +1116,8 @@
       "size": 2,
       "deps": [
         "S2",
-        "C10"
+        "C10",
+        "M8"
       ],
       "done_when": "Per D40/D42: an idea page with a placeholder card for its overview video until X2 lands after the pilot (D42 amended), and exercises with Worked example and Mastery practice tabs as in project/Kinematics Explorer.dc.html, sending tracker events; levels come from the tracker, never computed in the browser; Practice items shown verbatim with their attribution (D40)",
       "placeholder": false,
@@ -1183,9 +1184,9 @@
       "deps": [],
       "done_when": "Every test that asserts elapsed time passes consistently on CI's runners and under a loaded parallel `pnpm test`, with every criteria budget unchanged: performance checks run where load can't distort them (serially, in their own Vitest project or CI step), measure what the budget means (median or best of N after warm-up, or CPU time where that is the quantity), and a failure names the test and its timings",
       "placeholder": false,
-      "status": "review",
+      "status": "done",
       "owner": "agent-f1e",
-      "updated": "2026-10-29",
+      "updated": "2026-10-30",
       "version": "0.1"
     },
     {

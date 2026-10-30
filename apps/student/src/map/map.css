@@ -78,23 +78,54 @@
 .imap-ring {
   fill: none;
   stroke: var(--map-ring);
-  stroke-dasharray: 6 6;
+  /* Dots rather than dashes: the rings guide the eye without drawing a hard edge. */
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 9;
   opacity: 0.5;
   vector-effect: non-scaling-stroke;
 }
-.imap-edge line {
+.imap-edge path {
+  fill: none;
   stroke: var(--map-link);
   stroke-width: 1.5;
+  stroke-linecap: round;
 }
 .imap-edge polygon {
   fill: var(--map-link);
 }
-.imap-edge-hot line {
+.imap-edge-hot path {
   stroke: var(--map-link-active);
   stroke-width: 2.5;
 }
 .imap-edge-hot polygon {
   fill: var(--map-link-active);
+}
+/* A link between two locked ideas steps back: thinner and dashed. 70% strength keeps it
+   at 3:1 or more on the canvas, its glow and a card (WCAG 1.4.11). */
+.imap-edge-quiet path {
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+.imap-edge-quiet,
+.imap-edge-faded {
+  opacity: 0.7;
+}
+/* Forced colours (Windows high contrast) leave SVG strokes alone, so the quiet and faded
+   links would nearly vanish: draw every link in the system text colour at full strength.
+   The hot link still stands out by its thicker stroke and its label. */
+@media (forced-colors: active) {
+  .imap-edge line,
+  .imap-edge path {
+    stroke: CanvasText;
+  }
+  .imap-edge polygon {
+    fill: CanvasText;
+  }
+  .imap-edge-quiet,
+  .imap-edge-faded {
+    opacity: 1;
+  }
 }
 .imap-edge text {
   fill: var(--map-link-label);
@@ -113,7 +144,7 @@
   gap: 2px;
   min-height: 44px;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--map-node-open);
   border: 1px solid var(--map-node-open-border);
   color: var(--map-node-text);
@@ -149,7 +180,8 @@
 }
 .imap-centre {
   align-items: center;
-  padding: 14px 22px;
+  padding: 14px 26px;
+  border-radius: 999px;
   font: 500 18px var(--font-heading);
   background: var(--map-node-centre);
   border-color: var(--map-node-centre-border);
@@ -174,8 +206,35 @@
   border-color: var(--map-node-locked-border);
 }
 .imap-next:hover,
-.imap-far:hover {
+.imap-far:hover,
+.imap-near {
   border-color: var(--map-node-hover-border);
+}
+.imap-node:hover {
+  z-index: 1;
+}
+.imap-req-full {
+  display: none;
+}
+.imap-node:hover .imap-req-full,
+.imap-node:focus-visible .imap-req-full {
+  display: inline;
+}
+.imap-node:hover .imap-req-short,
+.imap-node:focus-visible .imap-req-short {
+  display: none;
+}
+
+/* Zoomed far out, card text is too small to read: one line with the lock, the title and
+   the category icon. Hover or focus shows the whole card. */
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-cat-name,
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-req {
+  display: none;
 }
 
 .imap-bar {
@@ -480,11 +539,50 @@
     padding: var(--space-3);
   }
 }
-/* The border eases in on hover and focus only. A resting transition would also animate
-   every node when the theme changes (F8), costing extra style recalculations. */
+/* Motion, all off with reduced motion or Calm screen (udl.css).
+   Colour transitions sit only on the card under the pointer or keyboard (F8: never at
+   rest). The card the pointer has just left (.imap-leaving, for 200 ms) eases only its
+   lift back down. Links fade by opacity only, which a theme change never touches. So a
+   theme switch, even with the pointer on the map, starts no transitions and stays one
+   style recalculation (F8-P1). */
 @media (prefers-reduced-motion: no-preference) {
   .imap-node:hover,
   .imap-node:focus-visible {
-    transition: border-color 120ms;
+    transition:
+      border-color 160ms ease-out,
+      transform 160ms ease-out;
+  }
+  .imap-node.imap-leaving {
+    transition: transform 160ms ease-out;
+  }
+  .imap:hover .imap-edge {
+    transition: opacity 160ms ease-out;
+  }
+  /* An open card lifts a little under the pointer; a locked one stays put. */
+  .imap-node:not(.imap-next):not(.imap-far):hover {
+    transform: translate(-50%, -50%) translateY(-2px);
+  }
+  /* Zoom buttons, Fit and keyboard moves glide; drag, wheel and pinch stay direct. */
+  .imap-world-glide {
+    transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* The map arrives from the centre outwards: centre, then each ring, then the links. */
+  .imap-node {
+    animation: imap-arrive 380ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(var(--ring, 0) * 90ms);
+  }
+  .imap-svg {
+    animation: imap-fade 520ms ease-out 140ms backwards;
+  }
+}
+@keyframes imap-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+@keyframes imap-fade {
+  from {
+    opacity: 0;
   }
 }

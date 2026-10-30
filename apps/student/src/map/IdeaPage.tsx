@@ -90,9 +90,9 @@ export function IdeaPage({
                     Comes from
                   </h3>
                   <ul className="ipage-conn">
-                    {idea.linksIn.map((l) => (
-                      <li key={`in-${l.id}`}>
-                        <strong>{l.title}</strong>
+                    {idea.linksIn.map((l, i) => (
+                      <li key={`in-${l.id ?? `hidden-${i}`}`}>
+                        <strong>{l.title ?? 'A hidden idea'}</strong>
                         <span className="ipage-rel">{l.relation} this idea</span>
                       </li>
                     ))}
@@ -108,10 +108,10 @@ export function IdeaPage({
                     Leads to
                   </h3>
                   <ul className="ipage-conn">
-                    {idea.linksOut.map((l) => (
-                      <li key={`out-${l.id}`}>
+                    {idea.linksOut.map((l, i) => (
+                      <li key={`out-${l.id ?? `hidden-${i}`}`}>
                         <span className="ipage-rel">This idea {l.relation}</span>
-                        <strong>{l.title}</strong>
+                        <strong>{l.title ?? 'a hidden idea'}</strong>
                       </li>
                     ))}
                   </ul>

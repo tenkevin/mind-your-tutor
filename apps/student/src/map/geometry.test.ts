@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { exitPoint, fitView, revealPoint, toPixels, zoomAt, UNIT, STRETCH } from './geometry';
+import {
+  COMPACT_ZOOM,
+  arc,
+  exitPoint,
+  fitView,
+  halfSize,
+  revealPoint,
+  toPixels,
+  zoomAt,
+  UNIT,
+  STRETCH,
+} from './geometry';
 
 describe('map geometry', () => {
   it('scales stored positions without moving them', () => {
@@ -28,6 +39,35 @@ describe('map geometry', () => {
     const view = fitView(400, 600, { w: 1400, h: 900 }, true);
     expect(view.z * 1400).toBeLessThanOrEqual(400);
     expect(view.z * 900).toBeLessThanOrEqual(600);
+  });
+
+  it('a compact card is one line and narrower than the full card', () => {
+    const card = {
+      title: 'Condensation',
+      category: 'Process',
+      requires: 'Unlocks after Evaporation',
+    };
+    const full = halfSize(card, false, true);
+    const small = halfSize(card, false, true, true);
+    expect(small.hw).toBeLessThan(full.hw);
+    expect(small.hh).toBeLessThan(full.hh);
+    expect(COMPACT_ZOOM).toBeLessThan(fitView(400, 600, { w: 1400, h: 900 }).z);
+  });
+
+  it('curves a link between card edges, bowing one way so a two-way pair stays apart', () => {
+    const a = { x: 0, y: 0, hw: 40, hh: 20 };
+    const b = { x: 400, y: 0, hw: 40, hh: 20 };
+    const there = arc(a, b);
+    const back = arc(b, a);
+    // Ends sit just outside each card, not at its centre.
+    expect(there.end.x).toBeLessThan(b.x - b.hw);
+    expect(Math.abs(there.end.y - b.y)).toBeLessThanOrEqual(b.hh + 4);
+    // The two directions bow to opposite sides of the line between the cards.
+    expect(Math.sign(there.mid.y)).toBe(-Math.sign(back.mid.y));
+    expect(Math.abs(there.mid.y)).toBeGreaterThan(10);
+    // The arrow points along the curve, into card b.
+    expect(Math.abs(there.deg)).toBeLessThan(45);
+    expect(there.d.startsWith('M ')).toBe(true);
   });
 
   it('pans only when a focused idea is out of view', () => {

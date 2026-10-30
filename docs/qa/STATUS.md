@@ -8,7 +8,49 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Design-aspect failures (user, 2026-10-29):** a third QA failure on a design aspect defers that check to the design session (`docs/design/README.md` §7) and the task merges once every other must passes; functional, security, performance and privacy failures never defer. **S10 and F8 merged** 2026-10-29 (S10 squash `3ad9110`, F8 squash `eff7d02`, merge CI green; reports `reports/S10.md`, `reports/F8.md`). Formerly: **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
 
-> **idea-map CI RED since 2026-10-30 02:39 UTC — merging paused (integration gate).** Three `pnpm test` failures on `9f0f771` (S10b merge) and `fe9479c`, each a known load-sensitive test: connectors `storage.test.ts` zip-bomb timing (×2) and api `imports.test.ts` T2-F2 (latest import read as null, the newest-job race). Every tree passes locally in CI order on a fresh database. Fix task **F1e #45** is under independent Claude QA (`session_017xAqLeYapB4WFhDLCfuKG7`); it needs the user's approval to merge on that review. Job logs are readable through the GitHub connector's `get_job_logs` (the `logs_url` downloads with curl).
+## Codex queue for 2026-11-01 (coordinator, 2026-10-30)
+
+Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts with `node scripts/qa-queue.mjs` and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
+
+**A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
+
+| # | Task · PR | Unblocks (v0.1) | Merge check 2026-10-30 |
+|---|---|---|---|
+| 1 | C10 #43 Practice tab | S6, M8, C11, C14, C15 | clean |
+| 2 | C12 #44 two-layer graph | M8, C14, C17 | conflict (`packages/domain/src/index.ts`) |
+| 3 | A7 #36 anonymous layer | A8, A9, S4 | conflict (`apps/student/src/App.tsx`) |
+| 4 | A2 #37 student safety | A9, A11, S4 | clean |
+| 5 | A3 #38 library and RAG | A4, A11, C13, C15 | clean |
+| 6 | T3 #29 course details | T4 | conflict (`apps/api/src/index.ts`) |
+| 7 | A5 #35 persona evals | A10 | clean |
+| 8 | T8 #40 publish screen | L1 | clean |
+| 9 | T6 #41 data tabs | L1 | conflict (api and contracts index) |
+| 10 | A6 #42 draft approvals | L1 | conflict (contracts and domain index) |
+| 11 | C5cx2 #34, C6cx2 #39 (fix tasks) | L1 | clean |
+
+**B. Post-merge reviews** (merged on a user-approved Claude QA PASS; Claude QA covered structure, so Codex reviews them in full): S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771`, then F1e (`2d871d2`), M2, M3, S10c and design #50–#52 as they merge (merge SHAs are recorded in the rows above as they land). Errors become `<ID>cx<n>` fix tasks as usual. Order: M2 and M3 first (S1, M4 and M5 build on them), then F1e, S10b, S10c, S10, F8 and the design PRs.
+
+**Reviewers start with `node scripts/qa-prep.mjs <PR>`** (docs/qa/README.md, "QA tooling"): it does the scratch merge, Postgres with pgvector, CI's steps and the report skeleton. With the new `.gitattributes`, C12 #44 and A6 #42 merge cleanly once synced locally, and T6 #41 keeps only its `apps/api/src/index.ts` conflict.
+
+**Known noise, not findings:** timing-only overruns under parallel load in domain C2-P2 and C3-P1/P2, and api F5-P1, beyond F1e's list. If they persist after F1e merges, the coordinator opens a fix task; reviewers re-run the package alone and record the result.
+
+> **Building paused until Codex reviews (user, 2026-10-30 18:45):** no new build or fix sessions (including the proposed M2b) until Codex has worked through the review queue (Codex returns 2026-11-01); too many reviews are piling up. F1e QA run 2 continues; F1e merges on PASS (already approved).
+
+> **QA run 2 verdicts (18:37):** **M2 #30 `66e10d7` STRUCTURAL PASS** (issuecomment-6530660821; non-structural 1, unbounded `at` that can fail a whole batch and retry forever, proposed to the user as fix task M2b). **M3 #31 `e602dcc` STRUCTURAL PASS** (issuecomment-6530666338; its note that raw `TrackerState` holds teacher-only fields is now must S1-S3). Both wait for the user's go-ahead and for idea-map to be green (F1e).
+
+> **QA run 2 (2026-10-30 18:30):** fix heads green on CI: F1e #45 `cf60a39` (CI green twice; T2-F2/F5/F7 20 of 20 under load), M2 #30 `66e10d7` (synced), M3 #31 `e602dcc` (S-1 fixed per §8.4 rule 5; N1, N2, N4 done; dangling-requires decision accepted, `82fd45b`). QA sessions: F1e full run `session_01KbXtJ72bgr1epcC1CaSaR2`, M2 structural `session_01KbXtJ6dJi3LHfHRLJKUH75`, M3 structural `session_01KbXtJ3jN1fw17TsJp45gf2`; each messages the coordinator when done. Fallback check-in `trig_0153od4jRSMc3b7cbeYYJR6E` at 19:20 UTC.
+
+> **M2 and M3 QA run 1 (2026-10-30 17:45):** **M2 #30 BLOCKED** (issuecomment-6529064212): 3 additive merge conflicts with idea-map (api index, student App.tsx, contracts index); nothing tested. Sync session `session_01KbXtJ3vuYGxCLLNarHJQec`. **M3 #31 STRUCTURAL FAIL** (issuecomment-6529188262): the tracker passed every M3 check, but its sticky unlocks (§7) and the domain's `mapStates` (S10b) could disagree after a publish (S-1). Resolved as a contract, ARCHITECTURE §8.4 rule 5 (`c07cf0b`), and must M3-F9. Fix session `session_01KbXtJ2bjLzk2Tkyc4Q6ZZF` also does N1, N2 and N4 (additive state-shape items S1 will consume). Both get a fresh structural QA run 2 when CI is green on their new heads.
+
+> **User directives (2026-10-30 17:25):** (1) **Claude QA for M2 #30 and M3 #31, focused on structural integrity**: structural errors that could collapse later work block the merge; smaller findings go to Codex (Nov 1). QA sessions: M2 `session_01KbXtJ3tUT8NeveW1McTk35`, M3 `session_01KbXtJ5TJRQPfJEZJBuRDmF`. Verdicts are STRUCTURAL PASS / STRUCTURAL FAIL / BLOCKED, and each PR's merge on that verdict still needs the user's go-ahead. (2) **The MLP is all of v0.1, target about 2 weeks** (around 2026-11-13; user, revised 17:40); no fixed pilot date; S6 requires vetted Practice items (C10); see `docs/ROADMAP.md`. (3) **Builders stay idle** until merges unblock M4, S1 and A9; no new build sessions until then.
+
+> **Coordinator handover (2026-10-30 17:00):** coordinator is now `session_01KbXtJ4C5cRRdJDCKn84ohK`; the earlier coordinator's sessions are not reachable from it. **F1e #45** at `531ad93` (CI green, behind docs only) still does not meet F1e-F9: `getCurriculumData` reorders READ COMMITTED reads instead of one snapshot. Change request posted (issuecomment-6528480435); Sonnet fixer `session_01KbXtJ4MG19qRoe65pjxdm7` works on the same branch. QA run 2 starts after its head goes green twice. **Design re-run (relayed by the user, 17:00):** the design QA again passed all three heads merged with `11d5bb7`, with no must regressing. Disclosed: on a machine about 2x slower, idea-page open measured 340 ms on merged map-smooth + idea-page (budget 300 ms), but 342 ms on the unchanged base in the same state, so it is attributed to the environment and not yet re-measured on normal hardware. The idea-page API still names far ideas until S10c #49 lands.
+
+> **Design PRs (2026-10-30 16:43):** independent Claude design QA (`session_017xAqLcNqdUxEoYFENFHR6U`) **PASS** on all three final heads: #50 map-emphasis `7aa9a7b`, #51 map-smooth `081fb1f` (stacked on #50), #52 idea-page `eafcbb5`. F8-P1 (1 recalc, 0 transitions with the pointer over the map) is fixed; S10b and D47 hold; full suite solo green except wall-clock flakes. The user approved merging them on this Claude QA (2026-10-30). They wait for idea-map to be green (F1e), in the order #50, #51, #52, after S10c #49.
+>
+> **Timing-test gaps for F1e (2026-10-30 16:15):** besides the tests F1e already hardens, CI has also flaked on connectors `storage.test.ts` zip bomb (F1e only changed `security.test.ts`), api `imports.test.ts` T2-F2/F5/F7 (newest-job race not fully fixed: T2-F5 failed once under load in F1e's QA), and domain `lock.test.ts` S10b-P1 (2,000 ideas under 5 ms, on #52). F1e must cover all of them before merge.
+>
+> ~~idea-map CI RED since 2026-10-30 02:39 UTC~~ **Resolved 2026-10-30 ~20:00: F1e merged as `2d871d2`, merge CI green; idea-map is green and merging resumes one PR at a time (report `reports/F1e.md`).** History: Three `pnpm test` failures on `9f0f771` (S10b merge) and `fe9479c`, each a known load-sensitive test: connectors `storage.test.ts` zip-bomb timing (×2) and api `imports.test.ts` T2-F2 (latest import read as null, the newest-job race). Every tree passes locally in CI order on a fresh database. Fix task **F1e #45** is under independent Claude QA (`session_017xAqLeYapB4WFhDLCfuKG7`); it needs the user's approval to merge on that review. Job logs are readable through the GitHub connector's `get_job_logs` (the `logs_url` downloads with curl).
 >
 > **S10b merged** 2026-10-30 (squash `9f0f771`, user-approved on Claude QA PASS; merge CI red as above, not S10b-specific). **S10c #49** (coordinator-written D47 leak fixes, user request) is under Claude QA (`session_017xAqLb4r7YvGMWBQtzre1s`). **Design branches** `design/map-emphasis`, `design/map-smooth`, `design/idea-page` (user's design session `session_017xAqLciuNohCywzAy8sdeo`) are under regression QA (`session_017xAqLcNqdUxEoYFENFHR6U`); map-smooth conflicts with S10b.
 

@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import { describe, expect, it } from 'vitest';
 import { lockStates, mapStates } from './lock.js';
 
@@ -76,19 +77,15 @@ describe('mapStates (S10b-F1)', () => {
     expect(s.map((i) => i.state)).toEqual(['open', 'next']);
   });
 
-  it('is pure and fast on 2,000 ideas (S10b-P1)', () => {
+  it('is pure and fast on 2,000 ideas (S10b-P1)', async () => {
     const big = Array.from({ length: 2000 }, (_, i) => ({
       idea_id: `i${i}`,
       requires: i === 0 ? [] : [`i${i - 1}`, `i${Math.floor(i / 2)}`],
     }));
     const a = mapStates(big); // warms up, so parallel test load doesn't time a cold start
-    let best = Infinity;
-    for (let i = 0; i < 5; i++) {
-      const t = performance.now();
-      mapStates(big);
-      best = Math.min(best, performance.now() - t);
-    }
-    expect(best).toBeLessThan(5);
+    await expectBestUnder('mapStates on 2,000 ideas (S10b-P1)', 5, () => mapStates(big), {
+      runs: 5,
+    });
     expect(mapStates(big)).toEqual(a);
   });
 
@@ -114,5 +111,62 @@ describe('mapStates (S10b-F1)', () => {
           expect(after.find((a) => a.idea_id === s.idea_id)!.state).not.toBe('open');
       }
     }
+  });
+});
+
+describe('one source of unlocks (M3-F9, §8.4 rule 5)', () => {
+  // Version 2 added `c` as a prerequisite of `b` after the student had unlocked it.
+  const v2 = [
+    { idea_id: 'a', requires: [] },
+    { idea_id: 'c', requires: [] },
+    { idea_id: 'b', requires: ['a', 'c'] },
+  ];
+  const map = (mastered: string[], unlocked?: string[]) =>
+    Object.fromEntries(
+      mapStates(v2, new Set(mastered), unlocked && new Set(unlocked)).map((s) => [
+        s.idea_id,
+        s.state,
+      ]),
+    );
+
+  it('keeps an idea the tracker unlocked open after a publish adds a prerequisite', () => {
+    expect(map(['a'])).toMatchObject({ b: 'next' });
+    expect(map(['a'], ['a', 'b'])).toMatchObject({ b: 'open' });
+    expect(lockStates(v2, new Set(['a']), new Set(['b'])).find((l) => l.idea_id === 'b')).toEqual({
+      idea_id: 'b',
+      state: 'open',
+      unlocks_after: [],
+    });
+  });
+
+  it('derives next and far from the open set including tracker unlocks', () => {
+    const chain = [
+      { idea_id: 'x', requires: [] },
+      { idea_id: 'y', requires: ['x'] },
+      { idea_id: 'z', requires: ['y'] },
+    ];
+    const s = (u: string[]) => mapStates(chain, new Set(), new Set(u)).map((i) => i.state);
+    expect(s([])).toEqual(['open', 'next', 'far']);
+    expect(s(['y'])).toEqual(['open', 'open', 'next']);
+  });
+
+  it('treats a requires outside the version as unmet when the tracker is consulted', () => {
+    const ghost = [
+      { idea_id: 'a', requires: ['ghost'] },
+      { idea_id: 'b', requires: ['a'] },
+      { idea_id: 'c', requires: ['c'] },
+    ];
+    expect(mapStates(ghost, new Set(), new Set()).map((i) => i.state)).toEqual([
+      'far',
+      'far',
+      'far',
+    ]);
+    expect(lockStates(ghost, new Set(), new Set())[0]).toEqual({
+      idea_id: 'a',
+      state: 'locked',
+      unlocks_after: [],
+    });
+    // Without tracker input, S10b behaviour is unchanged.
+    expect(mapStates(ghost)[0]?.state).toBe('open');
   });
 });
