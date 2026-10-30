@@ -1,5 +1,6 @@
 import type { StudentMap, StudentMapIdea } from '@ideamap/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { CategoryIcon, LockIcon, NextIcon, categoryColour } from './CategoryIcon';
 import {
   COMPACT_ZOOM,
@@ -65,6 +66,20 @@ export function IdeaMap({
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [active, setActive] = useState<string | null>(null);
+  // The card the pointer or focus just left, so its border eases back (map.css).
+  const [leaving, setLeaving] = useState<string | null>(null);
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => setLeaving(null), 200);
+    return () => clearTimeout(t);
+  }, [leaving]);
+  // Synchronous, so the class is on the card before the browser restyles it without
+  // :hover; a later render would let the border snap back.
+  const leave = (id: string) =>
+    flushSync(() => {
+      setActive(null);
+      setLeaving(id);
+    });
   const [message, setMessage] = useState('');
   // The buttons, Fit and the keyboard glide the view; drag, wheel and pinch follow at once.
   const [glide, setGlide] = useState(false);
@@ -368,6 +383,7 @@ export function IdeaMap({
                     n.centre && 'imap-centre',
                     locked && `imap-${n.idea.state}`,
                     near?.has(n.idea.id) && 'imap-near',
+                    leaving === n.idea.id && 'imap-leaving',
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -380,9 +396,9 @@ export function IdeaMap({
                     setActive(n.idea.id);
                     if (modality.current === 'keyboard') reveal(n);
                   }}
-                  onBlur={() => setActive(null)}
+                  onBlur={() => leave(n.idea.id)}
                   onMouseEnter={() => setActive(n.idea.id)}
-                  onMouseLeave={() => setActive(null)}
+                  onMouseLeave={() => leave(n.idea.id)}
                 >
                   <span className="imap-title">
                     {n.idea.state === 'next' && <NextIcon />}

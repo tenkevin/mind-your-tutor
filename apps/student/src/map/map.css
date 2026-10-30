@@ -327,23 +327,21 @@
   }
 }
 /* Motion, all off with reduced motion or Calm screen (udl.css).
-   Transitions apply only while the pointer is on the map (or a card has focus), so a
-   theme change elsewhere still restyles every card in one recalculation (F8), while
-   leaving a card eases out instead of snapping. */
+   Colour transitions sit only on the card under the pointer or keyboard, and on the one
+   the pointer has just left (.imap-leaving, for 200 ms), so leaving a card eases out.
+   Links fade by opacity only, which a theme change never touches. So a theme switch,
+   even with the pointer on the map, starts no transitions and stays one style
+   recalculation (F8-P1). */
 @media (prefers-reduced-motion: no-preference) {
-  .imap:hover .imap-node,
-  .imap-node:focus-visible {
+  .imap-node:hover,
+  .imap-node:focus-visible,
+  .imap-node.imap-leaving {
     transition:
       border-color 160ms ease-out,
       transform 160ms ease-out;
   }
-  .imap:hover .imap-edge,
-  .imap:hover .imap-edge path,
-  .imap:hover .imap-edge polygon {
-    transition:
-      opacity 160ms ease-out,
-      stroke 160ms ease-out,
-      fill 160ms ease-out;
+  .imap:hover .imap-edge {
+    transition: opacity 160ms ease-out;
   }
   /* An open card lifts a little under the pointer; a locked one stays put. */
   .imap-node:not(.imap-next):not(.imap-far):hover {
@@ -355,11 +353,11 @@
   }
   /* The map arrives from the centre outwards: centre, then each ring, then the links. */
   .imap-node {
-    animation: imap-arrive 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: imap-arrive 380ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
     animation-delay: calc(var(--ring, 0) * 90ms);
   }
   .imap-svg {
-    animation: imap-fade 520ms ease-out 140ms both;
+    animation: imap-fade 520ms ease-out 140ms backwards;
   }
 }
 @keyframes imap-arrive {
