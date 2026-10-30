@@ -98,7 +98,7 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 6. Next actions, in order
 
-> **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP target about 3 weeks, no fixed pilot date; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
+> **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP = all of v0.1, target about 2 weeks (around 2026-11-13), no fixed pilot date, S6 requires vetted items; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
 
 1. F1e: receive the builder's head, send to QA run 2, merge on PASS (user-approved), confirm idea-map CI green.
 2. S10c: sync, small copy fix, merge, `plan.mjs done S10c`, save the report.
