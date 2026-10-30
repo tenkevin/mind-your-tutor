@@ -298,15 +298,33 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
   // F1e-F9: Teacher Settings → Curriculum data reads the newest job, its version and the
   // newest version as separate statements. A worker commit can land between any two of
   // them; the answer must still agree (a succeeded job always comes with its version).
-  it.each([1, 2, 3, 4, 5, 6])(
-    'F1e-F9: a worker commit after read %i of the curriculum data gives a consistent answer',
-    async (after) => {
+  it.each([
+    [1, false],
+    [2, false],
+    [3, false],
+    [4, false],
+    [5, false],
+    [6, false],
+    [1, true],
+    [3, true],
+  ])(
+    'F1e-F9: a worker commit after read %i of the curriculum data gives a consistent answer (job already running: %s)',
+    async (after, running) => {
       const stopped = { ...deps, boss: { send: () => Promise.resolve(null) } } as ImportDeps;
       const job = await startImport(stopped, a.teacher, {
         curriculumId: a.curriculumId,
         file: xlsxFile(),
       });
       const payload = { org_id: a.orgId, import_job_id: job.job.id };
+      if (running) {
+        const killed: RunDeps = {
+          ...deps,
+          afterStep: (step) => {
+            if (step === 'Check data') throw new Error('SIGKILL');
+          },
+        };
+        await expect(runImport(killed, payload)).rejects.toThrow('SIGKILL');
+      }
       let reads = 0;
       let committed = false;
       const commit = async () => {
@@ -315,29 +333,29 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
       };
       const interleaved: ImportDeps = {
         ...deps,
-        scope: (orgId, fn) =>
-          deps.scope(orgId, (trx) =>
-            fn(
-              trx.withPlugin({
-                transformQuery: ({ node }) => node,
-                transformResult: async ({ result }) => {
-                  if (++reads === after && !committed) await commit();
-                  return result;
-                },
-              }),
-            ),
+        scope: (orgId, fn, options) =>
+          deps.scope(
+            orgId,
+            (trx) =>
+              fn(
+                trx.withPlugin({
+                  transformQuery: ({ node }) => node,
+                  transformResult: async ({ result }) => {
+                    if (++reads === after && !committed) await commit();
+                    return result;
+                  },
+                }),
+              ),
+            options,
           ),
       };
       const data = await getCurriculumData(interleaved, a.teacher, a.curriculumId);
       if (!committed) await commit();
-      // Whenever the commit landed, the job and the version agree.
-      if (data.job?.status === 'succeeded') {
-        expect(data.job.version).not.toBeNull();
-        expect(data.version?.id).toBe(data.job.version!.id);
-      } else {
-        expect(data.job?.version ?? null).toBeNull();
-      }
-      expect(data.version === null || data.version.number === 1).toBe(true);
+      // One snapshot: the commit landed after it was taken, so none of it shows, and the
+      // job and the version agree whichever read the commit came after.
+      expect(data.job?.status).toBe(running ? 'running' : 'queued');
+      expect(data.job?.version ?? null).toBeNull();
+      expect(data.version).toBeNull();
       expect(data.unchanged).toBe(false);
     },
   );

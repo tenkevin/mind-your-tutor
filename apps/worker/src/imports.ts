@@ -50,7 +50,11 @@ import { inTransaction, type Sender } from './queue.js';
 type Trx = Transaction<Database>;
 
 /** Runs `fn` in a transaction acting for one organization (`withOrg` in production). */
-export type OrgScope = <T>(orgId: string, fn: (trx: Trx) => Promise<T>) => Promise<T>;
+export type OrgScope = <T>(
+  orgId: string,
+  fn: (trx: Trx) => Promise<T>,
+  options?: { isolation?: 'repeatable read' },
+) => Promise<T>;
 
 /** Who is asking. Until F5's sign-in lands, the API's `authenticate` supplies this. */
 export interface Caller {
@@ -300,44 +304,47 @@ export async function getCurriculumData(
 ): Promise<CurriculumDataResponse> {
   mayImport(caller);
   const data = Uuid.safeParse(curriculumId).success
-    ? await deps.scope(caller.orgId, async (trx) => {
-        const curriculum = await trx
-          .selectFrom('curriculum')
-          .select('id')
-          .where('id', '=', curriculumId)
-          .executeTakeFirst();
-        if (!curriculum) return null;
-        // Read in this order (F1e-F9): the job row, then its view, then the newest
-        // version. These are separate READ COMMITTED statements, so a worker commit can
-        // land between them. In this order, a job seen as succeeded always has its
-        // version, and the newest version read afterwards is never older than the job's.
-        const latest = await newestJob(trx, curriculumId);
-        const jobView = latest ? await viewOfRow(trx, latest) : null;
-        const version = await trx
-          .selectFrom('curriculum_version')
-          .select(['id', 'number', 'status', 'issues', 'pack', 'source', 'created_at'])
-          .where('curriculum_id', '=', curriculumId)
-          .orderBy('number', 'desc')
-          .limit(1)
-          .executeTakeFirst();
-        // "Unchanged since last import": the same bytes as the version before this job.
-        let unchanged = false;
-        if (latest) {
-          let before = trx
+    ? await deps.scope(
+        caller.orgId,
+        async (trx) => {
+          const curriculum = await trx
+            .selectFrom('curriculum')
+            .select('id')
+            .where('id', '=', curriculumId)
+            .executeTakeFirst();
+          if (!curriculum) return null;
+          // The job, its view and the newest version are separate statements. Under
+          // REPEATABLE READ (below) they see one snapshot, so a worker commit between
+          // them can't give a succeeded job a stale or missing version (F1e-F9).
+          const latest = await newestJob(trx, curriculumId);
+          const jobView = latest ? await viewOfRow(trx, latest) : null;
+          const version = await trx
             .selectFrom('curriculum_version')
-            .select(sql<string>`source->>'checksum'`.as('checksum'))
+            .select(['id', 'number', 'status', 'issues', 'pack', 'source', 'created_at'])
             .where('curriculum_id', '=', curriculumId)
-            .where('created_at', '<', latest.created_at);
-          if (latest.version_id) before = before.where('id', '!=', latest.version_id);
-          const previous = await before.orderBy('number', 'desc').limit(1).executeTakeFirst();
-          unchanged = previous?.checksum === latest.source.checksum;
-        }
-        return {
-          job: jobView,
-          unchanged,
-          version,
-        };
-      })
+            .orderBy('number', 'desc')
+            .limit(1)
+            .executeTakeFirst();
+          // "Unchanged since last import": the same bytes as the version before this job.
+          let unchanged = false;
+          if (latest) {
+            let before = trx
+              .selectFrom('curriculum_version')
+              .select(sql<string>`source->>'checksum'`.as('checksum'))
+              .where('curriculum_id', '=', curriculumId)
+              .where('created_at', '<', latest.created_at);
+            if (latest.version_id) before = before.where('id', '!=', latest.version_id);
+            const previous = await before.orderBy('number', 'desc').limit(1).executeTakeFirst();
+            unchanged = previous?.checksum === latest.source.checksum;
+          }
+          return {
+            job: jobView,
+            unchanged,
+            version,
+          };
+        },
+        { isolation: 'repeatable read' },
+      )
     : null;
   if (!data) throw new ImportRequestError(404, 'There is no such curriculum.');
   const { version } = data;
