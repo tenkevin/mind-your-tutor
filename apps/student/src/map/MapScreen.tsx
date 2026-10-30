@@ -111,7 +111,8 @@ export function MapScreen({ onSignedOut }: { onSignedOut: () => void }) {
   // The category's icon and colour, in the same order as the map: listed categories
   // first, then any others in the order ideas use them.
   const names = data.map.categories.map((c) => c.category);
-  for (const i of data.map.ideas) if (!names.includes(i.category)) names.push(i.category);
+  for (const i of data.map.ideas)
+    if (i.category && !names.includes(i.category)) names.push(i.category);
   const look = (category: string) => ({
     icon: data.map!.categories.find((c) => c.category === category)?.icon ?? null,
     colour: categoryColour(names.indexOf(category)),
