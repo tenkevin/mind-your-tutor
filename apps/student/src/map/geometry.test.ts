@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { exitPoint, fitView, revealPoint, toPixels, zoomAt, UNIT, STRETCH } from './geometry';
+import {
+  COMPACT_ZOOM,
+  exitPoint,
+  fitView,
+  halfSize,
+  revealPoint,
+  toPixels,
+  zoomAt,
+  UNIT,
+  STRETCH,
+} from './geometry';
 
 describe('map geometry', () => {
   it('scales stored positions without moving them', () => {
@@ -28,6 +38,19 @@ describe('map geometry', () => {
     const view = fitView(400, 600, { w: 1400, h: 900 }, true);
     expect(view.z * 1400).toBeLessThanOrEqual(400);
     expect(view.z * 900).toBeLessThanOrEqual(600);
+  });
+
+  it('a compact card is one line and narrower than the full card', () => {
+    const card = {
+      title: 'Condensation',
+      category: 'Process',
+      requires: 'Unlocks after Evaporation',
+    };
+    const full = halfSize(card, false, true);
+    const small = halfSize(card, false, true, true);
+    expect(small.hw).toBeLessThan(full.hw);
+    expect(small.hh).toBeLessThan(full.hh);
+    expect(COMPACT_ZOOM).toBeLessThan(fitView(400, 600, { w: 1400, h: 900 }).z);
   });
 
   it('pans only when a focused idea is out of view', () => {
