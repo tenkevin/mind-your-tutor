@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
 describe('@ideamap/student', () => {
@@ -9,6 +9,8 @@ describe('@ideamap/student', () => {
 });
 
 describe('signed in (M2)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it('renders inside the tracker without sending anything during render', () => {
     const me = {
       user: { id: '11111111-1111-4111-8111-111111111111', role: 'student' as const, name: 'Sam' },
@@ -16,6 +18,11 @@ describe('signed in (M2)', () => {
       csrfToken: 'token',
       session: { idleMinutes: 30, expiresAt: '2026-10-24T12:00:00.000Z' },
     };
-    expect(renderToStaticMarkup(<App initial={{ kind: 'signed-in', me }} />)).toContain('Hi, Sam.');
+    // The map screen reads the URL while rendering; the server-side test has no window.
+    const fetched = vi.fn();
+    vi.stubGlobal('fetch', fetched);
+    vi.stubGlobal('location', { pathname: '/', search: '', hash: '' });
+    expect(renderToStaticMarkup(<App initial={{ kind: 'signed-in', me }} />)).toContain('Sam');
+    expect(fetched).not.toHaveBeenCalled();
   });
 });
