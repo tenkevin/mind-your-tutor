@@ -48,6 +48,7 @@ const ROUTE_URLS = [
   '/api/curricula/:curriculumId/defaults',
   '/api/users/:userId/role',
   '/api/roster/import',
+  '/events',
 ];
 
 /** C4's routes, registered when the server is given import deps. */
@@ -67,6 +68,8 @@ const PUBLISH_ROUTE_URLS = [
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
   '/api/privacy/students/:studentId',
+  '/api/privacy/students/:studentId/unenrol',
+  '/api/privacy/students/:studentId/tracing',
 ];
 /** A1's AI gateway routes, registered when the server is given a model provider. */
 const AI_ROUTE_URLS = [
@@ -197,6 +200,8 @@ describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
     expect(privacy.map((r) => `${r.method} ${r.url}`).sort()).toEqual([
       'DELETE /api/privacy/students/:studentId',
       'POST /api/privacy/students/:studentId/export',
+      'POST /api/privacy/students/:studentId/unenrol',
+      'PUT /api/privacy/students/:studentId/tracing',
     ]);
     for (const route of privacy) {
       expect(route.policy).toEqual(STUDENT_PRIVACY_POLICY);
@@ -361,6 +366,24 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         body: PACK,
         headers: UPLOAD,
       },
+      // M2: a student posts their own learning events, in a class they're enrolled in.
+      {
+        route: '/events',
+        method: 'POST',
+        url: '/events',
+        body: {
+          events: [
+            {
+              id: '01JB8Y2C3D4E5F6G7H8J9K0M1N',
+              classId: classes.a1,
+              versionId: curricula.a,
+              at: new Date().toISOString(),
+              type: 'idea.opened',
+              payload: { ideaId: 'rain' },
+            },
+          ],
+        },
+      },
       {
         route: '/api/curricula/:curriculumId/imports/latest',
         method: 'GET',
@@ -401,6 +424,18 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         route: '/api/privacy/students/:studentId',
         method: 'DELETE',
         url: `/api/privacy/students/${users['student-a2']}`,
+      },
+      // M2: aimed at org A students the sweep doesn't sign in as.
+      {
+        route: '/api/privacy/students/:studentId/unenrol',
+        method: 'POST',
+        url: `/api/privacy/students/${users['unenrolled-a']}/unenrol`,
+      },
+      {
+        route: '/api/privacy/students/:studentId/tracing',
+        method: 'PUT',
+        url: `/api/privacy/students/${users['rostered-a']}/tracing`,
+        body: { optedOut: true },
       },
       // A1: one call per persona, aimed at class A1.
       ...['tutor', 'peer', 'agent'].map((persona) => ({
@@ -478,6 +513,8 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
     // T2: the same staff read the Curriculum data section.
     'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
+    // M2: students only; admins and teachers are refused (their events are server-side).
+    'POST /events': ['student'],
     // C5: staff of the org read a version's diff; publishing and rollback for class A1
     // are its teacher's or an admin's (the default).
     'GET /api/versions/:versionId/diff': ['admin', 'otherClassTeacher'],

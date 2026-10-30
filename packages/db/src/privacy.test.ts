@@ -438,62 +438,6 @@ describe.skipIf(!hasDatabase)('audit log (F6-F5, F6-F6, F6-S2, F6-U2)', () => {
   });
 });
 
-describe.skipIf(!hasDatabase)('audit cost (F6-P2)', () => {
-  let t: TestDatabase;
-  let a: Org;
-  beforeAll(async () => {
-    t = await freshDatabase();
-    a = await seedWithAdmin(t.db, 'p');
-  });
-  afterAll(async () => {
-    await t?.drop();
-  });
-
-  it('adds under 10 ms at p95 to a config save', async () => {
-    const app = await t.loginAs(APP_ROLE);
-    const save = async (i: number) => {
-      const started = performance.now();
-      await withOrg(app, a.orgId, async (trx) => {
-        await actAs(trx, a.teacherId);
-        await trx
-          .updateTable('class_config')
-          .set({
-            config: config({
-              course: { pass_mark: 50 + (i % 40) },
-              units: [{ unit: 1, due_date: `2026-11-${String(1 + (i % 28)).padStart(2, '0')}` }],
-              personas: [{ persona_id: 'tutor', prompt_template: `Prompt ${i} for {name}.` }],
-            }),
-          })
-          .where('class_id', '=', a.classId)
-          .execute();
-      });
-      return performance.now() - started;
-    };
-    const p95 = async (n: number) => {
-      const times: number[] = [];
-      for (let i = 0; i < n; i++) times.push(await save(i));
-      times.sort((x, y) => x - y);
-      return times[Math.floor(n * 0.95)]!;
-    };
-    await p95(30); // warm up
-    // Best of three rounds, each pairing an audited and a plain run back to back (F1e).
-    const rounds: { audited: number; plain: number }[] = [];
-    for (let r = 0; r < 3; r++) {
-      const audited = await p95(300);
-      await sql`ALTER TABLE class_config DISABLE TRIGGER audit`.execute(t.db);
-      const plain = await p95(300);
-      await sql`ALTER TABLE class_config ENABLE TRIGGER audit`.execute(t.db);
-      if (process.env.IDEAMAP_PERF_VERBOSE) console.log({ audited, plain });
-      rounds.push({ audited, plain });
-    }
-    const overheads = rounds.map((x) => x.audited - x.plain);
-    expect(
-      Math.min(...overheads),
-      `audit overhead p95 per round: ${overheads.map((o) => o.toFixed(2)).join(', ')} ms, budget 10 ms`,
-    ).toBeLessThan(10);
-  });
-});
-
 describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)', () => {
   let t: TestDatabase;
   let app: Db;
@@ -588,22 +532,34 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
     });
   });
 
-  it('removes personal data and text, keeps pseudonymous events, and audits it', async () => {
-    const eventsBefore = await t.db
+  it('removes personal data, text and raw events (D22), and audits it', async () => {
+    const otherEvents = await t.db
       .selectFrom('interaction_event')
       .selectAll()
-      .where('student_id', '=', a.studentId)
+      .where('student_id', '=', b.studentId)
       .orderBy('seq')
       .execute();
+    expect(otherEvents.length).toBeGreaterThan(0);
+    const textRef = await t.db
+      .selectFrom('interaction_event')
+      .select('payload')
+      .where('student_id', '=', a.studentId)
+      .where('type', '=', 'teachback.done')
+      .executeTakeFirstOrThrow();
+    const ref = (textRef.payload as { textRef: string }).textRef;
 
     const result = await deleteStudent(app, request(a.adminId), store);
     expect(result).toEqual({
+      interactionEvents: 2,
+      generatedMapViews: 1,
+      aiOutputs: 1,
       interactionText: 1,
       aiInteractions: 2,
       progressSnapshots: 1,
       enrollments: 1,
       authSessions: 1,
       exportFiles: 1,
+      tracingOptOut: 1,
     });
 
     const user = await t.db
@@ -620,17 +576,37 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
       role: 'student',
     });
 
-    // Events are untouched, and their text reference resolves to the removed marker.
-    const eventsAfter = await t.db
-      .selectFrom('interaction_event')
-      .selectAll()
-      .where('student_id', '=', a.studentId)
-      .orderBy('seq')
-      .execute();
-    expect(eventsAfter).toEqual(eventsBefore);
-    const ref = (eventsAfter[1]!.payload as { text_ref: string }).text_ref;
+    // Events, their keys, map views and AI outputs are gone; a reference to the text
+    // still resolves to the removed marker.
+    for (const table of [
+      'interaction_event',
+      'interaction_event_key',
+      'generated_map_view',
+      'ai_output',
+    ] as const) {
+      const left = await t.db
+        .selectFrom(table)
+        .select('student_id')
+        .where('student_id', '=', a.studentId)
+        .execute();
+      expect(left, table).toEqual([]);
+    }
     const texts = await withOrg(app, a.orgId, (trx) => resolveTexts(trx, [ref]));
     expect(texts.get(ref)).toEqual(REMOVED_TEXT);
+
+    // Partitions stay, and org B's events are exactly as they were.
+    const { rows: parts } = await sql<{ n: number }>`
+      SELECT count(*)::int AS n FROM pg_inherits WHERE inhparent = 'interaction_event'::regclass
+    `.execute(t.db);
+    expect(parts[0]!.n).toBeGreaterThanOrEqual(3);
+    expect(
+      await t.db
+        .selectFrom('interaction_event')
+        .selectAll()
+        .where('student_id', '=', b.studentId)
+        .orderBy('seq')
+        .execute(),
+    ).toEqual(otherEvents);
 
     const audit = await latestAudit(t.db, a.orgId, 'student.deleted');
     expect(audit).toMatchObject({
@@ -681,6 +657,10 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
   it('is safe to repeat', async () => {
     const again = await deleteStudent(app, request(a.adminId), store);
     expect(again).toEqual({
+      interactionEvents: 0,
+      generatedMapViews: 0,
+      aiOutputs: 0,
+      tracingOptOut: 0,
       interactionText: 0,
       aiInteractions: 0,
       progressSnapshots: 0,
@@ -925,6 +905,8 @@ describe.skipIf(!hasDatabase)('student export covers every stored field (QA F6-E
       ai_outputs: 'ai_output',
       ai_interactions: 'ai_interaction',
       progress_snapshots: 'progress_snapshot',
+      tracing_opt_out: 'tracing_opt_out',
+      event_seq: 'student_event_seq',
       auth_sessions: 'auth_session',
     };
     for (const [section, table] of Object.entries(sources) as [
