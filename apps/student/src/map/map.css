@@ -165,15 +165,26 @@
   border-color: var(--map-node-centre-border);
   box-shadow: 0 0 32px var(--map-node-centre-glow);
 }
-.imap-locked {
+.imap-next,
+.imap-far {
   background: var(--map-node-locked);
-  border-style: dashed;
-  /* Quieter than an open card's border, still 3:1 on the canvas. */
-  border-color: color-mix(in srgb, var(--map-node-locked-border) 70%, transparent);
   color: var(--map-node-locked-text);
   cursor: not-allowed;
 }
-.imap-locked:hover,
+/* Next up: dashed, in the open border colour, with an arrow. */
+.imap-next {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: var(--map-node-open-border);
+}
+/* Further away: dotted, in the locked border colour, with a lock. */
+.imap-far {
+  border-style: dotted;
+  border-width: 2px;
+  border-color: var(--map-node-locked-border);
+}
+.imap-next:hover,
+.imap-far:hover,
 .imap-near {
   border-color: var(--map-node-hover-border);
 }
