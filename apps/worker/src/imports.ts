@@ -124,7 +124,22 @@ async function loadView(trx: Trx, jobId: string): Promise<ImportJobView | null> 
     .selectAll()
     .where('id', '=', jobId)
     .executeTakeFirst();
-  if (!job) return null;
+  return job ? viewOfRow(trx, job) : null;
+}
+
+async function newestJob(trx: Trx, curriculumId: string) {
+  return trx
+    .selectFrom('import_job')
+    .selectAll()
+    .where('curriculum_id', '=', curriculumId)
+    .orderBy('created_at', 'desc')
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
+/** The view of a job row already read. A job's version is committed with the job. */
+async function viewOfRow(trx: Trx, job: JobRow): Promise<ImportJobView> {
   const version = job.version_id
     ? await trx
         .selectFrom('curriculum_version')
@@ -292,14 +307,12 @@ export async function getCurriculumData(
           .where('id', '=', curriculumId)
           .executeTakeFirst();
         if (!curriculum) return null;
-        const latest = await trx
-          .selectFrom('import_job')
-          .select(['id', 'source', 'version_id', 'created_at'])
-          .where('curriculum_id', '=', curriculumId)
-          .orderBy('created_at', 'desc')
-          .orderBy('id', 'desc')
-          .limit(1)
-          .executeTakeFirst();
+        // Read in this order (F1e-F9): the job row, then its view, then the newest
+        // version. These are separate READ COMMITTED statements, so a worker commit can
+        // land between them. In this order, a job seen as succeeded always has its
+        // version, and the newest version read afterwards is never older than the job's.
+        const latest = await newestJob(trx, curriculumId);
+        const jobView = latest ? await viewOfRow(trx, latest) : null;
         const version = await trx
           .selectFrom('curriculum_version')
           .select(['id', 'number', 'status', 'issues', 'pack', 'source', 'created_at'])
@@ -320,7 +333,7 @@ export async function getCurriculumData(
           unchanged = previous?.checksum === latest.source.checksum;
         }
         return {
-          job: latest ? await loadView(trx, latest.id) : null,
+          job: jobView,
           unchanged,
           version,
         };

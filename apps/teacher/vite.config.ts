@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -6,6 +7,8 @@ const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  // Timing tests assert latency budgets, so test files never share the CPU (F1e).
+  test: { fileParallelism: false },
   resolve: {
     alias: [
       { find: '@ideamap/contracts', replacement: page('../../packages/contracts/src/index.ts') },
