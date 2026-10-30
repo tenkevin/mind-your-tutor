@@ -98,6 +98,8 @@ Background only, and rarely needed: `project/*.dc.html` (design prototypes, used
 
 ## 6. Next actions, in order
 
+> **User, 2026-10-30 17:25:** Claude QA (structural integrity; nitpicks to Codex) for M2 #30 and M3 #31 is running; MLP target about 3 weeks, no fixed pilot date; builders stay idle until M4, S1 and A9 are unblocked. See `docs/qa/STATUS.md`.
+
 1. F1e: receive the builder's head, send to QA run 2, merge on PASS (user-approved), confirm idea-map CI green.
 2. S10c: sync, small copy fix, merge, `plan.mjs done S10c`, save the report.
 3. Design PRs #50, #51, #52: **user approved merging on Claude design QA (2026-10-30)**, in that order, after F1e makes idea-map green and S10c #49 merges; sync each (docs-only syncs keep the PASS) and confirm merge CI. (Settled 2026-10-30: link option A; keep the Ms. Ivy placeholder, `docs/design/README.md` §7a.)
