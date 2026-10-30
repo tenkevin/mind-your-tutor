@@ -1515,7 +1515,7 @@
       ],
       "done_when": "A unit whose ideas are all hidden doesn't reveal its name, and a far idea by real id gets the same 404 as an unknown id (S10b QA should findings, D47)",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "version": "0.1",
       "owner": "coordinator",
       "updated": "2026-10-30"
