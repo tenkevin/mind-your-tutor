@@ -119,7 +119,13 @@ export function buildMap(p: Pinned, preview: boolean): StudentMap {
         relation: l.relation,
         importance: l.importance,
       })),
-    units: pack.units.map((u) => ({ unit: u.unit, name: u.name })),
+    // A unit is named only if the student can see at least one of its ideas: a unit
+    // made only of far ideas would otherwise give away what is hidden (D47).
+    units: pack.units
+      .filter((u) =>
+        pack.ideas.some((i) => i.unit === u.unit && shown.has(i.idea_id) && !hidden(i.idea_id)),
+      )
+      .map((u) => ({ unit: u.unit, name: u.name })),
     categories: pack.categories.map((c) => ({ category: c.category, icon: c.icon })),
   };
 }
@@ -169,8 +175,9 @@ export function studentMapRoutes(app: FastifyInstance): void {
     const lock = mapStates(pinned.pack.ideas).find((l) => l.idea_id === idea.idea_id)!;
     // A locked idea can't be opened by URL either (§8.4).
     if (!preview && lock.state !== 'open') {
-      // A far idea stays hidden: no title, no prerequisites (D47).
-      if (lock.state === 'far') return reply.code(403).send({ error: 'Locked' });
+      // A far idea stays hidden (D47): it answers exactly as an unknown id does, so a
+      // student can't probe which ideas exist.
+      if (lock.state === 'far') return reply.code(404).send({ error: 'Not found' });
       // Says what unlocks it, as the map card does, and nothing else about the idea.
       const titlesOf = new Map(pinned.pack.ideas.map((i) => [i.idea_id, i.title]));
       return reply.code(403).send({

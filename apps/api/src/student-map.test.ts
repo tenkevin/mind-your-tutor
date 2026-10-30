@@ -162,11 +162,34 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
       expect([403, 404]).toContain(no.statusCode);
       expect(no.body).not.toContain('Precipitation');
     }
-    const real = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/prec`);
-    expect(real.statusCode).toBe(403);
-    expect(real.json()).toEqual({ error: 'Locked' });
-    // A teacher's preview still shows everything.
     const prev = (await as(api, terry)('GET', mapUrl('?preview=1'))).json().map;
+    const prevUnits = () => prev.units as { unit: number }[];
+    // Far by real id, far by opaque id and an unknown id all answer the same (S10c-F2).
+    const answers = await Promise.all(
+      ['prec', opaque(map)[0], 'does-not-exist'].map((id) =>
+        as(api, sam)('GET', `/api/classes/${classId()}/ideas/${id}`),
+      ),
+    );
+    for (const a of answers) {
+      expect(a.statusCode).toBe(404);
+      expect(a.json()).toEqual({ error: 'Not found' });
+    }
+    // A next-up idea still says what unlocks it.
+    const next = await as(api, sam)('GET', `/api/classes/${classId()}/ideas/cond`);
+    expect(next.statusCode).toBe(403);
+    expect(next.json()).toMatchObject({ error: 'Locked', title: 'Condensation' });
+    // A unit made only of far ideas isn't named (S10c-F1); preview names every unit.
+    const shownUnits = new Set(
+      map.ideas
+        .filter((i: { unit: number | null }) => i.unit !== null)
+        .map((i: { unit: number }) => i.unit),
+    );
+    for (const u of map.units) expect(shownUnits.has(u.unit)).toBe(true);
+    for (const u of pack.units.filter((u) => !shownUnits.has(u.unit))) {
+      expect(res.body).not.toContain(u.name);
+    }
+    expect(prevUnits()).toHaveLength(pack.units.length);
+    // A teacher's preview still shows everything.
     expect(prev.ideas.every((i: { title: string | null }) => i.title)).toBe(true);
   });
 
