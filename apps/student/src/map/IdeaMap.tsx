@@ -66,7 +66,7 @@ export function IdeaMap({
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [active, setActive] = useState<string | null>(null);
-  // The card the pointer or focus just left, so its border eases back (map.css).
+  // The card the pointer or focus just left, so its lift eases back down (map.css).
   const [leaving, setLeaving] = useState<string | null>(null);
   useEffect(() => {
     if (!leaving) return;

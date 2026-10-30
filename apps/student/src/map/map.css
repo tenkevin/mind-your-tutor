@@ -343,18 +343,20 @@
   }
 }
 /* Motion, all off with reduced motion or Calm screen (udl.css).
-   Colour transitions sit only on the card under the pointer or keyboard, and on the one
-   the pointer has just left (.imap-leaving, for 200 ms), so leaving a card eases out.
-   Links fade by opacity only, which a theme change never touches. So a theme switch,
-   even with the pointer on the map, starts no transitions and stays one style
-   recalculation (F8-P1). */
+   Colour transitions sit only on the card under the pointer or keyboard (F8: never at
+   rest). The card the pointer has just left (.imap-leaving, for 200 ms) eases only its
+   lift back down. Links fade by opacity only, which a theme change never touches. So a
+   theme switch, even with the pointer on the map, starts no transitions and stays one
+   style recalculation (F8-P1). */
 @media (prefers-reduced-motion: no-preference) {
   .imap-node:hover,
-  .imap-node:focus-visible,
-  .imap-node.imap-leaving {
+  .imap-node:focus-visible {
     transition:
       border-color 160ms ease-out,
       transform 160ms ease-out;
+  }
+  .imap-node.imap-leaving {
+    transition: transform 160ms ease-out;
   }
   .imap:hover .imap-edge {
     transition: opacity 160ms ease-out;
