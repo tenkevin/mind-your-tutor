@@ -7,7 +7,11 @@ const page = (name: string) => fileURLToPath(new URL(name, import.meta.url));
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@ideamap/contracts': page('../../packages/contracts/src/index.ts') },
+    alias: [
+      { find: '@ideamap/contracts', replacement: page('../../packages/contracts/src/index.ts') },
+      // The bare package only; '@ideamap/ui/styles.css' still resolves through its exports.
+      { find: /^@ideamap\/ui$/, replacement: page('../../packages/ui/src/index.ts') },
+    ],
   },
   // Sign-in and the API are served from this origin through the dev proxy, so the
   // session cookie stays host-only and same-site (F5). `pnpm dev:auth` runs the API.

@@ -1,4 +1,5 @@
 import '@ideamap/ui/styles.css';
+import '@ideamap/ui/themes.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { UiReference } from './UiReference';

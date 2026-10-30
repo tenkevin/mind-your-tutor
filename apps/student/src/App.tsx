@@ -8,6 +8,8 @@ import {
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
 import { TrackerProvider } from './tracker/TrackerProvider';
+import { MapScreen } from './map/MapScreen';
+import { DisplaySettings } from './udl';
 
 // The session lives in an HttpOnly cookie; the app only asks /api/me who is signed in.
 
@@ -57,9 +59,19 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   }
   return (
     <TrackerProvider me={view.me}>
-      <main style={{ padding: 'var(--space-6)' }}>
-        <h1>Idea Map · Student</h1>
-        <p>Hi, {view.me.user.name}.</p>
+      <main className="student-main">
+        <header className="student-bar">
+          <span className="student-brand">Idea Map</span>
+          <span className="student-who">{view.me.user.name}</span>
+          <DisplaySettings />
+        </header>
+        <MapScreen
+          onSignedOut={() =>
+            location.assign(
+              `/sign-in?returnTo=${encodeURIComponent(safeReturnTo(`${location.pathname}${location.search}${location.hash}`))}`,
+            )
+          }
+        />
       </main>
     </TrackerProvider>
   );

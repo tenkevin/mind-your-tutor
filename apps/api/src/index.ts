@@ -18,6 +18,7 @@ import { registerPolicies } from './policy.js';
 import { privacyRoutes, type PrivacyRoutes } from './privacy.js';
 import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
+import { studentMapRoutes } from './routes/student-map.js';
 import { authRoutes } from './routes/auth.js';
 import { publishRoutes, type PublishRoutesOptions } from './publish.js';
 import { deriveKeys } from './tokens.js';
@@ -92,6 +93,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
+  studentMapRoutes(app);
   // Students' learning events (M2).
   eventRoutes(app, deps, options.events);
   // The caller of C4's and C5's routes is the signed-in session.
