@@ -13,6 +13,11 @@
       "@ideamap/source": "./src/personas.ts",
       "types": "./dist/personas.d.ts",
       "default": "./dist/personas.js"
+    },
+    "./backstop": {
+      "@ideamap/source": "./src/backstop.ts",
+      "types": "./dist/backstop.d.ts",
+      "default": "./dist/backstop.js"
     }
   },
   "scripts": {
