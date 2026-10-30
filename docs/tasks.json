@@ -1501,10 +1501,10 @@
       ],
       "done_when": "For each locked idea the map API returns next (every prerequisite still needed is open) or far (needs a still-locked prerequisite), from a deterministic, unit-tested function in packages/domain; the map draws them distinctly with theme tokens; M4 later reuses the same function in its stored MapView (section 8.4); far ideas are hidden (D47): no title or identifying data sent, shown as Hidden idea, Explore nearby to reveal",
       "placeholder": false,
-      "status": "doing",
+      "status": "review",
       "version": "0.1",
       "owner": "agent-s10b",
-      "updated": "2026-10-29"
+      "updated": "2026-10-30"
     }
   ],
   "versions": [
