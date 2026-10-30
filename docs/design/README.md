@@ -85,6 +85,11 @@ Should findings from QA that the design session should also take up:
 - F8 run 4: hover-out on map cards now snaps instead of easing (transitions live only on `:hover` and `:focus-visible`, so theme switches stay one recalc). Optional: restore an ease-out without a resting colour transition.
 - S10 runs 1 and 2 #4: cards crowd and overlap at 60 ideas (layout belongs to C16, but the card size and density are design).
 
+## 7a. Design decisions (user)
+
+- **Links on the map, option A (user, 2026-10-30).** At rest, show only the links leading out of open ideas. Show the other links on hover or focus. A "Show all links" toggle covers touch screens. The alternatives were B (no links at rest) and C (all links, as before). Styling the next-up and hidden ideas builds on this.
+- **Ms. Ivy placeholder (user, 2026-10-30): keep it.** The idea page's right column keeps its current wording ("Soon you can ask Ms. Ivy…" and "Coming soon"). It has no controls and makes no AI call, until S4 replaces it with the chat panel.
+
 ## 8. Prompt for the design session
 
 The user pastes this into a new Claude Code session on `tenkevin/mind-your-tutor`. Use Sonnet, as for builders. S10 merged as `3ad9110` and F8 as `eff7d02` on 2026-10-29.

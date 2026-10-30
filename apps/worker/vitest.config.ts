@@ -5,6 +5,8 @@ export default defineConfig({
   resolve: { conditions: ['@ideamap/source'] },
   ssr: { resolve: { conditions: ['@ideamap/source'] } },
   test: {
+    // Timing tests assert latency budgets, so test files never share the CPU (F1e).
+    fileParallelism: false,
     // Database tests migrate their own database; give slow CI runners room.
     testTimeout: 60_000,
     hookTimeout: 120_000,

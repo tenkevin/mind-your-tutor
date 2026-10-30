@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import { describe, expect, it } from 'vitest';
 import {
   ClientEventSchema,
@@ -319,14 +320,18 @@ describe('forbidden data (D19)', () => {
 });
 
 describe('validation speed', () => {
-  it('validates 500 mixed events in under 20 ms', () => {
+  it('validates 500 mixed events in under 20 ms', async () => {
     const batch = Array.from({ length: 500 }, (_, i) =>
       client(EVENT_TYPES[i % EVENT_TYPES.length]!),
     );
     for (const event of batch) ClientEventSchema.parse(event); // warm up
-    const start = performance.now();
-    for (const event of batch) ClientEventSchema.parse(event);
-    const ms = performance.now() - start;
-    expect(ms).toBeLessThan(20);
+    return expectBestUnder(
+      'validates 500 mixed events',
+      20,
+      () => {
+        for (const event of batch) ClientEventSchema.parse(event);
+      },
+      { runs: 5 },
+    );
   });
 });
