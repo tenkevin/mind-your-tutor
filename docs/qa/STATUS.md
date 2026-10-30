@@ -10,7 +10,7 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 ## Codex queue for 2026-11-01 (coordinator, 2026-10-30)
 
-Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts and syncs any that conflict. Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
+Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
 
 **A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
 
