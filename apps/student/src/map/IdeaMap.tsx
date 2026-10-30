@@ -1,5 +1,6 @@
 import type { StudentMap, StudentMapIdea } from '@ideamap/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { CategoryIcon, LockIcon, NextIcon, categoryColour } from './CategoryIcon';
 import {
   COMPACT_ZOOM,
@@ -7,7 +8,7 @@ import {
   MIN_ZOOM,
   STRETCH,
   UNIT,
-  exitPoint,
+  arc,
   fitView,
   halfSize,
   revealPoint,
@@ -65,7 +66,23 @@ export function IdeaMap({
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [active, setActive] = useState<string | null>(null);
+  // The card the pointer or focus just left, so its lift eases back down (map.css).
+  const [leaving, setLeaving] = useState<string | null>(null);
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => setLeaving(null), 200);
+    return () => clearTimeout(t);
+  }, [leaving]);
+  // Synchronous, so the class is on the card before the browser restyles it without
+  // :hover; a later render would let the border snap back.
+  const leave = (id: string) =>
+    flushSync(() => {
+      setActive(null);
+      setLeaving(id);
+    });
   const [message, setMessage] = useState('');
+  // The buttons, Fit and the keyboard glide the view; drag, wheel and pinch follow at once.
+  const [glide, setGlide] = useState(false);
 
   const nodes = useMemo(() => {
     const out = new Map<string, Node>();
@@ -129,6 +146,7 @@ export function IdeaMap({
     if (!el) return;
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
+      setGlide(false);
       const r = el.getBoundingClientRect();
       setView(
         (v) =>
@@ -147,6 +165,7 @@ export function IdeaMap({
   const modality = useRef<'keyboard' | 'pointer'>('keyboard');
   const down = (e: React.PointerEvent) => {
     modality.current = 'pointer';
+    setGlide(false);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     gesture.current = { moved: false, pinch: 0 };
   };
@@ -180,13 +199,21 @@ export function IdeaMap({
   };
 
   const zoomBy = (k: number) => {
-    if (view && size) setView(zoomAt(view, view.z * k, size.w / 2, size.h / 2));
+    if (!view || !size) return;
+    setGlide(true);
+    setView(zoomAt(view, view.z * k, size.w / 2, size.h / 2));
   };
-  const fit = () => size && setView(fitView(size.w, size.h, extent, true));
+  const fit = () => {
+    if (!size) return;
+    setGlide(true);
+    setView(fitView(size.w, size.h, extent, true));
+  };
 
   // Bring a card into view when the keyboard reaches it.
   const reveal = (n: Node) => {
-    if (size) setView((v) => v && revealPoint(v, n, size.w, size.h));
+    if (!size) return;
+    setGlide(true);
+    setView((v) => v && revealPoint(v, n, size.w, size.h));
   };
 
   // Back from an idea page: focus the card that was open.
@@ -246,28 +273,12 @@ export function IdeaMap({
         const a = nodes.get(l.from);
         const b = nodes.get(l.to);
         if (!a || !b) return [];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        if (Math.hypot(dx, dy) < 1) return [];
-        const sa = compact ? a.small : a.full;
-        const sb = compact ? b.small : b.full;
-        const s = exitPoint(sa.hw + 4, sa.hh + 4, dx, dy);
-        const e = exitPoint(sb.hw + 4, sb.hh + 4, -dx, -dy);
-        const x1 = a.x + s.x;
-        const y1 = a.y + s.y;
-        const x2 = b.x + e.x;
-        const y2 = b.y + e.y;
-        return [
-          {
-            key: `${l.from}>${l.to}`,
-            link: l,
-            x1,
-            y1,
-            x2,
-            y2,
-            deg: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI,
-          },
-        ];
+        const curve = arc(
+          { x: a.x, y: a.y, ...(compact ? a.small : a.full) },
+          { x: b.x, y: b.y, ...(compact ? b.small : b.full) },
+        );
+        if (curve.len < 1) return [];
+        return [{ key: `${l.from}>${l.to}`, link: l, ...curve }];
       }),
     [map, nodes, compact],
   );
@@ -315,8 +326,11 @@ export function IdeaMap({
       >
         {view && (
           <div
-            className={compact ? 'imap-world imap-compact' : 'imap-world'}
+            className={['imap-world', compact && 'imap-compact', glide && 'imap-world-glide']
+              .filter(Boolean)
+              .join(' ')}
             style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})` }}
+            onTransitionEnd={(e) => e.target === e.currentTarget && setGlide(false)}
           >
             <svg className="imap-svg" width="1" height="1" aria-hidden="true" focusable="false">
               {[1, 2].map((ring) => (
@@ -342,13 +356,13 @@ export function IdeaMap({
                   .join(' ');
                 return (
                   <g key={e.key} className={cls} data-link={e.key}>
-                    <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} />
+                    <path d={e.d} />
                     <polygon
                       points="0,0 -10,-5 -10,5"
-                      transform={`translate(${e.x2} ${e.y2}) rotate(${e.deg})`}
+                      transform={`translate(${e.end.x} ${e.end.y}) rotate(${e.deg})`}
                     />
                     {hot && (
-                      <text x={(e.x1 + e.x2) / 2} y={(e.y1 + e.y2) / 2} textAnchor="middle" dy="-4">
+                      <text x={e.mid.x} y={e.mid.y} textAnchor="middle" dy="-4">
                         {e.link.relation}
                       </text>
                     )}
@@ -369,10 +383,12 @@ export function IdeaMap({
                     n.centre && 'imap-centre',
                     locked && `imap-${n.idea.state}`,
                     near?.has(n.idea.id) && 'imap-near',
+                    leaving === n.idea.id && 'imap-leaving',
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  style={{ left: n.x, top: n.y }}
+                  // --ring staggers the fade-in from the centre outwards.
+                  style={{ left: n.x, top: n.y, ['--ring' as string]: n.idea.ring }}
                   aria-label={label(n.idea)}
                   aria-disabled={locked || undefined}
                   onClick={() => click(n)}
@@ -380,9 +396,9 @@ export function IdeaMap({
                     setActive(n.idea.id);
                     if (modality.current === 'keyboard') reveal(n);
                   }}
-                  onBlur={() => setActive(null)}
+                  onBlur={() => leave(n.idea.id)}
                   onMouseEnter={() => setActive(n.idea.id)}
-                  onMouseLeave={() => setActive(null)}
+                  onMouseLeave={() => leave(n.idea.id)}
                 >
                   <span className="imap-title">
                     {n.idea.state === 'next' && <NextIcon />}
