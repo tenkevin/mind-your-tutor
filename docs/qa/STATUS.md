@@ -8,6 +8,30 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Design-aspect failures (user, 2026-10-29):** a third QA failure on a design aspect defers that check to the design session (`docs/design/README.md` §7) and the task merges once every other must passes; functional, security, performance and privacy failures never defer. **S10 and F8 merged** 2026-10-29 (S10 squash `3ad9110`, F8 squash `eff7d02`, merge CI green; reports `reports/S10.md`, `reports/F8.md`). Formerly: **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
 
+## Codex queue for 2026-11-01 (coordinator, 2026-10-30)
+
+Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts and syncs any that conflict. Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
+
+**A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
+
+| # | Task · PR | Unblocks (v0.1) | Merge check 2026-10-30 |
+|---|---|---|---|
+| 1 | C10 #43 Practice tab | S6, M8, C11, C14, C15 | clean |
+| 2 | C12 #44 two-layer graph | M8, C14, C17 | conflict (`packages/domain/src/index.ts`) |
+| 3 | A7 #36 anonymous layer | A8, A9, S4 | conflict (`apps/student/src/App.tsx`) |
+| 4 | A2 #37 student safety | A9, A11, S4 | clean |
+| 5 | A3 #38 library and RAG | A4, A11, C13, C15 | clean |
+| 6 | T3 #29 course details | T4 | conflict (`apps/api/src/index.ts`) |
+| 7 | A5 #35 persona evals | A10 | clean |
+| 8 | T8 #40 publish screen | L1 | clean |
+| 9 | T6 #41 data tabs | L1 | conflict (api and contracts index) |
+| 10 | A6 #42 draft approvals | L1 | conflict (contracts and domain index) |
+| 11 | C5cx2 #34, C6cx2 #39 (fix tasks) | L1 | clean |
+
+**B. Post-merge reviews** (merged on a user-approved Claude QA PASS; Claude QA covered structure, so Codex reviews them in full): S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771`, then F1e, M2, M3, S10c and design #50–#52 as they merge (merge SHAs are recorded in the rows above as they land). Errors become `<ID>cx<n>` fix tasks as usual. Order: M2 and M3 first (S1, M4 and M5 build on them), then F1e, S10b, S10c, S10, F8 and the design PRs.
+
+**Known noise, not findings:** timing-only overruns under parallel load in domain C2-P2 and C3-P1/P2, and api F5-P1, beyond F1e's list. If they persist after F1e merges, the coordinator opens a fix task; reviewers re-run the package alone and record the result.
+
 > **Building paused until Codex reviews (user, 2026-10-30 18:45):** no new build or fix sessions (including the proposed M2b) until Codex has worked through the review queue (Codex returns 2026-11-01); too many reviews are piling up. F1e QA run 2 continues; F1e merges on PASS (already approved).
 
 > **QA run 2 verdicts (18:37):** **M2 #30 `66e10d7` STRUCTURAL PASS** (issuecomment-6530660821; non-structural 1, unbounded `at` that can fail a whole batch and retry forever, proposed to the user as fix task M2b). **M3 #31 `e602dcc` STRUCTURAL PASS** (issuecomment-6530666338; its note that raw `TrackerState` holds teacher-only fields is now must S1-S3). Both wait for the user's go-ahead and for idea-map to be green (F1e).
