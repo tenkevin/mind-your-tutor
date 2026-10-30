@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import { describe, expect, it } from 'vitest';
 import { lockStates, mapStates } from './lock.js';
 
@@ -76,19 +77,15 @@ describe('mapStates (S10b-F1)', () => {
     expect(s.map((i) => i.state)).toEqual(['open', 'next']);
   });
 
-  it('is pure and fast on 2,000 ideas (S10b-P1)', () => {
+  it('is pure and fast on 2,000 ideas (S10b-P1)', async () => {
     const big = Array.from({ length: 2000 }, (_, i) => ({
       idea_id: `i${i}`,
       requires: i === 0 ? [] : [`i${i - 1}`, `i${Math.floor(i / 2)}`],
     }));
     const a = mapStates(big); // warms up, so parallel test load doesn't time a cold start
-    let best = Infinity;
-    for (let i = 0; i < 5; i++) {
-      const t = performance.now();
-      mapStates(big);
-      best = Math.min(best, performance.now() - t);
-    }
-    expect(best).toBeLessThan(5);
+    await expectBestUnder('mapStates on 2,000 ideas (S10b-P1)', 5, () => mapStates(big), {
+      runs: 5,
+    });
     expect(mapStates(big)).toEqual(a);
   });
 
