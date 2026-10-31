@@ -776,7 +776,8 @@
         "S2q",
         "S4t",
         "S4m",
-        "M10"
+        "M10",
+        "M11"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -1099,7 +1100,7 @@
         "C10",
         "C12"
       ],
-      "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels; time-to-answer to the whole second (D19)",
+      "done_when": "Per D38/D41 and §8: rulesVersion 2 adds exercise levels (Not started, Attempted, Familiar, Proficient), the two-layer trace-back, baseline breakdown and the engagement indices as pure deterministic replay of events, with property tests; no psychological labels; time-to-answer to the whole second (D19); plus D49's remediation trigger (a failure threshold on a core idea, traced back to an unmastered prerequisite-scope idea) as a deterministic signal for S9",
       "placeholder": false,
       "status": "todo",
       "version": "0.1"
@@ -1257,10 +1258,11 @@
         "S2",
         "C16",
         "C13",
-        "M8"
+        "M8",
+        "M11"
       ],
       "placeholder": false,
-      "done_when": "Per D43/D41: zooming in from a core idea shows its prerequisite-scope ideas and Vault standards (C13) as a separate layer, offered when the M8 trace-back flags the student as stalled on a prerequisite; zooming out returns to the core map",
+      "done_when": "Per D43, D41 and D49: zooming in from a core idea shows its prerequisite-scope ideas and Vault standards (C13) as a separate layer. When the tracker raises a D49 remediation trigger (2–3 failures on a core idea, traced back to an unmastered prerequisite), the map pins that prerequisite, offers it as a side-task with its incentive, and the zoom takes the student there; zooming out returns to the core map. Pins, offers and zooms are recorded views (§8.4)",
       "status": "todo",
       "version": "0.1"
     },
@@ -1582,6 +1584,21 @@
         "A6"
       ],
       "done_when": "Per §8.2, §8.3 and D48: when every idea in a unit is mastered, the student teaches Milo the unit's approved assessment questions; Milo's checker judges each answer, the output is stored with ai.output_shown, and teachback.done (typed text in InteractionText, anonymised by A7) and teachback.judged (pass or retry, with key points hit) are recorded; the student sees Milo's reaction and what was missing; unit completion and Milo's stage come from the tracker; a teacher can reopen a teach-back only by choice (§7)",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-31",
+      "version": "0.1"
+    },
+    {
+      "id": "M11",
+      "title": "Core-only unlocks (rulesVersion 2)",
+      "size": 1,
+      "deps": [
+        "M3",
+        "C14"
+      ],
+      "done_when": "Per D49 and §8.3: in rulesVersion 2 a core idea unlocks when its core-scope requires are mastered; prerequisite-scope requires never lock it; packs without scope behave as before. The domain's lockStates and mapStates apply the same rule at zero progress, and §8.4 rule 5's agreement property test covers it. Pure deterministic replay; rulesVersion 1 unchanged",
       "placeholder": false,
       "status": "todo",
       "owner": null,

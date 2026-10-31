@@ -14,6 +14,8 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts with `node scripts/qa-queue.mjs` and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
 
+**Synced 2026-10-31 for Codex (coordinator, user-approved).** Heads to review: C10 #43 `318410c` · A7 #36 `a38f68a` · A2 #37 `420fdb3` · A3 #38 `5c7c180` · T3 #29 `6a0a50d` · A5 #35 `3b0ac4e` · T8 #40 `47c4650` · T6 #41 `07c8566` · A6 #42 `20c9447` · C5cx2 #34 `f192938` · C6cx2 #39 `4cd7735`. All CI green, and each PR has a sync note. Migrations renumbered in review order: A2 0017–0018, A3 0019–0020, T3 0021, A6 0022 (a PR merged out of order is bumped in its pre-merge sync). **C12 #44 (`b84777d`) is held**: synced locally, its data makes core ideas that require prerequisite-scope ideas locked or hidden at zero progress (M3 and S10 tests fail). It waits for the user's decision, ARCHITECTURE §12 q29; Codex skips it until then.
+
 **A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
 
 | # | Task · PR | Unblocks (v0.1) | Merge check 2026-10-30 |
