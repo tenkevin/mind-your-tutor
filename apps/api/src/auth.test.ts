@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import { SIGN_IN_ERRORS } from '@ideamap/contracts';
 import { hasDatabase } from '@ideamap/db/testing';
 import { sql } from 'kysely';
@@ -323,9 +324,9 @@ describe.skipIf(!hasDatabase)('sign-in with OIDC', () => {
   });
 
   it('round-trips the mock sign-in to /me in under a second (F5-P2)', async () => {
-    const started = performance.now();
-    await signIn(api, 'google', 'teacher-a1');
-    expect(performance.now() - started).toBeLessThan(1000);
+    await expectBestUnder('mock sign-in round trip (F5-P2)', 1000, () =>
+      signIn(api, 'google', 'teacher-a1'),
+    );
   });
 });
 

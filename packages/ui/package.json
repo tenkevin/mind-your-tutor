@@ -9,11 +9,13 @@
       "default": "./dist/index.js"
     },
     "./styles.css": "./styles.css",
-    "./fonts/*": "./fonts/*"
+    "./fonts/*": "./fonts/*",
+    "./themes.css": "./themes.css"
   },
   "files": [
     "dist",
     "styles.css",
+    "themes.css",
     "fonts"
   ],
   "sideEffects": [

@@ -11,6 +11,7 @@ export const packageName = '@ideamap/worker';
 export {
   ImportRequestError,
   abandonImport,
+  getCurriculumData,
   getImportJob,
   importFailure,
   packSeed,
@@ -29,8 +30,8 @@ export { QUEUE_OPTIONS, createBoss, ensureQueues, inTransaction, type Sender } f
 /** The production scope: the app role's connection, acting for one organization. */
 export const orgScope =
   (db: Db): OrgScope =>
-  (orgId, fn) =>
-    withOrg(db, orgId, fn);
+  (orgId, fn, options) =>
+    withOrg(db, orgId, fn, options);
 
 export interface WorkerOptions {
   boss: PgBoss;

@@ -27,6 +27,8 @@ export interface BlurResult {
   texts: string[];
   /** Identifiers that reached the server unblurred (D26 privacy misses). */
   misses: number;
+  /** The same misses by kind, for the event store's privacy_miss counts (M2). */
+  byKind: { names: number; emails: number; phones: number; identifiers: number };
 }
 
 export interface IdentifierBackstop {
@@ -128,19 +130,23 @@ export const entityBackstop: IdentifierBackstop = {
     );
 
     let misses = 0;
+    const byKind = { names: 0, emails: 0, phones: 0, identifiers: 0 };
     const out = texts.map((text) => {
       let t = text.replace(EMAIL, () => {
         misses++;
+        byKind.emails++;
         return '[email]';
       });
       if (identifiers) {
         t = t.replace(identifiers, () => {
           misses++;
+          byKind.identifiers++;
           return '[id]';
         });
       }
       t = t.replace(PHONE, () => {
         misses++;
+        byKind.phones++;
         return '[phone]';
       });
       if (names) {
@@ -151,6 +157,7 @@ export const entityBackstop: IdentifierBackstop = {
             return match;
           }
           misses++;
+          byKind.names++;
           return label('person', `roster:${nameOwner.get(key0)!}`);
         });
       }
@@ -162,12 +169,18 @@ export const entityBackstop: IdentifierBackstop = {
         const raw = t.slice(e.start, e.end);
         if (allowed.has(raw.toLocaleLowerCase())) continue;
         misses++;
+        // M2's privacy_miss table stores names, emails and phones only (and requires one
+        // of them above zero), so people, places, schools and addresses all count as
+        // `names`; contact kinds count under their own key. The sum stays equal to misses.
+        if (e.kind === 'email') byKind.emails++;
+        else if (e.kind === 'phone') byKind.phones++;
+        else byKind.names++;
         blurred += t.slice(at, e.start) + label(e.kind, normalise(raw));
         at = e.end;
       }
       return blurred + t.slice(at);
     });
-    return { texts: out, misses };
+    return { texts: out, misses, byKind };
   },
 };
 

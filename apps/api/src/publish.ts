@@ -12,14 +12,17 @@ import {
 
 // Reviewing and publishing over HTTP (ARCHITECTURE.md §7, task C5):
 //
-//   GET  /versions/:versionId/diff[?against=<versionId>]
+//   GET  /api/versions/:versionId/diff[?against=<versionId>]
 //        The diff against the latest published version (or `against`).
-//   POST /versions/:versionId/preview   { class_ids }
+//   POST /api/versions/:versionId/preview   { class_ids }
 //        The diff, what blocks publishing, and "Students receiving this update".
-//   POST /versions/:versionId/publish   { class_ids }, Idempotency-Key: optional
+//   POST /api/versions/:versionId/publish   { class_ids }, Idempotency-Key: optional
 //        201 with the pins moved, or 200 with the first result for a repeated key.
-//   POST /classes/:classId/pin          { version_id }
+//   POST /api/classes/:classId/pin          { version_id }
 //        Rollback: back to an earlier published version.
+//
+// The server registers these under the /api prefix, beside every other app route (the
+// apps proxy /api).
 //
 // Who is asking comes from `authenticate`: the signed-in F5 session. Each route's
 // policy (F5-F4) admits the roles and checks the version or class is in the caller's

@@ -31,7 +31,7 @@ page. The seeded users (`src/dev/sample.ts`) cover every role in two orgs:
 | `stranger-a`, `other-school`          |     |         | Google        | No account / unknown school: refused                                                 |
 | `admin-b`, `teacher-b1`, `student-b1` | B   |         | Google        | A second org                                                                         |
 
-The app servers proxy `/auth` and `/api` to the API, so the session cookie is host-only on
+The app servers proxy `/auth` and `/api` (and the student app `/events`) to the API, so the session cookie is host-only on
 the app's own origin. Secrets are random per run. Chrome and Firefox accept the `Secure`
 session cookie on `http://localhost`.
 
@@ -70,6 +70,22 @@ D3), or one user in the org. The check runs before every handler: signed out is 
 wrong role, class or org is 403. Handlers reach the database only through
 `req.withOrg`, which sets the org (and class) for row-level security and switches to the
 `ideamap_app` role. `src/policy.test.ts` calls every route as each kind of caller.
+
+## Curriculum imports
+
+`startServer` (the deployed entry point, `node dist/index.js`) wires C4's imports in: jobs
+go to pg-boss in the same database, uploads to `UPLOAD_DIR`, which the worker
+(`apps/worker`) reads too. The routes sit under `/api` with the other app routes, each
+with a staff policy on a curriculum or job the caller's org can see:
+
+- `POST /api/curricula/:curriculumId/imports`: the file as the body
+  (`application/octet-stream`), `X-File-Name` percent-encoded, optional `Idempotency-Key`.
+- `GET /api/curricula/:curriculumId/imports/latest`: the newest job and the newest
+  version's issues grouped by cause, for Teacher Settings → Curriculum data (T2).
+- `GET /api/imports/:jobId`: one job's status and steps, polled while it runs.
+
+`pnpm dev:auth` also runs an import worker in its own process, so a local upload goes all
+the way to a draft (uploads in a temporary directory unless `UPLOAD_DIR` is set).
 
 ## Roster import
 
@@ -149,3 +165,40 @@ mock in `src/test/mock-model.ts`, which records every request it receives.
 `pnpm --filter @ideamap/api test` with `DATABASE_URL` set, as for `packages/db`: each test
 file gets a fresh database and its own mock identity provider. Set
 `IDEAMAP_PERF_VERBOSE=1` to print the auth timing.
+
+## Learning events (M2)
+
+`POST /events` (`src/events.ts`) takes a student's batch of M1 events (ARCHITECTURE.md
+§8.5), up to 200 events and 20 typed texts:
+
+- **Who:** students only, for themselves, in classes they're enrolled in. A batch naming
+  another student or class is refused whole (403). Teacher actions and model verdicts
+  (`teaching` events, `teachback.judged`) are recorded by the server.
+- **Each event on its own:** checked against M1's catalogue; rejected with a reason
+  (`unknown_type`, `forbidden_field`, `invalid`, `server_only`, `version_not_pinned`,
+  `text_missing`, `id_taken`) while the rest of the batch is stored. Resent ids are
+  returned as `duplicates`, never stored twice.
+- **seq and level:** `seq` continues per student with no gaps. A batch's numbers come
+  from one upsert on `student_event_seq` (constant time, whatever the history), whose
+  row lock puts a student's batches one after another; a resend racing its first send
+  loses on the ledger's unique key and is judged again as a duplicate. `level` is
+  generated from the type by the database, which also refuses any type outside the
+  catalogue.
+- **Round trips:** one statement reads everything a batch is judged against
+  (enrolment, pins, re-pins, opt-out, ids already recorded), and one allocates the
+  numbers and inserts the events. Text queries run only when the batch has typed text.
+- **Versions:** the class's pinned version, or the one it replaced within the grace
+  period after a publish (`VERSION_GRACE_MS`, 24 hours; read from the class's audit log).
+- **Typed text** comes anonymised from the device (D26, task A7). The server backstop
+  (`@ideamap/ai/backstop`) blurs any real roster name, email or phone number that slipped
+  through, stores only the blurred text, and counts a `privacy_miss`.
+- **Opt-out (D24):** events of a student in `tracing_opt_out` are stored with
+  `tracing_opted_out`. Admins set it with `PUT /api/privacy/students/:id/tracing`.
+- **Leaving the district (D22):** `POST /api/privacy/students/:id/unenrol` (admin) deletes
+  the student's events, as the FERPA delete now does too.
+- **Nothing extra:** no IP address, user agent or device is stored, and the route logs at
+  warn and above only, so request logs carrying the client address aren't written for it.
+
+The student app's queue (`apps/student/src/tracker/queue.ts`) batches events every 5
+seconds and on page hide, keeps them in sessionStorage per signed-in student while
+offline, and resends with the same ids until the server answers.

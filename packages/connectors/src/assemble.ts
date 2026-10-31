@@ -223,6 +223,8 @@ export interface Assembled {
   pack: Pack | null;
   issues: ImportIssue[];
   used: ColumnMappingEntry[];
+  /** The sheet row of each pack item, by tab, in pack order (Course aside). */
+  rows: Partial<Record<TabName, number[]>>;
 }
 
 function parseCourse(
@@ -327,7 +329,7 @@ export function assemblePack(
   sheets: ReadonlyMap<TabName, RawSheet>,
   mapping: readonly ColumnMappingEntry[],
 ): Assembled {
-  const out: Assembled = { pack: null, issues: [], used: [] };
+  const out: Assembled = { pack: null, issues: [], used: [], rows: {} };
   const course = parseCourse(sheets.get('Course'), mapping, out);
   const tabs: Partial<Record<RowTab, unknown[]>> = {};
   const rowNumbers: Partial<Record<TabName, number[]>> = {};
@@ -454,5 +456,6 @@ export function assemblePack(
     return out;
   }
   out.pack = result.value;
+  out.rows = rowNumbers;
   return out;
 }

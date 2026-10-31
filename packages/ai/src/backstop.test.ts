@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entityBackstop } from './index.js';
+import { entityBackstop, patternBackstop } from './index.js';
 
 // A7-F5, A7-F8, A7-S3 at the unit level; gateway.test.ts covers the stored and logged side.
 const context = {
@@ -34,7 +34,7 @@ describe('server backstop (A7-F5, A7-F8)', () => {
 
   it('leaves interests and ordinary text, and counts no miss', () => {
     const text = 'I love Real Madrid and my cat Luna; water boils at 100 degrees.';
-    expect(blur(text)).toEqual({ texts: [text], misses: 0 });
+    expect(blur(text)).toMatchObject({ texts: [text], misses: 0 });
   });
 
   it("lets a persona's own name through when it is allowed", () => {
@@ -42,5 +42,34 @@ describe('server backstop (A7-F5, A7-F8)', () => {
       entityBackstop.blur(['You are Ms. Ivy, tutoring Sam.'], { ...context, allow: ['Ms. Ivy'] })
         .texts,
     ).toEqual(['You are Ms. Ivy, tutoring Person A.']);
+  });
+});
+
+describe('patternBackstop byKind (M2)', () => {
+  it('counts names, emails and phones separately', () => {
+    const out = patternBackstop.blur(
+      ['Sam Student mailed sam@district.example.org or call 555-010-0199 about Kim.'],
+      { names: ['Sam Student', 'Kim Lee'] },
+    );
+    expect(out.byKind).toEqual({ names: 2, emails: 1, phones: 1, identifiers: 0 });
+    expect(out.misses).toBe(4);
+    expect(out.texts[0]).not.toMatch(/Sam|Kim|@|555/);
+  });
+
+  it('counts nothing for text already blurred on the device', () => {
+    const out = patternBackstop.blur(['Person A and Person B did it.'], { names: ['Sam Student'] });
+    expect(out.byKind).toEqual({ names: 0, emails: 0, phones: 0, identifiers: 0 });
+  });
+});
+
+describe('byKind with the device entity rules (A7 + M2)', () => {
+  it('counts people, places, schools and addresses as names, so the sum equals misses', () => {
+    const out = entityBackstop.blur(
+      ['Omar from Leeds goes to Lincoln Elementary School, 42 Birch Street, 555-123-4567'],
+      { names: ['Sam Student'] },
+    );
+    expect(out.byKind).toEqual({ names: 4, emails: 0, phones: 1, identifiers: 0 });
+    const { names, emails, phones, identifiers } = out.byKind;
+    expect(names + emails + phones + identifiers).toBe(out.misses);
   });
 });

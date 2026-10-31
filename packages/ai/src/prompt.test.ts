@@ -81,7 +81,7 @@ describe('identifier backstop (D26)', () => {
 
   it('leaves ordinary text, numbers and device labels alone', () => {
     const text = 'Person A said water boils at 100 degrees, in 1 to 3 steps, in 2026.';
-    expect(patternBackstop.blur([text], context)).toEqual({ texts: [text], misses: 0 });
+    expect(patternBackstop.blur([text], context)).toMatchObject({ texts: [text], misses: 0 });
   });
 
   it('matches whole words only, and international numbers', () => {

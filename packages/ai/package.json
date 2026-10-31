@@ -23,6 +23,11 @@
       "@ideamap/source": "./src/device-recognizer.ts",
       "types": "./dist/device-recognizer.d.ts",
       "default": "./dist/device-recognizer.js"
+    },
+    "./backstop": {
+      "@ideamap/source": "./src/backstop.ts",
+      "types": "./dist/backstop.d.ts",
+      "default": "./dist/backstop.js"
     }
   },
   "scripts": {

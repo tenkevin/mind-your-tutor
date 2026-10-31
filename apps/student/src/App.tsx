@@ -8,6 +8,9 @@ import {
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
 import { NAMES_STAY_NOTE } from './privacy';
+import { TrackerProvider } from './tracker/TrackerProvider';
+import { MapScreen } from './map/MapScreen';
+import { DisplaySettings } from './udl';
 
 // The session lives in an HttpOnly cookie; the app only asks /api/me who is signed in.
 
@@ -56,13 +59,25 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
     );
   }
   return (
-    <main style={{ padding: 'var(--space-6)' }}>
-      <h1>Idea Map · Student</h1>
-      <p>Hi, {view.me.user.name}.</p>
-      <details>
-        <summary>Your privacy</summary>
-        <p>{NAMES_STAY_NOTE}</p>
-      </details>
-    </main>
+    <TrackerProvider me={view.me}>
+      <main className="student-main">
+        <header className="student-bar">
+          <span className="student-brand">Idea Map</span>
+          <span className="student-who">{view.me.user.name}</span>
+          <DisplaySettings />
+        </header>
+        <MapScreen
+          onSignedOut={() =>
+            location.assign(
+              `/sign-in?returnTo=${encodeURIComponent(safeReturnTo(`${location.pathname}${location.search}${location.hash}`))}`,
+            )
+          }
+        />
+        <details className="student-privacy">
+          <summary>Your privacy</summary>
+          <p>{NAMES_STAY_NOTE}</p>
+        </details>
+      </main>
+    </TrackerProvider>
   );
 }
