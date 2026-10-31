@@ -1,7 +1,15 @@
 import { expectBestUnder } from '@ideamap/testing';
-import { PACK_SPEC, type DataCheckIssue, type Pack } from '@ideamap/contracts';
+import {
+  PACK_SPEC,
+  TEST_PRACTICE_SOURCES,
+  type DataCheckIssue,
+  type Pack,
+} from '@ideamap/contracts';
 import { describe, expect, it } from 'vitest';
 import { checkPack } from '../../domain/src/index.js';
+
+// The fixture's Practice rows come from the test-only `fixture` bank (C10-F4).
+const checkFixture = (pack: Pack) => checkPack(pack, { practiceSources: TEST_PRACTICE_SOURCES });
 import {
   alignmentReport,
   assessmentDraftsReport,
@@ -86,7 +94,7 @@ function xlsxCells(ref: FileRef, sheet: number): string[][] {
 }
 
 describe('template workbook (C6-F1, F2, F3)', () => {
-  it('has a Read me sheet and the eight tabs with exactly the spec columns', async () => {
+  it('has a Read me sheet and the nine tabs with exactly the spec columns', async () => {
     const report = templateReport(DATE);
     expect(report.sheets.map((s) => s.name)).toEqual(['Read me', ...PACK_SPEC.map((t) => t.tab)]);
     for (const spec of PACK_SPEC) {
@@ -283,7 +291,7 @@ describe('formula injection (C6-S1)', () => {
     const pack = await hostilePack(csv);
     return [
       packReport(pack, DATE),
-      dataCheckReport(pack, checkPack(pack), DATE),
+      dataCheckReport(pack, checkFixture(pack), DATE),
       alignmentReport(pack, DATE),
       assessmentDraftsReport(pack.course.topic, [
         { unit: 1, idea_id: 'evap', question: '=1+1', key_points: ['@x'] },
@@ -335,7 +343,7 @@ describe('formula injection (C6-S1)', () => {
 describe('data-check report (C6-F5)', () => {
   it('lists the three sample issues, most serious first, with what to fix', async () => {
     const pack = await fixturePack();
-    const issues = checkPack(pack);
+    const issues = checkFixture(pack);
     expect(issues.map((i) => i.level)).toEqual(['error', 'warning', 'info']);
     // Shuffle to show the report sorts them itself.
     const report = dataCheckReport(pack, [...issues].reverse(), DATE);
@@ -422,7 +430,7 @@ describe('formats (C6-F7, F8, U1, U2)', () => {
     const reports = [
       templateReport(DATE),
       packReport(pack, DATE),
-      dataCheckReport(pack, checkPack(pack), DATE),
+      dataCheckReport(pack, checkFixture(pack), DATE),
       alignmentReport(pack, DATE),
     ];
     for (const target of Object.values(EXPORT_TARGETS)) {
@@ -652,7 +660,7 @@ describe('scope and size (C6-S3, P1, P2)', () => {
     const all = [
       templateReport(DATE),
       packReport(pack, DATE),
-      dataCheckReport(pack, checkPack(pack), DATE),
+      dataCheckReport(pack, checkFixture(pack), DATE),
       alignmentReport(pack, DATE),
     ].flatMap((r) => r.sheets.flatMap((s) => s.header));
     for (const header of all) expect(header).not.toMatch(/student|progress|transcript|email/i);
@@ -660,7 +668,7 @@ describe('scope and size (C6-S3, P1, P2)', () => {
 
   it('sample exports take well under 300 ms each', async () => {
     const pack = await fixturePack();
-    const issues = checkPack(pack);
+    const issues = checkFixture(pack);
     const builds = [
       () => templateReport({ ...DATE, sample: true }),
       () => packReport(pack, DATE),
@@ -699,7 +707,7 @@ describe('scope and size (C6-S3, P1, P2)', () => {
       async () => {
         const first = await xlsxExport.write(packReport(pack, DATE));
         await xlsxExport.write(alignmentReport(pack, DATE));
-        await xlsxExport.write(dataCheckReport(pack, checkPack(pack), DATE));
+        await xlsxExport.write(dataCheckReport(pack, checkFixture(pack), DATE));
         return first;
       },
       { runs: 3 },

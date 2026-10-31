@@ -31,6 +31,15 @@ export const CAUSE_LABELS: Record<DataCheckKind | ImportIssueCode, string> = {
   no_categories: 'No categories',
   assessment_unknown_unit: 'Question for an unknown unit',
   assessment_unit_mismatch: 'Question in the wrong unit',
+  practice_unknown_idea: 'Practice item for an unknown idea',
+  practice_source: 'Practice item without a vetted source',
+  practice_license: 'Practice item without an allowed licence',
+  practice_attribution: 'Practice item missing its attribution',
+  practice_choices: 'Multiple-choice problem without choices',
+  practice_answer: 'Practice answer that can’t be used',
+  practice_quiz: 'Quiz that can’t be built',
+  practice_standard: 'Group with two standard codes',
+  practice_exercise: 'Exercise rows that disagree',
   file_refused: 'File refused',
   no_tabs: 'No tabs found',
   tab_missing: 'Missing tab',
@@ -108,12 +117,14 @@ type RowSource = {
   ideas: readonly { idea_id: string }[];
   units: readonly { unit: number }[];
   assessment: readonly { idea_id: string }[];
+  practice?: readonly { exercise_id: string }[];
 };
 
 /**
  * Finds data-check items in the sheet from a version's pack and the sheet row of each
  * pack item (`VersionSource.rows`). Unit items are Units rows; Assessment items are
- * the idea's Assessment row, if it has one; every other item is the idea's Ideas row.
+ * the idea's Assessment row, if it has one; Practice items are `exercise_id#n`, the
+ * exercise's nth problem, which is its nth Practice row; every other item is the idea's Ideas row.
  */
 export function rowLocator(
   pack: RowSource,
@@ -130,12 +141,20 @@ export function rowLocator(
   const ideas = first(pack.ideas, (i) => i.idea_id);
   const units = first(pack.units, (u) => String(u.unit));
   const assessment = first(pack.assessment, (a) => a.idea_id);
+  const practice = new Map<string, number>();
+  const seen = new Map<string, number>();
+  (pack.practice ?? []).forEach((p, i) => {
+    const n = (seen.get(p.exercise_id) ?? 0) + 1;
+    seen.set(p.exercise_id, n);
+    practice.set(`${p.exercise_id}#${n}`, i);
+  });
   const at = (tab: TabName, index: number | undefined) => {
     const row = index === undefined ? undefined : rows[tab]?.[index];
     return row === undefined ? null : { tab, row };
   };
   return (fixTab, item) => {
     if (fixTab === 'Units') return at('Units', units.get(item));
+    if (fixTab === 'Practice') return at('Practice', practice.get(item));
     // An idea with no question yet has no Assessment row; its Ideas row names it.
     if (fixTab === 'Assessment')
       return at('Assessment', assessment.get(item)) ?? at('Ideas', ideas.get(item));

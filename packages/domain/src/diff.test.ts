@@ -47,6 +47,7 @@ describe('diffPacks (C5)', () => {
           added: ['How does the Sun help water rise into the air?'],
         },
       ],
+      practice_changed: [],
     });
     // The API's payload shape accepts it as it is.
     expect(CurriculumDiffSchema.parse(diff)).toEqual(diff);

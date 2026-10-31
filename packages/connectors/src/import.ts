@@ -52,7 +52,7 @@ const fileName = (file: Blob) =>
   sourceName(typeof (file as File).name === 'string' ? (file as File).name : '');
 
 const EXPECTED_TABS =
-  `A curriculum pack has eight tabs: ${TAB_NAMES.join(', ')}. ` +
+  `A curriculum pack has nine tabs: ${TAB_NAMES.join(', ')}. ` +
   'Upload a workbook with a sheet for each, or one CSV file per tab named after it (Ideas.csv and so on). ' +
   'The Curriculum Pack template shows the layout.';
 

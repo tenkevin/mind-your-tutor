@@ -46,6 +46,24 @@ export const DATA_CHECK_KINDS = [
   'assessment_unknown_unit',
   /** An Assessment row's unit isn't its idea's unit, so it covers neither. */
   'assessment_unit_mismatch',
+  /** A Practice row names an idea_id that isn't in Ideas; the row is skipped. */
+  'practice_unknown_idea',
+  /** A Practice row has no vetted source, or names a bank that isn't on the allow-list (D40). */
+  'practice_source',
+  /** A Practice row has no licence, or one that isn't on the allow-list (D40). */
+  'practice_license',
+  /** A Practice row's licence needs an attribution and it has none (D40). */
+  'practice_attribution',
+  /** A multiple-choice problem has fewer than two choices. */
+  'practice_choices',
+  /** A Practice answer can't be used: not a number, or not one of the choices. */
+  'practice_answer',
+  /** A quiz lists no exercises, an exercise that isn't there, or another quiz. */
+  'practice_quiz',
+  /** One group has more than one standard_code. */
+  'practice_standard',
+  /** Rows of one exercise disagree about its idea or kind. */
+  'practice_exercise',
 ] as const;
 export type DataCheckKind = (typeof DATA_CHECK_KINDS)[number];
 

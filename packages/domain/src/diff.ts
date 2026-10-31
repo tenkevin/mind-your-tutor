@@ -1,4 +1,10 @@
-import type { CurriculumDiff, DiffIdeaRef, DiffUnit, Pack } from '@ideamap/contracts';
+import {
+  PracticeItemSchema,
+  type CurriculumDiff,
+  type DiffIdeaRef,
+  type DiffUnit,
+  type Pack,
+} from '@ideamap/contracts';
 
 // The draft vs published diff (ARCHITECTURE.md §7, task C5). Ideas are matched by
 // `idea_id`, the stable identity across versions (§5), so a new title on the same id
@@ -8,6 +14,7 @@ import type { CurriculumDiff, DiffIdeaRef, DiffUnit, Pack } from '@ideamap/contr
 export type PackDiff = CurriculumDiff;
 
 type Idea = Pack['ideas'][number];
+type PracticeRow = Pack['practice'][number];
 
 const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -59,6 +66,84 @@ function minus(a: readonly string[], b: readonly string[]): string[] {
   });
 }
 
+const PRACTICE_COLUMNS = Object.keys(PracticeItemSchema.shape).filter(
+  (name) => name !== 'exercise_id',
+) as (keyof PracticeRow)[];
+
+const show = (value: PracticeRow[keyof PracticeRow]): string =>
+  value === null ? '' : Array.isArray(value) ? value.join(' | ') : String(value);
+
+/** Every accepted Practice problem by exercise, then by question (trimmed), in a stable order. */
+function practice(pack: Pack): Map<string, Map<string, PracticeRow[]>> {
+  const ideas = ideasById(pack);
+  const out = new Map<string, Map<string, PracticeRow[]>>();
+  for (const row of pack.practice) {
+    if (!ideas.has(row.idea_id)) continue;
+    const exercise = out.get(row.exercise_id) ?? new Map<string, PracticeRow[]>();
+    const key = row.question.trim();
+    exercise.set(key, [...(exercise.get(key) ?? []), row]);
+    out.set(row.exercise_id, exercise);
+  }
+  // The same question twice is paired in a fixed order, whichever row came first.
+  const canonical = (row: PracticeRow) => JSON.stringify(PRACTICE_COLUMNS.map((c) => row[c]));
+  for (const exercise of out.values()) {
+    for (const rows of exercise.values()) {
+      rows.sort((a, b) => byCodePoint(canonical(a), canonical(b)));
+    }
+  }
+  return out;
+}
+
+function diffPractice(before: Pack | null, after: Pack): PackDiff['practice_changed'] {
+  const was = before ? practice(before) : new Map<string, Map<string, PracticeRow[]>>();
+  const now = practice(after);
+  const out: PackDiff['practice_changed'] = [];
+  const first = (e: Map<string, PracticeRow[]> | undefined) => [...(e?.values() ?? [])][0]?.[0];
+  for (const id of [...new Set([...was.keys(), ...now.keys()])].sort(byCodePoint)) {
+    const old = was.get(id);
+    const cur = now.get(id);
+    const head = first(cur) ?? first(old)!;
+    const entry: PackDiff['practice_changed'][number] = {
+      exercise_id: id,
+      title: head.exercise_title,
+      idea_id: head.idea_id,
+      change: !old ? 'added' : !cur ? 'removed' : 'changed',
+      problems_added: [],
+      problems_removed: [],
+      problems_changed: [],
+    };
+    for (const question of [...new Set([...(old?.keys() ?? []), ...(cur?.keys() ?? [])])].sort(
+      byCodePoint,
+    )) {
+      const a = old?.get(question) ?? [];
+      const b = cur?.get(question) ?? [];
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        const x = a[i];
+        const y = b[i];
+        if (!x) entry.problems_added.push({ question: y!.question });
+        else if (!y) entry.problems_removed.push({ question: x.question });
+        else {
+          const fields = PRACTICE_COLUMNS.filter((c) => show(x[c]) !== show(y[c]));
+          if (fields.length === 0) continue;
+          entry.problems_changed.push({
+            question: y.question,
+            fields,
+            before: Object.fromEntries(fields.map((c) => [c, show(x[c])])),
+            after: Object.fromEntries(fields.map((c) => [c, show(y[c])])),
+          });
+        }
+      }
+    }
+    if (
+      entry.problems_added.length + entry.problems_removed.length + entry.problems_changed.length >
+      0
+    ) {
+      out.push(entry);
+    }
+  }
+  return out;
+}
+
 const sortedUnique = (ids: readonly string[]) => [...new Set(ids)].sort(byCodePoint);
 
 /**
@@ -90,6 +175,7 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
     prerequisites_changed: [],
     units_changed: [],
     assessment_changed: [],
+    practice_changed: diffPractice(before, after),
   };
 
   const prevQuestions = before ? questions(before) : new Map<string, string[]>();
@@ -150,7 +236,8 @@ export function diffPacks(before: Pack | null, after: Pack): PackDiff {
       diff.ideas_renamed.length +
       diff.prerequisites_changed.length +
       diff.units_changed.length +
-      diff.assessment_changed.length ===
+      diff.assessment_changed.length +
+      diff.practice_changed.length ===
     0;
   return diff;
 }

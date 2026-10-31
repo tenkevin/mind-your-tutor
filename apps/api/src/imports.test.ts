@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { CurriculumDataResponseSchema, QUEUES, countIssues } from '@ideamap/contracts';
+import {
+  CurriculumDataResponseSchema,
+  QUEUES,
+  TEST_PRACTICE_SOURCES,
+  countIssues,
+} from '@ideamap/contracts';
 import { registerWorkers, type Caller, type ImportDeps } from '@ideamap/worker';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
@@ -87,7 +92,13 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
   beforeAll(async () => {
     t = await freshDatabase();
     boss = await startBoss(t.url);
-    const deps: ImportDeps = { scope: appScope(t.db), boss, store: store() };
+    // The fixture's Practice rows name the test-only `fixture` bank (C10).
+    const deps: ImportDeps = {
+      scope: appScope(t.db),
+      boss,
+      store: store(),
+      practiceSources: TEST_PRACTICE_SOURCES,
+    };
     await registerWorkers({ ...deps, boss, pollingIntervalSeconds: 0.5 });
     a = await seedOrg(t.db, 'A');
     b = await seedOrg(t.db, 'B');

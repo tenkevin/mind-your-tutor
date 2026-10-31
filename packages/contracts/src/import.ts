@@ -20,12 +20,12 @@ export type ColumnMapping = z.infer<typeof ColumnMappingSchema>;
 export const IMPORT_ISSUE_CODES = [
   /** The file was refused: wrong type, too big, unsafe, or unreadable. */
   'file_refused',
-  /** None of the eight tabs was found. */
+  /** None of the nine tabs was found. */
   'no_tabs',
   'tab_missing',
   /** Two files or sheets give the same tab. */
   'tab_duplicate',
-  /** A file or sheet that isn't one of the eight tabs. */
+  /** A file or sheet that isn't one of the nine tabs. */
   'tab_ignored',
   /** An optional tab is missing or unusable, so its spec default is used. */
   'tab_default',

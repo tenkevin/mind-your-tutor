@@ -6,12 +6,18 @@ import {
   CurriculumVersionSchema,
   VersionIssuesSchema,
   parsePack,
+  TEST_PRACTICE_SOURCES,
   type DataCheckIssue,
   type DataCheckKind,
   type Pack,
 } from '@ideamap/contracts';
 import { describe, expect, it } from 'vitest';
 import { canPublish, checkPack, summarizeIssues, type CheckedPack } from './index.js';
+
+// The fixture's Practice rows come from the test-only `fixture` bank, which production
+// configuration does not allow (C10-F4), so these tests pass the test policy.
+const checkFixture = (pack: CheckedPack) =>
+  checkPack(pack, { practiceSources: TEST_PRACTICE_SOURCES });
 
 const sample = (): Pack => {
   const raw: unknown = JSON.parse(
@@ -93,7 +99,7 @@ function chain(n: number, close: boolean): IdeaSpec[] {
 
 describe('a clean pack', () => {
   it('has no issues and can publish (C2-F8)', () => {
-    const issues = checkPack(pack([{ idea_id: 'a' }, { idea_id: 'b', requires: ['a'] }]));
+    const issues = checkFixture(pack([{ idea_id: 'a' }, { idea_id: 'b', requires: ['a'] }]));
     expect(issues).toEqual([]);
     expect(canPublish(issues)).toBe(true);
     expect(summarizeIssues(issues)).toBe('all clear');
@@ -101,7 +107,7 @@ describe('a clean pack', () => {
 });
 
 describe('the water-cycle sample (C2-F2)', () => {
-  const issues = checkPack(sample());
+  const issues = checkFixture(sample());
 
   it('gives exactly 1 error, 1 warning and 1 info', () => {
     expect(issues.map((i) => [i.kind, i.level])).toEqual([
@@ -160,7 +166,7 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
       ),
     });
     if (!parsed.ok) throw new Error('sample with a prompt warning should parse');
-    const checks = checkPack(parsed.value);
+    const checks = checkFixture(parsed.value);
     const issues = [...parsed.issues, ...checks];
     const version = CurriculumVersionSchema.parse({
       id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
@@ -188,7 +194,7 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
   it('keeps C8 issues for 10,000 ideas below the 1 MB storage bound', () => {
     const specs = chain(10_000, false);
     specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
-    const checks = checkPack(pack(specs));
+    const checks = checkFixture(pack(specs));
     expect(checks.map((issue) => issue.kind)).toEqual(['prereq', 'blocked']);
     expect(checks[1]!.items).toHaveLength(9_999);
 
@@ -200,7 +206,7 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
   it('parses a version with the largest valid C8 issue group in under 50 ms', async () => {
     const specs = chain(10_000, false);
     specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
-    const checks = checkPack(pack(specs));
+    const checks = checkFixture(pack(specs));
     const input = {
       id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
       curriculum_id: '0f8fad5b-d9cb-469f-a165-70867728950e',
@@ -232,7 +238,7 @@ describe('optional unit objectives and assessment questions (C9)', () => {
     p.units[0]!.objective = null;
     p.assessment[0]!.question = null;
     p.assessment[1]!.question = null;
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     const draftable = issues.filter(
       (issue) => issue.kind === 'unit_objective' || issue.kind === 'assessment_question',
     );
@@ -261,7 +267,7 @@ describe('optional unit objectives and assessment questions (C9)', () => {
     expect(draftable.find((issue) => issue.kind === 'assessment_question')!.message).toMatch(
       /Assessment question.*Atlas can draft one/,
     );
-    expect(canPublish(issues)).toBe(canPublish(checkPack(sample())));
+    expect(canPublish(issues)).toBe(canPublish(checkFixture(sample())));
   });
 
   it('keeps structural warnings for empty questions with an unknown idea or mismatched unit', () => {
@@ -270,7 +276,7 @@ describe('optional unit objectives and assessment questions (C9)', () => {
     p.assessment[0]!.idea_id = 'missing-idea';
     p.assessment[1]!.question = null;
     p.assessment[1]!.unit = 3;
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(ofKind(issues, 'assessment_unknown_idea')).toHaveLength(1);
     expect(ofKind(issues, 'assessment_unit_mismatch')).toHaveLength(1);
     expect(ofKind(issues, 'assessment_question')).toHaveLength(0);
@@ -279,7 +285,9 @@ describe('optional unit objectives and assessment questions (C9)', () => {
 
 describe('prototype checks (C2-F1)', () => {
   it('media: info naming each idea', () => {
-    const [issue, ...rest] = checkPack(pack([{ idea_id: 'a', media_url: null }, { idea_id: 'b' }]));
+    const [issue, ...rest] = checkFixture(
+      pack([{ idea_id: 'a', media_url: null }, { idea_id: 'b' }]),
+    );
     expect(rest).toEqual([]);
     expect(issue).toMatchObject({ kind: 'media', level: 'info', items: ['a'] });
     expect(issue!.message).toBe(
@@ -289,7 +297,7 @@ describe('prototype checks (C2-F1)', () => {
   });
 
   it('codes: one warning for all ideas without codes', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', standard_codes: [] },
         { idea_id: 'b', standard_codes: [] },
@@ -302,7 +310,7 @@ describe('prototype checks (C2-F1)', () => {
   });
 
   it('prereq: one error per unknown id', () => {
-    const issues = checkPack(pack([{ idea_id: 'a', requires: ['x', 'y', 'x'] }]));
+    const issues = checkFixture(pack([{ idea_id: 'a', requires: ['x', 'y', 'x'] }]));
     expect(issues.map((i) => [i.kind, i.level])).toEqual([
       ['prereq', 'error'],
       ['prereq', 'error'],
@@ -312,7 +320,7 @@ describe('prototype checks (C2-F1)', () => {
   });
 
   it('cycle: an error listing the ideas in the loop', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['b'] },
         { idea_id: 'b', requires: ['a'] },
@@ -333,14 +341,14 @@ describe('prototype checks (C2-F1)', () => {
 
 describe('loops of every shape (C2-F4)', () => {
   it('a → a', () => {
-    const issues = checkPack(pack([{ idea_id: 'a', requires: ['a'] }]));
+    const issues = checkFixture(pack([{ idea_id: 'a', requires: ['a'] }]));
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatchObject({ kind: 'cycle', level: 'error', items: ['a'] });
     expect(issues[0]!.message).toContain('1 idea can never unlock: A requires itself');
   });
 
   it('a 50-idea chain closing on itself', () => {
-    const issues = checkPack(pack(chain(50, true)));
+    const issues = checkFixture(pack(chain(50, true)));
     expect(issues).toHaveLength(1);
     expect(issues[0]!.kind).toBe('cycle');
     expect(issues[0]!.items).toHaveLength(50);
@@ -349,7 +357,7 @@ describe('loops of every shape (C2-F4)', () => {
   });
 
   it('two separate loops give two issues', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['b'] },
         { idea_id: 'b', requires: ['a'] },
@@ -364,7 +372,7 @@ describe('loops of every shape (C2-F4)', () => {
   });
 
   it('shows a self-requirement inside a bigger loop, with advice for its shape (C8-F2)', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['a', 'b'] },
         { idea_id: 'b', requires: ['a'] },
@@ -377,7 +385,7 @@ describe('loops of every shape (C2-F4)', () => {
   });
 
   it('names every idea in a loop with more than one ring (C8-F2)', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['b', 'c'] },
         { idea_id: 'b', requires: ['a'] },
@@ -400,21 +408,21 @@ describe('loops of every shape (C2-F4)', () => {
       { idea_id: 'b', requires: ['c'] },
       { idea_id: 'c', requires: ['a'] },
     ];
-    const [issue] = checkPack(pack(specs));
+    const [issue] = checkFixture(pack(specs));
     expect(issue!.kind).toBe('cycle');
     expect(issue!.items).toEqual(['a', 'b', 'c']);
     expect(issue!.message).toBe(
       'Prerequisites form a loop, so 3 ideas can never unlock: A requires B and C; B requires C; C requires A. This group can contain several loops: remove requirements in Ideas → requires until no prerequisite loops remain.',
     );
     expect(issue!.message).not.toMatch(/won't break|Remove one of these/);
-    const fixed = checkPack(
+    const fixed = checkFixture(
       pack(specs.map((s) => (s.idea_id === 'c' ? { ...s, requires: [] } : s))),
     );
     expect(ofKind(fixed, 'cycle')).toEqual([]);
   });
 
   it('keeps "remove one of these" for a single ring (C8-F2)', () => {
-    const [issue] = checkPack(
+    const [issue] = checkFixture(
       pack([
         { idea_id: 'a', requires: ['b'] },
         { idea_id: 'b', requires: ['c'] },
@@ -429,7 +437,7 @@ describe('loops of every shape (C2-F4)', () => {
 
 describe('knock-on blocks (C2-F5)', () => {
   it('warns the ideas downstream of an unknown id once, naming the cause (C8-F3)', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', title: 'Groundwater', requires: ['aquifer'] },
         { idea_id: 'b', title: 'Wells', requires: ['a'] },
@@ -446,7 +454,7 @@ describe('knock-on blocks (C2-F5)', () => {
   });
 
   it('words a single blocked idea in the singular', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', title: 'Groundwater', requires: ['aquifer'] },
         { idea_id: 'b', title: 'Wells', requires: ['a'] },
@@ -458,7 +466,7 @@ describe('knock-on blocks (C2-F5)', () => {
   });
 
   it('warns an idea downstream of a loop, but not the ideas in it', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['b'] },
         { idea_id: 'b', requires: ['a'] },
@@ -486,7 +494,7 @@ describe('knock-on blocks (C2-F5)', () => {
         specs.push({ idea_id: id, requires });
       }
     }
-    const issues = checkPack(pack(specs));
+    const issues = checkFixture(pack(specs));
     expect(issues.map((i) => i.kind)).toEqual([
       'prereq',
       'prereq',
@@ -501,7 +509,7 @@ describe('knock-on blocks (C2-F5)', () => {
   it('gives one warning for a 10,000-idea chain with a broken root (C8-F3, C8-S1)', () => {
     const specs = chain(10_000, false);
     specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
-    const issues = checkPack(pack(specs));
+    const issues = checkFixture(pack(specs));
     expect(issues.map((i) => i.kind)).toEqual(['prereq', 'blocked']);
     expect(issues[1]!.items).toHaveLength(9_999);
     expect(issues[1]!.message).toMatch(/^9999 ideas may never unlock, .* and 9987 more\. /);
@@ -509,7 +517,7 @@ describe('knock-on blocks (C2-F5)', () => {
   });
 
   it("doesn't add a warning to an idea that carries the error", () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', requires: ['x'] },
         { idea_id: 'b', requires: ['a', 'y'] },
@@ -524,7 +532,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
   it('duplicate_id: error', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
     p.ideas.push(idea({ idea_id: 'a', title: 'Another A' }));
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => i.kind)).toEqual(['duplicate_id']);
     expect(issues[0]).toMatchObject({
       level: 'error',
@@ -543,7 +551,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
       { from_id: 'nope', to_id: 'b', relation: 'feeds', importance: 3, media_url: null },
       { from_id: 'x', to_id: 'y', relation: 'feeds', importance: 3, media_url: null },
     );
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level, i.items, i.fix])).toEqual([
       ['link_unknown_idea', 'warning', ['a'], { tab: 'Links', column: 'to_id' }],
       ['link_unknown_idea', 'warning', ['b'], { tab: 'Links', column: 'from_id' }],
@@ -563,7 +571,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
   });
 
   it('unknown_category: warning, uses the first category', () => {
-    const issues = checkPack(pack([{ idea_id: 'a', category: 'Stuff' }, { idea_id: 'b' }]));
+    const issues = checkFixture(pack([{ idea_id: 'a', category: 'Stuff' }, { idea_id: 'b' }]));
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatchObject({
       kind: 'unknown_category',
@@ -578,7 +586,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
     p.ideas[1] = idea({ idea_id: 'b', unit: 7 });
     p.assessment = p.assessment.map((q) => ({ ...q, unit: 1 }));
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level, i.items])).toEqual([
       ['unknown_unit', 'error', ['b']],
     ]);
@@ -589,7 +597,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
   it('assessment_unknown_idea: warning, row skipped', () => {
     const p = pack([{ idea_id: 'a' }]);
     p.assessment.push({ unit: 1, idea_id: 'ghost', question: 'Who?', key_points: [] });
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level])).toEqual([['assessment_unknown_idea', 'warning']]);
     expect(issues[0]!.message).toContain('is skipped');
     expect(issues[0]!.fix).toEqual({ tab: 'Assessment', column: 'idea_id' });
@@ -601,7 +609,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
       p.assessment[0]!,
       { unit: 1, idea_id: 'ghost', question: 'Who?', key_points: [] },
     ];
-    expect(checkPack(p).map((i) => i.kind)).toEqual([
+    expect(checkFixture(p).map((i) => i.kind)).toEqual([
       'assessment_unknown_idea',
       'assessment_coverage',
     ]);
@@ -610,7 +618,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
   it('no_links: warning explaining why it may never unlock', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }, { idea_id: 'c', requires: ['a'] }]);
     p.links = [{ from_id: 'a', to_id: 'b', relation: 'feeds', importance: 3, media_url: null }];
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level, i.items])).toEqual([['no_links', 'warning', ['c']]]);
     expect(issues[0]!.message).toContain(
       'C has no links in the Links tab, so it can only unlock through prerequisites.',
@@ -623,7 +631,7 @@ describe('cross-row checks from the spec (C2-F3)', () => {
   it('no_links with no prerequisites says it may never unlock', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }, { idea_id: 'c' }]);
     p.links = p.links.slice(0, 1);
-    const [issue] = checkPack(p);
+    const [issue] = checkFixture(p);
     expect(issue!.kind).toBe('no_links');
     expect(issue!.message).toContain('may never unlock');
   });
@@ -637,7 +645,7 @@ describe('assessment coverage (C2-F6)', () => {
       { idea_id: 'c', unit: 2 },
     ]);
     p.assessment = p.assessment.slice(0, 1);
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatchObject({
       kind: 'assessment_coverage',
@@ -655,7 +663,7 @@ describe('assessment coverage counts ideas, not rows (C8-F1)', () => {
   it('reports an idea with no question when another idea has two', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
     p.assessment = [p.assessment[0]!, { ...p.assessment[0]!, question: 'And again?' }];
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.items])).toEqual([['assessment_coverage', ['b']]]);
     expect(issues[0]!.message).toMatch(
       /^Unit 1: 1 of 2 questions; Atlas can draft the rest\. No question yet for B\./,
@@ -668,7 +676,7 @@ describe('assessment coverage counts ideas, not rows (C8-F1)', () => {
       { unit: 1, idea_id: 'a', question: 'What is A?', key_points: [] },
       { unit: 1, idea_id: 'b', question: 'What is B?', key_points: [] },
     ];
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level, i.items, i.fix.column])).toEqual([
       ['assessment_unit_mismatch', 'warning', ['b'], 'unit'],
       ['assessment_coverage', 'info', ['b'], 'question'],
@@ -682,7 +690,7 @@ describe('assessment coverage counts ideas, not rows (C8-F1)', () => {
   it('warns on a question for a unit that is not in Units, and skips it', () => {
     const p = pack([{ idea_id: 'a' }, { idea_id: 'b' }]);
     p.assessment.push({ unit: 9, idea_id: 'a', question: 'Again?', key_points: [] });
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues.map((i) => [i.kind, i.level, i.items])).toEqual([
       ['assessment_unknown_unit', 'warning', ['a']],
     ]);
@@ -700,7 +708,7 @@ describe('spec "missing" behaviours (C8-F4, C8-F9)', () => {
       { idea_id: 'b' },
       { idea_id: 'c', objective: '  ' },
     ]);
-    const issues = checkPack(p);
+    const issues = checkFixture(p);
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatchObject({
       kind: 'objective',
@@ -715,7 +723,7 @@ describe('spec "missing" behaviours (C8-F4, C8-F9)', () => {
   });
 
   it('warns when the Categories tab is empty', () => {
-    const issues = checkPack(pack([{ idea_id: 'a' }, { idea_id: 'b' }], { categories: [] }));
+    const issues = checkFixture(pack([{ idea_id: 'a' }, { idea_id: 'b' }], { categories: [] }));
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatchObject({
       kind: 'no_categories',
@@ -748,6 +756,16 @@ describe('every kind (C2-F9)', () => {
       'no_categories',
       'assessment_unknown_unit',
       'assessment_unit_mismatch',
+      // The Practice kinds are tested in practice-checks.test.ts (C10).
+      'practice_unknown_idea',
+      'practice_source',
+      'practice_license',
+      'practice_attribution',
+      'practice_choices',
+      'practice_answer',
+      'practice_quiz',
+      'practice_standard',
+      'practice_exercise',
     ];
     expect([...tested].sort()).toEqual([...DATA_CHECK_KINDS].sort());
   });
@@ -755,7 +773,7 @@ describe('every kind (C2-F9)', () => {
 
 describe('hostile input', () => {
   it('keeps titles as raw text, building no markup (C2-S1)', () => {
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([
         { idea_id: 'a', title: '<img src=x onerror=alert(1)>', requires: ['nope'] },
         { idea_id: 'b', title: '{{constructor}}', standard_codes: [] },
@@ -766,16 +784,16 @@ describe('hostile input', () => {
   });
 
   it('handles a 10,000-idea chain without overflowing the stack (C2-S2)', () => {
-    const open = checkPack(pack(chain(10_000, false)));
+    const open = checkFixture(pack(chain(10_000, false)));
     expect(open).toEqual([]);
-    const closed = checkPack(pack(chain(10_000, true)));
+    const closed = checkFixture(pack(chain(10_000, true)));
     expect(closed).toHaveLength(1);
     expect(closed[0]!.items).toHaveLength(10_000);
   });
 
   it('handles one idea requiring 5,000 others (C2-S2)', () => {
     const others = Array.from({ length: 5000 }, (_, i) => ({ idea_id: `o${i}` }));
-    const issues = checkPack(
+    const issues = checkFixture(
       pack([...others, { idea_id: 'hub', requires: others.map((o) => o.idea_id) }]),
     );
     expect(issues).toEqual([]);
@@ -785,7 +803,7 @@ describe('hostile input', () => {
 describe('performance', () => {
   it('runs the sample in well under 5 ms (C2-P1)', async () => {
     const p = sample();
-    const t = await timeRuns(() => checkPack(p), { runs: 100 });
+    const t = await timeRuns(() => checkFixture(p), { runs: 100 });
     expectTimingUnder('checks the sample (C2-P1)', 5, t.median, t, 'median');
   });
 
@@ -812,7 +830,7 @@ describe('performance', () => {
     for (let k = 0; k < 4; k++) p.links[k] = { ...p.links[k]!, to_id: `ghost${k}` }; // 4 links
     for (let k = 0; k < 4; k++) p.assessment[k] = { ...p.assessment[k]!, idea_id: `ghost${k}` }; // 4 questions
 
-    const issues = await expectBestUnder('checks 2,000 ideas (C2-P2)', 200, () => checkPack(p));
+    const issues = await expectBestUnder('checks 2,000 ideas (C2-P2)', 200, () => checkFixture(p));
 
     const counts = Object.fromEntries(
       DATA_CHECK_KINDS.map((kind) => [kind, ofKind(issues, kind).length]),

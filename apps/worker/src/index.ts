@@ -5,6 +5,7 @@ import { createDb, withOrg, type Db } from '@ideamap/db';
 import type { PgBoss } from 'pg-boss';
 import { abandonImport, runImport, type OrgScope, type RunDeps } from './imports.js';
 import { indexLibrary } from './library.js';
+import { loadPracticeSources } from './practice-sources.js';
 import { QUEUE_OPTIONS, createBoss, ensureQueues } from './queue.js';
 
 export const packageName = '@ideamap/worker';
@@ -38,6 +39,8 @@ export interface WorkerOptions {
   scope: OrgScope;
   store: ObjectStore;
   limits?: Partial<ImportLimits>;
+  /** The banks and licences Practice rows may name; production's allow-list when omitted. */
+  practiceSources?: RunDeps['practiceSources'];
   /** Seconds between polls when idle. Default 2. */
   pollingIntervalSeconds?: number;
   afterStep?: RunDeps['afterStep'];
@@ -77,7 +80,12 @@ async function main(): Promise<void> {
   const boss = createBoss(url);
   boss.on('error', (error) => console.error(error));
   await boss.start();
-  await registerWorkers({ boss, scope: orgScope(db), store: new FileObjectStore(uploads) });
+  await registerWorkers({
+    boss,
+    scope: orgScope(db),
+    store: new FileObjectStore(uploads),
+    practiceSources: loadPracticeSources(),
+  });
   const stop = async () => {
     await boss.stop({ graceful: true });
     await db.destroy();
@@ -90,3 +98,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   await main();
 }
 export * from './retention.js';
+export * from './practice-sources.js';

@@ -377,6 +377,150 @@
           }
         }
       }
+    },
+    "practice": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Standards-aligned exercises shown under “Practice for mastery” on each idea page. One row per problem; rows with the same exercise_id form one exercise. Items come only from vetted item banks and are shown as written, with their attribution.",
+        "required": [
+          "exercise_id",
+          "idea_id",
+          "group",
+          "exercise_title",
+          "problem_type",
+          "question",
+          "answer",
+          "explanation"
+        ],
+        "properties": {
+          "exercise_id": {
+            "type": "string",
+            "description": "slug · Groups problems into one exercise · If missing: Row skipped · Edited in: sheet"
+          },
+          "idea_id": {
+            "type": "string",
+            "description": "Ideas.idea_id · If missing: Row skipped · Edited in: sheet"
+          },
+          "group": {
+            "type": "string",
+            "description": "text · Heading on the idea page · If missing: Shows “Practice” · Edited in: sheet"
+          },
+          "standard_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "code · One code per group · If missing: No code shown · Edited in: sheet"
+          },
+          "exercise_title": {
+            "type": "string",
+            "description": "text · If missing: Uses exercise_id · Edited in: sheet"
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "exercise | quiz · Quiz rows list exercise_ids in quiz_from · If missing: exercise · Edited in: sheet"
+          },
+          "quiz_from": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list of exercise_id · If missing: — · Edited in: sheet"
+          },
+          "problem_type": {
+            "type": "string",
+            "description": "mc | number · If missing: Row skipped · Edited in: sheet"
+          },
+          "question": {
+            "type": "string",
+            "description": "text · If missing: Row skipped · Edited in: sheet"
+          },
+          "choices": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list · Pipe-separated; first is correct, app shuffles · If missing: Required for mc · Edited in: sheet"
+          },
+          "answer": {
+            "type": "string",
+            "description": "number or text · If missing: Row skipped · Edited in: sheet"
+          },
+          "answer_unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · If missing: No unit shown · Edited in: sheet"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "text · If missing: Shows the answer only · Edited in: sheet"
+          },
+          "visual": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "graph: x,y; x,y | table: t…; x… · Drawn by the app · If missing: Text-only problem · Edited in: sheet"
+          },
+          "media_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "url or file · Optional hint video · If missing: — · Edited in: sheet"
+          },
+          "demo_video_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "url or file · Worked example video on the exercise’s “Worked example” tab. Read from the exercise’s first row · If missing: Empty video frame · Edited in: sheet"
+          },
+          "demo_steps": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "list · Pipe-separated steps shown under the demo video · If missing: First problem’s explanation · Edited in: sheet"
+          },
+          "source_bank_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · Vetted item bank the problem comes from (D40). Must be on the allow-list; the item is shown with this source · If missing: Blocks publishing · Edited in: sheet"
+          },
+          "license_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · Licence of the item. Must be on the allow-list · If missing: Blocks publishing · Edited in: sheet"
+          },
+          "attribution_string": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "text · Shown with the item. Required for CC-BY licences · If missing: Blocks publishing for CC-BY items · Edited in: sheet"
+          }
+        }
+      }
     }
   },
   "$comment": "Exported from project/curriculum-pack.js jsonSchema(), with two fixes so the prototype's own pack output validates (columns referencing Units.unit are integers; optional columns accept null), plus ideas.explanation, added by decision D9."

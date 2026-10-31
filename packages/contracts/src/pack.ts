@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { LIMITS, columns, documented, normalizeRow } from './fields.js';
 import {
   AUDIENCES,
+  EXERCISE_KINDS,
   PERSONA_IDS,
+  PROBLEM_TYPES,
   RARITIES,
   TONES,
   USE_FOR,
@@ -130,6 +132,31 @@ const library = tab('Library', (c) => ({
 export const LibraryDocSchema = library.schema;
 export const LibraryDocRowSchema = library.row;
 
+const practice = tab('Practice', (c) => ({
+  exercise_id: c.slug('exercise_id'),
+  idea_id: c.slug('idea_id'),
+  group: c.text('group', LIMITS.title),
+  standard_code: c.text('standard_code', LIMITS.code).nullable().default(null),
+  exercise_title: c.text('exercise_title', LIMITS.title),
+  kind: c.oneOf('kind', EXERCISE_KINDS).default('exercise'),
+  quiz_from: c.slugList('quiz_from').default([]),
+  problem_type: c.oneOf('problem_type', PROBLEM_TYPES),
+  question: c.text('question', LIMITS.question),
+  choices: c.pipeList('choices', LIMITS.keyPoint).default([]),
+  answer: c.text('answer', LIMITS.keyPoint),
+  answer_unit: c.text('answer_unit', LIMITS.code).nullable().default(null),
+  explanation: c.text('explanation', LIMITS.explanation),
+  visual: c.visual('visual').nullable().default(null),
+  media_url: c.url('media_url').nullable().default(null),
+  demo_video_url: c.url('demo_video_url').nullable().default(null),
+  demo_steps: c.pipeList('demo_steps', LIMITS.keyPoint).default([]),
+  source_bank_id: c.text('source_bank_id', LIMITS.shortText).nullable().default(null),
+  license_type: c.text('license_type', LIMITS.shortText).nullable().default(null),
+  attribution_string: c.text('attribution_string', LIMITS.keyPoint).nullable().default(null),
+}));
+export const PracticeItemSchema = practice.schema;
+export const PracticeItemRowSchema = practice.row;
+
 /** Row schemas by tab, accepting raw CSV, XLSX or JSON rows. */
 export const TAB_ROW_SCHEMAS = {
   Course: CourseRowSchema,
@@ -140,6 +167,7 @@ export const TAB_ROW_SCHEMAS = {
   Assessment: AssessmentItemRowSchema,
   Personas: PersonaRowSchema,
   Library: LibraryDocRowSchema,
+  Practice: PracticeItemRowSchema,
 } as const satisfies Record<TabName, z.ZodType>;
 
 /** Strict schemas by tab, for values already in pack shape. */
@@ -152,6 +180,7 @@ export const TAB_SCHEMAS = {
   Assessment: AssessmentItemSchema,
   Personas: PersonaSchema,
   Library: LibraryDocSchema,
+  Practice: PracticeItemSchema,
 } as const satisfies Record<TabName, z.ZodType>;
 
 /** Upper bounds on rows per tab, well above any real course, to keep imports bounded. */
@@ -163,6 +192,7 @@ export const MAX_ROWS = {
   Assessment: 10000,
   Personas: 50,
   Library: 2000,
+  Practice: 20000,
 } as const satisfies Record<Exclude<TabName, 'Course'>, number>;
 
 function rows<T extends z.ZodType>(name: Exclude<TabName, 'Course'>, row: T) {
@@ -195,6 +225,7 @@ export const PackSchema = packSchema({
   assessment: rows('Assessment', AssessmentItemRowSchema).default([]),
   personas: rows('Personas', PersonaRowSchema).default([]),
   library: rows('Library', LibraryDocRowSchema).default([]),
+  practice: rows('Practice', PracticeItemRowSchema).default([]),
 });
 
 /** A whole pack already in pack shape; the source for the generated JSON Schema. */
@@ -207,6 +238,7 @@ export const PackStrictSchema = packSchema({
   assessment: rows('Assessment', AssessmentItemSchema).default([]),
   personas: rows('Personas', PersonaSchema).default([]),
   library: rows('Library', LibraryDocSchema).default([]),
+  practice: rows('Practice', PracticeItemSchema).default([]),
 });
 
 export type Course = z.infer<typeof CourseSchema>;
@@ -217,6 +249,7 @@ export type Category = z.infer<typeof CategorySchema>;
 export type AssessmentItem = z.infer<typeof AssessmentItemSchema>;
 export type Persona = z.infer<typeof PersonaSchema>;
 export type LibraryDoc = z.infer<typeof LibraryDocSchema>;
+export type PracticeItem = z.infer<typeof PracticeItemSchema>;
 export type Pack = z.infer<typeof PackSchema>;
 /** A pack as it may be written in JSON, with defaults left out. */
 export type PackInput = z.input<typeof PackStrictSchema>;

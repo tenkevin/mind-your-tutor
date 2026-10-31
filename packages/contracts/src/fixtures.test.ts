@@ -30,6 +30,7 @@ describe('the water-cycle pack parses in every form (F3-F3)', () => {
     expect(pack.assessment).toHaveLength(18);
     expect(pack.personas).toHaveLength(3);
     expect(pack.library).toHaveLength(5);
+    expect(pack.practice).toHaveLength(5);
   });
 
   it('keeps the deliberate data problems for C2', () => {

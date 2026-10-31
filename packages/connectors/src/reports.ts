@@ -1,5 +1,6 @@
 import {
   PACK_SPEC,
+  PIPE_LIST_COLUMNS,
   TAB_KEYS,
   type AssessmentItem,
   type DataCheckIssue,
@@ -134,6 +135,33 @@ const SAMPLES: Record<TabSpec['tab'], Record<string, string>[]> = {
     },
   ],
   Library: [{ title: 'Water cycle unit plan', file_url: 'unit-plan.pdf', use_for: 'agent' }],
+  // The spec's example row (docs/spec), which is the prototype's Practice sample plus the
+  // D40 source columns. The source is an example, not a real item.
+  Practice: [
+    {
+      exercise_id: 'v4',
+      idea_id: 'vel',
+      group: 'Velocity as a rate of change',
+      standard_code: 'HSF-IF.B.6',
+      exercise_title: 'Velocity from position–time graphs',
+      kind: 'exercise',
+      quiz_from: '',
+      problem_type: 'number',
+      question: 'What is the velocity of this object?',
+      choices: '',
+      answer: '-5',
+      answer_unit: 'm/s',
+      explanation: 'Slope = (0 − 30) ÷ 6 = −5 m/s.',
+      visual: 'graph: 0,30; 6,0',
+      media_url: '',
+      demo_video_url: 'v4-worked-example.mp4',
+      demo_steps:
+        'Velocity is the slope of a position–time graph | Rise 20 m, run 4 s | 20 ÷ 4 | 5 m/s',
+      source_bank_id: 'OpenStax',
+      license_type: 'CC-BY-4.0',
+      attribution_string: 'Example Authors, Example Book, OpenStax, CC BY 4.0',
+    },
+  ],
 };
 
 /**
@@ -144,21 +172,27 @@ const SAMPLES: Record<TabSpec['tab'], Record<string, string>[]> = {
 function packCell(
   value: unknown,
   at: () => { sheet: string; row: number; column: string },
+  separator: ',' | '|' = ',',
 ): ExportCell {
   if (value === null || value === undefined) return null;
   if (Array.isArray(value)) {
     const items = value.map(String);
-    const bad = items.find((item) => /[,;]/.test(item));
+    // Pipe lists (Practice choices and steps) may hold commas; only a pipe would split them.
+    const bad = items.find((item) => (separator === '|' ? /\|/ : /[,;]/).test(item));
     if (bad !== undefined) {
       const where = at();
       throw new ExportRefused(
-        `${where.sheet}, row ${where.row}, ${where.column}: the item "${bad}" has a comma or semicolon, ` +
-          `which separate items in a spreadsheet list, so it would come back as more than one item. ` +
-          `The export stopped; reword that item without them, then export again.`,
+        separator === '|'
+          ? `${where.sheet}, row ${where.row}, ${where.column}: the item "${bad}" has a | (vertical bar), ` +
+              `which separates items in this list, so it would come back as more than one item. ` +
+              `The export stopped; reword that item without it, then export again.`
+          : `${where.sheet}, row ${where.row}, ${where.column}: the item "${bad}" has a comma or semicolon, ` +
+              `which separate items in a spreadsheet list, so it would come back as more than one item. ` +
+              `The export stopped; reword that item without them, then export again.`,
         where,
       );
     }
-    return items.join(', ');
+    return items.join(separator === '|' ? ' | ' : ', ');
   }
   if (typeof value === 'number') return value;
   return String(value as string);
@@ -191,7 +225,11 @@ function tabSheet(spec: TabSpec, rows: readonly Record<string, unknown>[]): Expo
     header: spec.cols.map((c) => c.name),
     rows: rows.map((row, r) =>
       spec.cols.map((c) =>
-        packCell(row[c.name], () => ({ sheet: spec.tab, row: r + 2, column: c.name })),
+        packCell(
+          row[c.name],
+          () => ({ sheet: spec.tab, row: r + 2, column: c.name }),
+          PIPE_LIST_COLUMNS[spec.tab]?.includes(c.name) ? '|' : ',',
+        ),
       ),
     ),
     widths: spec.cols.map((c) => widthOf(c.name)),
@@ -229,7 +267,7 @@ function readMeSheet(): ExportSheet {
 }
 
 /**
- * The Curriculum Pack template: a "Read me" sheet, then the eight tabs with the
+ * The Curriculum Pack template: a "Read me" sheet, then the nine tabs with the
  * spec's columns. `sample` fills each tab with the prototype's sample rows; the blank
  * template has only the required Course values, as examples.
  */
@@ -247,7 +285,7 @@ export function templateReport(options: ReportOptions & { sample?: boolean } = {
   };
 }
 
-/** A parsed pack as the eight tabs, ready to edit and import again. */
+/** A parsed pack as the nine tabs, ready to edit and import again. */
 export function packReport(pack: Pack, options: ReportOptions = {}): ExportPayload {
   return {
     report: 'pack',

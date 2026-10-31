@@ -22,6 +22,7 @@ import {
   type Pack,
   type TabName,
   type VersionSource,
+  type PracticeSourcePolicy,
 } from '@ideamap/contracts';
 import {
   DEFAULT_LIMITS,
@@ -68,6 +69,8 @@ export interface ImportDeps {
   boss: Sender;
   store: ObjectStore;
   limits?: Partial<ImportLimits>;
+  /** The banks and licences Practice rows may name; production's allow-list when omitted. */
+  practiceSources?: PracticeSourcePolicy;
 }
 
 /** A request the API refuses, with the HTTP status and a message for the teacher. */
@@ -389,6 +392,8 @@ function tabRows(pack: Pack, tab: TabName): number {
       return pack.personas.length;
     case 'Library':
       return pack.library.length;
+    case 'Practice':
+      return pack.practice.length;
   }
 }
 
@@ -530,7 +535,7 @@ export async function runImport(deps: RunDeps, data: unknown): Promise<RunOutcom
 
   const checks = await step(
     'Check data',
-    () => checkPack(pack),
+    () => checkPack(pack, { practiceSources: deps.practiceSources }),
     (c) => plural(c.length, 'note'),
   );
   const ranked = await step(

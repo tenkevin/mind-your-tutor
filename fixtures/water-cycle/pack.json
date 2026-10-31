@@ -784,5 +784,137 @@
       "file_url": "District pacing guide 2026.pdf",
       "use_for": "agent"
     }
+  ],
+  "practice": [
+    {
+      "exercise_id": "wc-evap-1",
+      "idea_id": "evap",
+      "group": "Evaporation and heat",
+      "standard_code": "MS-PS1-4",
+      "exercise_title": "What speeds up evaporation?",
+      "kind": "exercise",
+      "quiz_from": [],
+      "problem_type": "mc",
+      "question": "Which puddle dries fastest?",
+      "choices": [
+        "A shallow puddle in the sun",
+        "A deep puddle in the shade",
+        "A puddle on a cold night"
+      ],
+      "answer": "A shallow puddle in the sun",
+      "answer_unit": "",
+      "explanation": "More heat and more surface area both speed up evaporation.",
+      "visual": "",
+      "media_url": "",
+      "demo_video_url": "evaporation-demo.mp4",
+      "demo_steps": [
+        "Heat gives water molecules energy",
+        "The fastest ones escape the surface",
+        "A wider surface lets more escape",
+        "So a shallow puddle in the sun dries first"
+      ],
+      "source_bank_id": "fixture",
+      "license_type": "Public Domain",
+      "attribution_string": ""
+    },
+    {
+      "exercise_id": "wc-evap-1",
+      "idea_id": "evap",
+      "group": "Evaporation and heat",
+      "standard_code": "MS-PS1-4",
+      "exercise_title": "What speeds up evaporation?",
+      "kind": "exercise",
+      "quiz_from": [],
+      "problem_type": "number",
+      "question": "The graph shows how much water evaporates each hour at different temperatures (°C, mL). How many millilitres evaporate each hour at 30 °C?",
+      "choices": [],
+      "answer": "9",
+      "answer_unit": "mL",
+      "explanation": "Read up from 30 °C on the graph to the point (30, 9): 9 mL each hour.",
+      "visual": "graph: 10,2; 20,5; 30,9; 40,14",
+      "media_url": "",
+      "demo_video_url": "",
+      "demo_steps": [],
+      "source_bank_id": "fixture",
+      "license_type": "Public Domain",
+      "attribution_string": ""
+    },
+    {
+      "exercise_id": "wc-cond-1",
+      "idea_id": "cond",
+      "group": "Condensation",
+      "standard_code": "MS-ESS2-4",
+      "exercise_title": "How much vapour can air hold?",
+      "kind": "exercise",
+      "quiz_from": [],
+      "problem_type": "number",
+      "question": "The table shows the most water vapour, in grams, that 1 m³ of air can hold at each temperature. How many more grams can it hold at 30 °C than at 20 °C?",
+      "choices": [],
+      "answer": "13",
+      "answer_unit": "g",
+      "explanation": "30 °C holds 30 g and 20 °C holds 17 g, so 30 − 17 = 13 g more.",
+      "visual": "table: temperature: 10, 20, 30; vapour: 9, 17, 30",
+      "media_url": "vapour-table-hint.mp4",
+      "demo_video_url": "",
+      "demo_steps": [],
+      "source_bank_id": "fixture",
+      "license_type": "Public Domain",
+      "attribution_string": ""
+    },
+    {
+      "exercise_id": "wc-cond-1",
+      "idea_id": "cond",
+      "group": "Condensation",
+      "standard_code": "MS-ESS2-4",
+      "exercise_title": "How much vapour can air hold?",
+      "kind": "exercise",
+      "quiz_from": [],
+      "problem_type": "mc",
+      "question": "Warm, wet air rises and cools. What happens to the water vapour in it?",
+      "choices": [
+        "It condenses into tiny droplets",
+        "It evaporates faster",
+        "It turns into ice at once"
+      ],
+      "answer": "It condenses into tiny droplets",
+      "answer_unit": "",
+      "explanation": "Cooler air holds less vapour, so the extra vapour turns back into liquid droplets.",
+      "visual": "",
+      "media_url": "",
+      "demo_video_url": "",
+      "demo_steps": [],
+      "source_bank_id": "fixture",
+      "license_type": "Public Domain",
+      "attribution_string": ""
+    },
+    {
+      "exercise_id": "wc-quiz-1",
+      "idea_id": "cycle",
+      "group": "Water cycle review",
+      "standard_code": "MS-ESS2-4",
+      "exercise_title": "Water cycle quiz",
+      "kind": "quiz",
+      "quiz_from": [
+        "wc-evap-1",
+        "wc-cond-1"
+      ],
+      "problem_type": "mc",
+      "question": "Which process turns water vapour back into liquid droplets?",
+      "choices": [
+        "Condensation",
+        "Evaporation",
+        "Precipitation"
+      ],
+      "answer": "Condensation",
+      "answer_unit": "",
+      "explanation": "Condensation is vapour cooling into liquid; evaporation is the reverse.",
+      "visual": "",
+      "media_url": "",
+      "demo_video_url": "",
+      "demo_steps": [],
+      "source_bank_id": "fixture",
+      "license_type": "CC-BY-4.0",
+      "attribution_string": "Fixture Authors, Water Cycle Test Items, CC BY 4.0"
+    }
   ]
 }
