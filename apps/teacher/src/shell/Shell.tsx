@@ -1,4 +1,5 @@
 import type { ClassHeaderResponse, MeResponse } from '@ideamap/contracts';
+import type { ReactNode } from 'react';
 import type { SaveState } from '../auth/session';
 import { Icon } from './icons';
 import { SECTIONS } from './sections';
@@ -46,6 +47,8 @@ export interface ShellProps {
   retrying?: boolean;
   onRetry?: () => void;
   onSignOut: () => void;
+  /** Each section's content, by section id, below its heading and summary. */
+  content?: Partial<Record<string, ReactNode>>;
 }
 
 export function Shell({
@@ -58,6 +61,7 @@ export function Shell({
   retrying = false,
   onRetry,
   onSignOut,
+  content = {},
 }: ShellProps) {
   const title = headerTitle(header);
   return (
@@ -115,6 +119,7 @@ export function Shell({
           <section key={s.id} id={s.id} className="tshell-section" aria-labelledby={`${s.id}-h`}>
             <h2 id={`${s.id}-h`}>{s.heading}</h2>
             <p className="tshell-summary">{s.summary}</p>
+            {content[s.id]}
           </section>
         ))}
       </main>

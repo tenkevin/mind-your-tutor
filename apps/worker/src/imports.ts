@@ -1,13 +1,18 @@
 import { createHash } from 'node:crypto';
 import {
   canPublishIssues,
+  CurriculumDataResponseSchema,
+  groupVersionIssues,
+  rowLocator,
   IdempotencyKeySchema,
   ImportJobPayloadSchema,
   ImportJobViewSchema,
   pendingSteps,
   QUEUES,
+  TAB_NAMES,
   VersionIssuesSchema,
   VersionSourceSchema,
+  type CurriculumDataResponse,
   type ImportFailure,
   type ImportIssue,
   type ImportJobView,
@@ -15,6 +20,7 @@ import {
   type ImportStepName,
   type LibraryIndexPayload,
   type Pack,
+  type TabName,
   type VersionSource,
 } from '@ideamap/contracts';
 import {
@@ -44,7 +50,11 @@ import { inTransaction, type Sender } from './queue.js';
 type Trx = Transaction<Database>;
 
 /** Runs `fn` in a transaction acting for one organization (`withOrg` in production). */
-export type OrgScope = <T>(orgId: string, fn: (trx: Trx) => Promise<T>) => Promise<T>;
+export type OrgScope = <T>(
+  orgId: string,
+  fn: (trx: Trx) => Promise<T>,
+  options?: { isolation?: 'repeatable read' },
+) => Promise<T>;
 
 /** Who is asking. Until F5's sign-in lands, the API's `authenticate` supplies this. */
 export interface Caller {
@@ -118,7 +128,22 @@ async function loadView(trx: Trx, jobId: string): Promise<ImportJobView | null> 
     .selectAll()
     .where('id', '=', jobId)
     .executeTakeFirst();
-  if (!job) return null;
+  return job ? viewOfRow(trx, job) : null;
+}
+
+async function newestJob(trx: Trx, curriculumId: string) {
+  return trx
+    .selectFrom('import_job')
+    .selectAll()
+    .where('curriculum_id', '=', curriculumId)
+    .orderBy('created_at', 'desc')
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
+/** The view of a job row already read. A job's version is committed with the job. */
+async function viewOfRow(trx: Trx, job: JobRow): Promise<ImportJobView> {
   const version = job.version_id
     ? await trx
         .selectFrom('curriculum_version')
@@ -265,6 +290,106 @@ export async function getImportJob(
     : null;
   if (!job) throw new ImportRequestError(404, 'There is no such import.');
   return job;
+}
+
+/**
+ * Teacher Settings → Curriculum data (T2): the newest import job and the newest
+ * version, with its issues grouped by cause. A curriculum the caller's org can't see
+ * is refused like one that doesn't exist.
+ */
+export async function getCurriculumData(
+  deps: Pick<ImportDeps, 'scope'>,
+  caller: Caller,
+  curriculumId: string,
+): Promise<CurriculumDataResponse> {
+  mayImport(caller);
+  const data = Uuid.safeParse(curriculumId).success
+    ? await deps.scope(
+        caller.orgId,
+        async (trx) => {
+          const curriculum = await trx
+            .selectFrom('curriculum')
+            .select('id')
+            .where('id', '=', curriculumId)
+            .executeTakeFirst();
+          if (!curriculum) return null;
+          // The job, its view and the newest version are separate statements. Under
+          // REPEATABLE READ (below) they see one snapshot, so a worker commit between
+          // them can't give a succeeded job a stale or missing version (F1e-F9).
+          const latest = await newestJob(trx, curriculumId);
+          const jobView = latest ? await viewOfRow(trx, latest) : null;
+          const version = await trx
+            .selectFrom('curriculum_version')
+            .select(['id', 'number', 'status', 'issues', 'pack', 'source', 'created_at'])
+            .where('curriculum_id', '=', curriculumId)
+            .orderBy('number', 'desc')
+            .limit(1)
+            .executeTakeFirst();
+          // "Unchanged since last import": the same bytes as the version before this job.
+          let unchanged = false;
+          if (latest) {
+            let before = trx
+              .selectFrom('curriculum_version')
+              .select(sql<string>`source->>'checksum'`.as('checksum'))
+              .where('curriculum_id', '=', curriculumId)
+              .where('created_at', '<', latest.created_at);
+            if (latest.version_id) before = before.where('id', '!=', latest.version_id);
+            const previous = await before.orderBy('number', 'desc').limit(1).executeTakeFirst();
+            unchanged = previous?.checksum === latest.source.checksum;
+          }
+          return {
+            job: jobView,
+            unchanged,
+            version,
+          };
+        },
+        { isolation: 'repeatable read' },
+      )
+    : null;
+  if (!data) throw new ImportRequestError(404, 'There is no such curriculum.');
+  const { version } = data;
+  return CurriculumDataResponseSchema.parse({
+    job: data.job,
+    unchanged: data.unchanged,
+    version: version
+      ? {
+          id: version.id,
+          number: version.number,
+          status: version.status,
+          can_publish: canPublishIssues(version.issues),
+          created_at: version.created_at.toISOString(),
+          source: {
+            kind: version.source.kind,
+            file_name: version.source.file_name,
+            checksum: version.source.checksum,
+          },
+          tabs: TAB_NAMES.map((tab) => ({ tab, rows: tabRows(version.pack, tab) })),
+          groups: groupVersionIssues(version.issues, rowLocator(version.pack, version.source.rows)),
+        }
+      : null,
+  });
+}
+
+/** Rows in one tab of a pack, as the sheet has them (Course is key/value rows). */
+function tabRows(pack: Pack, tab: TabName): number {
+  switch (tab) {
+    case 'Course':
+      return Object.values(pack.course).filter((v) => v !== null && v !== undefined).length;
+    case 'Units':
+      return pack.units.length;
+    case 'Ideas':
+      return pack.ideas.length;
+    case 'Links':
+      return pack.links.length;
+    case 'Categories':
+      return pack.categories.length;
+    case 'Assessment':
+      return pack.assessment.length;
+    case 'Personas':
+      return pack.personas.length;
+    case 'Library':
+      return pack.library.length;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -433,6 +558,7 @@ export async function runImport(deps: RunDeps, data: unknown): Promise<RunOutcom
     ...source,
     kind: imported.kind ?? source.kind,
     column_mapping: imported.mapping,
+    rows: imported.rows,
   });
   const issues = VersionIssuesSchema.parse([...imported.issues, ...checks]);
   return finish(deps, orgId, jobId, steps, {

@@ -1,4 +1,5 @@
 import '@ideamap/ui/styles.css';
+import '@ideamap/ui/themes.css';
 import './udl/udl.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

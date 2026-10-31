@@ -397,6 +397,86 @@
         "C6cx1"
       ],
       "suggestions": "Re-QA of 750a50b: C6-E1/E2/E3 fixes pass. Apostrophe reimport limitation and future export-route authorization already in CXB. Full-suite gate UNVERIFIED (function_binding excluded)."
+    },
+    {
+      "file": "docs/qa/codex/Codex-A1-review-070cb66.md",
+      "commit": "0332471",
+      "date": "2026-10-27",
+      "reviews": [
+        "A1"
+      ],
+      "verdict": "PASS (scoped); A1-F9 UNVERIFIED pending coordinator full-suite run incl. function_binding",
+      "errors": [],
+      "suggestions": [
+        "A1-P2 streaming stays a should check (A1)",
+        "per-process limits and roster-name detection: already in CXB (A7 / deployment)"
+      ]
+    },
+    {
+      "file": "docs/qa/codex/Codex-C5cx1-review-7005308.md",
+      "commit": "a3ee27c",
+      "date": "2026-10-28",
+      "reviews": [
+        "C5cx1"
+      ],
+      "verdict": "PASS (scoped); C5cx1-F6 UNVERIFIED pending coordinator full-suite run incl. function_binding",
+      "errors": [],
+      "suggestions": [],
+      "disposition": "Coordinator synced #33 with idea-map (3f8f887; idea-map had only Codex report files since the reviewed base 63855ef, so the tested application tree is unchanged) and ran the full root suite with Postgres 16 + pgvector: all exit 0, function_binding.test.ts 4/4. Merge per integration gate."
+    },
+    {
+      "file": "docs/qa/codex/Codex-C6cx1-review-29b23ff.md",
+      "commit": "681dd63",
+      "date": "2026-10-28",
+      "reviews": [
+        "C6cx1"
+      ],
+      "verdict": "FAIL on C6cx1-F4 (inherited CRLF, E1); F6 UNVERIFIED; all other musts PASS",
+      "errors": [
+        "C6cx2"
+      ],
+      "suggestions": [],
+      "disposition": "Coordinator: E1 is inherited from merged C6 (Codex: 'not a regression introduced by this PR'; CRLF/LF writer path unchanged from base). C6cx1-F4's own pass bar is 'CRLF and LF inside cells behave as before', which Codex confirms. The C6-F7 CRLF failure belongs to C6 and is routed to fix task C6cx2 (must-only criteria quoting E1), so C6cx1's scoped result counts as PASS for its lone-CR fix. F6 closed by the coordinator's local full-suite run before merge."
+    },
+    {
+      "file": "docs/qa/codex/Codex-M2-integration-38c0782-63855ef.md",
+      "commit": "0e5eb63",
+      "date": "2026-10-28",
+      "reviews": [
+        "M2"
+      ],
+      "verdict": "BLOCKED: merge with current idea-map conflicts (api index, policy.test, ARCHITECTURE, packages/ai backstop.ts add/add, ai index)",
+      "errors": [],
+      "suggestions": [],
+      "disposition": "Sync delegated to builder session session_017xAqLf6Rjogb9biR2BjA9c (2026-10-28 17:05); Codex reviews the synced head."
+    },
+    {
+      "file": "docs/qa/codex/Codex-T2-review-1afe366.md",
+      "commit": "3363c15",
+      "date": "2026-10-28",
+      "reviews": [
+        "T2"
+      ],
+      "verdict": "PASS (scoped) at 1afe366; T2-F9 UNVERIFIED",
+      "errors": [],
+      "suggestions": [
+        "Previous-version tab chips can briefly show while new checks load (not blocking; noted)"
+      ],
+      "disposition": "Coordinator verified the sync head 5caed4d: in T2's files it only folds in A1's gateway (startServer still calls startImports and registers import routes; policy sweep covers T2 and A1 routes; F5-P1 test renamed, not lost), so the PASS carries over per HANDOFF rule 4. F9 closed by the coordinator's local full-suite run on the final synced head before merge."
+    },
+    {
+      "file": "docs/qa/codex/Codex-A2-integration-8f0f8ba-b33ba4a.md",
+      "commit": "648006f",
+      "date": "2026-10-28",
+      "reviews": [
+        "A2"
+      ],
+      "verdict": "BLOCKED: content conflict in apps/api/src/index.ts with current idea-map (T2's startServer/loadAiConfig(env)); no implementation error; A2-U1 PASS (static)",
+      "errors": [],
+      "suggestions": [
+        "safety.ts resolve: audit safety_flag.resolved only when the conditional UPDATE changes one row (concurrent double resolve)"
+      ],
+      "disposition": "Sync and the audit fix sent to the A2 builder (session_017xAqLdhaHMuRWJHE4HsReH) with a test that two resolves write one audit (A2-S3). Coordinator also checked every open PR against idea-map b33ba4a+: A3 (#38) and T3 (#29) conflict too; A3's builder and a new T3 sync session (session_017xAqLeCMQJG9WKza3smeXF) are syncing. The other nine merge cleanly."
     }
   ]
 }

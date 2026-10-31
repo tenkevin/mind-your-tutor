@@ -55,8 +55,11 @@ export async function freshDatabase(): Promise<TestDatabase> {
  * connection's own privileges for the transaction.
  */
 export function appScope(db: Db): OrgScope {
-  return (orgId, fn) =>
-    db.transaction().execute(async (trx) => {
+  return (orgId, fn, options) =>
+    (options?.isolation
+      ? db.transaction().setIsolationLevel(options.isolation)
+      : db.transaction()
+    ).execute(async (trx) => {
       await sql`SET LOCAL ROLE ${sql.id(APP_ROLE)}`.execute(trx);
       await sql`SELECT set_config(${ORG_SETTING}, ${orgId}, true)`.execute(trx);
       return fn(trx);

@@ -5,18 +5,28 @@
   "type": "module",
   "exports": {
     ".": {
+      "@ideamap/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./personas": {
+      "@ideamap/source": "./src/personas.ts",
       "types": "./dist/personas.d.ts",
       "default": "./dist/personas.js"
+    },
+    "./backstop": {
+      "@ideamap/source": "./src/backstop.ts",
+      "types": "./dist/backstop.d.ts",
+      "default": "./dist/backstop.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@ideamap/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

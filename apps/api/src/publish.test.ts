@@ -193,12 +193,12 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     call(
       as,
       'POST',
-      `/versions/${versionId}/publish`,
+      `/api/versions/${versionId}/publish`,
       { class_ids: classIds },
       key ? { 'idempotency-key': key } : {},
     );
   const preview = (as: string, versionId: string, classIds: string[]) =>
-    call(as, 'POST', `/versions/${versionId}/preview`, { class_ids: classIds });
+    call(as, 'POST', `/api/versions/${versionId}/preview`, { class_ids: classIds });
 
   beforeAll(async () => {
     t = await freshDatabase();
@@ -264,7 +264,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
 
   it('C5-F2: before anything is published, every idea is listed as added', async () => {
     versionA = await draft(a, a.curriculumId, packA());
-    const res = await call('teacher', 'GET', `/versions/${versionA}/diff`);
+    const res = await call('teacher', 'GET', `/api/versions/${versionA}/diff`);
     expect(res.statusCode).toBe(200);
     const body = res.json<{
       from_version: unknown;
@@ -338,7 +338,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   it('C5-F1, F3, U1, S4: B’s diff against A, stable across requests and re-imports', async () => {
     versionB = await draft(a, a.curriculumId, packB());
     const get = async (id: string) => {
-      const res = await call('teacher', 'GET', `/versions/${id}/diff`);
+      const res = await call('teacher', 'GET', `/api/versions/${id}/diff`);
       expect(res.statusCode).toBe(200);
       return res.json<{ from_version: { id: string }; diff: Record<string, unknown[]> }>();
     };
@@ -376,9 +376,13 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     await t.db.deleteFrom('curriculum_version').where('id', '=', again).execute();
 
     // A against itself is empty, not an error.
-    const self = await call('teacher', 'GET', `/versions/${versionA}/diff`);
+    const self = await call('teacher', 'GET', `/api/versions/${versionA}/diff`);
     expect(self.json()).toMatchObject({ from_version: { id: versionA }, diff: { empty: true } });
-    const against = await call('teacher', 'GET', `/versions/${versionB}/diff?against=${versionA}`);
+    const against = await call(
+      'teacher',
+      'GET',
+      `/api/versions/${versionB}/diff?against=${versionA}`,
+    );
     expect(JSON.stringify(against.json<{ diff: unknown }>().diff)).toBe(text);
 
     // No student identifiers anywhere in the payload.
@@ -417,7 +421,9 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
   });
 
   it('C5-F7: rollback re-pins an earlier published version; drafts and archived are refused', async () => {
-    const res = await call('teacher', 'POST', `/classes/${ids.c1}/pin`, { version_id: versionA });
+    const res = await call('teacher', 'POST', `/api/classes/${ids.c1}/pin`, {
+      version_id: versionA,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
       pin: { class: { class_id: ids.c1, from_version_id: versionB, to_version_id: versionA } },
@@ -426,7 +432,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect((await version(versionB)).status).toBe('published');
 
     const aDraft = await draft(a, a.curriculumId, packA());
-    const toDraft = await call('teacher', 'POST', `/classes/${ids.c1}/pin`, {
+    const toDraft = await call('teacher', 'POST', `/api/classes/${ids.c1}/pin`, {
       version_id: aDraft,
     });
     expect(toDraft.statusCode).toBe(422);
@@ -439,7 +445,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       .set({ status: 'archived' })
       .where('id', '=', old)
       .execute();
-    const toArchived = await call('teacher', 'POST', `/classes/${ids.c3}/pin`, {
+    const toArchived = await call('teacher', 'POST', `/api/classes/${ids.c3}/pin`, {
       version_id: old,
     });
     expect(toArchived.statusCode).toBe(422);
@@ -638,7 +644,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect(other.statusCode).toBe(409);
     // Put class 1 and 2 back on A for the tests below.
     for (const c of [ids.c1!, ids.c2!]) {
-      await call('teacher', 'POST', `/classes/${c}/pin`, { version_id: versionA });
+      await call('teacher', 'POST', `/api/classes/${c}/pin`, { version_id: versionA });
     }
   });
 
@@ -708,13 +714,13 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     expect((await version(versionF)).status).toBe('draft');
 
     // Diffs: staff of the organization can read; students and other orgs can't.
-    expect((await call('nobody', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(401);
-    expect((await call('student', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(403);
-    expect((await call('b-admin', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(403);
-    expect((await call('author', 'GET', `/versions/${versionF}/diff`)).statusCode).toBe(200);
+    expect((await call('nobody', 'GET', `/api/versions/${versionF}/diff`)).statusCode).toBe(401);
+    expect((await call('student', 'GET', `/api/versions/${versionF}/diff`)).statusCode).toBe(403);
+    expect((await call('b-admin', 'GET', `/api/versions/${versionF}/diff`)).statusCode).toBe(403);
+    expect((await call('author', 'GET', `/api/versions/${versionF}/diff`)).statusCode).toBe(200);
     // Rollback follows the same rule.
     const pin = (as: string) =>
-      call(as, 'POST', `/classes/${ids.c1}/pin`, { version_id: versionA });
+      call(as, 'POST', `/api/classes/${ids.c1}/pin`, { version_id: versionA });
     expect((await pin('teacher2')).statusCode).toBe(403);
     expect((await pin('b-admin')).statusCode).toBe(403);
 
@@ -737,7 +743,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
     const wrong = await publishTo('teacher', versionA, [ids.classY!]);
     expect(wrong.statusCode).toBe(422);
     expect(
-      (await call('teacher', 'POST', `/classes/${ids.classY}/pin`, { version_id: versionA }))
+      (await call('teacher', 'POST', `/api/classes/${ids.classY}/pin`, { version_id: versionA }))
         .statusCode,
     ).toBe(422);
     expect(await pins()).toEqual(before);
@@ -862,6 +868,9 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       runs.push(ms);
     }
     runs.sort((x, y) => x - y);
-    expect(runs[2]).toBeLessThan(200);
+    expect(
+      runs[2],
+      `studentsReceiving median ${runs[2]!.toFixed(2)} ms, budget 200 ms (samples: ${runs.map((r) => r.toFixed(2)).join(', ')})`,
+    ).toBeLessThan(200);
   });
 });

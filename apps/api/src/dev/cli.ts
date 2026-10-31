@@ -1,13 +1,20 @@
 import { randomBytes } from 'node:crypto';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, migrateUp } from '@ideamap/db';
+import { createBoss, orgScope, registerWorkers } from '@ideamap/worker';
 import { loadConfig } from '../config.js';
-import { buildServer } from '../index.js';
+import { buildServer, startImports } from '../index.js';
 import { startMockIdp } from './mock-idp.js';
 import { mockProviders, SAMPLE_PROVIDERS, seedSample } from './sample.js';
 
 // `pnpm dev:auth`: one command for local sign-in (F5-U4). Migrates the local database,
 // seeds the sample orgs and users once, starts the mock identity provider and starts
-// the API wired to it. Then run the apps (`pnpm --filter @ideamap/teacher dev`).
+// the API wired to it, with curriculum imports and an import worker in this process (so
+// an upload goes all the way to a draft). Then run the apps
+// (`pnpm --filter @ideamap/teacher dev`).
 // Local only: secrets are random per run, and the database is the compose one.
 
 const databaseUrl =
@@ -48,7 +55,18 @@ for (const id of Object.keys(SAMPLE_PROVIDERS)) {
   env[`${key}CLIENT_SECRET`] = clientSecret;
 }
 const config = loadConfig(env);
-const app = buildServer({ db, config, logger: false });
+const uploadDir = process.env.UPLOAD_DIR ?? mkdtempSync(join(tmpdir(), 'ideamap-uploads-'));
+const { imports, stop: stopImports } = await startImports(db, databaseUrl, uploadDir);
+const workerBoss = createBoss(databaseUrl);
+workerBoss.on('error', (error) => console.error(error));
+await workerBoss.start();
+await registerWorkers({
+  boss: workerBoss,
+  scope: orgScope(db),
+  store: new FileObjectStore(uploadDir),
+  pollingIntervalSeconds: 1,
+});
+const app = buildServer({ db, config, logger: false, imports });
 await app.listen({ port: apiPort, host: 'localhost' });
 
 const users = Object.entries(mockProviders())
@@ -57,7 +75,7 @@ const users = Object.entries(mockProviders())
   )
   .join('\n');
 console.log(`Mock identity provider: ${idp.url}  (one issuer per provider: /google, /clever, /classlink)
-API: http://localhost:${apiPort}
+API: http://localhost:${apiPort}  (uploads in ${uploadDir})
 Apps: http://localhost:5173 (teacher), http://localhost:5174 (student); start them with
   pnpm --filter @ideamap/teacher dev   and   pnpm --filter @ideamap/student dev
 
@@ -68,6 +86,8 @@ Ctrl-C to stop.`);
 
 const stop = async () => {
   await app.close();
+  await stopImports();
+  await workerBoss.stop({ graceful: true });
   await idp.close();
   await db.destroy();
   process.exit(0);
