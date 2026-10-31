@@ -6,7 +6,59 @@ Direct cross-session messages are for urgent findings/actionable blockers, or a 
 
 > **Gate `MD` cleared by the user on 2026-10-23.** Tracing work follows D15–D30 and the §8 spec v1 exactly; see AGENTS.md.
 
-## Queue (snapshot 2026-10-28 04:15 UTC)
+> **Design-aspect failures (user, 2026-10-29):** a third QA failure on a design aspect defers that check to the design session (`docs/design/README.md` §7) and the task merges once every other must passes; functional, security, performance and privacy failures never defer. **S10 and F8 merged** 2026-10-29 (S10 squash `3ad9110`, F8 squash `eff7d02`, merge CI green; reports `reports/S10.md`, `reports/F8.md`). Formerly: **S10 merged** 2026-10-29 (squash `3ad9110`, merge CI green; report `reports/S10.md`). **Policy exception (user, 2026-10-29):** S10 #46 and F8 #47 get an independent **Claude** QA review and merge on its PASS, without waiting for Codex. Codex reviews them after merge on 2026-11-01; any Codex errors become `S10cx<n>` / `F8cx<n>` fix tasks as usual.
+
+> **Merges 2026-10-30 (coordinator, user-approved, one at a time, merge CI green after each, #52's included):** F1e `2d871d2` · M2 `c2b03a8` · M3 `73cb494` · S10c `889aa57` · design #50 `08375b7` · #51 `8d84d2f` · #52 `486f7b2`. Reports: `reports/F1e.md`, `M2.md`, `M3.md`, `S10c.md`, `design-50-52.md`. Syncs that needed resolving (M2 vs F1e timing tests, #51 after #50's squash, #52 vs S10c) are recorded in those reports and on the PRs. **Now unblocked but not started (building paused until Codex):** S1, M4, M5. Proposed M2b waits too.
+
+## Codex queue for 2026-11-01 (coordinator, 2026-10-30)
+
+Built so that each Codex run reviews a head that merges cleanly into `idea-map` and is green on CI, and so that the reviews which unblock the most work come first. **Before Codex starts**, the coordinator re-checks every head below for conflicts with `node scripts/qa-queue.mjs` and syncs any that conflict (user-approved 2026-10-30: the coordinator resolves mechanical conflicts itself on the PR branches; a conflict that needs task logic is left for the builder after Codex and noted here). Conflicts seen on 2026-10-30 were all in shared `index.ts`/`App.tsx` export lists, and the syncs are mechanical. A sync changes no task code (`git diff <reviewed> <head> -- <task paths>` is empty), so it keeps any PASS. Each review uses the PR's head at that time; check `docs/qa/STATUS.md` for it.
+
+**A. Pre-merge reviews, in this order** (each review is the PR's QA; it merges on PASS):
+
+| # | Task · PR | Unblocks (v0.1) | Merge check 2026-10-30 |
+|---|---|---|---|
+| 1 | C10 #43 Practice tab | S6, M8, C11, C14, C15 | clean |
+| 2 | C12 #44 two-layer graph | M8, C14, C17 | conflict (`packages/domain/src/index.ts`) |
+| 3 | A7 #36 anonymous layer | A8, A9, S4 | conflict (`apps/student/src/App.tsx`) |
+| 4 | A2 #37 student safety | A9, A11, S4 | clean |
+| 5 | A3 #38 library and RAG | A4, A11, C13, C15 | clean |
+| 6 | T3 #29 course details | T4 | conflict (`apps/api/src/index.ts`) |
+| 7 | A5 #35 persona evals | A10 | clean |
+| 8 | T8 #40 publish screen | L1 | clean |
+| 9 | T6 #41 data tabs | L1 | conflict (api and contracts index) |
+| 10 | A6 #42 draft approvals | L1 | conflict (contracts and domain index) |
+| 11 | C5cx2 #34, C6cx2 #39 (fix tasks) | L1 | clean |
+
+**B. Post-merge reviews** (merged on a user-approved Claude QA PASS; Claude QA covered structure, so Codex reviews them in full): S10 `3ad9110`, F8 `eff7d02`, S10b `9f0f771`, then F1e `2d871d2`, M2 `c2b03a8`, M3 `73cb494`, S10c `889aa57` and design #50 `08375b7`, #51 `8d84d2f`, #52 `486f7b2` (merge SHAs are recorded in the rows above as they land). Errors become `<ID>cx<n>` fix tasks as usual. Order: M2 and M3 first (S1, M4 and M5 build on them), then F1e, S10b, S10c, S10, F8 and the design PRs.
+
+**Reviewers start with `node scripts/qa-prep.mjs <PR>`** (docs/qa/README.md, "QA tooling"): it does the scratch merge, Postgres with pgvector, CI's steps and the report skeleton. With the new `.gitattributes`, C12 #44 and A6 #42 merge cleanly once synced locally, and T6 #41 keeps only its `apps/api/src/index.ts` conflict.
+
+**Known noise, not findings:** timing-only overruns under parallel load in domain C2-P2 and C3-P1/P2, and api F5-P1, beyond F1e's list. If they persist after F1e merges, the coordinator opens a fix task; reviewers re-run the package alone and record the result.
+
+> **Building paused until Codex reviews (user, 2026-10-30 18:45):** no new build or fix sessions (including the proposed M2b) until Codex has worked through the review queue (Codex returns 2026-11-01); too many reviews are piling up. F1e QA run 2 continues; F1e merges on PASS (already approved).
+
+> **QA run 2 verdicts (18:37):** **M2 #30 `66e10d7` STRUCTURAL PASS** (issuecomment-6530660821; non-structural 1, unbounded `at` that can fail a whole batch and retry forever, proposed to the user as fix task M2b). **M3 #31 `e602dcc` STRUCTURAL PASS** (issuecomment-6530666338; its note that raw `TrackerState` holds teacher-only fields is now must S1-S3). Both wait for the user's go-ahead and for idea-map to be green (F1e).
+
+> **QA run 2 (2026-10-30 18:30):** fix heads green on CI: F1e #45 `cf60a39` (CI green twice; T2-F2/F5/F7 20 of 20 under load), M2 #30 `66e10d7` (synced), M3 #31 `e602dcc` (S-1 fixed per §8.4 rule 5; N1, N2, N4 done; dangling-requires decision accepted, `82fd45b`). QA sessions: F1e full run `session_01KbXtJ72bgr1epcC1CaSaR2`, M2 structural `session_01KbXtJ6dJi3LHfHRLJKUH75`, M3 structural `session_01KbXtJ3jN1fw17TsJp45gf2`; each messages the coordinator when done. Fallback check-in `trig_0153od4jRSMc3b7cbeYYJR6E` at 19:20 UTC.
+
+> **M2 and M3 QA run 1 (2026-10-30 17:45):** **M2 #30 BLOCKED** (issuecomment-6529064212): 3 additive merge conflicts with idea-map (api index, student App.tsx, contracts index); nothing tested. Sync session `session_01KbXtJ3vuYGxCLLNarHJQec`. **M3 #31 STRUCTURAL FAIL** (issuecomment-6529188262): the tracker passed every M3 check, but its sticky unlocks (§7) and the domain's `mapStates` (S10b) could disagree after a publish (S-1). Resolved as a contract, ARCHITECTURE §8.4 rule 5 (`c07cf0b`), and must M3-F9. Fix session `session_01KbXtJ2bjLzk2Tkyc4Q6ZZF` also does N1, N2 and N4 (additive state-shape items S1 will consume). Both get a fresh structural QA run 2 when CI is green on their new heads.
+
+> **User directives (2026-10-30 17:25):** (1) **Claude QA for M2 #30 and M3 #31, focused on structural integrity**: structural errors that could collapse later work block the merge; smaller findings go to Codex (Nov 1). QA sessions: M2 `session_01KbXtJ3tUT8NeveW1McTk35`, M3 `session_01KbXtJ5TJRQPfJEZJBuRDmF`. Verdicts are STRUCTURAL PASS / STRUCTURAL FAIL / BLOCKED, and each PR's merge on that verdict still needs the user's go-ahead. (2) **The MLP is all of v0.1, target about 2 weeks** (around 2026-11-13; user, revised 17:40); no fixed pilot date; S6 requires vetted Practice items (C10); see `docs/ROADMAP.md`. (3) **Builders stay idle** until merges unblock M4, S1 and A9; no new build sessions until then.
+
+> **Coordinator handover (2026-10-30 17:00):** coordinator is now `session_01KbXtJ4C5cRRdJDCKn84ohK`; the earlier coordinator's sessions are not reachable from it. **F1e #45** at `531ad93` (CI green, behind docs only) still does not meet F1e-F9: `getCurriculumData` reorders READ COMMITTED reads instead of one snapshot. Change request posted (issuecomment-6528480435); Sonnet fixer `session_01KbXtJ4MG19qRoe65pjxdm7` works on the same branch. QA run 2 starts after its head goes green twice. **Design re-run (relayed by the user, 17:00):** the design QA again passed all three heads merged with `11d5bb7`, with no must regressing. Disclosed: on a machine about 2x slower, idea-page open measured 340 ms on merged map-smooth + idea-page (budget 300 ms), but 342 ms on the unchanged base in the same state, so it is attributed to the environment and not yet re-measured on normal hardware. The idea-page API still names far ideas until S10c #49 lands.
+
+> **Design PRs (2026-10-30 16:43):** independent Claude design QA (`session_017xAqLcNqdUxEoYFENFHR6U`) **PASS** on all three final heads: #50 map-emphasis `7aa9a7b`, #51 map-smooth `081fb1f` (stacked on #50), #52 idea-page `eafcbb5`. F8-P1 (1 recalc, 0 transitions with the pointer over the map) is fixed; S10b and D47 hold; full suite solo green except wall-clock flakes. The user approved merging them on this Claude QA (2026-10-30). They wait for idea-map to be green (F1e), in the order #50, #51, #52, after S10c #49.
+>
+> **Timing-test gaps for F1e (2026-10-30 16:15):** besides the tests F1e already hardens, CI has also flaked on connectors `storage.test.ts` zip bomb (F1e only changed `security.test.ts`), api `imports.test.ts` T2-F2/F5/F7 (newest-job race not fully fixed: T2-F5 failed once under load in F1e's QA), and domain `lock.test.ts` S10b-P1 (2,000 ideas under 5 ms, on #52). F1e must cover all of them before merge.
+>
+> ~~idea-map CI RED since 2026-10-30 02:39 UTC~~ **Resolved 2026-10-30 ~20:00: F1e merged as `2d871d2`, merge CI green; idea-map is green and merging resumes one PR at a time (report `reports/F1e.md`).** History: Three `pnpm test` failures on `9f0f771` (S10b merge) and `fe9479c`, each a known load-sensitive test: connectors `storage.test.ts` zip-bomb timing (×2) and api `imports.test.ts` T2-F2 (latest import read as null, the newest-job race). Every tree passes locally in CI order on a fresh database. Fix task **F1e #45** is under independent Claude QA (`session_017xAqLeYapB4WFhDLCfuKG7`); it needs the user's approval to merge on that review. Job logs are readable through the GitHub connector's `get_job_logs` (the `logs_url` downloads with curl).
+>
+> **S10b merged** 2026-10-30 (squash `9f0f771`, user-approved on Claude QA PASS; merge CI red as above, not S10b-specific). **S10c #49** (coordinator-written D47 leak fixes, user request) is under Claude QA (`session_017xAqLb4r7YvGMWBQtzre1s`). **Design branches** `design/map-emphasis`, `design/map-smooth`, `design/idea-page` (user's design session `session_017xAqLciuNohCywzAy8sdeo`) are under regression QA (`session_017xAqLcNqdUxEoYFENFHR6U`); map-smooth conflicts with S10b.
+
+## Queue (snapshot 2026-10-29 17:00 UTC)
+
+**Order (user, 2026-10-29):** fix tasks first (F1e, C5cx2, C6cx2), then **M2 and M3**, which unblock the student map (S1, M4 → S2), then C10 and C12 (they unblock the pilot pack C14–C17 and M8), then A3 (it unblocks C13 and C15), then the rest. Every PR below is v0.1. "Behind" counts are live as of this snapshot and are mostly docs commits; sync before merge, not before review.
 
 Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA report. Codex's runner excludes `packages/db/src/function_binding.test.ts`; the coordinator closes any full-suite must locally (Postgres 16 + pgvector, PR synced with current `idea-map`) before merging, as it did for F4cx1, F5 and A1.
 
@@ -14,21 +66,21 @@ Reviewer: **Codex**. A `Codex-*` file reviewing a PR's current head is its QA re
 
 | Priority | Task / PR | Head | Behind | Criteria (version) | Review history | Next action |
 |---|---|---|---|---|---|---|
-| 1 | C6cx1 #32 (agent-c6cx1) | `29b23ff` | 36 | `C6cx1.md` (2026-10-27) | None yet | Codex review; then sync and merge |
-| 2 | C5cx1 #33 (agent-c5cx1) | `7005308` | 35 | `C5cx1.md` (2026-10-27) | None yet | Codex review; then sync and merge |
-| 3 | C5cx2 #34 (agent-c5cx2) | `0c56a73` | 34 | `C5cx2.md` (2026-10-27) | None yet | Codex review; then sync and merge |
-| 4 | A2 #37 (agent-a2) | `bea1b71` | 0 | `A2.md` (2026-10-28: A2-S4 per-district flag window, D32) | Synced (one AI setup path: T2's `loadAiConfig(env)` + shared provider/moderation) and Codex's audit suggestion applied with tests (stale view, 4-way concurrent resolve → one audit); CI green | Codex review of `bea1b71` |
-| 5 | M2 #30 (agent-m2b) | `97018f5` | 0 | `M2.md` (2026-10-24) | Codex `Codex-M2-integration-38c0782-63855ef.md`: BLOCKED (conflicts). Synced by session_017xAqLf6Rjogb9biR2BjA9c: one backstop (A1's), routes and policies kept. Post-merge CI M2-P1 ran 316–980 ms p95 on a busy shared CI database; fix waits for autovacuum and CHECKPOINTs before measuring (bar unchanged): p95 8.5 ms client / 7.9 ms server on `97018f5` | Codex review of `97018f5` |
-| 6 | M3 #31 (agent-m3) | `a022010` | 45 | `M3.md` (2026-10-24) | None yet | Codex review |
-| 7 | T2 #27 (agent-t2) | `5caed4d` | 0 | `T2.md` (2026-10-24) | Claude QA run 1 FAIL at `41221d8` ([report](reports/T2-run1.md)); fixes pushed since. Sync session merged `idea-map` at `5caed4d` (CI green; A1 gateway folded into T2's `startServer`, import routes and F5 policies kept; see PR body) | Codex review of `5caed4d` |
-| 8 | T3 #29 (agent-t3) | `aa67890` | 0 | `T3.md` (2026-10-24) | Synced (shell holds T3's Course details and T2's Curriculum data; both CSS imports); CI green | Codex review of `aa67890` |
-| 9 | A7 #36 (agent-a7) | `cf41793` | 0 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
-| 10 | A5 #35 (agent-a5) | `49be775` | 4 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
-| 11 | A3 #38 (agent-a3) | `0ec9c58` | 0 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | Synced (T2's import tests and every route kept; dev CLI passes the hash embedder); D31 rework included; CI green | Codex review of `0ec9c58` |
-| 12 | C6cx2 #39 (agent-c6cx2) | `5b23c8b` | 10 | `C6cx2.md` (2026-10-28) | None yet. Canonical LF on import (`assemblePack`) and on export, so legacy CRLF packs export as a fresh import would store them; lone CR still refused in CSV (C6cx1); LibreOffice matrix run by the builder with ad hoc scripts (no soffice in CI) | Codex review (fix task: merge first) |
-| 13 | T8 #40 (agent-t8) | `18d6e07` | 3 | `T8.md` (2026-10-24) | None yet. New API route `GET /api/curricula/:id/publishing` (F5 policy, in the sweep). Rollback lists every other published version, earlier or newer (criteria say earlier); not browser-run | Codex review |
-| 14 | T6 #41 (agent-t6) | `0223f39` | 2 | `T6.md` (2026-10-24) | None yet. Mapping edits author/admin only; picker options from headers the newest import recorded; server-side paging (100 rows) | Codex review |
-| 15 | A6 #42 (agent-a6) | `0b0b1d4` | 1 | `A6.md` (2026-10-24) | None yet. Drafting runs in the API process (holds the key) via an injected writer; bypasses the student rate limiter, bounded by job concurrency 4; new student read route `GET /api/classes/:id/content`; library passages wait for A3 | Codex review |
+| 1 | **F1e #45 (fix task, merge first)** | `bccb5be` | 7 | `F1e.md` (2026-10-29) | None yet. Serial `pnpm test` (~5.5 min on 2 CPUs); new test-only `@ideamap/testing` best-of-N/median latency helper; no budgets changed, nothing skipped or retried; fixed `imports.test.ts` T2-F5 newest-job race; F1e-F6 (artificial delay on a real test) not run, helper self-tests instead. CI green twice on head; 10/10 loaded local runs | Codex review |
+| 2 | C5cx2 #34 (agent-c5cx2) | `0c56a73` | 83 | `C5cx2.md` (2026-10-27) | None yet | Codex review; then sync and merge |
+| 3 | C6cx2 #39 (agent-c6cx2) | `5b23c8b` | 37 | `C6cx2.md` (2026-10-28) | None yet. Canonical LF on import (`assemblePack`) and on export, so legacy CRLF packs export as a fresh import would store them; lone CR still refused in CSV (C6cx1); LibreOffice matrix run by the builder with ad hoc scripts (no soffice in CI) | Codex review (fix task: merge first) |
+| 4 | M2 #30 (agent-m2b) | `97018f5` | 35 | `M2.md` (2026-10-24) | Codex `Codex-M2-integration-38c0782-63855ef.md`: BLOCKED (conflicts). Synced by session_017xAqLf6Rjogb9biR2BjA9c: one backstop (A1's), routes and policies kept. Post-merge CI M2-P1 ran 316–980 ms p95 on a busy shared CI database; fix waits for autovacuum and CHECKPOINTs before measuring (bar unchanged): p95 8.5 ms client / 7.9 ms server on `97018f5` | Codex review of `97018f5` |
+| 5 | M3 #31 (agent-m3) | `a022010` | 94 | `M3.md` (2026-10-24) | None yet | Codex review |
+| 6 | C10 #43 (agent-c10) | `ea9ef53` | 10 | `C10.md` (2026-10-29) | None yet. Fixture Practice rows use a test-only `fixture` bank (production config reports them as errors); D40 columns optional in the parser so the data check blocks publishing with a located error; allow-list via `PRACTICE_SOURCES_FILE`; Practice is tab index 9. Earlier red CI not reproduced (likely timing, F1e) | Codex review |
+| 7 | C12 #44 (agent-c12) | `b84777d` | 8 | `C12.md` (2026-10-29, F1 corrected: `layer` sheet-only) | None yet. Uses existing `standard_codes`; `traceTargets` stops at mastered ideas; C3 parity expectations updated for the new fixture. `layer` now sheet-only (not a class override), CI green on `b84777d` | Codex review |
+| 8 | A3 #38 (agent-a3) | `0ec9c58` | 24 | `A3.md` (2026-10-28: A3-S3 tiered vault and class uploads, D31) | Synced (T2's import tests and every route kept; dev CLI passes the hash embedder); D31 rework included; CI green | Codex review of `0ec9c58` |
+| 9 | A2 #37 (agent-a2) | `bea1b71` | 24 | `A2.md` (2026-10-28: A2-S4 per-district flag window, D32) | Synced (one AI setup path: T2's `loadAiConfig(env)` + shared provider/moderation) and Codex's audit suggestion applied with tests (stale view, 4-way concurrent resolve → one audit); CI green | Codex review of `bea1b71` |
+| 10 | A7 #36 (agent-a7) | `cf41793` | 49 | `A7.md` (2026-10-28: A7-F10 ML NER, A7-F11 fails closed, D33) | None yet; builder reports every must plus F8/F9 met locally | Codex review |
+| 11 | A5 #35 (agent-a5) | `49be775` | 53 | `A5.md` (2026-10-24; D34 adds no check, baselines are an interim seed) | None yet | Codex review; after A2 merges, the builder replaces the stand-in guardrails with A2's |
+| 12 | A6 #42 (agent-a6) | `0b0b1d4` | 28 | `A6.md` (2026-10-24) | None yet. Drafting runs in the API process (holds the key) via an injected writer; bypasses the student rate limiter, bounded by job concurrency 4; new student read route `GET /api/classes/:id/content`; library passages wait for A3 | Codex review |
+| 13 | T3 #29 (agent-t3) | `aa67890` | 24 | `T3.md` (2026-10-24) | Synced (shell holds T3's Course details and T2's Curriculum data; both CSS imports); CI green | Codex review of `aa67890` |
+| 14 | T6 #41 (agent-t6) | `0223f39` | 29 | `T6.md` (2026-10-24) | None yet. Mapping edits author/admin only; picker options from headers the newest import recorded; server-side paging (100 rows) | Codex review |
+| 15 | T8 #40 (agent-t8) | `6f8a8f9` | 3 | `T8.md` (2026-10-24) | None yet. New API route `GET /api/curricula/:id/publishing` (F5 policy, in the sweep). **Coordinator change request 2026-10-29, done at `38ee4a4`, wording and test aligned at `6f8a8f9`:** publish routes now wired into `startServer` and `dev/cli.ts`, with `index.test.ts` asserting 401/403 (not 404); rollback offers earlier published versions only (user decision 2026-10-29, T8-F6), and the store refuses newer or current ones. CI green on head; builder's local full suite in CI order passed (function_binding 4/4); not browser-run | Codex review |
 
 **Built 2026-10-28** in four Sonnet cloud sessions (ids in HANDOFF §roles): A2 #37, A3 #38, A5 #35, A7 #36 (rows 4 and 9–11 above).
 

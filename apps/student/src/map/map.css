@@ -1,0 +1,588 @@
+/* The student map and idea page (S10). Nocturne tokens from @ideamap/ui; sizes in rem/em
+   so the browser's text size and the S5 "Words on the page" setting (--udl-scale) apply. */
+
+.student-main {
+  padding: var(--space-4) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.student-bar {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.student-brand {
+  font: var(--font-heading-weight) 1.1rem var(--font-heading);
+}
+.student-who {
+  color: var(--color-neutral-300);
+  font-size: 0.875rem;
+}
+
+.mscreen {
+  font-size: calc(0.9375rem * var(--udl-scale));
+}
+.mscreen-title {
+  font: var(--font-heading-weight) 1.4em/1.2 var(--font-heading);
+  margin: 0 0 var(--space-4);
+}
+.mscreen-title span {
+  color: var(--color-neutral-300);
+  font-size: 0.7em;
+}
+.mscreen-note {
+  color: var(--map-hint);
+  padding: var(--space-6) 0;
+}
+.mscreen-banner {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--map-banner-border);
+  border-radius: var(--radius-md);
+  background: var(--map-banner);
+  color: var(--map-banner-text);
+}
+
+.imap-wrap {
+  position: relative;
+}
+.imap {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  height: clamp(420px, 68vh, 680px);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 50%, var(--map-canvas-glow), var(--map-canvas) 60%);
+}
+.imap:active {
+  cursor: grabbing;
+}
+.imap-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+.imap-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.imap-ring {
+  fill: none;
+  stroke: var(--map-ring);
+  /* Dots rather than dashes: the rings guide the eye without drawing a hard edge. */
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 9;
+  opacity: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+.imap-edge path {
+  fill: none;
+  stroke: var(--map-link);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.imap-edge polygon {
+  fill: var(--map-link);
+}
+.imap-edge-hot path {
+  stroke: var(--map-link-active);
+  stroke-width: 2.5;
+}
+.imap-edge-hot polygon {
+  fill: var(--map-link-active);
+}
+/* A link between two locked ideas steps back: thinner and dashed. 70% strength keeps it
+   at 3:1 or more on the canvas, its glow and a card (WCAG 1.4.11). */
+.imap-edge-quiet path {
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+.imap-edge-quiet,
+.imap-edge-faded {
+  opacity: 0.7;
+}
+/* Forced colours (Windows high contrast) leave SVG strokes alone, so the quiet and faded
+   links would nearly vanish: draw every link in the system text colour at full strength.
+   The hot link still stands out by its thicker stroke and its label. */
+@media (forced-colors: active) {
+  .imap-edge line,
+  .imap-edge path {
+    stroke: CanvasText;
+  }
+  .imap-edge polygon {
+    fill: CanvasText;
+  }
+  .imap-edge-quiet,
+  .imap-edge-faded {
+    opacity: 1;
+  }
+}
+.imap-edge text {
+  fill: var(--map-link-label);
+  font-size: 13px;
+  paint-order: stroke;
+  stroke: var(--map-canvas);
+  stroke-width: 4px;
+}
+
+.imap-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+  color: var(--map-node-text);
+  font: 500 13px var(--font-body);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.imap-node:hover {
+  border-color: var(--map-node-hover-border);
+}
+.imap-node:focus-visible {
+  outline: 3px solid var(--map-focus);
+  outline-offset: 3px;
+  z-index: 2;
+}
+.imap-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.imap-cat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 400;
+}
+.imap-req {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--map-node-locked-text);
+}
+.imap-centre {
+  align-items: center;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font: 500 18px var(--font-heading);
+  background: var(--map-node-centre);
+  border-color: var(--map-node-centre-border);
+  box-shadow: 0 0 32px var(--map-node-centre-glow);
+}
+.imap-next,
+.imap-far {
+  background: var(--map-node-locked);
+  color: var(--map-node-locked-text);
+  cursor: not-allowed;
+}
+/* Next up: dashed, in the open border colour, with an arrow. */
+.imap-next {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: var(--map-node-open-border);
+}
+/* Further away: dotted, in the locked border colour, with a lock. */
+.imap-far {
+  border-style: dotted;
+  border-width: 2px;
+  border-color: var(--map-node-locked-border);
+}
+.imap-next:hover,
+.imap-far:hover,
+.imap-near {
+  border-color: var(--map-node-hover-border);
+}
+.imap-node:hover {
+  z-index: 1;
+}
+.imap-req-full {
+  display: none;
+}
+.imap-node:hover .imap-req-full,
+.imap-node:focus-visible .imap-req-full {
+  display: inline;
+}
+.imap-node:hover .imap-req-short,
+.imap-node:focus-visible .imap-req-short {
+  display: none;
+}
+
+/* Zoomed far out, card text is too small to read: one line with the lock, the title and
+   the category icon. Hover or focus shows the whole card. */
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-cat-name,
+.imap-compact .imap-node:not(.imap-centre):not(:hover):not(:focus-visible) .imap-req {
+  display: none;
+}
+
+.imap-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.imap-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+.imap-btn {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--map-node-open);
+}
+.imap-hint {
+  margin: 0;
+  font-size: 0.8125em;
+  color: var(--map-hint);
+}
+.imap-status {
+  min-height: 1.6em;
+  margin: var(--space-3) 0 0;
+  color: var(--map-heading);
+}
+
+.ipage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: var(--space-8);
+  overflow-wrap: anywhere;
+}
+.ipage-back {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-left: calc(-1 * var(--space-3));
+}
+/* The idea on the left, where it sits on the map on the right; one column when narrow. */
+.ipage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--space-8);
+  align-items: start;
+}
+.ipage-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 44rem;
+}
+.ipage-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ipage-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+.ipage-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+  color: var(--map-node-text);
+  font-size: 0.8125em;
+}
+.ipage-tag-icon {
+  display: inline-flex;
+}
+.ipage-title {
+  margin: 0;
+  font: var(--font-heading-weight) 2em/1.15 var(--font-heading);
+}
+.ipage-title:focus {
+  outline: none;
+}
+.ipage h2 {
+  margin: 0 0 var(--space-2);
+  font: var(--font-heading-weight) 1.05em var(--font-heading);
+  color: var(--map-heading);
+}
+.ipage h2.ipage-label,
+.ipage .ipage-label {
+  margin: 0 0 var(--space-1);
+  font: 500 0.75em var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--map-hint);
+}
+.ipage p {
+  margin: 0;
+  line-height: 1.6;
+}
+.ipage-quiet {
+  color: var(--map-hint);
+}
+/* The objective as a card with a target, as in the prototype. */
+.ipage-goal {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-goal-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--map-link-active);
+}
+.ipage-explain p {
+  max-width: 60ch;
+  font-size: 1.0625em;
+}
+.ipage-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ipage-terms li {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--map-term);
+  border: 1px solid var(--map-term-border);
+}
+.ipage-media {
+  display: grid;
+  place-items: center;
+  min-height: 11rem;
+  padding: var(--space-6);
+  border: 1px dashed var(--map-placeholder-border);
+  border-radius: var(--radius-lg);
+  background: var(--map-placeholder);
+  color: var(--map-placeholder-text);
+  text-align: center;
+}
+/* "How it connects": what leads in, this idea, and what it leads to, left to right
+   (top to bottom on a phone), on a patch of the map's own canvas. */
+.ipage-connects {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 50%, var(--map-canvas-glow), var(--map-canvas) 75%);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-connects > h2 {
+  grid-column: 1 / -1;
+}
+.ipage-from {
+  grid-column: 1;
+}
+.ipage-connects > .ipage-here {
+  grid-column: 2;
+  justify-self: center;
+}
+.ipage-to {
+  grid-column: 3;
+}
+.ipage-conn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ipage-conn li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-rel {
+  color: var(--map-hint);
+  font-size: 0.875em;
+  font-style: italic;
+}
+.ipage-here {
+  align-self: center;
+  padding: var(--space-2) var(--space-6);
+  border-radius: 999px;
+  background: var(--map-node-centre);
+  border: 1px solid var(--map-node-centre-border);
+  box-shadow: 0 0 24px var(--map-node-centre-glow);
+  font: var(--font-heading-weight) 1em var(--font-heading);
+}
+/* Where Ms. Ivy's chat arrives (S4): a card only, no input until it works. */
+.ipage-tutor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-open);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage-tutor-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ipage-tutor-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--map-node-centre);
+  border: 1px solid var(--map-node-centre-border);
+  color: var(--map-link-active);
+}
+.ipage .ipage-tutor-name {
+  margin: 0;
+  color: var(--map-node-text);
+}
+.ipage .ipage-tutor-role {
+  color: var(--map-hint);
+  font-size: 0.875em;
+}
+.ipage-tutor-note {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--map-node-locked);
+  border: 1px solid var(--map-node-open-border);
+}
+.ipage .ipage-tutor-soon {
+  align-self: flex-start;
+  padding: 2px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--map-placeholder-border);
+  color: var(--map-hint);
+  font-size: 0.8125em;
+}
+@media (max-width: 860px) {
+  .ipage-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+@media (max-width: 640px) {
+  .ipage-connects {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ipage-from,
+  .ipage-connects > .ipage-here,
+  .ipage-to {
+    grid-column: 1;
+  }
+}
+
+/* Moving between the map and an idea: the page grows out of the card that was opened,
+   and the map fades back in. A slow load shows "Loading…" only after a moment, so a fast
+   one doesn't flash it. All off with reduced motion or Calm screen (udl.css). */
+@media (prefers-reduced-motion: no-preference) {
+  .ipage {
+    transform-origin: var(--ipage-from-x, 50%) var(--ipage-from-y, 0);
+    animation: ipage-open 280ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .mscreen-map:not([hidden]) {
+    animation: mscreen-fade 240ms ease-out backwards;
+  }
+  .mscreen-wait {
+    animation: mscreen-fade 200ms ease-out 250ms backwards;
+  }
+}
+@keyframes ipage-open {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes mscreen-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-main {
+    padding: var(--space-3);
+  }
+}
+/* Motion, all off with reduced motion or Calm screen (udl.css).
+   Colour transitions sit only on the card under the pointer or keyboard (F8: never at
+   rest). The card the pointer has just left (.imap-leaving, for 200 ms) eases only its
+   lift back down. Links fade by opacity only, which a theme change never touches. So a
+   theme switch, even with the pointer on the map, starts no transitions and stays one
+   style recalculation (F8-P1). */
+@media (prefers-reduced-motion: no-preference) {
+  .imap-node:hover,
+  .imap-node:focus-visible {
+    transition:
+      border-color 160ms ease-out,
+      transform 160ms ease-out;
+  }
+  .imap-node.imap-leaving {
+    transition: transform 160ms ease-out;
+  }
+  .imap:hover .imap-edge {
+    transition: opacity 160ms ease-out;
+  }
+  /* An open card lifts a little under the pointer; a locked one stays put. */
+  .imap-node:not(.imap-next):not(.imap-far):hover {
+    transform: translate(-50%, -50%) translateY(-2px);
+  }
+  /* Zoom buttons, Fit and keyboard moves glide; drag, wheel and pinch stay direct. */
+  .imap-world-glide {
+    transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* The map arrives from the centre outwards: centre, then each ring, then the links. */
+  .imap-node {
+    animation: imap-arrive 380ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(var(--ring, 0) * 90ms);
+  }
+  .imap-svg {
+    animation: imap-fade 520ms ease-out 140ms backwards;
+  }
+}
+@keyframes imap-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+@keyframes imap-fade {
+  from {
+    opacity: 0;
+  }
+}

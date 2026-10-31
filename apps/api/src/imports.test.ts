@@ -229,12 +229,19 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     const importB = async (body: Buffer, name: string) => {
       const res = await post('b-teacher', b.curriculumId, body, { 'x-file-name': name });
       expect(res.statusCode, res.body).toBe(202);
+      // Wait for this upload's job, not an earlier one that is still the newest (F1e).
+      const { job: queued } = res.json<{ job: { id: string } }>();
       const until = Date.now() + 20_000;
       for (;;) {
         const data = CurriculumDataResponseSchema.parse(
           (await latest('b-teacher', b.curriculumId)).json(),
         );
-        if (data.job?.status === 'succeeded' || data.job?.status === 'failed') return data;
+        if (
+          data.job?.id === queued.id &&
+          (data.job.status === 'succeeded' || data.job.status === 'failed')
+        ) {
+          return data;
+        }
         if (Date.now() > until) throw new Error('import did not finish');
         await new Promise((resolve) => setTimeout(resolve, 100));
       }

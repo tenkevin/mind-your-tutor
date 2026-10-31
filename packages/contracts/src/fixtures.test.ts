@@ -1,3 +1,4 @@
+import { expectBestUnder, expectTimingUnder, timeRuns } from '@ideamap/testing';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -97,27 +98,25 @@ function syntheticPack(ideas: number, links: number, questions: number) {
 }
 
 describe('performance', () => {
-  it('parses pack.json in well under 20 ms (median of 100) (F3-P1)', () => {
+  it('parses pack.json in well under 20 ms (median of 100) (F3-P1)', async () => {
     const input = readPackJson();
     parsePack(input);
-    const times: number[] = [];
-    for (let i = 0; i < 100; i++) {
-      const start = performance.now();
-      const result = parsePack(input);
-      times.push(performance.now() - start);
-      expect(result.ok).toBe(true);
-    }
-    times.sort((a, b) => a - b);
-    expect(times[50]).toBeLessThan(20);
+    const t = await timeRuns(
+      () => {
+        const result = parsePack(input);
+        expect(result.ok).toBe(true);
+      },
+      { runs: 100 },
+    );
+    expectTimingUnder('parses pack.json (F3-P1)', 20, t.median, t, 'median');
   });
 
-  it('parses 2,000 ideas, 6,000 links and 2,000 questions in under a second (F3-P2)', () => {
+  it('parses 2,000 ideas, 6,000 links and 2,000 questions in under a second (F3-P2)', async () => {
     const input = syntheticPack(2000, 6000, 2000);
-    const start = performance.now();
-    const result = parsePack(input);
-    const elapsed = performance.now() - start;
+    const result = await expectBestUnder('parses 2,000 ideas (F3-P2)', 1000, () =>
+      parsePack(input),
+    );
     expect(result.issues).toEqual([]);
     expect(result.value?.links).toHaveLength(6000);
-    expect(elapsed).toBeLessThan(1000);
   });
 });

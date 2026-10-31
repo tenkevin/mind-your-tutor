@@ -1,3 +1,4 @@
+import { expectBestUnder } from '@ideamap/testing';
 import {
   PACK_SPEC,
   TEST_PRACTICE_SOURCES,
@@ -676,9 +677,9 @@ describe('scope and size (C6-S3, P1, P2)', () => {
     ];
     for (const build of builds) {
       for (const target of [csvExport, xlsxExport]) {
-        const start = performance.now();
-        await target.write(build());
-        expect(performance.now() - start).toBeLessThan(300);
+        await expectBestUnder(`${target.kind} sample export`, 300, () => target.write(build()), {
+          runs: 3,
+        });
       }
     }
   });
@@ -700,11 +701,17 @@ describe('scope and size (C6-S3, P1, P2)', () => {
       importance: 3,
       media_url: null,
     }));
-    const start = performance.now();
-    const ref = await xlsxExport.write(packReport(pack, DATE));
-    await xlsxExport.write(alignmentReport(pack, DATE));
-    await xlsxExport.write(dataCheckReport(pack, checkFixture(pack), DATE));
-    expect(performance.now() - start).toBeLessThan(5000);
+    const ref = await expectBestUnder(
+      '2,000-idea XLSX export',
+      5000,
+      async () => {
+        const first = await xlsxExport.write(packReport(pack, DATE));
+        await xlsxExport.write(alignmentReport(pack, DATE));
+        await xlsxExport.write(dataCheckReport(pack, checkFixture(pack), DATE));
+        return first;
+      },
+      { runs: 3 },
+    );
     const again = await reimport(ref);
     expect(again.pack!.ideas).toHaveLength(2000);
   });

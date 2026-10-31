@@ -690,6 +690,9 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
       runs.push(ms);
     }
     runs.sort((x, y) => x - y);
-    expect(runs[2]).toBeLessThan(200);
+    expect(
+      runs[2],
+      `studentsReceiving median ${runs[2]!.toFixed(2)} ms, budget 200 ms (samples: ${runs.map((r) => r.toFixed(2)).join(', ')})`,
+    ).toBeLessThan(200);
   });
 });
