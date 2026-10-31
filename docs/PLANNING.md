@@ -8,12 +8,12 @@ How Idea Map work is planned, made ready, built, reviewed and finished. For coor
 
 v0.1 is the minimum lovable product (user, 2026-10-30). It is done when every slice below is done and L1 (two classes share the Water Cycle; Kinematics runs Practice and trace-back) passes.
 
-| Slice | When it's done… | Tasks still open on 2026-10-30 |
+| Slice | When it's done… | Tasks still open on 2026-10-31 |
 |---|---|---|
 | A · Teacher publishes | a teacher imports, checks, configures and publishes a curriculum to classes | T3 T6 T8 A6 C5cx2 C6cx2 |
-| B · Student sees progress | a student's map shows their own live progress from tracker events | S1 M4 S2 C7 |
+| B · Student sees progress | a student takes quizzes and their map shows their own live progress from tracker events | S1 M4 S2 S2q M10 C7 |
 | C · Learn an idea | a student opens an idea and practises vetted items, and a failure traces back to its cause | C10 C12 C13 C14 C15 C16 C17 C11 M8 S6 S9 |
-| D · Ms. Ivy tutors safely | a student asks Ms. Ivy and gets grounded, safe, anonymised help | A2 A3 A5 A7 A8 A11 S4 |
+| D · Ms. Ivy and Milo | a student gets grounded, safe, anonymised help from Ms. Ivy, and teaches Milo at the end of a unit | A2 A3 A5 A7 A8 A11 S4 S4m S4t |
 | E · Teacher steers and sees | a teacher sets due dates and missions, asks Atlas, and sees timelines and diagnostics | T4 S3 A4 M5 M9 |
 | F · Feedback is fair | feedback is explained, challengeable, checked before sending and audited for fairness | A9 A10 M6 |
 | Pilot | the pilot runs | L1 |

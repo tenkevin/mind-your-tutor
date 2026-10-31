@@ -307,7 +307,7 @@
         "C5",
         "S1"
       ],
-      "done_when": "Publishing carries mastery over by idea_id and archives removed ideas, covered by tests",
+      "done_when": "Per §7: publishing archives ideas a new version removes (kept in snapshots and teacher views, out of the student's map) and lets the teacher choose whether a changed unit's teach-back reopens; mastery and unlocks carry over through tracker replay by idea_id (M3, §8.4 rule 5), covered by tests",
       "placeholder": false,
       "status": "todo",
       "owner": null,
@@ -716,7 +716,8 @@
         "S2",
         "A2",
         "A7",
-        "A8"
+        "A8",
+        "A11"
       ],
       "done_when": "Ms. Ivy and Milo chats call the gateway with safety on",
       "placeholder": false,
@@ -771,7 +772,11 @@
         "S9",
         "S10",
         "F8",
-        "S10b"
+        "S10b",
+        "S2q",
+        "S4t",
+        "S4m",
+        "M10"
       ],
       "done_when": "Two pilot classes share the Water Cycle (primary, conceptual) through import, publish, a student run and teach-back, and a Kinematics sub-pilot (procedural) runs the Practice and trace-back path (D42)",
       "placeholder": false,
@@ -875,7 +880,8 @@
         "A2",
         "M2",
         "A7",
-        "S5"
+        "S5",
+        "S4t"
       ],
       "done_when": "Per D15: formative feedback reaches the student with its reason and the rubric or key point it rests on, plus Challenge this; summative feedback waits for teacher approval or edit; challenges and rulings reach the teacher's queue; teacher rulings are stored as labelled examples per curriculum and question and retrieved for later feedback, never used for model training; feedback.shown, challenged and ruled events are recorded; per D30, feedback.ruled and teacher.feedback.approved/edited carry the acting teacher's pseudonymous id, and example retrieval weighs each teacher's contributions equally",
       "placeholder": false,
@@ -1000,7 +1006,8 @@
       "size": 1,
       "deps": [
         "A2",
-        "A3"
+        "A3",
+        "A5"
       ],
       "done_when": "Per D35, Ms. Ivy answers factual questions only from verified assets, citing the passage; when none covers the question she states that and guides the student's reasoning with questions instead of stating facts. Covered by A5 eval cases",
       "placeholder": false,
@@ -1520,6 +1527,66 @@
       "version": "0.1",
       "owner": "coordinator",
       "updated": "2026-10-30"
+    },
+    {
+      "id": "S2q",
+      "title": "Map quiz player with a plain hint",
+      "size": 1,
+      "deps": [
+        "S2"
+      ],
+      "done_when": "Per §8.2 and §8.3: a student takes an open idea's C3 quiz from the class's pinned version (the class quiz length), answers are checked on the server, and quiz.started, quiz.answered and quiz.finished are sent; a plain hint button records hint.requested and shows the idea's key point from the pinned version, with no AI (graded hints stay v0.2, A15); mastery shown comes from the tracker; a locked idea can't be quizzed",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-31",
+      "version": "0.1"
+    },
+    {
+      "id": "M10",
+      "title": "Milo stage rule (rulesVersion 2)",
+      "size": 1,
+      "deps": [
+        "M3"
+      ],
+      "done_when": "Per §8.3 (Milo stage) and D48: the tracker computes Milo's knowledge (mastered ideas + 3 × units whose latest teachback.judged is pass) and stage (1 Curious newbie at 0, 2 Getting it at 3, 3 Thinker at 7, 4 Scholar at 12) in rulesVersion 2, shared with M8, as pure deterministic replay with property tests; it's in the student view, and rulesVersion 1 outputs are unchanged",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-31",
+      "version": "0.1"
+    },
+    {
+      "id": "S4m",
+      "title": "Milo character: Soul file, skills and guardrails",
+      "size": 2,
+      "deps": [
+        "A2",
+        "A5",
+        "M10"
+      ],
+      "done_when": "Per D48 and D13: the built-in Milo in packages/ai is a Soul file (identity, voice, values, boundaries), skills (the teach-back answer checker with a structured verdict per key point, plus reactions to his stage) and guardrails (A2's fixed ones plus never giving answers away); Milo's context holds only the student's own tracker outputs (stage, unit, mastered ideas), never teacher-only signals or names; persona overrides change only his name and personality wording; A5 eval cases cover his voice and guardrails per grade band",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-31",
+      "version": "0.1"
+    },
+    {
+      "id": "S4t",
+      "title": "Teach Milo: the end-of-unit teach-back",
+      "size": 2,
+      "deps": [
+        "S4",
+        "S4m",
+        "A6"
+      ],
+      "done_when": "Per §8.2, §8.3 and D48: when every idea in a unit is mastered, the student teaches Milo the unit's approved assessment questions; Milo's checker judges each answer, the output is stored with ai.output_shown, and teachback.done (typed text in InteractionText, anonymised by A7) and teachback.judged (pass or retry, with key points hit) are recorded; the student sees Milo's reaction and what was missing; unit completion and Milo's stage come from the tracker; a teacher can reopen a teach-back only by choice (§7)",
+      "placeholder": false,
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-31",
+      "version": "0.1"
     }
   ],
   "versions": [
