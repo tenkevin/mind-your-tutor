@@ -368,11 +368,19 @@ describe.skipIf(!hasDatabase)('audit log (F6-F5, F6-F6, F6-S2, F6-U2)', () => {
     });
     const row = await latestAudit(t.db, a.orgId, 'class_config.updated');
     expect(JSON.stringify(row)).not.toMatch(/live-secret-123|sk-abc/);
-    expect(row!.detail.changed).toContain('config.connector');
-    expect(row!.after!['config.connector']).toEqual({
-      kind: 'drive',
-      client_secret: '[redacted]',
-      apiKey: '[redacted]',
+    // Nested objects are compared down to their leaves (0021), and each leaf path is
+    // redacted by its last segment.
+    expect(row!.detail.changed).toEqual(
+      expect.arrayContaining([
+        'config.connector.apiKey',
+        'config.connector.client_secret',
+        'config.connector.kind',
+      ]),
+    );
+    expect(row!.after).toMatchObject({
+      'config.connector.kind': 'drive',
+      'config.connector.client_secret': '[redacted]',
+      'config.connector.apiKey': '[redacted]',
     });
 
     await withOrg(app, a.orgId, async (trx) => {
@@ -825,7 +833,7 @@ describe.skipIf(!hasDatabase)('audit redaction of flattened paths (QA F6-E2)', (
     const [, created, updated, deleted] = rows;
     expect(created!.after).toMatchObject({ config: { token: '[redacted]', input_tokens: 5 } });
     expect(updated!.detail.changed).toEqual([
-      'config.course',
+      'config.course.pass_mark',
       'config.input_tokens',
       'config.token',
     ]);

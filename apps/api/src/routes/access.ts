@@ -9,7 +9,8 @@ import {
 import { parseOneRoster, RosterError } from '@ideamap/connectors';
 import { json } from '@ideamap/db';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
+import { courseValue } from '@ideamap/domain';
+import { loadClassCourse } from '../course.js';
 import { audit } from '../db.js';
 import { ALL_ROLES, type PolicyDeps } from '../policy.js';
 import { importRoster } from '../roster.js';
@@ -79,38 +80,17 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
   });
 
   // The teacher console header (T1): staff only, and only for a class they may see.
+  // Subject and topic are the class's effective values, as Course details shows them.
   app.get<ClassParams>('/api/classes/:classId/header', { config: classPolicy() }, async (req) => {
     const classId = req.params.classId;
-    const header = await req.withOrg(async (trx) => {
-      const klass = await trx
-        .selectFrom('class as c')
-        .leftJoin('class_config as cc', 'cc.class_id', 'c.id')
-        .leftJoin('curriculum_defaults as d', 'd.curriculum_id', 'c.curriculum_id')
-        .select(['c.name', 'c.curriculum_id', 'cc.config as classConfig', 'd.config as defaults'])
-        .where('c.id', '=', classId)
-        .executeTakeFirstOrThrow();
-      // The published version if there is one, else the newest draft.
-      const version = await trx
-        .selectFrom('curriculum_version')
-        .select(['pack'])
-        .where('curriculum_id', '=', klass.curriculum_id)
-        .orderBy(sql`published_at is null`)
-        .orderBy('number', 'desc')
-        .limit(1)
-        .executeTakeFirst();
-      return { klass, course: version?.pack.course ?? null };
-    });
-    const { klass, course } = header;
-    const pick = (field: 'subject' | 'topic') =>
-      klass.classConfig?.course?.[field] ??
-      klass.defaults?.course?.[field] ??
-      course?.[field] ??
-      null;
+    const { role, userId } = req.session!;
+    const course = await req.withOrg((trx) => loadClassCourse(trx, classId, { role, userId }));
+    const { className, details } = course!;
     return {
       classId,
-      className: klass.name,
-      subject: pick('subject'),
-      topic: pick('topic'),
+      className,
+      subject: courseValue(details.fields, 'subject'),
+      topic: courseValue(details.fields, 'topic'),
     } satisfies ClassHeaderResponse;
   });
 
@@ -123,7 +103,7 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
       const { orgId, userId } = req.session!;
       const classId = req.params.classId;
       const config: ClassConfig = parsed.data;
-      const now = at();
+      // The audit trigger records the change field by field (0015, 0021; T3).
       await req.withOrg(async (trx) => {
         await trx
           .insertInto('class_config')
@@ -132,14 +112,6 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
             oc.column('class_id').doUpdateSet({ config: json(config), updated_by: userId }),
           )
           .execute();
-        await audit(trx, {
-          orgId,
-          actorId: userId,
-          action: 'class_config.update',
-          targetType: 'class',
-          targetId: classId,
-          at: now,
-        });
       });
       return { config };
     },
@@ -280,7 +252,7 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
       const { orgId, userId } = req.session!;
       const curriculumId = req.params.curriculumId;
       const config = parsed.data;
-      const now = at();
+      // The audit trigger records the change field by field (0015, 0021; T3).
       await req.withOrg(async (trx) => {
         await trx
           .insertInto('curriculum_defaults')
@@ -294,14 +266,6 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
             oc.column('curriculum_id').doUpdateSet({ config: json(config), updated_by: userId }),
           )
           .execute();
-        await audit(trx, {
-          orgId,
-          actorId: userId,
-          action: 'curriculum_defaults.update',
-          targetType: 'curriculum',
-          targetId: curriculumId,
-          at: now,
-        });
       });
       return { config };
     },

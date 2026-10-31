@@ -13,6 +13,8 @@ export interface Section {
   heading: string;
   icon: SectionIcon;
   summary: string;
+  /** A tag beside the heading, as in the design. */
+  tag?: string;
 }
 
 export const SECTIONS: readonly Section[] = [
@@ -29,7 +31,9 @@ export const SECTIONS: readonly Section[] = [
     label: 'Course details',
     heading: 'Course details',
     icon: 'cap',
-    summary: 'Subject, topic, grade and pass mark for this class.',
+    summary:
+      'Subject, map title, grade, standards framework and whole-map objective for this class.',
+    tag: 'Editable here',
   },
   {
     id: 'sec-personas',

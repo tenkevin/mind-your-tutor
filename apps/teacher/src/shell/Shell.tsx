@@ -117,7 +117,10 @@ export function Shell({
         )}
         {SECTIONS.map((s) => (
           <section key={s.id} id={s.id} className="tshell-section" aria-labelledby={`${s.id}-h`}>
-            <h2 id={`${s.id}-h`}>{s.heading}</h2>
+            <div className="tshell-heading">
+              <h2 id={`${s.id}-h`}>{s.heading}</h2>
+              {s.tag && <span className="tag tag-outline">{s.tag}</span>}
+            </div>
             <p className="tshell-summary">{s.summary}</p>
             {content[s.id]}
           </section>

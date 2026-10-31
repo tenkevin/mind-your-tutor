@@ -20,6 +20,7 @@ import { createProviders, type IdentityProvider } from './providers.js';
 import { accessRoutes } from './routes/access.js';
 import { studentMapRoutes } from './routes/student-map.js';
 import { authRoutes } from './routes/auth.js';
+import { courseRoutes } from './routes/course.js';
 import { publishRoutes, type PublishRoutesOptions } from './publish.js';
 import { deriveKeys } from './tokens.js';
 
@@ -93,6 +94,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   );
   authRoutes(app, { ...deps, providers });
   accessRoutes(app, deps);
+  courseRoutes(app);
   studentMapRoutes(app);
   // Students' learning events (M2).
   eventRoutes(app, deps, options.events);

@@ -415,6 +415,31 @@ describe('save state (T1-F4)', () => {
     expect(client.saveState()).toBe('saved');
   });
 
+  it('reads Saved once a reset is accepted after a refused edit of the same field', async () => {
+    const { held, fetchFn } = heldServer();
+    const { client } = await started(fetchFn);
+    const refused = client.send('PUT', '/api/classes/x/course/topic', { value: 'x' });
+    held[0]!.resolve(new Response('{}', { status: 400 }));
+    await refused;
+    expect(client.saveState()).toBe('unsaved');
+    const reset = client.send('DELETE', '/api/classes/x/course/topic');
+    held[1]!.resolve(new Response('{}', { status: 200 }));
+    await reset;
+    expect(client.saveState()).toBe('saved');
+  });
+
+  it('keeps a failure to another URL after an accepted reset', async () => {
+    const { held, fetchFn } = heldServer();
+    const { client } = await started(fetchFn);
+    const refused = client.send('PUT', '/api/classes/x/course/topic', { value: 'x' });
+    held[0]!.resolve(new Response('{}', { status: 400 }));
+    await refused;
+    const reset = client.send('DELETE', '/api/classes/x/course/subject');
+    held[1]!.resolve(new Response('{}', { status: 200 }));
+    await reset;
+    expect(client.saveState()).toBe('unsaved');
+  });
+
   it('reads Saving during a replay of kept edits, then Saved', async () => {
     const { held, fetchFn } = heldServer();
     const store = memoryStore();

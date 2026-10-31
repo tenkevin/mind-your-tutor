@@ -1,0 +1,76 @@
+/* Course details (T3), after the section in project/Teacher Settings.dc.html. Every
+   value is a Nocturne token, or the prototype's own size where Nocturne has no token.
+
+   New pairs, all on --color-bg (D10: no new exceptions): the origin tags are the
+   design system's tag-neutral (9.20:1) and tag-accent (9.42:1); the hint line is
+   neutral-400 (8.75:1); an error is accent-2-200 text with a warning icon (14.28:1),
+   and the field it is about gets an accent-2-200 border (14.28:1, needs 3:1). */
+
+.course {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.course-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 5px;
+}
+/* The label sits in the row, so the row, not the label, keeps the field's spacing. */
+.course-field > .course-label-row > label {
+  display: inline;
+  margin: 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.course-origin {
+  padding: 1px 8px;
+}
+.course-reset {
+  padding-block: 0;
+  font-size: 12px;
+}
+textarea.course-objective {
+  min-height: 54px;
+  resize: vertical;
+  font-family: var(--font-body);
+}
+.course-field .input[aria-invalid='true'] {
+  border-color: var(--color-accent-2-200);
+}
+.course-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--color-accent-2-200);
+}
+.course-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-neutral-400);
+}
+.course-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.course-target legend {
+  float: left;
+  padding: 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
