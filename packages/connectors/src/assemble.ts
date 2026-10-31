@@ -13,7 +13,7 @@ import {
   type TabName,
 } from '@ideamap/contracts';
 import { error, fromPackIssue, info, warning } from './issues.js';
-import { mapCourse, mapRows, type MappedTab } from './mapping.js';
+import { canonicalLineEndings, mapCourse, mapRows, type MappedTab } from './mapping.js';
 import type { RawCell, RawSheet } from './types.js';
 
 // Turns mapped rows into a pack through the F3 contracts, applying the spec's
@@ -324,11 +324,22 @@ function missingColumns(tab: RowTab, mapped: MappedTab, sheet: RawSheet, out: As
   }
 }
 
+/** The sheet with line endings made canonical (LF). */
+function canonicalSheet(sheet: RawSheet): RawSheet {
+  return {
+    ...sheet,
+    grid: sheet.grid.map((cells) =>
+      cells.map((cell) => (typeof cell === 'string' ? canonicalLineEndings(cell) : cell)),
+    ),
+  };
+}
+
 /** Builds the pack from the tabs found in the upload. */
 export function assemblePack(
-  sheets: ReadonlyMap<TabName, RawSheet>,
+  rawSheets: ReadonlyMap<TabName, RawSheet>,
   mapping: readonly ColumnMappingEntry[],
 ): Assembled {
+  const sheets = new Map([...rawSheets].map(([tab, sheet]) => [tab, canonicalSheet(sheet)]));
   const out: Assembled = { pack: null, issues: [], used: [], rows: {} };
   const course = parseCourse(sheets.get('Course'), mapping, out);
   const tabs: Partial<Record<RowTab, unknown[]>> = {};
