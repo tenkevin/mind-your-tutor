@@ -1,0 +1,10 @@
+<script type="module">
+import { BertNer } from './ner-model.js';
+const bytes = await (await fetch('./ner-bert-tiny-v1.bin')).arrayBuffer();
+const t0 = performance.now();
+const m = BertNer.load(bytes);
+window.loadMs = performance.now() - t0;
+const text = ('Yesterday my friend Maya and I walked to Lincoln Elementary School on Birch Street and talked about how rain forms, how Real Madrid won, and the water cycle. ').repeat(4).slice(0, 500);
+window.run = (n) => { for (let i = 0; i < 3; i++) m.predict(text); const t = performance.now(); for (let i = 0; i < n; i++) m.predict(text); return (performance.now() - t) / n; };
+window.ready = true;
+</script>

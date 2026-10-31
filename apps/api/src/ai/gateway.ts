@@ -260,7 +260,7 @@ export function aiRoutes(
     // and the turns.
     const blurred = backstop.blur(
       [fill(context.course, context.persona), ...kept.map((t) => t.text)],
-      { names: context.names, identifiers: context.identifiers },
+      { names: context.names, identifiers: context.identifiers, allow: [context.persona.name] },
     );
     const [system, ...texts] = blurred.texts as [string, ...string[]];
     const messages: ModelTurn[] = kept.map((t, i) => ({
@@ -288,8 +288,11 @@ export function aiRoutes(
 
     // The stored reply is blurred too, in case the model echoed an identifier.
     const storedReply = result
-      ? backstop.blur([result.text], { names: context.names, identifiers: context.identifiers })
-          .texts[0]!
+      ? backstop.blur([result.text], {
+          names: context.names,
+          identifiers: context.identifiers,
+          allow: [context.persona.name],
+        }).texts[0]!
       : null;
     const row = await req.withOrg((trx) =>
       trx
@@ -330,7 +333,8 @@ export function aiRoutes(
     const body: AiChatResponse = {
       interactionId: row.id,
       persona: { id: context.persona.persona_id, name: context.persona.name },
-      reply: result.text,
+      // The same blurred text that is stored, never the model's raw words (A7-F9).
+      reply: storedReply!,
     };
     return reply.header('cache-control', 'no-store').send(body);
   }

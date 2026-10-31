@@ -14,6 +14,16 @@
       "types": "./dist/personas.d.ts",
       "default": "./dist/personas.js"
     },
+    "./anonymise": {
+      "@ideamap/source": "./src/anonymise.ts",
+      "types": "./dist/anonymise.d.ts",
+      "default": "./dist/anonymise.js"
+    },
+    "./device": {
+      "@ideamap/source": "./src/device-recognizer.ts",
+      "types": "./dist/device-recognizer.d.ts",
+      "default": "./dist/device-recognizer.js"
+    },
     "./backstop": {
       "@ideamap/source": "./src/backstop.ts",
       "types": "./dist/backstop.d.ts",

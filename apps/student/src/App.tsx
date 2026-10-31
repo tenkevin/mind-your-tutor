@@ -7,6 +7,7 @@ import {
 } from '@ideamap/contracts';
 import { useEffect, useState } from 'react';
 import { SignIn } from './auth/SignIn';
+import { NAMES_STAY_NOTE } from './privacy';
 import { TrackerProvider } from './tracker/TrackerProvider';
 import { MapScreen } from './map/MapScreen';
 import { DisplaySettings } from './udl';
@@ -72,6 +73,10 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
             )
           }
         />
+        <details className="student-privacy">
+          <summary>Your privacy</summary>
+          <p>{NAMES_STAY_NOTE}</p>
+        </details>
       </main>
     </TrackerProvider>
   );
