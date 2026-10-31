@@ -44,6 +44,8 @@ export interface ImportResult {
   mapping: ColumnMappingEntry[];
   /** Mappings for near-miss headers, for the teacher to confirm. */
   suggestions: ColumnMappingEntry[];
+  /** The sheet row of each pack item, by tab, in pack order; empty without a pack. */
+  rows: Partial<Record<TabName, number[]>>;
 }
 
 const fileName = (file: Blob) =>
@@ -75,6 +77,7 @@ export async function importPack(
     sources: [],
     mapping: [],
     suggestions: [],
+    rows: {},
   };
   const finish = () => {
     result.issues = sortIssues(result.issues);
@@ -189,7 +192,11 @@ export async function importPack(
   result.issues.push(...assembled.issues);
   result.mapping = assembled.used;
   result.pack = assembled.pack;
+  result.rows = assembled.rows;
   result.ok = assembled.pack !== null && !result.issues.some((i) => i.severity === 'error');
-  if (!result.ok) result.pack = null;
+  if (!result.ok) {
+    result.pack = null;
+    result.rows = {};
+  }
   return finish();
 }

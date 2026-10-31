@@ -259,7 +259,7 @@ export async function studentsReceiving(
   return { label: STUDENTS_RECEIVING_LABEL, count, class_ids: sorted };
 }
 
-/** GET /versions/:versionId/diff (C5-F1–F3). */
+/** GET /api/versions/:versionId/diff (C5-F1–F3). */
 export async function getDiff(
   deps: PublishDeps,
   caller: Caller,
@@ -273,7 +273,7 @@ export async function getDiff(
   );
 }
 
-/** POST /versions/:versionId/preview: what the teacher reviews before publishing. */
+/** POST /api/versions/:versionId/preview: what the teacher reviews before publishing. */
 export async function previewPublish(
   deps: PublishDeps,
   caller: Caller,
@@ -311,7 +311,7 @@ const REPIN_ACTION = 'class.repin';
 const keyHash = (key: string) => createHash('sha256').update(key).digest('hex');
 
 /**
- * POST /versions/:versionId/publish (C5-F4–F9). All or nothing: on any refusal or
+ * POST /api/versions/:versionId/publish (C5-F4–F9). All or nothing: on any refusal or
  * failure no pin moves and the version stays as it was. With an Idempotency-Key, a
  * repeat of a publish that succeeded returns its result again and changes nothing.
  */
@@ -446,7 +446,7 @@ export async function publish(
 }
 
 /**
- * POST /classes/:classId/pin (C5-F7): rollback, by re-pinning an earlier published
+ * POST /api/classes/:classId/pin (C5-F7): rollback, by re-pinning an earlier published
  * version of the class's curriculum. Drafts and archived versions are refused.
  */
 export async function repin(

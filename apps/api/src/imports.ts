@@ -1,6 +1,7 @@
 import { DEFAULT_LIMITS, megabytes } from '@ideamap/connectors';
 import {
   ImportRequestError,
+  getCurriculumData,
   getImportJob,
   startImport,
   type Caller,
@@ -11,10 +12,15 @@ import { STAFF } from './policy.js';
 
 // Curriculum imports over HTTP (ARCHITECTURE.md §7, §11 "Curriculum data"):
 //
-//   POST /curricula/:curriculumId/imports   the file as the body (application/octet-stream),
-//        X-File-Name: its name, percent-encoded; Idempotency-Key: optional.
-//        202 with the queued job, or 200 with the first job for a repeated key.
-//   GET  /imports/:jobId                    the job's status, steps and draft.
+//   POST /api/curricula/:curriculumId/imports   the file as the body
+//        (application/octet-stream), X-File-Name: its name, percent-encoded;
+//        Idempotency-Key: optional. 202 with the queued job, or 200 with the first job
+//        for a repeated key.
+//   GET  /api/curricula/:curriculumId/imports/latest   the newest job and the newest
+//        version's issues grouped by cause, for Teacher Settings → Curriculum data (T2).
+//   GET  /api/imports/:jobId                    the job's status, steps and draft.
+//
+// The server registers these under the /api prefix, beside every other app route.
 //
 // Who is asking comes from `authenticate`; F5's sign-in provides it. The route
 // policies (F5-F4) refuse signed-out callers, students, and curricula or jobs the
@@ -105,6 +111,24 @@ export function importRoutes(app: FastifyInstance, options: ImportRoutesOptions)
     },
   );
 
+  app.get<{ Params: { curriculumId: string } }>(
+    '/curricula/:curriculumId/imports/latest',
+    {
+      config: {
+        policy: {
+          roles: STAFF,
+          scope: { kind: 'visible', table: 'curriculum', param: 'curriculumId' },
+        },
+      },
+    },
+    async (request, reply) => {
+      const who = await caller(request);
+      // Polled while a job runs; never served from a cache.
+      reply.header('cache-control', 'no-store');
+      return getCurriculumData(options.deps, who, request.params.curriculumId);
+    },
+  );
+
   app.get<{ Params: { jobId: string } }>(
     '/imports/:jobId',
     {
@@ -112,8 +136,9 @@ export function importRoutes(app: FastifyInstance, options: ImportRoutesOptions)
         policy: { roles: STAFF, scope: { kind: 'visible', table: 'import_job', param: 'jobId' } },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const who = await caller(request);
+      reply.header('cache-control', 'no-store');
       return { job: await getImportJob(options.deps, who, request.params.jobId) };
     },
   );

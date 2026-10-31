@@ -9,6 +9,7 @@ import {
   StepFlow,
   type Mission,
 } from './udl';
+import { ThemeReference } from './ThemeReference';
 
 // Every S5 component on one page, for QA and visual checks (udl-reference.html).
 // The content is from fixtures/water-cycle. Nothing on this page calls the API.
@@ -43,6 +44,7 @@ export function UdlReference() {
     <main className="udl-ref">
       <h1>Student UDL components</h1>
       <DisplaySettings />
+      <ThemeReference />
 
       <h2>Representation: text, read-aloud, pictures</h2>
       <IdeaText

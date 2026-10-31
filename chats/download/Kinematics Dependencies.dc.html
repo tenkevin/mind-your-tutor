@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="kinematics-graph.js"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <div style="position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 22px;background:var(--color-bg);box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading);white-space:nowrap">Idea Map</span>
+    <span class="tag tag-accent">Teacher</span>
+    <span style="font-size:13px;color:var(--color-neutral-300);white-space:nowrap">Physics · Kinematics · Dependencies</span>
+    <div style="flex:1"></div>
+    <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--color-neutral-400);white-space:nowrap"><i class="{{ syncIcon }}"></i>{{ syncText }}</span>
+    <sc-if value="{{ hasEdits }}"><button class="btn btn-primary" onClick="{{ writeBack }}" style="white-space:nowrap"><i class="ph ph-upload-simple"></i>Write back to sheet</button></sc-if>
+    <a class="btn btn-secondary" href="Kinematics Explorer.dc.html" style="text-decoration:none;white-space:nowrap"><i class="ph ph-eye"></i>Preview as student</a>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:22px;padding:22px;max-width:1440px;box-sizing:border-box">
+    <div style="flex:1 1 760px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:720px">
+        <span style="font:500 22px/1.25 var(--font-heading)">Prerequisite structure</span>
+        <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">These are the same {{ ideaCount }} ideas students explore on their concept map, joined by the requires column instead of by concept links. Students never see this view. It decides where a missed exercise gets traced back to.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+        <div class="seg">
+          <label class="seg-opt"><input type="radio" name="kd-overlay" checked="{{ isMastery }}" onChange="{{ showMastery }}"></input><i class="ph ph-chart-bar"></i>Class mastery</label>
+          <label class="seg-opt"><input type="radio" name="kd-overlay" checked="{{ isHot }}" onChange="{{ showHot }}"></input><i class="ph ph-flow-arrow"></i>Stuck hotspots</label>
+        </div>
+        <span style="font-size:12px;color:var(--color-neutral-400);white-space:nowrap">Period 3 · {{ classSize }} students, including your preview student</span>
+        <div style="flex:1"></div>
+        <button class="btn {{ linkBtnClass }}" onClick="{{ toggleLink }}" style="white-space:nowrap"><i class="ph ph-plus"></i>{{ linkBtnText }}</button>
+      </div>
+      <sc-if value="{{ hasNote }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);border:1px solid {{ noteBc }};font-size:12px;color:var(--color-neutral-100)"><i class="{{ noteIcon }}" style="color:var(--color-accent-300)"></i><span style="flex:1">{{ noteText }}</span><button class="btn btn-ghost btn-icon" onClick="{{ clearNote }}" aria-label="Dismiss"><i class="ph ph-x"></i></button></div>
+      </sc-if>
+      <div style="overflow-x:auto;border-radius:var(--radius-lg);box-shadow:0 0 0 1px var(--color-divider)">
+        <div style="position:relative;width:760px;height:{{ mapH }}px;cursor:{{ mapCursor }};background:radial-gradient(ellipse at 45% 100%, var(--color-accent-900), var(--color-bg) 65%)">
+          <sc-for list="{{ unitBands }}" as="b">
+            <span style="position:absolute;left:12px;top:{{ b.y }}px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500)">{{ b.label }}</span>
+          </sc-for>
+          <svg width="760" height="{{ mapH }}" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible">
+            <sc-for list="{{ edges }}" as="e">
+              <path d="{{ e.d }}" fill="none" style="stroke:{{ e.stroke }};stroke-width:{{ e.w }};stroke-dasharray:{{ e.dash }};opacity:{{ e.op }};transition:opacity .3s, stroke-width .3s"></path>
+            </sc-for>
+          </svg>
+          <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="19">
+            <button onClick="{{ n.go }}" title="{{ n.title }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%);width:150px;height:52px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 9px;border-radius:var(--radius-md);background:{{ n.bg }};border:1px {{ n.bs }} {{ n.bc }};box-shadow:{{ n.glow }};opacity:{{ n.op }};color:var(--color-text);font:500 12px var(--font-body);text-align:left;cursor:pointer;transition:opacity .3s, box-shadow .3s" style-hover="background:var(--color-accent-900)">
+              <span style="line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ n.label }}</span>
+              <span style="display:flex;align-items:center;gap:6px"><span style="flex:1;display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--color-neutral-800)"><span style="width:{{ n.wm }}%;background:var(--color-accent-400)"></span><span style="width:{{ n.wp }}%;background:var(--color-accent-700)"></span></span><span style="flex:none;font-size:10px;color:var(--color-neutral-300);font-variant-numeric:tabular-nums">{{ n.pct }}%</span></span>
+              <sc-if value="{{ n.hasBadge }}"><span style="position:absolute;right:-8px;top:-10px;padding:0 6px;border-radius:999px;background:var(--color-accent-800);border:1px solid var(--color-accent-400);font-size:10px;line-height:16px;color:var(--color-accent-100);white-space:nowrap">{{ n.badge }}</span></sc-if>
+            </button>
+          </sc-for>
+          <div style="position:absolute;left:14px;top:12px;display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider);font-size:11px;color:var(--color-neutral-300)">
+            <sc-for list="{{ legend }}" as="l">
+              <span style="display:flex;align-items:center;gap:7px;white-space:nowrap"><span style="width:18px;height:0;border-top:{{ l.w }}px {{ l.s }} {{ l.c }}"></span>{{ l.text }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1 1 340px;max-width:440px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:var(--radius-lg);background:var(--color-surface)">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px"><span class="tag tag-neutral">Unit {{ selUnit }}</span><span style="font-size:11px;color:var(--color-neutral-400)">idea_id: {{ selId }}</span></div>
+          <span style="font:500 18px/1.25 var(--font-heading);text-wrap:balance">{{ selTitle }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Class</span>
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--color-neutral-800)"><span style="width:{{ dist.wm }}%;background:var(--color-accent-400)"></span><span style="width:{{ dist.wp }}%;background:var(--color-accent-700)"></span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--color-neutral-300);font-variant-numeric:tabular-nums">
+            <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-accent-400)"></span>{{ dist.m }} mastered</span>
+            <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-accent-700)"></span>{{ dist.p }} in progress</span>
+            <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-neutral-700)"></span>{{ dist.n }} not started</span>
+          </div>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-400)"><i class="ph ph-user"></i>Preview student: {{ liveStatus }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Requires</span>
+          <sc-if value="{{ noPrereqs }}"><span style="font-size:12px;color:var(--color-neutral-400)">Nothing. This is a root of the map.</span></sc-if>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ prereqs }}" as="p">
+              <span style="display:flex;align-items:center;gap:2px;padding:2px 3px 2px 9px;border-radius:999px;border:1px {{ p.bs }} {{ p.bc }};font-size:12px;color:var(--color-neutral-100);white-space:nowrap">
+                <button onClick="{{ p.go }}" style="padding:0;background:none;border:0;color:inherit;font:inherit;cursor:pointer" style-hover="color:var(--color-accent-200)">{{ p.label }}</button>
+                <button onClick="{{ p.remove }}" aria-label="Remove prerequisite" style="width:20px;height:20px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--color-neutral-400);cursor:pointer" style-hover="background:var(--color-accent-900);color:var(--color-accent-200)"><i class="ph ph-x"></i></button>
+              </span>
+            </sc-for>
+          </div>
+          <select class="input" value="" onChange="{{ addFromSelect }}">
+            <option value="">Add a prerequisite…</option>
+            <sc-for list="{{ candidates }}" as="c"><option value="{{ c.id }}">{{ c.label }}</option></sc-for>
+          </select>
+          <span style="font-size:11px;color:var(--color-neutral-500)">Ideas that would create a loop are left out.</span>
+        </div>
+        <sc-if value="{{ hasConcept }}">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">Concept links students see</span>
+            <span style="font-size:12px;line-height:1.45;color:var(--color-neutral-300);text-wrap:pretty">{{ conceptText }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasStuck }}">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)">{{ stuckTitle }}</span>
+            <sc-for list="{{ stuck }}" as="t">
+              <button onClick="{{ t.go }}" style="display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:6px;background:var(--color-bg);border:0;color:var(--color-text);font:400 12px var(--font-body);text-align:left;cursor:pointer" style-hover="background:var(--color-accent-900)">
+                <i class="{{ t.icon }}" style="color:var(--color-accent-300)"></i><span style="flex:1;line-height:1.4">{{ t.text }}</span><span style="font-variant-numeric:tabular-nums;color:var(--color-accent-200)">{{ t.n }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <button class="btn btn-secondary" onClick="{{ askAboutSel }}" style="align-self:flex-start;white-space:nowrap"><i class="ph ph-compass"></i>Ask Atlas about this idea</button>
+      </div>
+      <dc-import name="Chat Panel" persona-name="{{ agentChat.name }}" persona-role="{{ agentChat.role }}" persona-icon="{{ agentChat.icon }}" tag="{{ agentChat.tag }}" msgs="{{ agentChat.msgs }}" loading="{{ agentChat.loading }}" loading-text="{{ agentChat.loadingText }}" input="{{ agentChat.input }}" on-input="{{ agentChat.onInput }}" on-key="{{ agentChat.onKey }}" send="{{ agentChat.send }}" suggestions="{{ agentChat.suggestions }}" placeholder="{{ agentChat.placeholder }}" height="{{ agentChat.height }}" hint-size="100%,420px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const G = { x0: 85, xw: 590, top: 70, gap: 78 };
+const CONCEPT = {
+  vel: 'Displacement divided by time gives Velocity · Speed plus a direction is Velocity',
+  acc: 'Velocity changes at a rate called Acceleration · Acceleration is the slope of a velocity–time graph',
+  suvat: 'Constant acceleration is needed for SUVAT · Rearranging equations is how you solve SUVAT',
+  fall: 'Gravity causes Free fall · Free fall is the vertical part of Projectile motion',
+  disp: 'Position changing gives Displacement · Distance differs from Displacement',
+  alg: 'Rearranging equations is how you solve SUVAT · It finds the time in Free fall'
+};
+const A = n => `var(--color-accent-${n})`, N = n => `var(--color-neutral-${n})`;
+class Component extends DCLogic {
+  state = { req: null, orig: null, sel: 'suvat', overlay: 'mastery', linking: false, note: null, chat: [], chatInput: '', chatLoading: false, tick: 0 };
+  componentDidMount() {
+    const boot = () => { if (!window.KinGraph) { this._t = setTimeout(boot, 50); return; } const R = window.KinGraph.requiresMap(); this.setState({ req: R, orig: R }); };
+    boot();
+    this._onStore = e => { if (window.KinGraph && window.KinGraph.KEYS.includes(e.key)) this.setState(s => ({ tick: s.tick + 1 })); };
+    window.addEventListener('storage', this._onStore);
+    this._poll = setInterval(() => this.setState(s => ({ tick: s.tick + 1 })), 4000);
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearInterval(this._poll); window.removeEventListener('storage', this._onStore); }
+  by() { if (!this._by) { this._by = {}; window.KinGraph.IDEAS.forEach(n => this._by[n.id] = n); } return this._by; }
+  depths(R) { const d = {}, f = (id, seen = []) => d[id] != null ? d[id] : seen.includes(id) ? 0 : (d[id] = R[id].length ? 1 + Math.max(...R[id].map(r => f(r, [...seen, id]))) : 0); Object.keys(R).forEach(k => f(k)); return d; }
+  desc(id, R) { const out = new Set(), q = [id]; while (q.length) { const c = q.shift(); Object.keys(R).forEach(k => { if (R[k].includes(c) && !out.has(k)) { out.add(k); q.push(k); } }); } return out; }
+  pathTo(from, to, R) {
+    const q = [[from]], seen = new Set([from]);
+    while (q.length) { const p = q.shift(), last = p[p.length - 1]; if (last === to) return p; for (const r of R[last]) if (!seen.has(r)) { seen.add(r); q.push([...p, r]); } }
+    return null;
+  }
+  canAdd(t, c, R) { return c !== t && !R[t].includes(c) && !this.desc(t, R).has(c); }
+  edits() { const R = this.state.req, O = this.state.orig; if (!R || !O) return 0; let n = 0; Object.keys(R).forEach(k => { n += R[k].filter(x => !O[k].includes(x)).length + O[k].filter(x => !R[k].includes(x)).length; }); return n; }
+  addReq(t, c) {
+    const R = this.state.req, by = this.by();
+    if (!this.canAdd(t, c, R)) return this.setState({ linking: false, note: { text: R[t].includes(c) ? `${by[c].t} is already required.` : `${by[c].t} already depends on ${by[t].t}, so that link would create a loop.`, icon: 'ph ph-warning' } });
+    this.setState({ req: { ...R, [t]: [...R[t], c] }, linking: false, note: { text: `${by[t].t} now requires ${by[c].t}.`, icon: 'ph ph-check-circle' } });
+  }
+  removeReq(t, r) { const R = this.state.req, by = this.by(); this.setState({ req: { ...R, [t]: R[t].filter(x => x !== r) }, note: { text: `${by[t].t} no longer requires ${by[r].t}. Traces through this link stop.`, icon: 'ph ph-link-break' } }); }
+  click = id => { const s = this.state; if (s.linking && id !== s.sel) return this.addReq(s.sel, id); this.setState({ sel: id, linking: false }); };
+  data() {
+    const KG = window.KinGraph, live = KG.progress(), R = this.state.req;
+    const liveSt = id => live.mastered.includes(id) ? 0 : (live.exLv[id] || 0) > 0 ? 1 : 2;
+    const counts = {}; KG.IDEAS.forEach(i => { const c = [...KG.SAMPLE[i.id]]; c[liveSt(i.id)]++; counts[i.id] = c; });
+    const agg = {};
+    [...KG.SAMPLE_TRACES, ...KG.traces().map(t => ({ from: t.from, root: t.root, n: 1, where: 'preview student, exercise ' + t.exercise, live: true }))].forEach(t => {
+      const k = t.from + '>' + t.root + (t.live ? '*' : ''); if (!agg[k]) agg[k] = { ...t, n: 0 }; agg[k].n += t.n;
+    });
+    return { counts, traces: Object.values(agg), liveSt, R };
+  }
+  agentSystem() {
+    const KG = window.KinGraph, { counts, traces, R } = this.data(), by = this.by();
+    const nodes = KG.IDEAS.map(i => ({ id: i.id, title: i.t, unit: i.unit, requires: R[i.id], class: { mastered: counts[i.id][0], inProgress: counts[i.id][1], notStarted: counts[i.id][2] } }));
+    return 'You are Atlas, the logistics agent for Idea Map, talking with a physics teacher about the prerequisite structure of their Grade 9 to 11 kinematics unit. The same ideas appear on the student concept map, joined there by labelled concept links; prerequisites are teacher-only and are used to trace a missed exercise back to the weakest prerequisite. Class size ' + KG.CLASS + '. Ideas with requires and class mastery: ' + JSON.stringify(nodes) + '. Traced misses: ' + JSON.stringify(traces.map(t => ({ missedIdea: by[t.from].t, tracedTo: by[t.root].t, students: t.n, where: t.where }))) + '. Unsaved edits: ' + this.edits() + '. Be calm and practical, under 120 words, no headings. Spreadsheet changes go in the requires column of the Ideas tab.';
+  }
+  async askAgent(q) {
+    const text = (q || '').trim(), s = this.state;
+    if (!text || s.chatLoading) return;
+    const next = [...s.chat, { me: true, text }];
+    this.setState({ chat: next, chatInput: '', chatLoading: true });
+    let out;
+    try { out = await window.claude.complete({ system: this.agentSystem(), messages: next.map(m => ({ role: m.me ? 'user' : 'assistant', content: m.text })), max_tokens: 500 }); } catch (e) { out = null; }
+    this.setState(p => ({ chatLoading: false, chat: [...p.chat, { me: false, text: out ? String(out).trim() : 'I could not answer just now. Try again in a moment.' }] }));
+  }
+  renderVals() {
+    const s = this.state, KG = window.KinGraph;
+    if (!KG || !s.req) return { edges: [], nodes: [], legend: [], unitBands: [], prereqs: [], candidates: [], stuck: [], dist: {}, mapH: 660, agentChat: { msgs: [], suggestions: [] } };
+    const by = this.by(), { counts, traces, liveSt, R } = this.data(), D = this.depths(R), sel = s.sel, hot = s.overlay === 'hot', O = s.orig, C = KG.CLASS;
+    const maxD = Math.max(...Object.values(D)), mapH = G.top + maxD * G.gap + 50;
+    const pos = id => ({ x: G.x0 + by[id].col * G.xw, y: mapH - 40 - D[id] * G.gap });
+    const pct = id => Math.round((counts[id][0] + counts[id][1] * .5) / C * 100);
+    const flow = {}, rootN = {};
+    traces.forEach(t => { const p = this.pathTo(t.from, t.root, R); if (!p) return; rootN[t.root] = (rootN[t.root] || 0) + t.n; for (let i = 0; i < p.length - 1; i++) { const k = p[i] + '>' + p[i + 1]; flow[k] = (flow[k] || 0) + t.n; } });
+    const eligible = s.linking ? new Set(KG.IDEAS.filter(n => this.canAdd(sel, n.id, R)).map(n => n.id)) : null;
+    const edges = [];
+    KG.IDEAS.forEach(n => R[n.id].forEach(r => {
+      const p = pos(r), c = pos(n.id), y1 = p.y - 26, y2 = c.y + 26, my = (y1 + y2) / 2, added = !O[n.id].includes(r), f = flow[n.id + '>' + r] || 0;
+      let stroke = N(600), w = 1.5, dash = 'none', op = 1;
+      if (hot) { if (f) { stroke = A(400); w = 1.5 + f * .4; } else { stroke = N(700); op = .4; } }
+      else if (n.id === sel || r === sel) { stroke = A(500); w = 2; }
+      if (added) { stroke = A(300); dash = '6 4'; op = 1; }
+      edges.push({ d: `M${p.x} ${y1} C${p.x} ${my}, ${c.x} ${my}, ${c.x} ${y2}`, stroke, w, dash, op });
+    }));
+    const nodes = KG.IDEAS.map(n => {
+      const p = pos(n.id), isSel = n.id === sel, c = counts[n.id], rn = rootN[n.id] || 0, el = eligible ? eligible.has(n.id) : null;
+      return { x: p.x, y: p.y, label: n.t, title: n.t, pct: pct(n.id), wm: c[0] / C * 100, wp: c[1] / C * 100, go: () => this.click(n.id),
+        op: eligible && !el && !isSel ? .3 : 1, bc: isSel ? 'var(--color-accent)' : el ? A(500) : hot && rn ? A(300) : N(600), bs: el ? 'dashed' : 'solid',
+        bg: isSel ? A(900) : 'var(--color-surface)', glow: isSel ? '0 0 24px var(--color-accent-800)' : hot && rn ? `0 0 ${10 + rn * 2}px var(--color-accent-600)` : 'none',
+        hasBadge: hot && rn > 0, badge: `${rn} traced` };
+    });
+    const n = by[sel], c = counts[sel], edits = this.edits();
+    const stuck = [
+      ...traces.filter(t => t.root === sel).map(t => ({ text: `Missed ${by[t.from].t}: ${t.where}`, n: t.n, icon: t.live ? 'ph ph-user' : 'ph ph-flow-arrow', go: () => this.click(t.from) })),
+      ...traces.filter(t => t.from === sel).map(t => ({ text: `Traced to ${by[t.root].t}: ${t.where}`, n: t.n, icon: t.live ? 'ph ph-user' : 'ph ph-flow-arrow', go: () => this.click(t.root) }))
+    ];
+    const msgs = s.chat.length ? s.chat : [{ me: false, text: 'I can see the requires links, class mastery and every traced miss, including your preview student’s. Ask why students are stuck, or what a link change would do.' }];
+    const sendAgent = () => this.askAgent(s.chatInput);
+    return {
+      ideaCount: KG.IDEAS.length, classSize: C, mapH,
+      syncIcon: edits ? 'ph ph-pencil-simple' : 'ph ph-check-circle', syncText: edits ? `${edits} unsaved ${edits === 1 ? 'change' : 'changes'}` : 'Matches the sheet',
+      hasEdits: edits > 0, writeBack: () => { KG.saveRequires(R); this.setState({ orig: R, note: { text: 'Saved to the requires column on the Ideas tab. The student explorer uses it on its next exercise.', icon: 'ph ph-check-circle' } }); },
+      isMastery: !hot, isHot: hot, showMastery: () => this.setState({ overlay: 'mastery' }), showHot: () => this.setState({ overlay: 'hot' }),
+      linkBtnClass: s.linking ? 'btn-primary' : 'btn-secondary', linkBtnText: s.linking ? `Pick what ${n.t} requires…` : 'Draw a link', toggleLink: () => this.setState({ linking: !s.linking, note: null }),
+      mapCursor: s.linking ? 'crosshair' : 'default',
+      hasNote: !!s.note, noteText: s.note ? s.note.text : '', noteIcon: s.note ? s.note.icon : '', noteBc: s.note && s.note.icon === 'ph ph-warning' ? A(400) : A(700), clearNote: () => this.setState({ note: null }),
+      unitBands: [], edges, nodes,
+      legend: hot ? [{ text: 'Traced misses (thicker = more)', c: A(400), w: 3, s: 'solid' }, { text: 'Unsaved link', c: A(300), w: 1.5, s: 'dashed' }] : [{ text: 'Requires (below → above)', c: N(500), w: 1.5, s: 'solid' }, { text: 'Unsaved link', c: A(300), w: 1.5, s: 'dashed' }],
+      selUnit: n.unit, selId: sel, selTitle: n.t,
+      dist: { m: c[0], p: c[1], n: c[2], wm: c[0] / C * 100, wp: c[1] / C * 100 },
+      liveStatus: ['Mastered', 'In progress', 'Not started'][liveSt(sel)],
+      noPrereqs: R[sel].length === 0,
+      prereqs: R[sel].map(r => ({ label: by[r].t, go: () => this.click(r), remove: () => this.removeReq(sel, r), bc: O[sel].includes(r) ? N(600) : A(300), bs: O[sel].includes(r) ? 'solid' : 'dashed' })),
+      candidates: KG.IDEAS.filter(x => this.canAdd(sel, x.id, R)).map(x => ({ id: x.id, label: x.t })),
+      addFromSelect: e => { if (e.target.value) this.addReq(sel, e.target.value); e.target.value = ''; },
+      hasConcept: !!CONCEPT[sel], conceptText: CONCEPT[sel] || '',
+      hasStuck: stuck.length > 0, stuckTitle: 'Traced misses', stuck,
+      askAboutSel: () => this.askAgent(`What should I know about ${n.t}? ${this.desc(sel, R).size} ideas depend on it.`),
+      agentChat: {
+        name: 'Atlas', role: 'Logistics agent', icon: 'ph ph-compass', tag: 'Teacher',
+        msgs: msgs.map(m => ({ text: m.text, align: m.me ? 'flex-end' : 'flex-start', bg: m.me ? 'var(--color-accent-900)' : 'var(--color-bg)', border: m.me ? 'var(--color-accent-700)' : 'var(--color-neutral-700)' })),
+        loading: s.chatLoading, loadingText: 'Atlas is checking the structure…', input: s.chatInput,
+        onInput: ev => this.setState({ chatInput: ev.target.value }), onKey: ev => { if (ev.key === 'Enter') sendAgent(); }, send: sendAgent,
+        suggestions: ['Why are students stuck on SUVAT equations?', 'Is a prerequisite missing anywhere?', 'What should I reteach first?'].map(q => ({ text: q, ask: () => this.askAgent(q) })),
+        placeholder: 'Ask about the structure…', height: 300
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

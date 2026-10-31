@@ -25,9 +25,6 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 30
-    env:
-      # The database tests (packages/db) need this, and fail rather than skip in CI.
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ideamap
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -35,11 +32,33 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      # The database tests (packages/db) need DATABASE_URL, and fail rather than skip in
+      # CI. Connect to the service container's own address on the job network, not the
+      # published port: that goes through Docker's userland proxy, which adds latency
+      # the M2-P1 timing test (p95 under 200 ms) shouldn't be measured through.
+      - name: Point DATABASE_URL at the Postgres container
+        run: |
+          id=$(docker ps --filter "ancestor=pgvector/pgvector:pg16" --format '{{.ID}}' | head -n1)
+          ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$id")
+          test -n "$ip"
+          echo "Postgres container at $ip"
+          echo "DATABASE_URL=postgres://postgres:postgres@$ip:5432/ideamap" >> "$GITHUB_ENV"
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
+        env:
+          IDEAMAP_PERF_REPORT: ${{ runner.temp }}/m2-p1-report.txt
+      # Publish the M2-P1 summary and timeline as a run annotation.
+      - name: M2-P1 report
+        if: always()
+        run: |
+          f="$RUNNER_TEMP/m2-p1-report.txt"
+          if [ -f "$f" ]; then
+            cat "$f"
+            echo "::notice title=M2-P1 ingest::$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' "$f")"
+          fi
       # Persona evals on recorded replies: no model key, same scores every run (A5).
       - name: Persona evals
         run: pnpm --filter @ideamap/ai exec vitest run src/evals

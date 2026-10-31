@@ -128,17 +128,17 @@ describe.skipIf(!hasDatabase)('keys and references (F4-F2)', () => {
     [
       'interaction_event → class',
       () =>
-        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${a.studentId}', '${missing}', '${a.publishedId}', 100, now(), 'x.y')`,
+        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${a.studentId}', '${missing}', '${a.publishedId}', 100, now(), 'idea.opened')`,
     ],
     [
       'interaction_event → student in another org',
       () =>
-        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${b.studentId}', '${a.classId}', '${a.publishedId}', 100, now(), 'x.y')`,
+        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${b.studentId}', '${a.classId}', '${a.publishedId}', 100, now(), 'idea.opened')`,
     ],
     [
       'interaction_event → version',
       () =>
-        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${a.studentId}', '${a.classId}', '${missing}', 100, now(), 'x.y')`,
+        `INSERT INTO interaction_event (id, org_id, student_id, class_id, version_id, seq, at, type) VALUES ('${testUlid()}', '${a.orgId}', '${a.studentId}', '${a.classId}', '${missing}', 100, now(), 'idea.opened')`,
     ],
     [
       'interaction_text → class',
