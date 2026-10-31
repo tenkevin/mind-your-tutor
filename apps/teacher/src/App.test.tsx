@@ -128,3 +128,13 @@ describe('NotForStudents (T1-S2)', () => {
     expect(html).not.toContain('Preview as student');
   });
 });
+
+describe('previewUrl (S10-F7)', () => {
+  it('opens the student app on the class in preview mode', async () => {
+    const { previewUrl } = await import('./App');
+    expect(previewUrl('http://localhost:5174/', 'c1')).toBe(
+      'http://localhost:5174/?class=c1&preview=1',
+    );
+    expect(previewUrl('http://localhost:5174/', null)).toBe('http://localhost:5174/');
+  });
+});

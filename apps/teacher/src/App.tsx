@@ -33,6 +33,15 @@ type View =
 const STUDENT_URL: string =
   (import.meta.env.VITE_STUDENT_APP_URL as string | undefined) || 'http://localhost:5174/';
 
+/** The student app's map for this class, in preview mode (S10-F7). */
+export function previewUrl(base: string, classId: string | null): string {
+  if (!classId) return base;
+  const url = new URL(base);
+  url.searchParams.set('class', classId);
+  url.searchParams.set('preview', '1');
+  return url.toString();
+}
+
 function browserClient(): SessionClient {
   return createSessionClient({
     fetch: (...args) => fetch(...args),
@@ -187,7 +196,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
       header={header}
       saveState={saveState}
       current={sectionFor(hash)?.id ?? null}
-      studentUrl={STUDENT_URL}
+      studentUrl={previewUrl(STUDENT_URL, typeof header === 'object' ? header.classId : null)}
       pending={view.pending}
       retrying={retrying}
       onRetry={retry}
