@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="curriculum.js"></script>
+<script src="curriculum-pack.js"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <div style="position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 22px;background:var(--color-bg);box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading);white-space:nowrap">Idea Map</span>
+    <span class="tag tag-accent">Teacher</span>
+    <span style="font-size:13px;color:var(--color-neutral-300);white-space:nowrap">Curriculum pack template</span>
+    <div style="flex:1"></div>
+    <a class="btn btn-ghost" href="Teacher Settings.dc.html" style="text-decoration:none"><i class="ph ph-arrow-left"></i> Settings</a>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;padding:22px;max-width:1240px;box-sizing:border-box">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px">
+      <div style="flex:1 1 420px;display:flex;flex-direction:column;gap:6px">
+        <h1 style="margin:0;font:500 26px var(--font-heading)">Curriculum pack</h1>
+        <span style="font-size:13px;line-height:1.55;color:var(--color-neutral-400);max-width:72ch;text-wrap:pretty">Every configurable field in one schema. Fill the spreadsheet tabs (or send the same structure as JSON) and any subject, grade or framework plugs into the map. Fields marked Both are seeded by the pack and can be overridden in Settings.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="btn btn-secondary" onClick="{{ dlAll }}" style="white-space:nowrap"><i class="ph ph-file-csv"></i> All tab templates</button>
+        <button class="btn btn-secondary" onClick="{{ dlSchema }}" style="white-space:nowrap"><i class="ph ph-brackets-curly"></i> JSON schema</button>
+        <button class="btn btn-primary" onClick="{{ dlPack }}" style="white-space:nowrap"><i class="ph ph-download-simple"></i> Export current pack</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px">
+      <div class="seg">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+          <button class="seg-opt" onClick="{{ v.pick }}" aria-pressed="{{ v.on }}" style="display:flex;align-items:center;gap:6px;border:1px solid {{ v.border }};background:{{ v.bg }};color:{{ v.color }}"><i class="{{ v.icon }}"></i>{{ v.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:12px;color:var(--color-neutral-400)">
+        <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span class="tag tag-neutral">Sheet</span>source data only</span>
+        <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span class="tag tag-accent">Both</span>pack seeds, Settings overrides</span>
+        <span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span class="tag tag-outline">App</span>Settings only</span>
+      </div>
+    </div>
+
+    <sc-if value="{{ isSheet }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:22px">
+        <div style="flex:0 1 230px;min-width:200px;display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-500);padding:0 8px 4px">Tabs</span>
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="8">
+            <button onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-md);border:1px solid {{ t.border }};background:{{ t.bg }};color:var(--color-text);font:13px var(--font-body);cursor:pointer;text-align:left" style-hover="background:var(--color-surface)">
+              <i class="{{ t.icon }}" style="font-size:16px;color:{{ t.iconColor }}"></i><span style="flex:1">{{ t.tab }}</span><span style="font-size:11px;color:var(--color-neutral-500)">{{ t.reqText }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="flex:1 1 600px;min-width:0;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+            <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:4px">
+              <h2 style="margin:0;display:flex;align-items:center;gap:8px;font:500 20px var(--font-heading)"><i class="{{ cur.icon }}" style="color:var(--color-accent-300)"></i>{{ cur.tab }}</h2>
+              <span style="font-size:13px;color:var(--color-neutral-400)">{{ cur.desc }}</span>
+              <span style="font-size:12px;color:var(--color-neutral-500)">{{ cur.shape }}</span>
+            </div>
+            <button class="btn btn-ghost" onClick="{{ cur.dl }}"><i class="ph ph-download-simple"></i> {{ cur.fileName }}</button>
+          </div>
+
+          <table class="table">
+            <thead><tr><th>Column</th><th>Type</th><th>Edited in</th><th>If empty</th><th>Example</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ cur.cols }}" as="k" hint-placeholder-count="6">
+                <tr>
+                  <td style="vertical-align:top">
+                    <div style="display:flex;flex-direction:column;gap:3px">
+                      <span style="display:flex;align-items:center;gap:6px;font:12px ui-monospace,Menlo,monospace;color:var(--color-neutral-100)">{{ k.name }}<sc-if value="{{ k.req }}"><span style="font:500 10px var(--font-body);color:var(--color-accent-300)">required</span></sc-if></span>
+                      <sc-if value="{{ k.hasNote }}"><span style="font-size:11px;color:var(--color-neutral-400);max-width:30ch">{{ k.note }}</span></sc-if>
+                    </div>
+                  </td>
+                  <td style="vertical-align:top;font-size:12px;color:var(--color-neutral-300)">{{ k.type }}</td>
+                  <td style="vertical-align:top"><span class="{{ k.editClass }}">{{ k.editLabel }}</span></td>
+                  <td style="vertical-align:top;font-size:12px;color:{{ k.missColor }}">{{ k.missing }}</td>
+                  <td style="vertical-align:top;font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-400);max-width:220px;overflow-wrap:anywhere">{{ k.example }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-500)">Sample rows · {{ cur.fileName }}</span>
+            <pre style="margin:0;padding:12px 14px;border-radius:var(--radius-md);background:var(--color-surface);font:11px/1.6 ui-monospace,Menlo,monospace;color:var(--color-neutral-200);overflow:auto;white-space:pre">{{ cur.csv }}</pre>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+            <i class="ph ph-compass" style="font-size:18px;color:var(--color-accent-300)"></i>
+            <span style="flex:1 1 260px;font-size:13px;color:var(--color-neutral-200)">{{ cur.coverage }}</span>
+            <a class="btn btn-ghost" href="Teacher Settings.dc.html#sec-source" style="text-decoration:none"><i class="ph ph-sparkle"></i> Ask Atlas to fill gaps</a>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isJson }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:13px;color:var(--color-neutral-400);max-width:72ch">{{ jsonNote }}</span>
+        <pre style="margin:0;padding:14px 16px;border-radius:var(--radius-md);background:var(--color-surface);font:11px/1.6 ui-monospace,Menlo,monospace;color:var(--color-neutral-200);overflow:auto;max-height:70vh;white-space:pre">{{ jsonText }}</pre>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sheet&quot;,&quot;pack&quot;,&quot;schema&quot;],&quot;default&quot;:&quot;sheet&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;sampleRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { ready: false, view: 'sheet', tab: 'Ideas' };
+  componentDidMount() {
+    const boot = () => { if (!window.IdeaMapCurriculum || !window.IdeaMapPack) { this._bt = setTimeout(boot, 60); return; } this.setState({ ready: true, view: this.props.startView ?? 'sheet' }); };
+    boot();
+  }
+  componentWillUnmount() { clearTimeout(this._bt); }
+  download(name, text, type) {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  renderVals() {
+    const s = this.state, P = window.IdeaMapPack, C = window.IdeaMapCurriculum;
+    if (!s.ready || !P || !C) return { views: [], tabs: [], cur: { cols: [], tab: '', icon: '', desc: '', shape: '', fileName: '', csv: '', coverage: '' }, isSheet: true, isJson: false, jsonNote: '', jsonText: '' };
+    const cfg = C.load(), S = C.SHEET, withSample = this.props.sampleRows ?? true;
+    const EDIT = { sheet: ['tag tag-neutral', 'Sheet'], both: ['tag tag-accent', 'Both'], app: ['tag tag-outline', 'App'] };
+    const views = [['sheet', 'Spreadsheet', 'ph ph-table'], ['pack', 'Pack JSON', 'ph ph-brackets-curly'], ['schema', 'JSON schema', 'ph ph-file-code']].map(v => {
+      const on = s.view === v[0];
+      return { label: v[1], icon: v[2], on: String(on), pick: () => this.setState({ view: v[0] }), border: on ? 'var(--color-accent-600)' : 'transparent', bg: on ? 'var(--color-accent-900)' : 'transparent', color: on ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' };
+    });
+    const tabs = P.TABS.map(t => {
+      const on = s.tab === t.tab;
+      return { tab: t.tab, icon: 'ph ph-' + t.icon, reqText: t.cols.filter(k => k.req).length + '/' + t.cols.length, pick: () => this.setState({ tab: t.tab }),
+        border: on ? 'var(--color-accent-600)' : 'transparent', bg: on ? 'var(--color-accent-900)' : 'transparent', iconColor: on ? 'var(--color-accent-200)' : 'var(--color-neutral-400)' };
+    });
+    const t = P.TABS.find(x => x.tab === s.tab);
+    const fileName = t.tab + '.csv';
+    const counts = S.counts, nIdeas = S.ideas.length;
+    const cov = {
+      Course: 'Course fields are set: ' + cfg.subject + ' · ' + cfg.topic + ' · ' + C.gradeLabel(cfg.grade) + ' · ' + cfg.framework + '.',
+      Units: S.units.length + ' units synced, ' + S.units.filter(u => cfg.due[u.n]).length + ' with due dates.',
+      Ideas: nIdeas + ' ideas synced. ' + S.ideas.filter(r => !r.media).length + ' have no media_url, ' + S.ideas.filter(r => !r.codes).length + ' have no standard_codes.',
+      Links: (counts.Links || 0) + ' links synced. Only the 3 strongest in and out per idea are shown.',
+      Categories: S.categories.length + ' categories: ' + S.categories.map(k => k.name).join(', ') + '.',
+      Assessment: Object.values(S.assessment).reduce((a, b) => a + b, 0) + ' of ' + nIdeas + ' teach-back questions written. Missing ones stay as placeholders.',
+      Personas: cfg.personas.length + ' personas configured; edits in Settings override this tab.',
+      Library: C.LIBRARY.length + ' documents indexed for Atlas.'
+    }[t.tab];
+    const cur = {
+      tab: t.tab, icon: 'ph ph-' + t.icon, desc: t.desc, fileName,
+      shape: t.kind === 'keyvalue' ? 'Two columns: key, value. One row per field.' : 'One row per item. Header row uses the column names below; Settings › Column mapping can rename them.',
+      cols: t.cols.map(k => ({ name: k.name, req: k.req, note: k.note, hasNote: !!k.note, type: k.type, editClass: EDIT[k.edit][0], editLabel: EDIT[k.edit][1], missing: k.missing, example: k.example,
+        missColor: k.missing === 'Blocks import' ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' })),
+      csv: P.templateCSV(t.tab, withSample).trim(),
+      dl: () => this.download(fileName, P.templateCSV(t.tab, withSample), 'text/csv'),
+      coverage: 'Current pack: ' + cov
+    };
+    const pack = P.buildPack(C, cfg), schema = P.jsonSchema();
+    return {
+      views, tabs, cur, isSheet: s.view === 'sheet', isJson: s.view !== 'sheet',
+      jsonNote: s.view === 'pack' ? 'The current pack, built from the last sync plus your Settings. Links and assessment questions are summarised; the export lists them in full once the sheet is connected.' : 'Validate an incoming pack against this schema before import. Required fields block the import; optional fields fall back as described.',
+      jsonText: JSON.stringify(s.view === 'pack' ? pack : schema, null, 2),
+      dlAll: () => P.TABS.forEach((x, i) => setTimeout(() => this.download(x.tab + '.csv', P.templateCSV(x.tab, withSample), 'text/csv'), i * 150)),
+      dlSchema: () => this.download('curriculum-pack.schema.json', JSON.stringify(schema, null, 2), 'application/json'),
+      dlPack: () => this.download((cfg.topic || 'curriculum').toLowerCase().replace(/\W+/g, '-') + '.pack.json', JSON.stringify(pack, null, 2), 'application/json')
+    };
+  }
+}
+</script>
+</body>
+</html>

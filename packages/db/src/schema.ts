@@ -46,7 +46,7 @@ export type ExportKind =
   | 'drafted_rows'
   | 'class_progress'
   | 'student_record';
-export type TextKind = 'chat' | 'teachback' | 'transcript';
+export type TextKind = 'chat' | 'teachback' | 'transcript' | 'challenge';
 /** A column-mapping entry, as in VersionSource. */
 export type ColumnMapping = VersionSource['column_mapping'];
 
@@ -63,11 +63,11 @@ export interface OrganizationTable {
   export_retention_days: Generated<number>;
   /** Days sign-in sessions are kept after expiry or revocation (default 30, from 0015). */
   session_retention_days: Generated<number>;
-  /** Who is told of a concerning student message (A2, from 0016). */
+  /** Who is told of a concerning student message (A2, from 0017). */
   flag_notify: Generated<FlagNotify>;
-  /** What a student reads after such a message; null means the default (A2, from 0016). */
+  /** What a student reads after such a message; null means the default (A2, from 0017). */
   help_text: string | null;
-  /** Days after a safety flag is resolved before it is deleted (D32; default 30, from 0017). */
+  /** Days after a safety flag is resolved before it is deleted (D32; default 30, from 0018). */
   flag_resolved_retention_days: Generated<number>;
 }
 
@@ -241,6 +241,10 @@ export interface InteractionEventTable {
   type: string;
   payload: ColumnType<unknown, JsonText<unknown> | undefined, never>;
   recorded_at: CreatedAt;
+  /** Generated from `type` (M2): participating, teaching or other (§8.2). */
+  level: ColumnType<'participating' | 'teaching' | 'other', never, never>;
+  /** D24: the student was opted out of tracing when the event was stored. */
+  tracing_opted_out: ColumnType<boolean, boolean | undefined, never>;
 }
 
 export interface InteractionEventKeyTable {
@@ -367,7 +371,7 @@ export interface AuditEventTable {
 
 export type FlagNotify = 'teacher_and_admin' | 'teacher' | 'admin';
 
-/** A concerning student message raised to the teacher and/or admin (0016, A2). No text: see the transcript. */
+/** A concerning student message raised to the teacher and/or admin (0017, A2). No text: see the transcript. */
 export interface SafetyFlagTable {
   id: Generated<string>;
   org_id: string;
@@ -419,6 +423,33 @@ export interface AuthSessionTable {
   revoked_at: NullableTimestamp;
 }
 
+/** D24: a student the district opted out of tracing; removed when they opt back in. */
+export interface TracingOptOutTable {
+  student_id: string;
+  org_id: string;
+  opted_out_at: CreatedAt;
+  set_by: string | null;
+}
+
+/** Each student's last event seq, allocated a batch at a time by ingest (M2). */
+export interface StudentEventSeqTable {
+  student_id: string;
+  org_id: string;
+  last_seq: ColumnType<number, number, number>;
+}
+
+/** D26: typed text in which the server backstop found what the device should have removed. */
+export interface PrivacyMissTable {
+  id: Generated<string>;
+  org_id: string;
+  class_id: string;
+  source: 'event_ingest';
+  names: number;
+  emails: number;
+  phones: number;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   organization: OrganizationTable;
   app_user: AppUserTable;
@@ -440,6 +471,9 @@ export interface Database {
   generated_map_view: GeneratedMapViewTable;
   ai_output: AiOutputTable;
   progress_snapshot: ProgressSnapshotTable;
+  tracing_opt_out: TracingOptOutTable;
+  student_event_seq: StudentEventSeqTable;
+  privacy_miss: PrivacyMissTable;
   import_job: ImportJobTable;
   export_job: ExportJobTable;
   export_subject: ExportSubjectTable;
@@ -595,6 +629,8 @@ export const COLUMNS = {
     'type',
     'payload',
     'recorded_at',
+    'level',
+    'tracing_opted_out',
   ],
   interaction_event_key: ['id', 'org_id', 'student_id', 'seq', 'recorded_at'],
   interaction_text: [
@@ -724,6 +760,9 @@ export const COLUMNS = {
     'expires_at',
     'revoked_at',
   ],
+  tracing_opt_out: ['student_id', 'org_id', 'opted_out_at', 'set_by'],
+  student_event_seq: ['student_id', 'org_id', 'last_seq'],
+  privacy_miss: ['id', 'org_id', 'class_id', 'source', 'names', 'emails', 'phones', 'created_at'],
 } as const satisfies { [T in TableName]: readonly (keyof Database[T] & string)[] };
 
 /** Tables whose rows belong to one organization, with row-level security forced. */

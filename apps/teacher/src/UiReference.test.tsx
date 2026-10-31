@@ -20,9 +20,15 @@ describe('UiReference', () => {
       'tag tag-neutral',
       'tag tag-outline',
       'class="table"',
+      'id="theme-ref-select"',
+      '--map-node-mastered',
+      'var(--map-node-open-border)',
+      'var(--map-node-locked-text)',
     ]) {
       expect(html).toContain(cls);
     }
-    expect(html.match(/<tbody>.*<\/tbody>/)?.[0].match(/<tr>/g)).toHaveLength(3);
+    expect(
+      html.match(/<tbody>(?:(?!<\/tbody>).)*Unit 1.*?<\/tbody>/)?.[0].match(/<tr>/g),
+    ).toHaveLength(3);
   });
 });

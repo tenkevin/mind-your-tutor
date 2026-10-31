@@ -229,6 +229,9 @@ describe('diffPacks (C5)', () => {
     const diff = diffPacks(before, after);
     expect(diff.ideas_renamed).toHaveLength(200);
     expect(diff.assessment_changed).toHaveLength(200);
-    expect(runs[2]).toBeLessThan(500);
+    expect(
+      runs[2],
+      `diffPacks median ${runs[2]!.toFixed(2)} ms, budget 500 ms (samples: ${runs.map((r) => r.toFixed(2)).join(', ')})`,
+    ).toBeLessThan(500);
   });
 });

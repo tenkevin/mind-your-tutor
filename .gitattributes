@@ -1,0 +1,7 @@
+# Package entry points that are lists of `export … from` lines. Parallel tasks each add
+# a line, so a local merge keeps both sides instead of stopping on a conflict
+# (docs/qa/README.md, "QA tooling"). A union merge can repeat a line; typecheck and
+# lint catch that. GitHub's own merges ignore this, so sync locally.
+packages/contracts/src/index.ts merge=union
+packages/domain/src/index.ts merge=union
+packages/tracker/src/index.ts merge=union

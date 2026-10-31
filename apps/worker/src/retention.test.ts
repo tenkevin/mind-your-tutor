@@ -50,7 +50,7 @@ async function seedAged(db: Db, org: SeededOrg): Promise<Map<number, string>> {
         org_id: org.orgId,
         class_id: org.classId,
         student_id: org.studentId,
-        kind: 'chat',
+        kind: 'teachback',
         body: `Typed ${days} days ago`,
         created_at,
       })
@@ -79,8 +79,8 @@ async function seedAged(db: Db, org: SeededOrg): Promise<Map<number, string>> {
         version_id: version.pinned_version_id!,
         seq: ++seq,
         at: new Date(),
-        type: 'chat.turn',
-        payload: json({ persona: 'tutor', text_ref: text.id }),
+        type: 'teachback.done',
+        payload: json({ unitId: 1, textRef: text.id }),
       })
       .execute();
   }
@@ -220,10 +220,10 @@ describe.skipIf(!hasDatabase)('retention job (F6-F3, F6-F4)', () => {
       const events = await trx
         .selectFrom('interaction_event')
         .select('payload')
-        .where('type', '=', 'chat.turn')
+        .where('type', '=', 'teachback.done')
         .orderBy('seq')
         .execute();
-      const ids = events.map((e) => (e.payload as { text_ref: string }).text_ref);
+      const ids = events.map((e) => (e.payload as { textRef: string }).textRef);
       return resolveTexts(trx, ids);
     });
     expect(refs.get(textsA.get(91)!)).toEqual(REMOVED_TEXT);
@@ -456,7 +456,9 @@ describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
 
       expect(result.interaction_text).toBe(Math.floor(ROWS / 2));
       expect(batches).toBeGreaterThanOrEqual(Math.floor(ROWS / 2 / 5000));
-      expect(elapsed).toBeLessThan(5 * 60_000);
+      expect(elapsed, `retention took ${elapsed.toFixed(0)} ms, budget 300000 ms`).toBeLessThan(
+        5 * 60_000,
+      );
       expect(insertTimes.length).toBeGreaterThan(0);
       insertTimes.sort((x, y) => x - y);
       const worst = insertTimes[insertTimes.length - 1]!;
@@ -470,7 +472,10 @@ describe.skipIf(!hasDatabase)('retention at scale (F6-P1)', () => {
         });
       }
       // Inserts kept going: none waited on the job for long.
-      expect(worst).toBeLessThan(1000);
+      expect(
+        worst,
+        `slowest insert during retention ${worst.toFixed(0)} ms, budget 1000 ms`,
+      ).toBeLessThan(1000);
     },
     SCALE_TIMEOUT,
   );

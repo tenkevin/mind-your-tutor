@@ -3,7 +3,7 @@ import { RETENTION_ROLE } from './helpers.js';
 
 // Safety flag retention (ARCHITECTURE.md D32; task A2). A flag is an alert, not the
 // school's record. It is deleted with its transcript at the district's AI retention
-// period (the foreign key from 0016 already does that), or once it has been resolved
+// period (the foreign key from 0017 already does that), or once it has been resolved
 // for the district's early-deletion window, whichever comes first.
 //
 // The window is an organization setting like every period in 0015, and is read when the

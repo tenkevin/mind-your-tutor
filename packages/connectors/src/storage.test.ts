@@ -101,7 +101,9 @@ describe('screenUpload (C4-S2)', () => {
       expect(screened.ok).toBe(false);
       expect(!screened.ok && screened.message).toMatch(/unpacks to more than 100 MB/);
     }
-  });
+    // No time budget here. It deflates two 120 MB buffers, about 2 s alone and 7 s on
+    // a loaded 2-CPU runner, so it gets room beyond Vitest's default 5 s (F1e-F8).
+  }, 60_000);
 
   it('refuses files that are not a pack', async () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]);

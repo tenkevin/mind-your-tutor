@@ -28,9 +28,11 @@ const APP_FUNCTION_INVENTORY = [
   'app.flag_resolved_cutoff(uuid)',
   'app.guard_class_pin()',
   'app.guard_curriculum_version()',
+  'app.purge_student_events(uuid)',
   'app.record_interaction_event_keys()',
   'app.redact_secrets(jsonb)',
   'app.refuse_change()',
+  'app.refuse_tracker_change()',
   'app.retention_cutoff(uuid,text)',
   'app.sso_tenant_org(text,text)',
   'app.touch_updated_at()',
@@ -276,9 +278,11 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
       'app.guard_curriculum_version()',
       'app.record_interaction_event_keys()',
       'app.refuse_change()',
+      'app.refuse_tracker_change()',
       'app.touch_updated_at()',
     ]);
     expect(rows.filter((fn) => fn.definer).map((fn) => fn.signature)).toEqual([
+      'app.purge_student_events(uuid)',
       'app.record_interaction_event_keys()',
       'app.sso_tenant_org(text,text)',
     ]);
@@ -302,5 +306,17 @@ describe.skipIf(!hasDatabase)('database function name binding (F4cx1)', () => {
     expect(source.get('app.retention_cutoff(uuid,text)')).toContain('FROM public.organization');
     // A2's early-deletion window for resolved safety flags (D32).
     expect(source.get('app.flag_resolved_cutoff(uuid)')).toContain('FROM public.organization');
+    // M2's purge: every table it reads or deletes from is named by schema.
+    const purge = source.get('app.purge_student_events(uuid)')!;
+    for (const table of [
+      'public.app_user',
+      'public.interaction_event ',
+      'public.interaction_event_key',
+      'public.generated_map_view',
+      'public.ai_output',
+    ]) {
+      expect(purge).toContain(table);
+    }
+    expect(purge).not.toMatch(/(FROM|JOIN)\s+(?!public\.)[a-z_]+\s+AS/);
   });
 });
