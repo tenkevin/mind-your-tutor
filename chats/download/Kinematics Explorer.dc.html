@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="kinematics-graph.js"></script>
+<script src="interests.js"></script>
+<script src="study-plan.js"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div ref="{{ rootRef }}" style="position:relative;width:960px;min-height:668px;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading)">Idea Map</span>
+    <span class="tag tag-neutral">{{ headerTitle }}</span>
+    <div style="flex:1"></div>
+    <span style="font-size:12px;color:var(--color-neutral-400)">Mastered {{ masteredCount }} of {{ totalCount }}</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--color-neutral-200)"><i class="ph ph-flame" style="color:var(--color-accent-300)"></i>{{ streakDays }}-day streak</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--color-neutral-200);font-variant-numeric:tabular-nums"><i class="ph ph-lightning" style="color:var(--color-accent-300)"></i>{{ xp }} XP</span>
+    <button class="btn btn-secondary" onClick="{{ openCards }}"><i class="ph ph-cards"></i> Cards {{ cardCount }}/{{ totalCount }}</button>
+    <a class="btn btn-ghost" href="Student Onboarding.dc.html" style="text-decoration:none;white-space:nowrap"><i class="ph ph-heart"></i> My interests</a>
+      <button class="btn btn-primary" onClick="{{ toggleMissions }}"><i class="ph ph-list-checks"></i> Missions <span style="min-width:18px;padding:0 5px;border-radius:999px;background:var(--color-accent-800);color:var(--color-accent-100);font-size:11px;line-height:18px;text-align:center">{{ missionCount }}</span></button>
+  </div>
+  <sc-if value="{{ missionsOpen }}">
+    <div style="position:absolute;right:18px;top:52px;z-index:8;width:360px;display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-lg)">
+      <div style="display:flex;align-items:center;gap:8px;padding:2px 4px 6px">
+        <span style="font:500 14px var(--font-heading);flex:1">Your missions</span>
+        <button class="btn btn-ghost btn-icon" onClick="{{ toggleMissions }}" aria-label="Close"><i class="ph ph-x"></i></button>
+      </div>
+      <sc-for list="{{ missions }}" as="m" hint-placeholder-count="4">
+        <button onClick="{{ m.go }}" style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:6px;background:{{ m.bg }};border:1px solid {{ m.border }};color:var(--color-text);font-family:var(--font-body);text-align:left;cursor:pointer;opacity:{{ m.op }}" style-hover="border-color:var(--color-accent-600)">
+          <span style="width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-bg);border:1px solid {{ m.iconBorder }};color:{{ m.iconColor }};font-size:15px"><i class="{{ m.icon }}"></i></span>
+          <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-size:13px;font-weight:500;text-decoration:{{ m.strike }}">{{ m.title }}</span>
+            <span style="font-size:11px;color:var(--color-neutral-400)">{{ m.sub }}</span>
+          </span>
+          <span style="flex:none;padding:2px 7px;border-radius:999px;border:1px solid {{ m.tagBorder }};font-size:10px;color:{{ m.tagColor }};white-space:nowrap">{{ m.tag }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px;font-size:12px;color:var(--color-neutral-400)">
+    <span>Your path:</span>
+    <sc-for list="{{ trail }}" as="s" hint-placeholder-count="1">
+      <div style="display:flex;align-items:center;gap:6px">
+        <sc-if value="{{ s.sep }}"><span style="color:var(--color-neutral-600)">→</span></sc-if>
+        <button onClick="{{ s.go }}" style="background:none;border:0;padding:2px 4px;font:inherit;cursor:pointer;color:var(--color-neutral-200);border-radius:4px" style-hover="color:var(--color-accent-300)">{{ s.title }}</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+  <div ref="{{ canvasRef }}" onPointerDown="{{ down }}" style="position:relative;width:960px;height:560px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background:radial-gradient(circle at 50% 50%, var(--color-accent-900), var(--color-bg) 55%)">
+    <div style="position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;transform:translate({{ tx }}px,{{ ty }}px) scale({{ z }});transition:{{ trans }}">
+      <div style="position:absolute;left:-162px;top:-120px;width:324px;height:240px;border-radius:50%;border:{{ lw }}px dashed var(--color-neutral-600);opacity:{{ ringOp }};pointer-events:none"></div>
+      <div style="position:absolute;left:-432px;top:-320px;width:864px;height:640px;border-radius:50%;border:{{ lw }}px dashed var(--color-neutral-600);opacity:{{ ringOp }};pointer-events:none"></div>
+      <sc-for list="{{ unitLabels }}" as="u">
+        <div style="position:absolute;left:{{ u.x }}px;top:{{ u.y }}px;transform:translate(-50%,-50%) scale({{ u.s }});z-index:5;padding:2px 8px;border-radius:999px;background:var(--color-bg);font:500 15px var(--font-heading);color:var(--color-accent-300);white-space:nowrap;opacity:{{ unitOp }};pointer-events:none">{{ u.title }}</div>
+      </sc-for>
+      <sc-for list="{{ ghostEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ lw }}px;background:var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:{{ ghostOp }}"></div>
+      </sc-for>
+      <sc-for list="{{ farEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:0;border-top:{{ lw }}px dashed var(--color-neutral-600);transform-origin:0 0;transform:rotate({{ e.deg }}deg);filter:blur(1.5px);opacity:.6"></div>
+      </sc-for>
+      <sc-for list="{{ pathEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ lw }}px;background:var(--color-neutral-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg);opacity:.7"></div>
+      </sc-for>
+      <sc-for list="{{ nearEdges }}" as="e">
+        <div style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:0;border-top:{{ e.w }}px {{ e.style }} var(--color-accent-500);transform-origin:0 0;transform:rotate({{ e.deg }}deg) translateY(-50%);opacity:{{ e.op }}"></div>
+        <div style="position:absolute;left:{{ e.ax }}px;top:{{ e.ay }}px;width:0;height:0;border-left:9px solid var(--color-accent-500);border-top:5px solid transparent;border-bottom:5px solid transparent;transform:translate(-50%,-50%) rotate({{ e.deg }}deg) scale({{ ls }});opacity:{{ e.op }}"></div>
+        <div onClick="{{ e.open }}" onMouseEnter="{{ e.enter }}" onMouseLeave="{{ e.leave }}" style="position:absolute;left:{{ e.x }}px;top:{{ e.y }}px;width:{{ e.len }}px;height:{{ e.hit }}px;transform-origin:0 0;transform:rotate({{ e.deg }}deg) translateY(-50%);cursor:pointer"></div>
+      </sc-for>
+      <sc-for list="{{ unconn }}" as="n">
+        <div data-node="{{ n.id }}" onClick="{{ n.lock }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-neutral-900);border:1px solid var(--color-neutral-700);color:var(--color-neutral-500);font-size:11px;cursor:pointer"><i class="ph ph-lock-simple"></i></div>
+      </sc-for>
+      <sc-for list="{{ fog }}" as="n">
+        <div onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});padding:5px 10px;border-radius:var(--radius-md);background:var(--color-surface);font-size:12px;color:var(--color-neutral-400);filter:blur(4px);opacity:.4;white-space:nowrap">{{ n.title }}</div>
+      </sc-for>
+      <sc-for list="{{ preview }}" as="n">
+        <div style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});padding:5px 10px;border-radius:var(--radius-md);background:var(--color-surface);font-size:12px;color:var(--color-neutral-300);filter:blur(3px);opacity:.55;white-space:nowrap">{{ n.title }}</div>
+      </sc-for>
+      <sc-for list="{{ visited }}" as="n">
+        <button data-node="{{ n.id }}" onClick="{{ n.go }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px 11px;border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-neutral-700);color:var(--color-neutral-300);font:500 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-600)">
+          <span style="display:flex;align-items:center;gap:5px">{{ n.title }}<sc-if value="{{ n.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if><sc-if value="{{ n.hasHook }}"><i class="{{ n.hookIcon }}" title="{{ n.hookTip }}" style="color:var(--color-accent-300)"></i></sc-if></span>
+          <span style="font-size:10px;color:var(--color-neutral-500);font-weight:400">{{ n.cat }}</span>
+        </button>
+      </sc-for>
+      <sc-for list="{{ locked }}" as="n">
+        <button data-node="{{ n.id }}" onClick="{{ n.lock }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border-radius:var(--radius-md);background:var(--color-bg);border:1px dashed var(--color-neutral-500);color:var(--color-neutral-300);font:500 13px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)">
+          <span style="display:flex;align-items:center;gap:5px"><i data-lock="1" class="ph ph-lock-simple"></i>{{ n.title }}</span>
+          <span style="font-size:10px;color:var(--color-neutral-400);font-weight:400">{{ n.req }}</span>
+        </button>
+      </sc-for>
+      <sc-for list="{{ nbrs }}" as="n">
+        <button data-node="{{ n.id }}" onClick="{{ n.go }}" onMouseEnter="{{ n.enter }}" onMouseLeave="{{ n.leave }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.s }});display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);color:var(--color-text);font:500 13px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)">
+          <span style="display:flex;align-items:center;gap:5px">{{ n.title }}<sc-if value="{{ n.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if><sc-if value="{{ n.hasHook }}"><i class="{{ n.hookIcon }}" title="{{ n.hookTip }}" style="color:var(--color-accent-300)"></i></sc-if></span>
+          <span style="font-size:10px;color:var(--color-neutral-400);font-weight:400">{{ n.cat }}</span>
+        </button>
+      </sc-for>
+      <button onClick="{{ openPage }}" style="position:absolute;left:{{ cur.x }}px;top:{{ cur.y }}px;transform:translate(-50%,-50%) scale({{ ls }});display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 22px;border-radius:var(--radius-lg);background:var(--color-accent-900);border:1px solid var(--color-accent);box-shadow:0 0 32px var(--color-accent-800);color:var(--color-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--color-accent-800)">
+        <span style="display:flex;align-items:center;gap:6px;font:500 18px var(--font-heading)">{{ cur.title }}<sc-if value="{{ cur.mastered }}"><i class="ph ph-seal-check" style="color:var(--color-accent-300)"></i></sc-if><sc-if value="{{ cur.hasHook }}"><i class="{{ cur.hookIcon }}" style="font-size:15px;color:var(--color-accent-300)"></i></sc-if></span>
+        <span style="font-size:11px;color:var(--color-accent-300)">{{ cur.hint }}</span>
+      </button>
+      <sc-for list="{{ nearEdges }}" as="e">
+        <button onClick="{{ e.open }}" onMouseEnter="{{ e.enter }}" onMouseLeave="{{ e.leave }}" aria-label="{{ e.text }}" style="position:absolute;left:{{ e.bx }}px;top:{{ e.by }}px;transform:translate(-50%,-50%) scale({{ ls }});width:24px;height:24px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-bg);border:1px solid var(--color-accent-600);color:var(--color-accent-300);font-size:12px;cursor:pointer" style-hover="background:var(--color-accent-800);color:var(--color-accent-100)"><i class="{{ e.icon }}"></i></button>
+      </sc-for>
+      <sc-for list="{{ fxItems }}" as="f">
+        <div data-fx="1" style="position:absolute;left:{{ f.x }}px;top:{{ f.y }}px;transform:translate(-50%,-50%) scale({{ ls }});width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-800);border:1px solid var(--color-accent);color:var(--color-accent-100);font-size:16px;pointer-events:none;box-shadow:0 0 24px var(--color-accent-600)"><i class="ph ph-lock-simple-open"></i></div>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{ labels }}" as="l">
+      <div style="position:absolute;left:{{ l.x }}px;top:{{ l.y }}px;transform:translate(-50%,-50%);z-index:2;padding:4px 9px;border-radius:999px;background:var(--color-accent-900);border:1px solid var(--color-accent-600);box-shadow:var(--shadow-md);color:var(--color-accent-200);font-size:11px;white-space:nowrap;pointer-events:none">{{ l.text }}</div>
+    </sc-for>
+
+    <sc-if value="{{ showUnits }}">
+      <div style="position:absolute;left:12px;top:64px;z-index:2;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider);pointer-events:none">
+        <sc-for list="{{ unitKey }}" as="u">
+          <div style="display:flex;align-items:baseline;gap:8px;font-size:12px;white-space:nowrap"><span style="font-weight:500;color:var(--color-accent-300)">{{ u.n }}</span><span style="color:var(--color-neutral-200)">{{ u.t }}</span><span style="font-size:11px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums">{{ u.count }}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="position:absolute;left:12px;top:10px;z-index:2;display:flex;flex-direction:column;gap:3px;padding:6px 9px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider);font-size:11px;color:var(--color-neutral-400);pointer-events:none">
+      <span>Scroll to zoom · drag to move · click a link badge to learn how two ideas connect</span>
+      <span>{{ ruleText }}</span>
+    </div>
+
+    <div data-nodrag="1" style="position:absolute;right:14px;top:12px;z-index:3;width:290px;display:flex;flex-direction:column;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-md);cursor:default;overflow:hidden">
+      <button onClick="{{ toggleObj }}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:none;border:0;color:var(--color-text);font:500 13px var(--font-heading);cursor:pointer;text-align:left">
+        <i class="ph ph-target" style="color:var(--color-accent-300)"></i><span style="flex:1">Lesson objectives</span><i class="{{ objChevron }}"></i>
+      </button>
+      <sc-if value="{{ objOpen }}">
+        <div style="display:flex;flex-direction:column;gap:2px;padding:0 6px 6px">
+          <sc-for list="{{ objectives }}" as="o" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:4px;padding:8px;border-radius:6px;background:{{ o.bg }}">
+              <span style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:{{ o.labelColor }}">{{ o.label }}</span>
+              <span style="font-size:12px;line-height:1.45;color:{{ o.color }};text-wrap:pretty">{{ o.text }}</span>
+              <sc-if value="{{ o.hasBar }}">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1;height:4px;border-radius:2px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ o.pct }}%;background:var(--color-accent)"></div></div>
+                  <span style="font-size:10px;color:var(--color-neutral-400)">{{ o.barText }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ o.canTeach }}">
+                <button class="btn btn-primary" onClick="{{ o.teach }}" style="align-self:flex-start"><i class="ph ph-student"></i> Summative: teach Milo</button>
+              </sc-if>
+              <sc-if value="{{ o.teachLocked }}">
+                <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-neutral-400)"><i class="ph ph-lock-simple"></i>Summative opens when every idea in this unit is mastered</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ hasLock }}">
+      <div data-nodrag="1" style="position:absolute;left:16px;bottom:62px;z-index:3;width:290px;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-lg);cursor:default">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ph ph-lock-simple" style="color:var(--color-accent-300)"></i>
+          <span style="font:500 15px var(--font-heading);flex:1">{{ lockCard.title }}</span>
+          <button onClick="{{ closeLock }}" class="btn btn-ghost btn-icon" aria-label="Close"><i class="ph ph-x"></i></button>
+        </div>
+        <span style="font-size:12px;color:var(--color-neutral-400)">{{ lockCard.rel }}</span>
+        <span style="font-size:13px;line-height:1.45;color:var(--color-neutral-200)">{{ lockCard.text }}</span>
+        <sc-if value="{{ lockCard.hasBtn }}">
+          <button class="btn btn-primary" onClick="{{ lockCard.go }}" style="align-self:flex-start">{{ lockCard.btn }}</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ buddyClosed }}">
+      <div data-nodrag="1" style="position:absolute;right:14px;bottom:56px;z-index:3;display:flex;align-items:flex-end;gap:6px">
+        <button data-milo-bubble="1" onClick="{{ openBuddy }}" style="max-width:230px;margin-bottom:30px;padding:9px 12px;border-radius:var(--radius-md) var(--radius-md) 2px var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);box-shadow:var(--shadow-md);font:12px/1.45 var(--font-body);color:var(--color-text);text-align:left;cursor:pointer" style-hover="border-color:var(--color-accent-600)">{{ milo.say }}</button>
+        <button onClick="{{ openBuddy }}" aria-label="Talk to Milo" style="display:flex;flex-direction:column;align-items:center;gap:0;padding:0;background:none;border:0;cursor:pointer">
+          <dc-import name="Milo" mood="{{ milo.mood }}" stage="{{ milo.stage }}" pulse="{{ milo.pulse }}" size="76" hint-size="76px,76px"></dc-import>
+          <span style="font-size:10px;color:var(--color-accent-300);white-space:nowrap">Milo · {{ milo.stageName }}</span>
+        </button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ buddyOpen }}">
+      <div data-nodrag="1" style="position:absolute;right:0;top:0;bottom:0;z-index:4;width:340px;display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--color-bg);box-shadow:var(--shadow-lg);cursor:default">
+        <div style="display:flex;align-items:center;gap:8px">
+          <dc-import name="Milo" mood="{{ milo.mood }}" stage="{{ milo.stage }}" pulse="{{ milo.pulse }}" size="84" hint-size="84px,84px"></dc-import>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+            <span style="font:500 15px var(--font-heading)">Milo</span>
+            <span style="font-size:11px;color:var(--color-accent-300)">Stage {{ milo.stage }} · {{ milo.stageName }}</span>
+            <div style="height:5px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ milo.pct }}%;background:var(--color-accent)"></div></div>
+            <span style="font-size:10px;line-height:1.4;color:var(--color-neutral-400)">{{ milo.nextText }}</span>
+          </div>
+          <button onClick="{{ closeBuddy }}" class="btn btn-ghost btn-icon" aria-label="Close"><i class="ph ph-x"></i></button>
+        </div>
+        <dc-import name="Chat Panel" persona-name="{{ buddyChat.name }}" persona-role="{{ buddyChat.role }}" persona-icon="{{ buddyChat.icon }}" tag="{{ buddyChat.tag }}" msgs="{{ buddyChat.msgs }}" loading="{{ buddyChat.loading }}" loading-text="{{ buddyChat.loadingText }}" input="{{ buddyChat.input }}" on-input="{{ buddyChat.onInput }}" on-key="{{ buddyChat.onKey }}" send="{{ buddyChat.send }}" suggestions="{{ buddyChat.suggestions }}" placeholder="{{ buddyChat.placeholder }}" height="{{ buddyChat.height }}" hint-size="100%,420px"></dc-import>
+      </div>
+    </sc-if>
+
+    <div data-nodrag="1" style="position:absolute;left:16px;bottom:14px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:11px;color:var(--color-neutral-400);cursor:default;max-width:540px">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px solid var(--color-accent);background:var(--color-accent-900)"></span>Current</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px solid var(--color-neutral-700);background:var(--color-surface)"></span>Open</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;border:1px dashed var(--color-neutral-500)"></span>Master current idea first</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-lock-simple"></i>Not connected yet</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-play" style="color:var(--color-accent-300)"></i>Video</span>
+      <span style="display:flex;align-items:center;gap:5px"><i class="ph ph-chalkboard-teacher" style="color:var(--color-accent-300)"></i>Tutor</span>
+    </div>
+
+    <div data-nodrag="1" style="position:absolute;right:14px;bottom:12px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-md);cursor:default">
+      <button class="btn btn-ghost btn-icon" onClick="{{ zoomOut }}" aria-label="Zoom out"><i class="ph ph-minus"></i></button>
+      <span style="width:38px;text-align:center;font-size:11px;color:var(--color-neutral-300);font-variant-numeric:tabular-nums">{{ pct }}%</span>
+      <button class="btn btn-ghost btn-icon" onClick="{{ zoomIn }}" aria-label="Zoom in"><i class="ph ph-plus"></i></button>
+      <span style="width:1px;height:18px;background:var(--color-neutral-700);margin:0 4px"></span>
+      <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+        <button onClick="{{ m.pick }}" style="padding:5px 10px;border-radius:6px;border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.color }};font:500 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="color:var(--color-accent-200)">{{ m.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isPage }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:28px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <button class="btn btn-ghost" onClick="{{ backToMap }}" style="align-self:flex-start">← Back to map</button>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:6px">
+          <span class="tag tag-accent">{{ cur.cat }}</span>
+          <span class="tag tag-neutral">{{ cur.unit }}</span>
+          <sc-if value="{{ cur.mastered }}"><span class="tag tag-outline">Mastered</span></sc-if>
+        </div>
+        <h1 style="margin:0;font:500 28px var(--font-heading)">{{ cur.title }}</h1>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <i class="ph ph-target" style="color:var(--color-accent-300);margin-top:2px"></i>
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-400)">Lesson objective</span><span style="font-size:13px;color:var(--color-neutral-100)">{{ cur.objective }}</span></div>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.55;color:var(--color-neutral-200);max-width:56ch;text-wrap:pretty">{{ cur.blurb }}</p>
+        <sc-if value="{{ cur.hasHook }}">
+          <div style="display:flex;align-items:center;gap:10px;max-width:56ch;padding:9px 12px;border-radius:var(--radius-md);border:1px solid var(--color-accent-700)">
+            <i class="{{ cur.hookIcon }}" style="font-size:18px;color:var(--color-accent-300)"></i>
+            <div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-accent-300)">For you · {{ cur.hookLabel }}</span><span style="font-size:13px;color:var(--color-neutral-100)">{{ cur.hookText }}</span></div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="position:relative;aspect-ratio:16/9;width:100%;max-width:640px;border-radius:var(--radius-lg);overflow:hidden;background:radial-gradient(ellipse at 30% 40%, var(--color-accent-900), var(--color-bg) 72%);box-shadow:0 0 0 1px var(--color-divider)">
+        <sc-if value="{{ vid.hasSrc }}"><video src="{{ vid.src }}" controls="{{ true }}" style="width:100%;height:100%;display:block;background:var(--color-bg)"></video></sc-if>
+        <sc-if value="{{ vid.noSrc }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px">
+            <span style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300)"><i class="{{ vid.icon }}"></i>{{ vid.kicker }}</span>
+            <div style="display:flex;align-items:flex-end;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0"><span style="font:500 16px var(--font-heading);color:var(--color-text)">{{ vid.title }}</span><span style="font-size:11px;color:var(--color-neutral-400)">{{ vid.meta }}</span></div>
+            </div>
+          </div>
+          <button title="Video not added yet" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;border:1px solid var(--color-accent);background:color-mix(in oklch, var(--color-bg) 70%, transparent);color:var(--color-accent-200);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 28px var(--color-accent-800)" style-hover="background:var(--color-accent-900)"><i class="ph-fill ph-play"></i></button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ hasEx }}">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <span style="font:500 17px var(--font-heading)">Practice for mastery</span>
+            <span style="font-size:12px;color:var(--color-neutral-400)">{{ exSummary }}</span>
+          </div>
+          <sc-for list="{{ exGroups }}" as="g">
+            <div style="display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:8px;padding-bottom:6px;box-shadow:0 1px 0 var(--color-divider)">
+                <span style="flex:1;font:500 14px var(--font-heading)">{{ g.title }}</span>
+                <span class="tag tag-neutral" style="white-space:nowrap">{{ g.std }}</span>
+              </div>
+              <sc-for list="{{ g.items }}" as="it">
+                <button onClick="{{ it.go }}" style="display:flex;align-items:center;gap:12px;padding:9px 6px;margin:0 -6px;border-radius:6px;background:none;border:0;color:var(--color-text);font:400 13px var(--font-body);text-align:left;cursor:pointer" style-hover="background:var(--color-surface)">
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;color:var(--color-neutral-100)">{{ it.title }}<sc-if value="{{ it.hasDemo }}"><i class="ph ph-play-circle" title="Has a worked example video" style="font-size:14px;color:var(--color-accent-300)"></i></sc-if></span>
+                  <span style="display:flex;align-items:center;gap:3px"><sc-for list="{{ it.dots }}" as="d"><span style="width:6px;height:6px;border-radius:50%;background:{{ d.c }}"></span></sc-for></span>
+                  <span style="width:72px;font-size:11px;color:{{ it.lvC }};white-space:nowrap">{{ it.lvText }}</span>
+                  <span style="width:78px;display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:12px;font-weight:500;color:var(--color-neutral-200);white-space:nowrap"><i class="{{ it.actIcon }}"></i>{{ it.act }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-md);background:var(--color-surface)">
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+          <span style="font:500 15px var(--font-heading)">Check your understanding</span>
+          <span style="font-size:12px;color:var(--color-neutral-400)">{{ quizInfo }}</span>
+        </div>
+        <button class="btn btn-primary" onClick="{{ startQuiz }}">{{ quizCta }}</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;padding-top:44px">
+      <dc-import name="Chat Panel" persona-name="{{ pageChat.name }}" persona-role="{{ pageChat.role }}" persona-icon="{{ pageChat.icon }}" tag="{{ pageChat.tag }}" msgs="{{ pageChat.msgs }}" loading="{{ pageChat.loading }}" loading-text="{{ pageChat.loadingText }}" input="{{ pageChat.input }}" on-input="{{ pageChat.onInput }}" on-key="{{ pageChat.onKey }}" send="{{ pageChat.send }}" suggestions="{{ pageChat.suggestions }}" placeholder="{{ pageChat.placeholder }}" height="{{ pageChat.height }}" hint-size="100%,380px"></dc-import>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isEx }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:28px;padding:22px 24px 26px;min-height:560px">
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <button class="btn btn-ghost" onClick="{{ exBack }}" style="align-self:flex-start">← Back to {{ exIdea }}</button>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px"><span class="tag tag-accent">{{ exKind }}</span><span class="tag tag-neutral">{{ exStd }}</span></div>
+        <span style="font:500 22px var(--font-heading)">{{ exTitle }}</span>
+      </div>
+      <sc-if value="{{ exHasTabs }}">
+        <div style="display:flex;gap:18px;box-shadow:0 1px 0 var(--color-divider)">
+          <sc-for list="{{ exTabs }}" as="t">
+            <button onClick="{{ t.pick }}" aria-pressed="{{ t.on }}" style="display:flex;align-items:center;gap:6px;padding:8px 0;margin-bottom:-1px;background:none;border:0;border-bottom:2px solid {{ t.bc }};color:{{ t.c }};font:500 13px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="color:var(--color-text)"><i class="{{ t.icon }}"></i>{{ t.label }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ exIsWorked }}">
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:640px">
+          <div style="position:relative;aspect-ratio:16/9;width:100%;max-width:640px;border-radius:var(--radius-lg);overflow:hidden;background:radial-gradient(ellipse at 30% 40%, var(--color-accent-900), var(--color-bg) 72%);box-shadow:0 0 0 1px var(--color-divider)">
+        <sc-if value="{{ exVid.hasSrc }}"><video src="{{ exVid.src }}" controls="{{ true }}" style="width:100%;height:100%;display:block;background:var(--color-bg)"></video></sc-if>
+        <sc-if value="{{ exVid.noSrc }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px">
+            <span style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300)"><i class="{{ exVid.icon }}"></i>{{ exVid.kicker }}</span>
+            <div style="display:flex;align-items:flex-end;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0"><span style="font:500 16px var(--font-heading);color:var(--color-text)">{{ exVid.title }}</span><span style="font-size:11px;color:var(--color-neutral-400)">{{ exVid.meta }}</span></div>
+            </div>
+          </div>
+          <button title="Video not added yet" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;border:1px solid var(--color-accent);background:color-mix(in oklch, var(--color-bg) 70%, transparent);color:var(--color-accent-200);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 28px var(--color-accent-800)" style-hover="background:var(--color-accent-900)"><i class="ph-fill ph-play"></i></button>
+        </sc-if>
+      </div>
+          <div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:var(--radius-lg);background:var(--color-surface)">
+            <span class="card-kicker">Worked example</span>
+            <span style="font:500 15px/1.5 var(--font-heading);text-wrap:pretty">{{ demoQ }}</span>
+            <sc-for list="{{ demoSteps }}" as="st">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="width:20px;height:20px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-accent-600);font-size:11px;color:var(--color-accent-200)">{{ st.n }}</span>
+                <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-100);text-wrap:pretty">{{ st.text }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ demoMore }}">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+                <button class="btn btn-secondary" onClick="{{ demoNext }}" style="white-space:nowrap">Show step {{ demoNextN }}</button>
+                <button class="btn btn-ghost" onClick="{{ demoAll }}" style="white-space:nowrap">Show all</button>
+                <span style="font-size:12px;color:var(--color-neutral-400)">Try to predict the next step first.</span>
+              </div>
+            </sc-if>
+          </div>
+          <button class="btn btn-primary" onClick="{{ toMastery }}" style="align-self:flex-start;white-space:nowrap">Try the practice problems →</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ exIsMastery }}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <sc-for list="{{ exDots }}" as="d"><span style="width:{{ d.w }}px;height:6px;border-radius:3px;background:{{ d.c }};transition:width .3s"></span></sc-for>
+        <sc-if value="{{ exWorking }}"><span style="margin-left:6px;font-size:12px;color:var(--color-neutral-400)">{{ exCount }}</span></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ exWorking }}">
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:600px">
+          <span style="font:500 16px/1.5 var(--font-heading);text-wrap:pretty">{{ exQ }}</span>
+          <sc-if value="{{ exHasTable }}">
+            <table class="table" style="width:auto">
+              <tbody>
+                <sc-for list="{{ exTable }}" as="r">
+                  <tr><th style="text-align:left;padding-right:18px;white-space:nowrap;font-weight:500;text-transform:none;letter-spacing:normal">{{ r.label }}</th><sc-for list="{{ r.cells }}" as="c"><td style="min-width:44px;text-align:center;font-variant-numeric:tabular-nums">{{ c.v }}</td></sc-for></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </sc-if>
+          <sc-if value="{{ exHasGraph }}">
+            <div style="display:flex;flex-direction:column;gap:6px;align-self:flex-start;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-surface)">
+              <div style="position:relative;width:{{ exGW }}px;height:{{ exGH }}px"><svg width="{{ exGW }}" height="{{ exGH }}" style="overflow:visible;font-family:var(--font-body)">
+                <sc-for list="{{ exGrid }}" as="l"><line x1="{{ l.x1 }}" y1="{{ l.y1 }}" x2="{{ l.x2 }}" y2="{{ l.y2 }}" style="stroke:var(--color-neutral-700);stroke-width:1"></line></sc-for>
+                <line x1="{{ exGL }}" y1="{{ exGBase }}" x2="{{ exGR }}" y2="{{ exGBase }}" style="stroke:var(--color-neutral-400);stroke-width:1.25"></line>
+                <sc-for list="{{ exLines }}" as="s">
+                  <polyline points="{{ s.pts }}" fill="none" style="stroke:{{ s.c }};stroke-width:2.5;stroke-linecap:round"></polyline>
+                  <circle cx="{{ s.x }}" cy="{{ s.y }}" r="3.5" style="fill:{{ s.c }}"></circle>
+                </sc-for>
+                <text x="{{ exXLx }}" y="{{ exXLy }}" text-anchor="middle" style="fill:var(--color-neutral-300);font-size:11px">Time t (s)</text>
+                <text x="10" y="{{ exYLy }}" text-anchor="middle" transform="rotate(-90 10 {{ exYLy }})" style="fill:var(--color-neutral-300);font-size:11px">{{ exYLabel }}</text>
+              </svg>
+              <sc-for list="{{ exXT }}" as="k"><span style="position:absolute;left:{{ k.x }}px;top:{{ k.y }}px;transform:translate(-50%,-80%);font-size:10px;color:var(--color-neutral-400);font-variant-numeric:tabular-nums">{{ k.v }}</span></sc-for>
+              <sc-for list="{{ exYT }}" as="k"><span style="position:absolute;left:{{ k.x }}px;top:{{ k.y }}px;transform:translate(-100%,-90%);font-size:10px;color:var(--color-neutral-400);font-variant-numeric:tabular-nums">{{ k.v }}</span></sc-for>
+              </div>
+              <div style="display:flex;gap:14px">
+                <sc-for list="{{ exLegend }}" as="l"><span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-neutral-300)"><span style="width:14px;height:2.5px;border-radius:2px;background:{{ l.c }}"></span>{{ l.text }}</span></sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ exIsMc }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ exOpts }}" as="o">
+                <button onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);background:{{ o.bg }};border:1px {{ o.bs }} {{ o.bc }};color:var(--color-text);font:400 14px var(--font-body);text-align:left;cursor:pointer" style-hover="border-color:var(--color-accent-500)">
+                  <span style="width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-neutral-600);font-size:11px;color:var(--color-neutral-300)">{{ o.key }}</span>
+                  <span style="flex:1">{{ o.text }}</span><i class="{{ o.icon }}" style="color:var(--color-accent-300)"></i>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ exIsNum }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <input class="input" value="{{ exVal }}" onChange="{{ exSetVal }}" onKeyDown="{{ exKey }}" placeholder="Your answer" style="width:160px;font-variant-numeric:tabular-nums"></input>
+              <span style="font-size:14px;color:var(--color-neutral-300)">{{ exUnit }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ exCanCheck }}">
+            <button class="btn btn-primary" onClick="{{ exCheck }}" style="align-self:flex-start"><i class="ph ph-check"></i> Check</button>
+          </sc-if>
+          <sc-if value="{{ exChecked }}">
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--radius-md);border:1px solid {{ exFbBc }}">
+              <i class="{{ exFbIcon }}" style="font-size:16px;color:{{ exFbC }};margin-top:1px"></i>
+              <span style="flex:1;font-size:13px;line-height:1.5;color:var(--color-neutral-100);text-wrap:pretty">{{ exFbText }}</span>
+            </div>
+            <button class="btn btn-primary" onClick="{{ exNext }}" style="align-self:flex-start">{{ exNextLabel }} →</button>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ exDone }}">
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:520px;padding:18px;border-radius:var(--radius-lg);background:var(--color-surface)">
+          <span class="card-kicker">Result</span>
+          <span style="font:500 24px var(--font-heading)">{{ exScore }}</span>
+          <span style="font-size:14px;color:{{ exLevelC }}">Level: {{ exLevel }}</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300)">{{ exDoneNote }}</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onClick="{{ exBack }}">Back to {{ exIdea }}</button>
+            <button class="btn btn-ghost" onClick="{{ exAgain }}">Try again</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:44px">
+      <span style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--radius-md) var(--radius-md) var(--radius-md) 2px;background:var(--color-surface);font-size:12px;line-height:1.45;color:var(--color-neutral-100);text-wrap:pretty">{{ milo.quizSay }}</span>
+      <dc-import name="Milo" mood="{{ milo.mood }}" stage="{{ milo.stage }}" pulse="{{ milo.pulse }}" size="110" hint-size="110px,110px"></dc-import>
+      <span style="font-size:10px;color:var(--color-neutral-400)">Milo is practising with you</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isQuiz }}">
+  <div style="display:flex;flex-direction:column;gap:16px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-ghost" onClick="{{ quitQuiz }}">← Back to idea</button>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <span style="font:500 18px var(--font-heading)">Quiz · {{ quiz.title }}</span>
+        <span style="font-size:12px;color:var(--color-neutral-400)">{{ quiz.objective }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <span data-combo="1" style="font:500 {{ quiz.comboSize }}px var(--font-heading);color:{{ quiz.comboColor }};text-shadow:{{ quiz.comboGlow }};white-space:nowrap">{{ quiz.comboText }}</span>
+        <span style="font-size:12px;color:var(--color-neutral-300);font-variant-numeric:tabular-nums">+{{ quiz.xp }} XP this quiz</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <sc-for list="{{ quiz.dots }}" as="d" hint-placeholder-count="8">
+        <div style="flex:1;height:6px;border-radius:3px;background:{{ d.bg }}"></div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ quiz.active }}">
+      <div style="display:flex;gap:20px;align-items:flex-start"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--radius-lg);background:var(--color-surface);max-width:720px">
+        <span style="font-size:12px;color:var(--color-neutral-400)">Question {{ quiz.num }} of {{ quiz.n }} · {{ quiz.prompt }}</span>
+        <span style="font:500 22px/1.35 var(--font-heading);text-wrap:pretty">{{ quiz.text }}</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+          <sc-for list="{{ quiz.options }}" as="o" hint-placeholder-count="4">
+            <button onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-md);background:{{ o.bg }};border:1px solid {{ o.border }};color:var(--color-text);font:14px var(--font-body);cursor:pointer;text-align:left" style-hover="border-color:var(--color-accent-500)">
+              <span style="width:22px;height:22px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--color-bg);font-size:11px;color:var(--color-neutral-300)">{{ o.letter }}</span>{{ o.text }}
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ quiz.answered }}">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="flex:1;font-size:13px;line-height:1.45;color:{{ quiz.fbColor }}">{{ quiz.feedback }}</span>
+            <button class="btn btn-primary" onClick="{{ nextQ }}">{{ quiz.nextLabel }}</button>
+          </div>
+        </sc-if>
+      </div>
+      <div style="width:170px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:4px">
+        <div data-milo-bubble="1" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:var(--radius-md) var(--radius-md) var(--radius-md) 2px;background:var(--color-surface);border:1px solid var(--color-neutral-700);font-size:12px;line-height:1.45;text-wrap:pretty">{{ milo.quizSay }}</div>
+        <dc-import name="Milo" mood="{{ milo.mood }}" stage="{{ milo.stage }}" pulse="{{ milo.pulse }}" size="100" hint-size="100px,100px"></dc-import>
+        <span style="font-size:10px;color:var(--color-neutral-400)">Milo is learning with you</span>
+      </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ quiz.failed }}">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;gap:12px">
+            <span style="font:500 44px var(--font-heading)">{{ quiz.score }}/{{ quiz.n }}</span>
+            <span style="font-size:14px;color:var(--color-neutral-300)">{{ quiz.pctText }}</span>
+          </div>
+          <span style="font-size:13px;color:var(--color-neutral-300)">{{ quiz.needText }}</span>
+          <div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+            <span style="font:500 14px var(--font-heading)">Hands-on review: rebuild the links you missed</span>
+            <span style="font-size:12px;color:var(--color-neutral-400)">Pick a sentence, then pick the idea that completes it. Finish all of them to unlock a retry.</span>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ practice.rows }}" as="r">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button data-prow="{{ r.idx }}" onClick="{{ r.pick }}" style="flex:1;display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:var(--radius-md);background:{{ r.bg }};border:1px solid {{ r.border }};color:var(--color-text);font:13px var(--font-body);cursor:pointer;text-align:left">
+                    <span>{{ r.before }}</span>
+                    <span style="padding:2px 8px;border-radius:5px;border:1px dashed {{ r.slotBorder }};color:{{ r.slotColor }};min-width:70px;text-align:center">{{ r.slot }}</span>
+                    <span>{{ r.after }}</span>
+                  </button>
+                  <button class="btn btn-ghost btn-icon" onClick="{{ r.explore }}" aria-label="Explore this link"><i class="{{ r.icon }}"></i></button>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ practice.chips }}" as="c">
+                <button data-chip="{{ c.id }}" onClick="{{ c.pick }}" style="padding:6px 11px;border-radius:999px;background:{{ c.bg }};border:1px solid var(--color-neutral-600);color:var(--color-neutral-100);font:12px var(--font-body);cursor:pointer;opacity:{{ c.op }}" style-hover="border-color:var(--color-accent-500)">{{ c.title }}</button>
+              </sc-for>
+            </div>
+            <span style="font-size:12px;color:var(--color-accent-300)">{{ practice.msg }}</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onClick="{{ retryQuiz }}" disabled="{{ practice.retryDisabled }}">Retry with new questions</button>
+            <button class="btn btn-ghost" onClick="{{ quitQuiz }}">Back to idea</button>
+          </div>
+        </div>
+        <dc-import name="Chat Panel" persona-name="{{ fixChat.name }}" persona-role="{{ fixChat.role }}" persona-icon="{{ fixChat.icon }}" tag="{{ fixChat.tag }}" msgs="{{ fixChat.msgs }}" loading="{{ fixChat.loading }}" loading-text="{{ fixChat.loadingText }}" input="{{ fixChat.input }}" on-input="{{ fixChat.onInput }}" on-key="{{ fixChat.onKey }}" send="{{ fixChat.send }}" suggestions="{{ fixChat.suggestions }}" placeholder="{{ fixChat.placeholder }}" height="{{ fixChat.height }}" hint-size="100%,420px"></dc-import>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isLink }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:28px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <button class="btn btn-ghost" onClick="{{ backFromLink }}" style="align-self:flex-start">{{ backLinkLabel }}</button>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+        <span style="padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);font:500 15px var(--font-heading)">{{ link.a }}</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-accent-300)"><span style="width:28px;height:1px;background:var(--color-accent-500)"></span>{{ link.rel }}<i class="ph ph-arrow-right"></i></span>
+        <span style="padding:8px 12px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-neutral-700);font:500 15px var(--font-heading)">{{ link.b }}</span>
+      </div>
+      <sc-if value="{{ showVideo }}">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="position:relative;aspect-ratio:16/9;max-height:320px;border-radius:var(--radius-md);border:1px dashed var(--color-neutral-600);background:var(--color-neutral-900);display:flex;align-items:center;justify-content:center">
+            <span style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-accent);color:var(--color-accent-200);font-size:22px;box-shadow:0 0 24px var(--color-accent-800)"><i class="ph ph-play"></i></span>
+            <span style="position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--color-neutral-300)">{{ link.mediaTitle }} · {{ link.mediaDur }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:13px;color:var(--color-neutral-400)">Still unsure after the video?</span>
+            <button class="btn btn-secondary" onClick="{{ toAI }}"><i class="ph ph-chalkboard-teacher"></i> Ask Ms. Ivy</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showAI }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-if value="{{ link.hasMedia }}"><button class="btn btn-ghost" onClick="{{ toVideo }}" style="align-self:flex-start"><i class="ph ph-play"></i> Back to video</button></sc-if>
+          <dc-import name="Chat Panel" persona-name="{{ linkChat.name }}" persona-role="{{ linkChat.role }}" persona-icon="{{ linkChat.icon }}" tag="{{ linkChat.tag }}" msgs="{{ linkChat.msgs }}" loading="{{ linkChat.loading }}" loading-text="{{ linkChat.loadingText }}" input="{{ linkChat.input }}" on-input="{{ linkChat.onInput }}" on-key="{{ linkChat.onKey }}" send="{{ linkChat.send }}" suggestions="{{ linkChat.suggestions }}" placeholder="{{ linkChat.placeholder }}" height="{{ linkChat.height }}" hint-size="100%,380px"></dc-import>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">
+      <sc-for list="{{ linkIdeas }}" as="c" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <span style="font-size:10px;color:var(--color-neutral-400);text-transform:uppercase;letter-spacing:.06em">{{ c.cat }}</span>
+          <span style="font:500 15px var(--font-heading)">{{ c.title }}</span>
+          <span style="font-size:12px;line-height:1.5;color:var(--color-neutral-300)">{{ c.blurb }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isTeach }}">
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;padding:16px 24px 20px;min-height:536px">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-ghost" onClick="{{ backToMap }}">← Back to map</button>
+        <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-accent-300)">Summative · {{ teach.unitName }}</span>
+          <span style="font:500 20px var(--font-heading)">Teach Milo what you learned</span>
+        </div>
+        <span class="tag tag-neutral">{{ teach.progressText }}</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <sc-for list="{{ teach.dots }}" as="d"><div style="flex:1;height:5px;border-radius:3px;background:{{ d.bg }}"></div></sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <dc-import name="Milo" mood="{{ milo.mood }}" stage="{{ milo.stage }}" pulse="{{ milo.pulse }}" size="64" hint-size="64px,64px"></dc-import>
+        <sc-if value="{{ milo.hasReact }}"><span data-milo-bubble="1" style="padding:7px 11px;border-radius:var(--radius-md) var(--radius-md) var(--radius-md) 2px;background:var(--color-surface);border:1px solid var(--color-neutral-700);font-size:13px">{{ milo.react }}</span></sc-if>
+      </div>
+      <div ref="{{ threadRef }}" style="display:flex;flex-direction:column;gap:10px;height:{{ teach.threadH }}px;overflow:auto;padding:12px;border-radius:var(--radius-md);background:var(--color-surface)">
+        <sc-for list="{{ teach.thread }}" as="m">
+          <div style="display:flex;flex-direction:column;align-items:{{ m.align }};gap:4px">
+            <sc-if value="{{ m.hasTag }}"><span style="display:flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-accent-300)"><i class="ph ph-student"></i>{{ m.tag }}</span></sc-if>
+            <div style="max-width:86%;padding:9px 12px;border-radius:var(--radius-md);background:{{ m.bg }};border:1px solid {{ m.border }};font-size:{{ m.size }}px;line-height:1.5;color:var(--color-neutral-100);white-space:pre-wrap;text-wrap:pretty">{{ m.text }}</div>
+            <sc-if value="{{ m.hasVia }}"><span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--color-neutral-500)"><i class="{{ m.viaIcon }}"></i>{{ m.via }}</span></sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ teach.loading }}"><span style="font-size:12px;color:var(--color-neutral-400)">Milo is thinking about your answer…</span></sc-if>
+      </div>
+      <sc-if value="{{ teach.hasError }}"><span style="font-size:12px;color:var(--color-accent-300)">{{ teach.error }}</span></sc-if>
+      <sc-if value="{{ teach.answering }}">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:12px;color:var(--color-neutral-400)">Answer by</span>
+            <div style="display:flex;gap:4px;padding:3px;border-radius:var(--radius-md);background:var(--color-surface)">
+              <sc-for list="{{ teach.tabs }}" as="t" hint-placeholder-count="4">
+                <button onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};font:500 12px var(--font-body);cursor:pointer"><i class="{{ t.icon }}"></i>{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <div style="flex:1"></div>
+            <button class="btn btn-ghost" onClick="{{ teach.notSure }}" disabled="{{ teach.busy }}" style="white-space:nowrap;flex:none">I'm not sure</button>
+          </div>
+          <sc-if value="{{ teach.isType }}">
+            <div style="display:flex;gap:8px">
+              <input class="input" value="{{ teach.input }}" onChange="{{ teach.onInput }}" onKeyDown="{{ teach.onKey }}" placeholder="Explain it to Milo in your own words…" style="flex:1;min-width:0">
+              <button class="btn btn-primary" onClick="{{ teach.sendType }}" disabled="{{ teach.busy }}">Send</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ teach.isRec }}">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="position:relative;width:{{ teach.previewW }}px;height:112px;flex:none;border-radius:var(--radius-md);border:1px dashed var(--color-neutral-600);background:var(--color-neutral-900);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--color-neutral-400)">
+                <i class="{{ teach.recIcon }}" style="font-size:26px"></i>
+                <span style="font-size:11px;text-align:center;padding:0 8px">{{ teach.recPlaceholder }}</span>
+                <sc-if value="{{ teach.recOn }}"><span style="position:absolute;left:8px;top:6px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-accent-200)"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent)"></span>REC {{ teach.recTime }}</span></sc-if>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <sc-if value="{{ teach.canStart }}"><button class="btn btn-primary" onClick="{{ teach.recStart }}"><i class="ph ph-record"></i> Start recording</button></sc-if>
+                  <sc-if value="{{ teach.recOn }}"><button class="btn btn-secondary" onClick="{{ teach.recStop }}"><i class="ph ph-stop"></i> Stop</button></sc-if>
+                  <sc-if value="{{ teach.recDone }}"><span style="font-size:12px;color:var(--color-neutral-300)">Recorded {{ teach.recTime }}</span><button class="btn btn-ghost" onClick="{{ teach.recReset }}">Re-record</button></sc-if>
+                </div>
+                <sc-if value="{{ teach.recDone }}">
+                  <textarea class="input" value="{{ teach.transcript }}" onChange="{{ teach.onTranscript }}" placeholder="Transcript: automatic in the real app. For this mock, type what you said." style="min-height:52px;resize:vertical;font-family:var(--font-body)"></textarea>
+                  <button class="btn btn-primary" onClick="{{ teach.sendTranscript }}" disabled="{{ teach.busy }}" style="align-self:flex-start">Send answer</button>
+                </sc-if>
+                <sc-if value="{{ teach.notDone }}"><span style="font-size:11px;line-height:1.45;color:var(--color-neutral-500)">Mock: the real app captures your mic, camera or screen and transcribes it so Milo can check it.</span></sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ teach.finished }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+          <span style="font:500 16px var(--font-heading)">Milo understood {{ teach.gotCount }} of {{ teach.allCount }} questions</span>
+          <sc-if value="{{ teach.passed }}"><span style="font-size:13px;color:var(--color-neutral-300)">Every lesson objective in this unit is covered. Unit assessment passed.</span></sc-if>
+          <sc-if value="{{ teach.hasGaps }}">
+            <span style="font-size:13px;color:var(--color-neutral-300)">Review the ideas marked in the checklist, then re-check only those questions with Milo.</span>
+            <button class="btn btn-primary" onClick="{{ teach.recheck }}" style="align-self:flex-start">Re-check {{ teach.gapCount }} with Milo</button>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div style="display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+        <span style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-neutral-400)">Unit objective</span>
+        <span style="font-size:12px;line-height:1.45;color:var(--color-neutral-100)">{{ teach.unitObjective }}</span>
+      </div>
+      <span style="font-size:12px;color:var(--color-neutral-400)">Milo's checklist · one question per lesson objective</span>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:430px;overflow:auto">
+        <sc-for list="{{ teach.checklist }}" as="c" hint-placeholder-count="6">
+          <div style="display:flex;gap:9px;padding:8px;border-radius:6px;background:{{ c.bg }};border:1px solid {{ c.border }}">
+            <i class="{{ c.icon }}" style="font-size:16px;color:{{ c.iconColor }};margin-top:1px"></i>
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;font-weight:500;flex:1;min-width:0">{{ c.title }}</span><span style="flex:none;white-space:nowrap;font-size:10px;color:{{ c.statusColor }}">{{ c.status }}</span></div>
+              <span style="font-size:11px;line-height:1.4;color:var(--color-neutral-400)">{{ c.objective }}</span>
+              <sc-if value="{{ c.hasNote }}"><span style="font-size:11px;line-height:1.4;color:var(--color-neutral-200)">{{ c.note }}</span></sc-if>
+              <sc-if value="{{ c.canReview }}"><button class="btn btn-ghost" onClick="{{ c.review }}" style="align-self:flex-start">Review {{ c.title }} →</button></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isCards }}">
+  <div style="display:flex;flex-direction:column;gap:20px;padding:22px 24px 26px;min-height:516px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-ghost" onClick="{{ backToMap }}">← Back to map</button>
+      <span style="font:500 20px var(--font-heading);flex:1">Your idea cards</span>
+      <span style="font-size:12px;color:var(--color-neutral-400)">Master an idea to collect its card. Score 8 out of 8 for a shiny one.</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--color-neutral-400)">Preview a reveal (demo):</span>
+      <sc-for list="{{ previews }}" as="p" hint-placeholder-count="4"><button class="btn btn-ghost" onClick="{{ p.go }}">{{ p.label }}</button></sc-for>
+      <span style="font-size:12px;color:var(--color-neutral-500)">· click a collected card to replay it</span>
+    </div>
+    <sc-for list="{{ collection }}" as="u">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:12px;color:var(--color-neutral-300)">{{ u.title }} · {{ u.count }}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{ u.cards }}" as="c">
+            <div onClick="{{ c.replay }}" style="cursor:{{ c.cursor }};width:128px;height:178px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:var(--radius-md);background:{{ c.bg }};border:1px solid {{ c.border }};box-shadow:{{ c.glow }};opacity:{{ c.op }}">
+              <span style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:{{ c.rarityColor }}">{{ c.rarity }}</span>
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;font-size:30px;color:{{ c.iconColor }}"><i class="{{ c.icon }}"></i></span>
+              <span style="font:500 13px var(--font-heading)">{{ c.title }}</span>
+              <span style="font-size:10px;color:var(--color-neutral-400)">{{ c.meta }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ hasReward }}">
+    <div ref="{{ revealRef }}" onClick="{{ reward.onStage }}" style="position:absolute;inset:0;z-index:10;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 44%, var(--color-accent-900), rgba(10,11,20,.95) 62%);cursor:{{ reward.cursor }};user-select:none">
+      <div style="position:absolute;left:0;right:0;top:0;height:668px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+      <canvas data-fx-canvas="1" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+      <div data-rays="1" style="position:absolute;left:50%;top:46%;width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;background:repeating-conic-gradient(from 0deg, color-mix(in oklch, var(--color-accent) 30%, transparent) 0deg 5deg, transparent 5deg 18deg);-webkit-mask-image:radial-gradient(circle, #000 6%, transparent 58%);mask-image:radial-gradient(circle, #000 6%, transparent 58%);opacity:0;pointer-events:none"></div>
+      <div data-slam="1" style="position:absolute;left:0;right:0;top:7%;text-align:center;font:500 96px var(--font-heading);letter-spacing:.18em;color:transparent;-webkit-text-stroke:1px var(--color-accent-300);opacity:0;pointer-events:none;white-space:nowrap">{{ reward.slamText }}</div>
+      <div data-rings="1" style="position:absolute;left:50%;top:46%;width:0;height:0;pointer-events:none"></div>
+      <div data-stage="1" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:14px">
+        <span data-kicker="1" style="font:500 13px var(--font-heading);text-transform:uppercase;letter-spacing:.16em;color:var(--color-accent-300)">{{ reward.kicker }}</span>
+        <div data-card-wrap="1" onMouseMove="{{ reward.tilt }}" onMouseLeave="{{ reward.untilt }}" style="position:relative;width:{{ reward.w }}px;height:{{ reward.h }}px;perspective:900px">
+          <div data-aura="1" style="position:absolute;left:50%;top:50%;width:{{ reward.glowSize }}px;height:{{ reward.glowSize }}px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle, var(--color-accent-600), transparent 62%);opacity:.3;pointer-events:none"></div>
+          <div data-tilt="1" style="position:absolute;inset:0;transform-style:preserve-3d;transition:transform 140ms ease-out">
+            <div data-flip="1" style="position:absolute;inset:0;transform-style:preserve-3d">
+              <div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--radius-lg);border:1px solid var(--color-accent-600);background:repeating-linear-gradient(45deg, var(--color-accent-900) 0 10px, var(--color-surface) 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;box-shadow:0 0 30px var(--color-accent-800)">
+                <span data-back-orb="1" style="width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-bg);border:1px solid var(--color-accent);color:var(--color-accent-200);font-size:34px;box-shadow:0 0 26px var(--color-accent-600)"><i class="ph ph-graph"></i></span>
+                <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-200)">Tap to open</span>
+              </div>
+              <div style="position:absolute;inset:0;transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-lg);background:{{ reward.bg }};border:1px solid {{ reward.border }};box-shadow:{{ reward.glow }}">
+                <span style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--color-accent-300)">{{ reward.rarity }}</span>
+                <span style="flex:1;display:flex;align-items:center;justify-content:center;font-size:{{ reward.iconSize }}px;color:var(--color-accent-200)"><i class="{{ reward.icon }}"></i></span>
+                <span style="font:500 18px var(--font-heading)">{{ reward.title }}</span>
+                <span style="font-size:11px;line-height:1.4;color:var(--color-neutral-300)">{{ reward.sub }}</span>
+                <div data-foil="1" style="position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--mx, 50%) var(--my, 30%), color-mix(in oklch, var(--color-accent-200) 34%, transparent), transparent 58%);opacity:{{ reward.foilOp }};pointer-events:none;mix-blend-mode:screen"></div>
+                <div data-sheen="1" style="position:absolute;top:-20%;bottom:-20%;left:-60%;width:45%;background:linear-gradient(100deg, transparent, color-mix(in oklch, var(--color-accent-100) 55%, transparent), transparent);transform:skewX(-15deg);pointer-events:none;mix-blend-mode:screen"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ reward.isCharge }}"><span style="font-size:12px;color:var(--color-neutral-300)">{{ reward.hint }}</span></sc-if>
+        <sc-if value="{{ reward.isDone }}">
+          <div data-info="1" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <sc-if value="{{ reward.hasXp }}"><span data-xp="1" style="font:500 34px var(--font-heading);color:var(--color-accent-200);text-shadow:0 0 24px var(--color-accent-600);font-variant-numeric:tabular-nums">+0 XP</span></sc-if>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <sc-for list="{{ reward.lines }}" as="l"><span data-line="1" style="font-size:13px;color:var(--color-neutral-200)">{{ l.text }}</span></sc-for>
+            </div>
+            <button class="btn btn-primary" onClick="{{ closeReward }}">{{ reward.cta }}</button>
+          </div>
+        </sc-if>
+      </div>
+      <div data-flash="1" style="position:absolute;inset:0;background:var(--color-accent-100);opacity:0;pointer-events:none"></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}">
+    <div style="position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:var(--radius-md);background:var(--color-accent-900);border:1px solid var(--color-accent-600);box-shadow:var(--shadow-lg);font-size:13px;color:var(--color-accent-100);white-space:nowrap"><i class="ph ph-info"></i>{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:960,&quot;height&quot;:700},&quot;demoStart&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;fresh&quot;,&quot;almost&quot;,&quot;unitDone&quot;],&quot;default&quot;:&quot;almost&quot;,&quot;tsType&quot;:&quot;'fresh'|'almost'|'unitDone'&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;masteryThreshold&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:50,&quot;max&quot;:95,&quot;step&quot;:5,&quot;unit&quot;:&quot;%&quot;,&quot;default&quot;:70,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Assessment&quot;},&quot;quizLength&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;min&quot;:3,&quot;max&quot;:12,&quot;default&quot;:8,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Assessment&quot;},&quot;maxLinks&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Map rules&quot;}}">
+const IDEAS = {
+  pos: { t: 'Position', c: 'Quantity', b: 'Where an object is, measured from a chosen starting point called the origin.', o: 'I can describe an object’s position from an origin.' },
+  disp: { t: 'Displacement', c: 'Quantity', b: 'How far an object ends up from where it started, in a straight line, with a direction.', o: 'I can find displacement and tell it apart from distance.' },
+  dist: { t: 'Distance', c: 'Quantity', b: 'The total length of the path travelled. It has no direction and never goes down.', o: 'I can calculate the total distance of a journey.' },
+  time: { t: 'Time interval', c: 'Quantity', b: 'How long something takes, written Δt. Every rate in kinematics divides by it.', o: 'I can find the time interval between two moments.' },
+  speed: { t: 'Speed', c: 'Quantity', b: 'How fast something moves: distance divided by time. It has no direction.', o: 'I can calculate average speed from distance and time.' },
+  vel: { t: 'Velocity', c: 'Quantity', b: 'Speed with a direction: displacement divided by time. It can be negative.', o: 'I can calculate average velocity and give its direction.' },
+  vec: { t: 'Sign convention', c: 'Tool', b: 'Choosing one direction as positive so every vector gets a + or − sign.', o: 'I can set a positive direction and sign every vector.' },
+  acc: { t: 'Acceleration', c: 'Quantity', b: 'How quickly velocity changes: change in velocity divided by time.', o: 'I can calculate acceleration and say whether something speeds up or slows down.' },
+  const: { t: 'Constant acceleration', c: 'Motion', b: 'Motion where velocity changes by the same amount every second.', o: 'I can recognise when acceleration is constant.' },
+  suvat: { t: 'SUVAT equations', c: 'Tool', b: 'Four equations linking s, u, v, a and t. Each one leaves out one of the five.', o: 'I can choose the right SUVAT equation for a problem.' },
+  xt: { t: 'Position–time graph', c: 'Tool', b: 'A graph of position against time. Its slope is the velocity.', o: 'I can read velocity from the slope of a position–time graph.' },
+  vt: { t: 'Velocity–time graph', c: 'Tool', b: 'A graph of velocity against time. Its slope is acceleration and its area is displacement.', o: 'I can read acceleration and displacement from a velocity–time graph.' },
+  grav: { t: 'Gravity', c: 'Quantity', b: 'Near Earth’s surface, gravity accelerates everything downward at about 9.8 m/s².', o: 'I can use g = 9.8 m/s² as a downward acceleration.' },
+  fall: { t: 'Free fall', c: 'Motion', b: 'Motion under gravity alone, with air resistance ignored.', o: 'I can solve problems about objects dropped or thrown upward.' },
+  proj: { t: 'Projectile motion', c: 'Motion', b: 'A thrown or launched object moving sideways and falling at the same time.', o: 'I can solve projectile problems by treating horizontal and vertical motion separately.' },
+  comp: { t: 'Components', c: 'Tool', b: 'Splitting a velocity into a horizontal part and a vertical part that act independently.', o: 'I can split a velocity into horizontal and vertical parts.' },
+  brake: { t: 'Stopping distance', c: 'Motion', b: 'How far a vehicle travels while it slows to a stop.', o: 'I can calculate how far something travels while braking.' },
+  alg: { t: 'Rearranging equations', c: 'Tool', b: 'Getting the unknown on its own by doing the same thing to both sides of an equation.', o: 'I can rearrange a kinematics equation for any variable.' },
+  journey: { t: 'Two-stage journey', c: 'Motion', b: 'A trip where the acceleration changes partway, so it is solved one stage at a time.', o: 'I can solve a journey with two stages of motion.' }
+};
+const MAP_OBJ = 'Describe how objects move, and use graphs and equations to predict where they will be and when.';
+const UNITS = [
+  { n: 1, t: 'Describing motion', o: 'Describe motion using position, displacement, distance, speed and velocity.', ids: ['pos','disp','dist','time','speed','vel','vec'] },
+  { n: 2, t: 'Changing motion', o: 'Describe changing velocity with acceleration, graphs and the SUVAT equations.', ids: ['acc','const','suvat','alg','xt','vt'] },
+  { n: 3, t: 'Motion in the real world', o: 'Apply kinematics to falling objects, projectiles and real journeys.', ids: ['grav','fall','proj','comp','brake','journey'] }
+];
+const CANDIDATES = [
+  ['disp','vel','divided by time gives',5,{ t: 'Why velocity uses displacement', d: '2:05' }],
+  ['speed','vel','plus a direction is',5,{ t: 'Speed vs velocity', d: '1:40' }],
+  ['dist','speed','divided by time gives',5],
+  ['pos','disp','changing gives',5],
+  ['vel','acc','changes at a rate called',5,{ t: 'What acceleration really means', d: '2:20' }],
+  ['const','suvat','is needed for',5,{ t: 'When SUVAT works, and when it doesn’t', d: '2:45' }],
+  ['grav','fall','causes',5,{ t: 'Everything falls the same way', d: '1:58' }],
+  ['comp','proj','split up',5,{ t: 'Splitting a projectile', d: '2:30' }],
+  ['dist','disp','differs from',4], ['time','vel','sets the rate for',3], ['time','acc','sets the rate for',3],
+  ['vec','disp','sets the direction of',4], ['vec','vel','sets the direction of',4], ['vec','comp','gives signs to',2],
+  ['acc','const','held steady gives',4], ['vel','suvat','appears as u and v in',4], ['acc','suvat','appears as a in',4], ['disp','suvat','appears as s in',3],
+  ['pos','xt','is plotted on',4], ['vel','xt','is the slope of',4], ['vel','vt','is plotted on',4], ['acc','vt','is the slope of',4], ['disp','vt','is the area under',3],
+  ['grav','acc','gives a fixed',3], ['const','fall','describes',4], ['fall','proj','is the vertical part of',4],
+  ['suvat','brake','calculate',3], ['alg','suvat','is how you solve',4], ['alg','fall','finds the time in',2], ['acc','brake','when negative, sets',4], ['journey','vt','is easiest to see on',3],
+  ['suvat','journey','are applied stage by stage in',3], ['suvat','fall','solve problems in',3], ['brake','journey','can be a stage of',2]
+];
+const LOCKS = {};
+const EXERCISES = {
+  vel: { groups: [
+    { title: 'Speed and velocity from measurements', std: 'HSN-Q.A.1', items: [
+      { id: 'v1', title: 'Average speed from distance and time', problems: [
+        { type: 'num', q: 'A bus travels 1500 m in 300 s. What is its average speed?', ans: 5, unit: 'm/s', why: '1500 ÷ 300 = 5 m/s.' },
+        { type: 'num', q: 'A runner covers 400 m in 80 s, then 200 m in 50 s. What is her average speed for the whole run?', ans: 4.6, unit: 'm/s', why: 'Total distance ÷ total time = 600 ÷ 130 ≈ 4.6 m/s. Don’t average the two speeds.' },
+        { type: 'mc', q: 'A cyclist rides 12 km in 0.5 h. What is her average speed?', opts: ['24 km/h', '6 km/h', '12.5 km/h'], ans: 0, why: '12 ÷ 0.5 = 24 km/h.' }
+      ] },
+      { id: 'v2', title: 'Average velocity from displacement', problems: [
+        { type: 'num', q: 'A dog runs 30 m east, then 10 m west, in 8 s. Taking east as positive, what is its average velocity?', ans: 2.5, unit: 'm/s', why: 'Displacement = 30 − 10 = 20 m east. 20 ÷ 8 = 2.5 m/s.' },
+        { type: 'num', q: 'A swimmer swims one 50 m length and back in 80 s. What is her average velocity?', ans: 0, unit: 'm/s', why: 'She ends where she started, so her displacement and average velocity are both 0.' },
+        { type: 'num', q: 'A lift goes from 30 m up down to the ground in 15 s. Taking up as positive, what is its average velocity?', ans: -2, unit: 'm/s', why: 'Displacement = 0 − 30 = −30 m. −30 ÷ 15 = −2 m/s.' }
+      ] },
+      { id: 'v3', title: 'Speed or velocity?', problems: [
+        { type: 'mc', q: '“The car is moving at 20 m/s.” Is this a speed or a velocity?', opts: ['Speed', 'Velocity'], ans: 0, why: 'No direction is given, so it is a speed.' },
+        { type: 'mc', q: 'Two cars both drive at 15 m/s, one north and one south. Which is true?', opts: ['Same speed, different velocities', 'Same velocity, different speeds', 'Same speed and same velocity'], ans: 0, why: 'Velocity includes direction, so opposite directions mean different velocities.' },
+        { type: 'mc', q: 'Can average speed be greater than the size of average velocity?', opts: ['Yes, when the path doubles back or turns', 'No, they are always equal', 'No, velocity is always bigger'], ans: 0, why: 'Distance can be longer than displacement, so average speed can be bigger.' }
+      ] }
+    ] },
+    { title: 'Velocity as a rate of change', std: 'HSF-IF.B.6', items: [
+      { id: 'v4', title: 'Velocity from position–time graphs', problems: [
+        { type: 'num', q: 'The graph shows a skateboarder’s position. What is her velocity?', graph: { series: [[[0, 0], [5, 20]]] }, ans: 4, unit: 'm/s', why: 'Slope = 20 ÷ 5 = 4 m/s.' },
+        { type: 'num', q: 'What is the velocity of this object?', graph: { series: [[[0, 30], [6, 0]]] }, ans: -5, unit: 'm/s', why: 'Slope = (0 − 30) ÷ 6 = −5 m/s. It is moving back toward the origin.' },
+        { type: 'mc', q: 'What does this graph show?', graph: { series: [[[0, 10], [8, 10]]] }, opts: ['The object is at rest', 'The object moves at 10 m/s', 'The object is speeding up'], ans: 0, why: 'The position doesn’t change, so the slope and the velocity are 0.' }
+      ] },
+      { id: 'v5', title: 'Velocity from tables', problems: [
+        { type: 'num', q: 'The table shows a toy car’s position. What is its velocity?', table: { t: [0, 2, 4, 6], x: [0, 6, 12, 18] }, ans: 3, unit: 'm/s', why: 'Position goes up 6 m every 2 s: 6 ÷ 2 = 3 m/s.' },
+        { type: 'num', q: 'What is this cart’s velocity?', table: { t: [0, 1, 2, 3], x: [50, 42, 34, 26] }, ans: -8, unit: 'm/s', why: 'Position drops 8 m every second, so v = −8 m/s.' },
+        { type: 'mc', q: 'Is this ball’s velocity constant?', table: { t: [0, 1, 2, 3], x: [0, 2, 8, 18] }, opts: ['No, the position changes by more each second', 'Yes, it is 6 m/s', 'Yes, it is 2 m/s'], ans: 0, why: 'The changes are 2, 6 and 10 m each second, so the velocity is increasing.' }
+      ] },
+      { id: 'v6', title: 'Velocity from equations', problems: [
+        { type: 'num', q: 'A train’s position is x = 25t + 100 (x in m, t in s). What is its velocity?', ans: 25, unit: 'm/s', why: 'In x = vt + x₀, the number multiplying t is the velocity: 25 m/s.' },
+        { type: 'num', q: 'An object’s position is x = 60 − 4t. What is its velocity?', ans: -4, unit: 'm/s', why: 'The number multiplying t is −4, so v = −4 m/s.' },
+        { type: 'mc', q: 'Which equation describes an object that starts at 5 m and moves at 3 m/s?', opts: ['x = 3t + 5', 'x = 5t + 3', 'x = 3 + 5'], ans: 0, why: 'Velocity multiplies t and the starting position is added: x = 3t + 5.' }
+      ] },
+      { id: 'vq1', title: 'Velocity: Quiz 1', kind: 'quiz', from: ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] }
+    ] },
+    { title: 'Compare and interpret velocities', std: 'HS-PS2-1', items: [
+      { id: 'v7', title: 'Compare velocities', problems: [
+        { type: 'mc', q: 'Ana walks 300 m in 240 s. Ben walks 200 m in 150 s. Who walks faster?', opts: ['Ben: 1.33 m/s vs 1.25 m/s', 'Ana, because she walks farther', 'They walk at the same speed'], ans: 0, why: 'Ana: 300 ÷ 240 = 1.25 m/s. Ben: 200 ÷ 150 ≈ 1.33 m/s.' },
+        { type: 'mc', q: 'Which runner has the greater velocity, and by how much?', graph: { series: [[[0, 0], [4, 20]], [[0, 0], [4, 12]]], names: ['Runner A', 'Runner B'] }, opts: ['A, by 2 m/s', 'B, by 2 m/s', 'A, by 8 m/s'], ans: 0, why: 'A: 20 ÷ 4 = 5 m/s. B: 12 ÷ 4 = 3 m/s. The difference is 2 m/s.' },
+        { type: 'mc', q: 'Car P has x = 12t. Car Q’s position goes up 30 m every 2 s. Which is faster?', opts: ['Q: 15 m/s vs 12 m/s', 'P: 12 m/s vs 10 m/s', 'They are the same'], ans: 0, why: 'Q: 30 ÷ 2 = 15 m/s, which is more than P’s 12 m/s.' }
+      ] },
+      { id: 'v8', title: 'Interpret velocity in context', problems: [
+        { type: 'mc', q: 'A drone’s position is x = −3t + 45. What does the −3 mean?', opts: ['It moves 3 m back toward the origin every second', 'It starts 3 m behind the origin', 'It slows down by 3 m/s every second'], ans: 0, why: 'The number multiplying t is the velocity: 3 m/s in the negative direction.' },
+        { type: 'mc', q: 'What does the slope of this bike’s graph tell you?', graph: { series: [[[0, 0], [10, 50]]] }, opts: ['The bike travels 5 m every second', 'The bike travels 50 m every second', 'The bike speeds up by 5 m/s each second'], ans: 0, why: 'Slope = 50 ÷ 10 = 5 m/s: 5 m more every second.' },
+        { type: 'mc', q: 'An object’s velocity is 0 m/s from t = 4 s to t = 7 s. What happened?', opts: ['It stayed still for 3 s', 'It went back to the start', 'It moved at a constant speed'], ans: 0, why: 'Zero velocity means the position isn’t changing.' }
+      ] }
+    ] }
+  ] },
+  disp: { groups: [
+    { title: 'Displacement and distance', std: 'HSN-Q.A.1', items: [
+      { id: 'd1', title: 'Find displacement along a line', problems: [
+        { type: 'num', q: 'You walk 8 m east, then 3 m west. Taking east as positive, what is your displacement?', ans: 5, unit: 'm', why: '8 − 3 = 5 m east.' },
+        { type: 'num', q: 'A car moves from x = 40 m to x = 15 m. What is its displacement?', ans: -25, unit: 'm', why: 'Final − initial = 15 − 40 = −25 m.' },
+        { type: 'num', q: 'A runner finishes one full lap of a 400 m track. What is her displacement?', ans: 0, unit: 'm', why: 'She ends where she started, so displacement is 0.' }
+      ] },
+      { id: 'd2', title: 'Distance or displacement?', problems: [
+        { type: 'num', q: 'You walk 8 m east, then 3 m west. What distance did you walk?', ans: 11, unit: 'm', why: 'Distance adds every part of the path: 8 + 3 = 11 m.' },
+        { type: 'mc', q: 'Which of these can be negative?', opts: ['Displacement', 'Distance', 'Both'], ans: 0, why: 'Displacement has a direction, so it can be negative. Distance never is.' },
+        { type: 'mc', q: 'A ball is thrown 5 m up and caught at the same height. Which is true?', opts: ['Distance 10 m, displacement 0 m', 'Distance 0 m, displacement 10 m', 'Both are 10 m'], ans: 0, why: 'It travels 5 m up and 5 m down, but ends where it started.' }
+      ] }
+    ] },
+    { title: 'Displacement from graphs and tables', std: 'HSF-IF.B.6', items: [
+      { id: 'd3', title: 'Read displacement from data', problems: [
+        { type: 'num', q: 'What is the displacement from t = 0 s to t = 6 s?', graph: { series: [[[0, 5], [6, 25]]] }, ans: 20, unit: 'm', why: '25 − 5 = 20 m.' },
+        { type: 'num', q: 'What is the displacement from t = 0 s to t = 5 s?', graph: { series: [[[0, 30], [5, 10]]] }, ans: -20, unit: 'm', why: '10 − 30 = −20 m.' },
+        { type: 'num', q: 'What is the displacement from t = 0 s to t = 4 s?', table: { t: [0, 2, 4], x: [12, 20, 4] }, ans: -8, unit: 'm', why: 'Only the start and end matter: 4 − 12 = −8 m.' }
+      ] },
+      { id: 'dq1', title: 'Displacement: Quiz 1', kind: 'quiz', from: ['d1', 'd2', 'd3'] }
+    ] }
+  ] },
+  acc: { groups: [
+    { title: 'Calculate acceleration', std: 'HSN-Q.A.1', items: [
+      { id: 'a1', title: 'Acceleration from a change in velocity', problems: [
+        { type: 'num', q: 'A bike goes from 2 m/s to 8 m/s in 3 s. What is its acceleration?', ans: 2, unit: 'm/s²', why: '(8 − 2) ÷ 3 = 2 m/s².' },
+        { type: 'num', q: 'A car slows from 25 m/s to 10 m/s in 5 s. What is its acceleration?', ans: -3, unit: 'm/s²', why: '(10 − 25) ÷ 5 = −3 m/s².' },
+        { type: 'num', q: 'A sprinter goes from rest to 9 m/s in 1.5 s. What is her acceleration?', ans: 6, unit: 'm/s²', why: '(9 − 0) ÷ 1.5 = 6 m/s².' }
+      ] },
+      { id: 'a2', title: 'Speeding up or slowing down?', problems: [
+        { type: 'mc', q: 'An object has v = +12 m/s and a = −2 m/s². What is it doing?', opts: ['Slowing down', 'Speeding up', 'Moving at constant speed'], ans: 0, why: 'Opposite signs mean the object is slowing down.' },
+        { type: 'mc', q: 'An object has v = −6 m/s and a = −3 m/s². What is it doing?', opts: ['Speeding up', 'Slowing down', 'Staying at rest'], ans: 0, why: 'Same signs mean the object is speeding up, here in the negative direction.' },
+        { type: 'mc', q: 'An object’s acceleration is 0. Which is true?', opts: ['Its velocity stays the same', 'It must be at rest', 'It is slowing down'], ans: 0, why: 'Zero acceleration means no change in velocity. It can still be moving.' }
+      ] }
+    ] },
+    { title: 'Acceleration as a rate of change', std: 'HSF-IF.B.6', items: [
+      { id: 'a3', title: 'Acceleration from velocity–time data', problems: [
+        { type: 'num', q: 'What is the acceleration shown on this velocity–time graph?', graph: { series: [[[0, 0], [4, 12]]], y: 'Velocity v (m/s)' }, ans: 3, unit: 'm/s²', why: 'Slope = 12 ÷ 4 = 3 m/s².' },
+        { type: 'num', q: 'What is the acceleration?', graph: { series: [[[0, 20], [5, 5]]], y: 'Velocity v (m/s)' }, ans: -3, unit: 'm/s²', why: 'Slope = (5 − 20) ÷ 5 = −3 m/s².' },
+        { type: 'num', q: 'The table shows a cart’s velocity. What is its acceleration?', table: { t: [0, 1, 2, 3], x: [4, 7, 10, 13], xl: 'Velocity v (m/s)' }, ans: 3, unit: 'm/s²', why: 'Velocity goes up 3 m/s every second.' }
+      ] },
+      { id: 'aq1', title: 'Acceleration: Quiz 1', kind: 'quiz', from: ['a1', 'a2', 'a3'] }
+    ] }
+  ] },
+  suvat: { groups: [
+    { title: 'Choose the right equation', std: 'HSA-SSE.A.1', items: [
+      { id: 's1', title: 'Which variable is not involved?', problems: [
+        { type: 'mc', q: 'u = 3 m/s, a = 2 m/s², t = 4 s. Find v. Which equation fits?', opts: ['v = u + at', 'v² = u² + 2as', 's = ½(u + v)t'], ans: 0, why: 's is not involved, so use v = u + at.' },
+        { type: 'mc', q: 'u = 0, v = 20 m/s, s = 50 m. Find a. Which equation fits?', opts: ['v² = u² + 2as', 'v = u + at', 's = ut + ½at²'], ans: 0, why: 't is not involved, so use v² = u² + 2as.' },
+        { type: 'mc', q: 'u = 10 m/s, v = 0, t = 4 s. Find s. Which equation fits?', opts: ['s = ½(u + v)t', 'v² = u² + 2as', 'v = u + at'], ans: 0, why: 'a is not involved, so use s = ½(u + v)t.' }
+      ] },
+      { id: 's2', title: 'When do SUVAT equations apply?', problems: [
+        { type: 'mc', q: 'A car brakes steadily to a stop. Can you use SUVAT?', opts: ['Yes, the acceleration is constant', 'No, the car stops'], ans: 0, why: 'Steady braking means constant acceleration.' },
+        { type: 'mc', q: 'A car’s acceleration changes every second. What should you use?', opts: ['A motion graph, because a is not constant', 'v = u + at'], ans: 0, why: 'SUVAT equations only work when acceleration is constant.' },
+        { type: 'mc', q: 'A ball falls with no air resistance. Can you use SUVAT?', opts: ['Yes, a = 9.8 m/s² downward', 'No, gravity changes as it falls'], ans: 0, why: 'Near Earth’s surface, gravity gives a constant acceleration.' }
+      ] }
+    ] },
+    { title: 'Rearrange and solve', std: 'HSA-CED.A.4', items: [
+      { id: 's3', title: 'Rearrange for the unknown', problems: [
+        { type: 'num', q: 'Using v = u + at with u = 4 m/s, v = 16 m/s and a = 3 m/s², find t.', ans: 4, unit: 's', why: 't = (v − u) ÷ a = 12 ÷ 3 = 4 s.' },
+        { type: 'num', q: 'Using v² = u² + 2as with u = 0, v = 12 m/s and a = 4 m/s², find s.', ans: 18, unit: 'm', why: 's = (v² − u²) ÷ 2a = 144 ÷ 8 = 18 m.' },
+        { type: 'num', q: 'Using s = ut + ½at² with u = 0, t = 3 s and s = 27 m, find a.', ans: 6, unit: 'm/s²', why: '27 = ½ × a × 9, so a = 54 ÷ 9 = 6 m/s².' }
+      ] },
+      { id: 'sq1', title: 'SUVAT: Quiz 1', kind: 'quiz', from: ['s1', 's2', 's3'] }
+    ] }
+  ] },
+  fall: { groups: [
+    { title: 'Solve free-fall problems', std: 'HSA-CED.A.4', items: [
+      { id: 'f1', title: 'Dropped objects', problems: [
+        { type: 'num', q: 'A stone is dropped from rest. How fast is it falling after 2 s? Use g = 9.8 m/s².', ans: 19.6, unit: 'm/s', why: 'v = u + at = 0 + 9.8 × 2 = 19.6 m/s.' },
+        { type: 'num', q: 'A stone is dropped from rest. How far does it fall in 3 s?', ans: 44.1, unit: 'm', why: 's = ½at² = ½ × 9.8 × 9 = 44.1 m.' },
+        { type: 'num', q: 'A ball is dropped from 19.6 m. How long does it take to hit the ground?', ans: 2, unit: 's', why: '19.6 = ½ × 9.8 × t², so t² = 4 and t = 2 s.' }
+      ] },
+      { id: 'f2', title: 'Thrown upward', problems: [
+        { type: 'num', q: 'A ball is thrown straight up at 19.6 m/s. How long does it take to reach the top?', ans: 2, unit: 's', why: 'At the top v = 0: t = 19.6 ÷ 9.8 = 2 s.' },
+        { type: 'num', q: 'A ball is thrown straight up at 14 m/s. How high does it go?', ans: 10, unit: 'm', why: '0 = 14² − 2 × 9.8 × s, so s = 196 ÷ 19.6 = 10 m.' },
+        { type: 'mc', q: 'What are the ball’s velocity and acceleration at the very top?', opts: ['v = 0, a = 9.8 m/s² downward', 'v = 0, a = 0', 'v = 9.8 m/s, a = 0'], ans: 0, why: 'It stops for an instant, but gravity is still pulling it down.' }
+      ] },
+      { id: 'fq1', title: 'Free fall: Quiz 1', kind: 'quiz', from: ['f1', 'f2'] }
+    ] }
+  ] }
+};
+// Overview video per idea. src comes from Curriculum Pack › Ideas.media_url.
+const VIDEOS = { vel: { t: 'Velocity: the big picture', d: '6:40', src: '' } };
+// Worked example per exercise. src from Curriculum Pack › Practice.demo_video_url, steps from Practice.demo_steps. Exercises without one fall back to their first problem.
+const DEMOS = {
+  v1: { d: '2:10', q: 'A train travels 2400 m in 120 s. What is its average speed?', steps: ['Write what you know: distance d = 2400 m, time t = 120 s.', 'Pick the formula: average speed = d ÷ t.', 'Substitute: 2400 ÷ 120.', 'Answer: 20 m/s.'] },
+  v2: { d: '2:45', q: 'A cat walks 12 m east, then 4 m west, in 4 s. Taking east as positive, what is its average velocity?', steps: ['Use displacement, not distance: +12 + (−4) = +8 m.', 'Time t = 4 s.', 'Average velocity = displacement ÷ time = 8 ÷ 4.', 'Answer: +2 m/s, so 2 m/s east.'] },
+  v3: { d: '1:50', q: '“A plane flies at 250 m/s due north.” Is this a speed or a velocity?', steps: ['Look for a direction in the statement.', '“Due north” is a direction.', 'A size plus a direction is a velocity.', 'Answer: velocity.'] },
+  v4: { d: '3:05', q: 'A position–time line goes from (0 s, 5 m) to (4 s, 25 m). What is the velocity?', steps: ['Velocity is the slope of a position–time graph.', 'Rise: 25 − 5 = 20 m. Run: 4 − 0 = 4 s.', 'Slope = 20 ÷ 4.', 'Answer: 5 m/s.'] },
+  v5: { d: '2:30', q: 'A table shows t = 0, 2, 4 s and x = 10, 4, −2 m. What is the velocity?', steps: ['Find the change in position each step: 4 − 10 = −6 m.', 'Each step takes 2 s.', 'v = −6 ÷ 2.', 'Answer: −3 m/s. It is moving in the negative direction.'] },
+  v6: { d: '2:20', q: 'A bike’s position is x = 8t − 16. What is its velocity, and where does it start?', steps: ['Match it to x = vt + x₀.', 'The number multiplying t is v = 8 m/s.', 'The constant is x₀ = −16 m.', 'Answer: 8 m/s, starting 16 m behind the origin.'] }
+};
+function demoFor(it) { const d = DEMOS[it.id]; if (d) return d; const p = (it.problems || [])[0]; return p ? { d: '', q: p.q, steps: [p.why] } : null; }
+function vidVals(v, kicker, icon, title, meta) { return { hasSrc: !!(v && v.src), noSrc: !(v && v.src), src: (v && v.src) || '', kicker, icon, title, meta }; }
+const EX_LV = [['Not started', 'var(--color-neutral-400)'], ['Attempted', 'var(--color-neutral-200)'], ['Familiar', 'var(--color-accent-300)'], ['Proficient', 'var(--color-accent-200)']];
+function exItem(id) { for (const k in EXERCISES) for (const g of EXERCISES[k].groups) for (const it of g.items) if (it.id === id) return { it, g, idea: k }; return null; }
+function exKey(p) { return p.q + '|' + (p.opts || []).join('|'); }
+const W = 960, H = 560, R1 = 210, R2 = 410, EX = 1.35;
+const TUTOR = { name: 'Ms. Ivy', role: 'AI tutor', icon: 'ph ph-chalkboard-teacher',
+  system: 'You are Ms. Ivy, a calm, clear and encouraging physics tutor for Grade 9 to 11 students (ages 14 to 17) studying kinematics. Use short sentences, plain words and one everyday example, such as a car, a bike or a thrown ball. Show at most one small calculation. Praise effort and never make the student feel bad. Answer in 3 to 5 sentences. No markdown, no lists, no headings.' };
+const PEER = { name: 'Milo', role: 'Virtual classmate', icon: 'ph ph-student',
+  system: 'You are Milo, a 15-year-old classmate who is curious, friendly and still learning physics. You never lecture like a teacher. Ask simple questions, react with enthusiasm, and now and then repeat an idea back with a small, believable mistake, such as mixing up distance and displacement or dropping a minus sign, so the student can correct you. Reply in 1 to 3 short sentences. No markdown. Never say you are an AI.' };
+const GRADER = 'You check a K-12 student\'s explanation of a science unit for gaps in understanding. Reply with JSON only, no other text: {"covered":["id"],"gaps":[{"id":"id","note":"one short, kind sentence telling the student what was missing or mixed up"}],"summary":"one encouraging sentence written as Milo, the classmate they taught"}. Use only ids from the list. An idea counts as covered only if the student explained it or how it connects, correctly.';
+
+const PROBES = {
+  1: [
+    { id: 'pos', q: 'How do you say where something is, so everyone agrees?', keys: 'Measure position from a chosen origin, with a direction.' },
+    { id: 'disp', q: 'If I walk around the block and end up back home, what is my displacement?', keys: 'Zero: displacement is the straight-line change from start to finish.' },
+    { id: 'dist', q: 'Then what is the distance for that same walk?', keys: 'The whole length of the path walked; distance has no direction.' },
+    { id: 'time', q: 'Why does every rate in kinematics divide by time?', keys: 'Rates say how much something changes per second, using the time interval Δt.' },
+    { id: 'speed', q: 'How do you work out average speed?', keys: 'Total distance divided by total time.' },
+    { id: 'vel', q: 'How is velocity different from speed?', keys: 'Velocity is displacement over time and has a direction; it can be negative.' },
+    { id: 'vec', q: 'Why would a velocity ever be negative?', keys: 'You choose one direction as positive; motion the other way gets a minus sign.' }
+  ],
+  2: [
+    { id: 'acc', q: 'What does acceleration actually measure?', keys: 'How fast velocity changes: (v − u) ÷ t; negative when slowing down in the positive direction.' },
+    { id: 'const', q: 'What does constant acceleration mean?', keys: 'Velocity changes by the same amount every second.' },
+    { id: 'suvat', q: 'How do you pick which SUVAT equation to use?', keys: 'Find the one variable not involved and use the equation that leaves it out; only for constant acceleration.' },
+    { id: 'xt', q: 'What can you read from a position–time graph?', keys: 'The slope gives the velocity.' },
+    { id: 'vt', q: 'What does the area under a velocity–time graph tell you?', keys: 'The area is displacement; the slope is acceleration.' }
+  ],
+  3: [
+    { id: 'grav', q: 'What does gravity do to a falling object every second?', keys: 'It adds about 9.8 m/s of downward velocity each second; a = 9.8 m/s² downward.' },
+    { id: 'fall', q: 'If I drop a ball, what do I know before doing any maths?', keys: 'u = 0 and a = 9.8 m/s² downward, with air resistance ignored.' },
+    { id: 'comp', q: 'Why split a velocity into horizontal and vertical parts?', keys: 'The two parts act independently, so each can be solved on its own.' },
+    { id: 'proj', q: 'How do you solve a ball kicked off a cliff?', keys: 'Vertical motion is free fall and gives the time; horizontal velocity is constant, so distance = speed × time.' },
+    { id: 'brake', q: 'How would you work out a car’s stopping distance?', keys: 'Use v = 0 and a negative acceleration with v² = u² + 2as.' },
+    { id: 'journey', q: 'How do you solve a journey that speeds up and then cruises?', keys: 'Split it into stages; final velocity of one stage is the initial velocity of the next; add the distances.' }
+  ]
+};
+const PROBE_GRADER = 'You assess a K-12 student during a teach-back assessment. The student is teaching Milo, an 11-year-old classmate who missed the lesson. Reply with JSON only, no other text: {"verdict":"got"|"partial"|"miss","note":"one short, kind sentence to the student naming what was missing or mixed up (empty string if got)","milo":"what Milo says next"}. Verdict "got" means the student correctly covers the key points in their own words; small wording slips are fine. "I am not sure" is a miss. Milo speaks in character: 1 to 2 short, friendly sentences, curious, never a teacher, never says he is an AI. If followUpAllowed is true and the verdict is not got, Milo asks one simple follow-up question that nudges toward the missing point without giving the answer away. Otherwise Milo thanks them briefly and asks nothing.';
+const TIERS = {
+  Common: { lvl: 1, flipMs: 620, deg: 180, parts: 28, speed: 6, rings: 1, rays: 0, flash: 0.14, shake: 0, slam: false, confetti: 0, conv: 0, pulse: 1300, aura: [0.25, 0.45], hint: 'Tap the card to open it' },
+  Rare: { lvl: 2, flipMs: 780, deg: 180, parts: 64, speed: 8.5, rings: 2, rays: 0.6, flash: 0.4, shake: 8, slam: false, confetti: 0, conv: 0.8, pulse: 760, aura: [0.35, 0.7], hint: 'It\'s glowing… tap to open' },
+  Legendary: { lvl: 3, flipMs: 1100, deg: 540, parts: 140, speed: 11.5, rings: 3, rays: 1, flash: 0.85, shake: 18, slam: true, confetti: 2800, conv: 2.6, pulse: 380, aura: [0.5, 1], hint: 'Something powerful is inside… tap to open' }
+};
+const MILO_LINES = {
+  arrive: ['Wait, how does {A} {rel} {B}? Can you explain it to me?', 'Hmm, why would {A} {rel} {B}?', 'I never knew {A} and {B} were connected. What\'s going on there?', 'Ooh, {T}! I\'ve heard of it, but I don\'t really get it yet.'],
+  locked: ['Ooh, what\'s behind {T}? Let\'s unlock it!', '{T} is locked… master this idea and we can go in together!'],
+  quizStart: ['Let\'s do this together! Get a few right in a row and I\'ll cheer.', 'Quiz time! I\'ll try too.'],
+  correct: ['Oh, I get it!', 'Ohhh, that makes sense!', 'Nice one! I\'m writing that down.', 'Wait, really? Cool!'],
+  combo: ['Combo x{m}! You\'re on fire!', 'x{m}! Teach me that trick!', 'Unstoppable! x{m}!'],
+  wrong: ['Hmm, I would have picked that too.', 'That one tricked me as well.', 'Ooh, close! Let\'s look again.'],
+  pass: ['Oh, I get it now! {L}.', 'Yes! Now I understand {T}!'],
+  fail: ['That one was tricky for me too. Let\'s rebuild the links together.', 'No worries, I\'m still learning it too. Let\'s practise!'],
+  practiceOk: ['Oh! That fits!', 'That makes sense now.'],
+  practiceNo: ['Hmm, I don\'t think that one fits.', 'Not that one… try another?'],
+  sleepy: ['Psst… are you still there? Can you tell me about {T}?', 'Zzz… oh! Sorry. Want to explain {T} to me?'],
+  evolve: ['Whoa, I evolved! I\'m a {S} now. Thanks for teaching me!'],
+  teachStart: ['Okay, I\'m ready to learn!'],
+  teachGot: ['Oh, I get it!', 'Ohhh! That makes so much sense.', 'Got it! Adding that to my notes.'],
+  teachPartial: ['Hmm, I kind of get it…', 'Wait, I\'m almost there…'],
+  teachMiss: ['I\'m confused…', 'Huh? I don\'t get that part yet.'],
+  teachPass: ['I understand the whole unit now! You\'re a great teacher!']
+};
+const MILO_STAGES = [{ at: 0, n: 'Curious newbie' }, { at: 3, n: 'Getting it' }, { at: 7, n: 'Thinker' }, { at: 12, n: 'Scholar' }];
+function line(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  return { x: x1, y: y1, len: Math.hypot(dx, dy), deg: Math.atan2(dy, dx) * 180 / Math.PI };
+}
+function rng(seed) {
+  return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function shuffle(arr, r) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function hash(s) { let h = 7; for (const ch of s) h = h * 31 + ch.charCodeAt(0) | 0; return h; }
+function multOf(c) { return c >= 6 ? 4 : c >= 4 ? 3 : c >= 2 ? 2 : 1; }
+function unitOf(id) { return UNITS.find(u => u.ids.includes(id)); }
+function buildGraph(max) {
+  const sorted = CANDIDATES.map((e, i) => ({ a: e[0], b: e[1], rel: e[2], w: e[3], media: e[4] || null, i, key: e[0] + '>' + e[1] }))
+    .sort((x, y) => y.w - x.w || x.i - y.i);
+  const out = {}, inn = {}, kept = [], hidden = [];
+  sorted.forEach(e => {
+    if ((out[e.a] || 0) < max && (inn[e.b] || 0) < max) { kept.push(e); out[e.a] = (out[e.a] || 0) + 1; inn[e.b] = (inn[e.b] || 0) + 1; }
+    else hidden.push(e);
+  });
+  const adj = {}, deg = {}, wsum = {};
+  Object.keys(IDEAS).forEach(k => { adj[k] = new Set(); deg[k] = 0; wsum[k] = 0; });
+  kept.forEach(e => { adj[e.a].add(e.b); adj[e.b].add(e.a); deg[e.a]++; deg[e.b]++; wsum[e.a] += e.w; wsum[e.b] += e.w; });
+  const rank = Object.keys(IDEAS).sort((x, y) => deg[y] - deg[x] || wsum[y] - wsum[x]);
+  const pos = {};
+  pos[rank[0]] = { x: 0, y: 0, a: null, ring: 0 };
+  const ring1 = rank.slice(1, 7), ring2 = rank.slice(7);
+  const order = [ring1[0]], left = ring1.slice(1);
+  while (left.length) {
+    const last = order[order.length - 1];
+    left.sort((x, y) => (adj[last].has(y) ? 1 : 0) - (adj[last].has(x) ? 1 : 0));
+    order.push(left.shift());
+  }
+  order.forEach((id, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / order.length; pos[id] = { a, ring: 1, x: Math.cos(a) * R1 * EX, y: Math.sin(a) * R1 }; });
+  const pref = id => {
+    const as = [...adj[id]].filter(n => pos[n] && pos[n].a !== null).map(n => pos[n].a);
+    if (!as.length) return null;
+    return Math.atan2(as.reduce((s, a) => s + Math.sin(a), 0), as.reduce((s, a) => s + Math.cos(a), 0));
+  };
+  const withPref = ring2.map(id => ({ id, p: pref(id) }));
+  const known = withPref.filter(o => o.p !== null).sort((x, y) => x.p - y.p);
+  const all2 = known.concat(withPref.filter(o => o.p === null));
+  const start = known.length ? known[0].p : -Math.PI / 2;
+  all2.forEach((o, i) => { const a = start + i * 2 * Math.PI / all2.length; pos[o.id] = { a, ring: 2, x: Math.cos(a) * R2 * EX, y: Math.sin(a) * R2 }; });
+  // Push apart any cards whose boxes (sized for the enlarged current card plus link badges) overlap.
+  const ids = Object.keys(pos), GX = 360, GY = 150;
+  for (let it = 0; it < 80; it++) {
+    let moved = false;
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const p = pos[ids[i]], q = pos[ids[j]], dx = q.x - p.x, dy = q.y - p.y, ox = GX - Math.abs(dx), oy = GY - Math.abs(dy);
+      if (ox <= 0 || oy <= 0) continue;
+      moved = true;
+      const fp = p.ring === 0 ? 0 : 1, fq = q.ring === 0 ? 0 : 1, sum = fp + fq || 1;
+      if (ox / GX < oy / GY) { const sx = (dx >= 0 ? 1 : -1) * ox / sum; p.x -= sx * fp; q.x += sx * fq; }
+      else { const sy = (dy >= 0 ? 1 : -1) * oy / sum; p.y -= sy * fp; q.y += sy * fq; }
+    }
+    if (!moved) break;
+  }
+  return { kept, hidden, pos, rank };
+}
+function exitT(hw, hh, dx, dy) {
+  return Math.min(Math.abs(dx) > 0.01 ? hw / Math.abs(dx) : 9, Math.abs(dy) > 0.01 ? hh / Math.abs(dy) : 9);
+}
+
+class Component extends DCLogic {
+  state = { hist: null, visited: null, mastered: [], cards: {}, xp: 0, streakDays: 3, streakBumped: false,
+    view: 'map', hover: null, hoverEdge: null, zoom: 1, pan: { x: 0, y: 0 }, mode: 'idea', instant: false,
+    lock: null, toast: null, link: null, linkFrom: 'map', linkMode: 'video', chats: {}, inputs: {},
+    milo: { mood: 'idle', say: '', pulse: 0 }, quiz: null, quizSeed: 1, practice: null, rewards: [], fx: [], pendingFx: [], objOpen: true, buddyOpen: false,
+    teach: null, teachAttempt: 0, taught: [], exLv: {}, ex: null };
+
+  cfg() { return { thr: this.props.masteryThreshold ?? 70, qn: Math.max(3, Math.min(12, this.props.quizLength ?? 8)) }; }
+  graph() {
+    const max = Math.max(1, Math.min(5, this.props.maxLinks ?? 3));
+    if (!this._g || this._gMax !== max) { this._g = buildGraph(max); this._gMax = max; }
+    return this._g;
+  }
+  start() { return this.graph().rank[0]; }
+  links(id) {
+    return this.graph().kept.filter(e => e.a === id || e.b === id).map(e => ({
+      id: e.a === id ? e.b : e.a, e, text: IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[e.b].t
+    }));
+  }
+  isOpen(id, M, V) {
+    if (id === this.start() || V.includes(id)) return true;
+    const rq = this.reqs(id);
+    if (rq.length) return rq.every(r => M.includes(r));
+    const ex = LOCKS[id];
+    if (ex && M.length < ex.count) return false;
+    return this.links(id).some(k => M.includes(k.id));
+  }
+  componentDidMount() {
+    this.applyPreset(); this.syncReveal(); this.bumpIdle();
+    this._cfgReload = () => { this._cfg = null; this.forceUpdate(); };
+    window.addEventListener('ideamap-config', this._cfgReload);
+    window.addEventListener('storage', this._cfgReload);
+    if (!window.IdeaMapCurriculum) this._cfgPoll = setInterval(() => { if (window.IdeaMapCurriculum) { clearInterval(this._cfgPoll); this._cfgReload(); } }, 100);
+  }
+  ccfg() { return null; }
+  reqs(id) {
+    return [];
+    const C = window.IdeaMapCurriculum; if (!C) return [];
+    const r = C.SHEET.ideas.find(x => x.id === id);
+    return r ? C.codes(r.requires).filter(x => IDEAS[x] && x !== id) : [];
+  }
+  rarityFor(id) {
+    const c = this.ccfg(), o = c && c.rarity[id];
+    if (o) return o;
+    const r = this.graph().pos[id].ring;
+    return r === 0 ? 'Legendary' : r === 1 ? 'Rare' : 'Common';
+  }
+  sysFor(persona) {
+    const C = window.IdeaMapCurriculum, c = this.ccfg();
+    const p = C && c && C.persona(c, persona === PEER ? 'peer' : 'tutor');
+    return (p ? C.fill(c, p) : persona.system) + this.interestNote(persona) + (window.StudyPlan ? window.StudyPlan.context(persona === PEER ? 'peer' : 'tutor') : '');
+  }
+  interestNote(persona) {
+    let p; try { p = JSON.parse(localStorage.getItem('ideamap.student.profile')); } catch (e) { p = null; }
+    if (!p || !(p.share || {})[persona === PEER ? 'peer' : 'tutor']) return '';
+    const parts = [];
+    if (p.name) parts.push('Call the student ' + p.name + '.');
+    if ((p.interests || []).length) parts.push('Their interests: ' + p.interests.join(', ') + '.');
+    if (p.detail) parts.push('In their words: "' + p.detail + '"');
+    if ((p.futures || []).length) parts.push('Future goals: ' + p.futures.join(', ') + '.');
+    if (p.style) parts.push('Preferred example style: ' + ({ life: 'everyday life', story: 'short stories', data: 'real numbers and stats', visual: 'describe what it looks like first' })[p.style] + '.');
+    if (p.avoid) parts.push('Avoid: ' + p.avoid + '.');
+    return parts.length ? ' About this student: ' + parts.join(' ') + ' When you give an example, build it around one of these interests if it fits naturally; rotate between them; never force it or mention that you were told.' : '';
+  }
+  pname(persona) {
+    const C = window.IdeaMapCurriculum, c = this.ccfg();
+    const p = C && c && C.persona(c, persona === PEER ? 'peer' : 'tutor');
+    return p ? p.name : persona.name;
+  }
+  componentWillUnmount() {
+    clearTimeout(this._tt); clearTimeout(this._wt); clearTimeout(this._ft); clearInterval(this._rec); clearTimeout(this._miloT); clearTimeout(this._idleT); clearInterval(this._cfgPoll); window.removeEventListener('ideamap-config', this._cfgReload); window.removeEventListener('storage', this._cfgReload); cancelAnimationFrame(this._fxRaf); this._rvTok = -1;
+    window.removeEventListener('pointermove', this.onMove);
+  }
+  miloKnow() { return this.state.mastered.length + 3 * this.state.taught.length; }
+  miloStage() { const k = this.miloKnow(); let st = 1; MILO_STAGES.forEach((x, i) => { if (k >= x.at) st = i + 1; }); return st; }
+  pick(kind, vars) {
+    const arr = MILO_LINES[kind]; this._lc = (this._lc || 0) + 1;
+    let t = arr[this._lc % arr.length];
+    Object.keys(vars || {}).forEach(k => { t = t.split('{' + k + '}').join(vars[k]); });
+    return t;
+  }
+  miloDo(mood, say, hold) {
+    clearTimeout(this._miloT);
+    this.setState(s => ({ milo: { mood, say: say == null ? s.milo.say : say, pulse: (s.milo.pulse || 0) + 1 } }));
+    if (mood !== 'idle') this._miloT = setTimeout(() => this.setState(s => ({ milo: { ...s.milo, mood: 'idle' } })), hold || 4200);
+    this.bumpIdle();
+  }
+  bumpIdle() {
+    clearTimeout(this._idleT);
+    this._idleT = setTimeout(() => {
+      const s = this.state;
+      if (s.view !== 'map' || s.buddyOpen || s.rewards.length) { this.bumpIdle(); return; }
+      const cur = (s.hist || [this.start()]).slice(-1)[0];
+      this.miloDo('sleepy', this.pick('sleepy', { T: IDEAS[cur].t }), 600000);
+    }, 30000);
+  }
+  arriveLine(id) {
+    const l = this.links(id)[(this._lc || 0) % Math.max(1, this.links(id).length)];
+    return l ? this.pick('arrive', { A: IDEAS[l.e.a].t, rel: l.e.rel, B: IDEAS[l.e.b].t, T: IDEAS[id].t }) : this.pick('arrive', { A: IDEAS[id].t, rel: 'connects to', B: 'other ideas', T: IDEAS[id].t });
+  }
+  safe(fn) { try { fn(); } catch (err) { console.warn('reveal fx', err && err.message); } }
+  syncReveal() {
+    const s = this.state, rw = s.rewards[0], ph = s.revealPhase || 'charge';
+    if (rw !== this._lastRw) {
+      this._lastRw = rw; this._lastPhase = null;
+      if (!rw) { this._emit = []; this._parts = []; this._rvTok = (this._rvTok || 0) + 1; return; }
+    }
+    if (!rw || ph === this._lastPhase) return;
+    this._lastPhase = ph;
+    if (ph === 'charge') requestAnimationFrame(() => this.safe(() => this.playCharge()));
+    else if (ph === 'reveal') this.safe(() => this.playReveal());
+    else if (ph === 'done') requestAnimationFrame(() => this.safe(() => this.playInfo()));
+  }
+  openReveal() {
+    if (this.state.revealPhase !== 'charge') return;
+    const rw = this.state.rewards[0];
+    this.setState({ revealPhase: 'reveal' });
+    setTimeout(() => { if (this.state.rewards[0] === rw && this.state.revealPhase === 'reveal') this.setState({ revealPhase: 'done' }); }, 1700);
+  }
+  componentDidUpdate(pp, ps) {
+    pp = pp || {}; ps = { rewards: [], fx: [], ...(ps || {}) };
+    if (window.KinGraph && (ps.mastered !== this.state.mastered || ps.exLv !== this.state.exLv)) window.KinGraph.saveProgress({ mastered: this.state.mastered, exLv: this.state.exLv });
+    this.syncReveal();
+    const mst = this.miloStage();
+    if (this._lastStage == null || this._skipEvolve) { this._lastStage = mst; this._skipEvolve = false; }
+    else if (mst > this._lastStage) { this._lastStage = mst; this.miloDo('excited', this.pick('evolve', { S: MILO_STAGES[mst - 1].n }), 6000); }
+    else this._lastStage = mst;
+    const say = this.state.milo.say;
+    if (say !== this._lastSay) { this._lastSay = say; if (this._root) requestAnimationFrame(() => this._root && this._root.querySelectorAll('[data-milo-bubble]').forEach(b => b.animate([{ transform: 'scale(.85)', opacity: 0.3 }, { transform: 'scale(1.04)', opacity: 1, offset: 0.6 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' }))); }
+    if (pp.demoStart !== this.props.demoStart || pp.maxLinks !== this.props.maxLinks) this.applyPreset();
+    const s = this.state, root = this._root;
+    if (this._thread && s.teach && (!ps.teach || ps.teach.thread.length !== s.teach.thread.length || ps.teach.loading !== s.teach.loading)) { const el = this._thread; requestAnimationFrame(() => requestAnimationFrame(() => { if (el) el.scrollTop = el.scrollHeight; })); }
+    if (!root) return;
+    const acc = getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#9184d9';
+    if (s.fx.length && s.fx !== ps.fx && s.view === 'map') {
+      requestAnimationFrame(() => {
+        const base = 'translate(-50%,-50%) scale(' + this._ls + ')';
+        s.fx.forEach((id, i) => {
+          const el = root.querySelector('[data-node="' + id + '"]');
+          if (el) el.animate([{ transform: base + ' scale(.5)', boxShadow: '0 0 0 0 ' + acc }, { transform: base + ' scale(1.18)', boxShadow: '0 0 40px 8px ' + acc, offset: .5 }, { transform: base, boxShadow: '0 0 0 0 transparent' }], { duration: 1000, delay: 250 + i * 160, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' });
+        });
+        root.querySelectorAll('[data-fx]').forEach((el, i) => el.animate([{ transform: base + ' scale(.4)', opacity: 0 }, { transform: base + ' scale(1.2)', opacity: 1, offset: .3 }, { transform: base + ' translateY(-50px) scale(1)', opacity: 0 }], { duration: 1300, delay: i * 160, fill: 'both', easing: 'ease-out' }));
+      });
+      clearTimeout(this._ft);
+      this._ft = setTimeout(() => this.setState({ fx: [] }), 1500 + s.fx.length * 160);
+    }
+    if (s.quiz && ps.quiz && s.quiz.combo > ps.quiz.combo && s.quiz.combo >= 2) {
+      const el = root.querySelector('[data-combo]');
+      if (el) el.animate([{ transform: 'scale(1.8) rotate(-4deg)' }, { transform: 'scale(.92)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    }
+  }
+  applyPreset() {
+    const p = this.props.demoStart ?? 'fresh', st = this.start();
+    let M = [];
+    if (p === 'unitDone') M = UNITS[0].ids.slice();
+    if (p === 'almost') M = UNITS[0].ids.slice(0, -1);
+    const cards = {}; M.forEach(id => { cards[id] = { shiny: false }; });
+    this._skipEvolve = true;
+    this.setState({ hist: [st], visited: [...new Set([st, ...M])], mastered: M, cards, xp: M.length * 90,
+      view: 'map', quiz: null, practice: null, teach: null, rewards: [], fx: [], ...this.fitFocus(st, this.state.objOpen), mode: 'idea', taught: [], lock: null });
+  }
+  fitFocus(id, objOpen) {
+    const P = this.graph().pos, pts = [id, ...this.links(id).map(l => l.id)].map(k => P[k]);
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const ux0 = 16, ux1 = objOpen ? 636 : 944, uy0 = 64, uy1 = 492;
+    const z = Math.min(1, (ux1 - ux0 - 190) / Math.max(1, maxX - minX), (uy1 - uy0 - 80) / Math.max(1, maxY - minY));
+    const camX = (minX + maxX) / 2 - ((ux0 + ux1) / 2 - W / 2) / z, camY = (minY + maxY) / 2 - ((uy0 + uy1) / 2 - H / 2) / z;
+    return { zoom: z, pan: { x: camX - P[id].x, y: camY - P[id].y } };
+  }
+  go(id) {
+    if (this._suppress) return;
+    this.setState(s => {
+      const hist = s.hist || [this.start()], visited = s.visited || hist;
+      const i = hist.indexOf(id);
+      return {
+        hist: i >= 0 ? hist.slice(0, i + 1) : [...hist, id],
+        visited: visited.includes(id) ? visited : [...visited, id],
+        view: 'map', hover: null, hoverEdge: null, lock: null, buddyOpen: false,
+        ...this.fitFocus(id, s.objOpen), mode: 'idea', instant: false
+      };
+    });
+    this.miloDo('curious', this.arriveLine(id), 3500);
+  }
+  toastMsg(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toast: null }), 3600);
+  }
+  setMode(m, cur) {
+    if (m === 'all') {
+      const P = Object.values(this.graph().pos), xs = P.map(p => p.x), ys = P.map(p => p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const z = Math.min(W / (maxX - minX + 220), H / (maxY - minY + 170));
+      this.setState({ zoom: z, pan: { x: (minX + maxX) / 2 - cur.x, y: (minY + maxY) / 2 - cur.y + 10 }, mode: m, instant: false });
+    } else {
+      const s = this.state, curId = (s.hist || [this.start()]).slice(-1)[0];
+      if (m === 'idea') this.setState({ ...this.fitFocus(curId, s.objOpen), mode: m, instant: false });
+      else this.setState({ zoom: 0.62, pan: { x: 0, y: 0 }, mode: m, instant: false });
+    }
+  }
+  zoomBy(f) { this.setState(s => ({ zoom: Math.min(1.6, Math.max(0.35, s.zoom * f)), mode: null, instant: false })); }
+  rootRef = el => { this._root = el; };
+  onWheel = e => {
+    e.preventDefault(); e.stopPropagation();
+    const r = this._cv.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * W / r.width - W / 2, my = (e.clientY - r.top) * H / r.height - H / 2;
+    const s = this.state, z = s.zoom, cur = this._curPos;
+    const z2 = Math.min(1.6, Math.max(0.35, z * Math.exp(-e.deltaY * 0.0015)));
+    const wx = cur.x + s.pan.x + mx / z, wy = cur.y + s.pan.y + my / z;
+    this.setState({ zoom: z2, pan: { x: wx - mx / z2 - cur.x, y: wy - my / z2 - cur.y }, mode: null, instant: true });
+    clearTimeout(this._wt);
+    this._wt = setTimeout(() => this.setState({ instant: false }), 160);
+  };
+  canvasRef = el => {
+    if (this._cv) this._cv.removeEventListener('wheel', this.onWheel);
+    this._cv = el;
+    if (el) el.addEventListener('wheel', this.onWheel, { passive: false });
+  };
+  onDown = e => {
+    if (e.button !== 0 || e.target.closest('[data-nodrag]')) return;
+    this._drag = { x: e.clientX, y: e.clientY, px: this.state.pan.x, py: this.state.pan.y, moved: false };
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onUp, { once: true });
+  };
+  onMove = e => {
+    const d = this._drag; if (!d) return;
+    const r = this._cv ? this._cv.getBoundingClientRect() : { width: W };
+    const k = W / r.width / this.state.zoom;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 4) return;
+    d.moved = true;
+    this.setState({ pan: { x: d.px - dx * k, y: d.py - dy * k }, instant: true, mode: null, hover: null, hoverEdge: null });
+  };
+  onUp = () => {
+    window.removeEventListener('pointermove', this.onMove);
+    if (this._drag && this._drag.moved) { this._suppress = true; setTimeout(() => { this._suppress = false; }, 0); }
+    this._drag = null;
+    this.setState({ instant: false });
+  };
+  lockClick(id) {
+    if (this._suppress) return;
+    this.setState({ lock: id });
+    this.miloDo('curious', this.pick('locked', { T: IDEAS[id].t }), 3000);
+    const el = this._root && this._root.querySelector('[data-node="' + id + '"]');
+    if (!el) return;
+    const base = 'translate(-50%,-50%) scale(' + this._ls + ')';
+    el.animate([0, -8, 8, -6, 6, -3, 0].map(x => ({ transform: base + ' translateX(' + x + 'px)' })), { duration: 480, easing: 'ease-out' });
+    const ic = el.querySelector('i');
+    if (ic) ic.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-22deg) scale(1.3)' }, { transform: 'rotate(18deg) scale(1.3)' }, { transform: 'rotate(0)' }], { duration: 480 });
+  }
+
+  async ask(key, persona, question, init) {
+    const prev = this.state.chats[key];
+    if (prev && prev.loading) return;
+    if (!question && prev) return;
+    const base = prev || init;
+    if (!base) return;
+    const api = [...base.api], msgs = [...base.msgs];
+    if (question) { api.push({ role: 'user', content: question }); msgs.push({ me: true, text: question }); }
+    const needCall = api.length > 0 && api[api.length - 1].role === 'user';
+    this.setState(s => ({ inputs: { ...s.inputs, [key]: '' }, chats: { ...s.chats, [key]: { api, msgs, loading: needCall } } }));
+    if (!needCall) return;
+    let reply = null;
+    try { reply = await window.claude.complete({ system: this.sysFor(persona), messages: api, max_tokens: 400 }); } catch (err) { reply = null; }
+    this.setState(s => {
+      const c = s.chats[key], ok = typeof reply === 'string' && reply.trim();
+      return { chats: { ...s.chats, [key]: {
+        api: ok ? [...c.api, { role: 'assistant', content: reply }] : (question ? c.api.slice(0, -1) : c.api),
+        msgs: [...c.msgs, { me: false, text: ok ? reply.trim() : 'Sorry, I could not answer just now. Try again.' }], loading: false } } };
+    });
+  }
+  greetInit(context, greeting) {
+    return { api: [{ role: 'user', content: context }, { role: 'assistant', content: greeting }], msgs: [{ me: false, text: greeting }] };
+  }
+  chatP(key, persona, opts) {
+    const c = this.state.chats[key], input = this.state.inputs[key] || '';
+    const send = () => { const v = (this.state.inputs[key] || '').trim(); if (v) this.ask(key, persona, v); };
+    return {
+      name: this.pname(persona), role: persona.role, icon: persona.icon, tag: opts.tag || '',
+      msgs: (c ? c.msgs : []).map(m => ({ text: m.text, align: m.me ? 'flex-end' : 'flex-start', bg: m.me ? 'var(--color-accent-900)' : 'var(--color-bg)', border: m.me ? 'var(--color-accent-700)' : 'var(--color-neutral-700)' })),
+      loading: !!(c && c.loading), loadingText: persona === PEER ? 'Milo is thinking…' : 'Ms. Ivy is typing…',
+      input, onInput: ev => { const v = ev.target.value; this.setState(s => ({ inputs: { ...s.inputs, [key]: v } })); },
+      onKey: ev => { if (ev.key === 'Enter') send(); }, send,
+      suggestions: (opts.suggestions || []).map(q => ({ text: q, ask: () => this.ask(key, persona, q) })),
+      placeholder: opts.placeholder || 'Type a message…', height: opts.height || 240
+    };
+  }
+  ideaContext(id) {
+    return 'Idea: ' + IDEAS[id].t + '. ' + IDEAS[id].b + ' Lesson objective: ' + IDEAS[id].o + ' Links on the map: ' + this.links(id).map(l => l.text).join('; ') + '.';
+  }
+
+  startEx(idea, id) {
+    const { it } = exItem(id);
+    let list;
+    if (it.kind === 'quiz') list = it.from.map((eid, k) => { const e = exItem(eid).it; return { ...e.problems[k % e.problems.length], covers: eid }; });
+    else list = it.problems.map(p => ({ ...p, covers: id }));
+    this._exList = list;
+    this.setState({ view: 'ex', buddyOpen: false, ex: { tab: it.kind === 'quiz' || (this.state.exLv[id] || 0) > 0 ? 'mastery' : 'worked', shown: 1, id, idea, i: 0, picked: null, val: '', checked: false, ok: false, res: [], done: false } });
+    this.miloDo('curious', it.kind === 'quiz' ? 'Quiz time! I’ll try too.' : 'Let’s work through these together.', 2400);
+  }
+  exCheck() {
+    const e = this.state.ex; if (!e || e.checked) return;
+    const p = this._exList[e.i];
+    let ok;
+    if (p.type === 'mc') { if (e.picked == null) return; ok = e.picked === p.ans; }
+    else { const v = parseFloat(String(e.val).replace('−', '-').replace(',', '.')); if (isNaN(v)) return; ok = Math.abs(v - p.ans) <= Math.max(.05, Math.abs(p.ans) * .03); }
+    const r = rng(hash(p.q + e.i));
+    this.setState(s => ({ ex: { ...s.ex, checked: true, ok, res: [...s.ex.res, ok] }, xp: s.xp + (ok ? 10 : 0) }));
+    this.miloDo(ok ? 'happy' : 'thinking', ok ? MILO_LINES.correct[Math.floor(r() * MILO_LINES.correct.length)] : MILO_LINES.wrong[Math.floor(r() * MILO_LINES.wrong.length)], 2200);
+  }
+  exNext() {
+    const e = this.state.ex, n = this._exList.length;
+    if (e.i + 1 < n) return this.setState({ ex: { ...e, i: e.i + 1, picked: null, val: '', checked: false, ok: false } });
+    const { it } = exItem(e.id), score = e.res.filter(Boolean).length, lv = { ...this.state.exLv };
+    const level = score === n ? 3 : score >= n - 1 ? 2 : 1;
+    lv[e.id] = Math.max(lv[e.id] || 0, level);
+    if (it.kind === 'quiz') this._exList.forEach((p, k) => { if (e.res[k]) lv[p.covers] = Math.max(lv[p.covers] || 0, 2); });
+    const KG = window.KinGraph;
+    if (KG && level < 3) { const root = KG.weakestRoot(e.idea, this.state.mastered, lv); if (root) KG.addTrace({ from: e.idea, root, exercise: e.id, score, of: n }); }
+    this.setState({ exLv: lv, ex: { ...e, done: true, score, level } });
+    this.miloDo(level === 3 ? 'happy' : 'curious', level === 3 ? 'Proficient! I’m writing all of that down.' : 'Nice try! Want to go again? I’m still learning it too.', 3200);
+  }
+  exVals(curId) {
+    const s = this.state, X = EXERCISES[curId], lv = s.exLv;
+    const A = n => 'var(--color-accent-' + n + ')', N = n => 'var(--color-neutral-' + n + ')';
+    const items = X ? X.groups.flatMap(g => g.items.filter(it => it.kind !== 'quiz')) : [];
+    const out = {
+      hasEx: !!X, exSummary: X ? items.filter(it => (lv[it.id] || 0) >= 3).length + ' of ' + items.length + ' exercises proficient' : '',
+      exGroups: X ? X.groups.map(g => ({ title: g.title, std: g.std, items: g.items.map(it => {
+        const l = lv[it.id] || 0, q = it.kind === 'quiz';
+        return { hasDemo: !q, title: it.title, act: q ? 'Quiz' : 'Exercise', actIcon: q ? 'ph ph-lightning' : 'ph ph-pencil-simple', lvText: EX_LV[l][0], lvC: EX_LV[l][1], dots: [1, 2, 3].map(k => ({ c: k <= l ? A(400) : N(700) })), go: () => this.startEx(curId, it.id) };
+      }) })) : [],
+      vid: vidVals(VIDEOS[curId], 'Overview video', 'ph ph-film-strip', (VIDEOS[curId] || {}).t || IDEAS[curId].t + ': the big picture', (VIDEOS[curId] || {}).d ? (VIDEOS[curId].d + ' · Watch this first') : 'Watch this first'),
+      isEx: s.view === 'ex' && !!s.ex, exDots: [], exTabs: [], demoSteps: [], exOpts: [], exTable: [], exGrid: [], exLines: [], exLegend: [], exXT: [], exYT: []
+    };
+    const e = s.ex; if (!e || s.view !== 'ex' || !this._exList) return out;
+    const { it, g, idea } = exItem(e.id), list = this._exList, p = list[Math.min(e.i, list.length - 1)];
+    Object.assign(out, {
+      exTitle: it.title, exStd: g.std, exIdea: IDEAS[idea].t, exKind: it.kind === 'quiz' ? 'Quiz' : 'Exercise',
+      exBack: () => this.showPage(idea), exCount: 'Problem ' + (e.i + 1) + ' of ' + list.length,
+      exDots: list.map((_, k) => ({ c: k < e.res.length ? (e.res[k] ? A(400) : N(500)) : k === e.i ? 'var(--color-accent)' : N(700), w: k === e.i && !e.done ? 22 : 10 })),
+      exQ: p.q
+    });
+    const tab = e.tab || 'mastery', demo = it.kind === 'quiz' ? null : demoFor(it), setEx = patch => this.setState(st => ({ ex: { ...st.ex, ...patch } }));
+    Object.assign(out, {
+      exHasTabs: !!demo, exIsWorked: !!demo && tab === 'worked', exIsMastery: !demo || tab === 'mastery',
+      exDone: !!e.done && (!demo || tab === 'mastery'), exWorking: !e.done && (!demo || tab === 'mastery'),
+      exTabs: demo ? [['worked', 'Worked example', 'ph ph-play-circle'], ['mastery', 'Mastery practice', 'ph ph-target']].map(([k, label, icon]) => ({ label, icon, on: String(tab === k), bc: tab === k ? 'var(--color-accent)' : 'transparent', c: tab === k ? 'var(--color-text)' : N(400), pick: () => setEx({ tab: k }) })) : [],
+      toMastery: () => setEx({ tab: 'mastery' })
+    });
+    if (demo) {
+      const shown = Math.min(e.shown || 1, demo.steps.length);
+      Object.assign(out, { exVid: vidVals(demo, 'Demonstration video', 'ph ph-play-circle', 'Watch it worked out: ' + it.title, demo.d ? demo.d + ' · Worked example' : 'Worked example'),
+        demoQ: demo.q, demoSteps: demo.steps.slice(0, shown).map((text, k) => ({ n: k + 1, text })), demoMore: shown < demo.steps.length, demoNextN: shown + 1,
+        demoNext: () => setEx({ shown: shown + 1 }), demoAll: () => setEx({ shown: demo.steps.length }) });
+    }
+    if (e.done) {
+      Object.assign(out, { exScore: e.score + ' of ' + list.length + ' correct', exLevel: EX_LV[e.level][0], exLevelC: EX_LV[e.level][1], exAgain: () => this.startEx(idea, e.id), exDoneNote: e.level === 3 ? 'Every problem right. This exercise counts toward mastering ' + IDEAS[idea].t + '.' : 'Get them all right to reach Proficient.' });
+      return out;
+    }
+    out.exHasTable = !!p.table;
+    if (p.table) out.exTable = [{ label: 'Time t (s)', cells: p.table.t.map(v => ({ v })) }, { label: p.table.xl || 'Position x (m)', cells: p.table.x.map(v => ({ v })) }];
+    out.exHasGraph = !!p.graph;
+    if (p.graph) {
+      const all = p.graph.series.flat(), tmax = Math.max(...all.map(q => q[0])), ymaxRaw = Math.max(...all.map(q => q[1]));
+      const ystep = ymaxRaw > 30 ? 10 : 5, ymax = Math.ceil(ymaxRaw / ystep) * ystep || 10, tstep = tmax > 8 ? 2 : 1;
+      const Wd = 380, Hd = 220, l = 46, r = 16, t = 14, b = 36, px = x => l + x / tmax * (Wd - l - r), py = y => Hd - b - y / ymax * (Hd - t - b);
+      for (let x = 0; x <= tmax; x += tstep) out.exGrid.push({ x1: px(x), y1: t, x2: px(x), y2: Hd - b }), out.exXT.push({ x: px(x), y: Hd - b + 16, v: x });
+      for (let y = 0; y <= ymax; y += ystep) out.exGrid.push({ x1: l, y1: py(y), x2: Wd - r, y2: py(y) }), out.exYT.push({ x: l - 8, y: py(y) + 4, v: y });
+      const cols = [A(300), N(200)];
+      out.exLines = p.graph.series.map((sr, k) => ({ pts: sr.map(q => px(q[0]) + ',' + py(q[1])).join(' '), c: cols[k], x: px(sr[sr.length - 1][0]), y: py(sr[sr.length - 1][1]) }));
+      out.exLegend = (p.graph.names || []).map((nm, k) => ({ text: nm, c: cols[k] }));
+      Object.assign(out, { exYLabel: p.graph.y || 'Position x (m)', exGW: Wd, exGH: Hd, exGBase: Hd - b, exGL: l, exGR: Wd - r, exXLx: (l + Wd - r) / 2, exXLy: Hd - 4, exYLy: (t + Hd - b) / 2 });
+    }
+    const isMc = p.type === 'mc';
+    out.exIsMc = isMc; out.exIsNum = !isMc;
+    if (isMc) out.exOpts = p.opts.map((o, k) => ({ o, k, h: hash(exKey(p) + k) })).sort((a, b) => a.h - b.h).map((o, j) => {
+      const picked = e.picked === o.k, right = e.checked && o.k === p.ans, wrong = e.checked && picked && !right;
+      return { key: 'ABC'[j], text: o.o, pick: () => { if (!e.checked) this.setState(st => ({ ex: { ...st.ex, picked: o.k } })); },
+        bc: right ? A(300) : wrong ? N(400) : picked ? 'var(--color-accent)' : N(700), bs: wrong ? 'dashed' : 'solid', bg: picked && !e.checked ? A(900) : right ? A(900) : 'var(--color-surface)', icon: right ? 'ph ph-check-circle' : wrong ? 'ph ph-x-circle' : '' };
+    });
+    Object.assign(out, {
+      exVal: e.val, exUnit: p.unit || '', exSetVal: ev => { const v = ev.target.value; if (!this.state.ex.checked) this.setState(st => ({ ex: { ...st.ex, val: v } })); },
+      exKey: ev => { if (ev.key === 'Enter') { if (this.state.ex.checked) this.exNext(); else this.exCheck(); } },
+      exCanCheck: !e.checked, exCheck: () => this.exCheck(), exChecked: e.checked, exNext: () => this.exNext(),
+      exNextLabel: e.i + 1 < list.length ? 'Next problem' : 'See results',
+      exFbIcon: e.ok ? 'ph ph-check-circle' : 'ph ph-lightbulb', exFbC: e.ok ? A(300) : N(300), exFbBc: e.ok ? A(700) : N(600),
+      exFbText: (e.ok ? 'Correct. ' : 'Not quite. The answer is ' + (isMc ? p.opts[p.ans] : p.ans + ' ' + (p.unit || '')) + '. ') + p.why
+    });
+    return out;
+  }
+  showPage(id) {
+    const key = 'page:' + id;
+    this.ask(key, TUTOR, null, this.greetInit(this.ideaContext(id) + ' The student is reading this idea\'s page and may ask you questions.', 'Hi, I\'m Ms. Ivy. Ask me anything about ' + IDEAS[id].t + ', and I\'ll help you get ready for the quiz.'));
+    this.setState({ view: 'page', lock: null, buddyOpen: false });
+  }
+  openBuddy(curId, line) {
+    const key = 'buddy:' + curId;
+    this.ask(key, PEER, null, this.greetInit('We are classmates studying a concept map together. We are looking at this idea. ' + this.ideaContext(curId) + ' Chat with me like a curious classmate.', line));
+    this.setState({ buddyOpen: true, lock: null });
+  }
+  openLink(e) {
+    if (this._suppress) return;
+    const view = this.state.view;
+    this.setState({ view: 'link', linkFrom: view === 'quiz' ? 'quiz' : 'map', link: e.key, linkMode: e.media ? 'video' : 'ai', hover: null, hoverEdge: null, lock: null, buddyOpen: false });
+    if (!e.media) this.linkTutor(e);
+  }
+  linkTutor(e) {
+    const A = IDEAS[e.a], B = IDEAS[e.b];
+    this.ask('link:' + e.key, TUTOR, null, { api: [{ role: 'user', content: 'Idea A: ' + A.t + '. ' + A.b + '\nIdea B: ' + B.t + '. ' + B.b + '\nRelationship on the map: ' + A.t + ' ' + e.rel + ' ' + B.t + '.\nExplain this relationship to me.' }], msgs: [] });
+  }
+
+  genQuiz(id, seed, n) {
+    const r = rng(seed * 7919 + hash(id));
+    const L = this.links(id), linked = new Set([id, ...L.map(l => l.id)]);
+    const others = Object.keys(IDEAS).filter(k => !linked.has(k));
+    const pool = [];
+    L.forEach(l => {
+      const e = l.e, A = IDEAS[e.a].t, B = IDEAS[e.b].t, fwd = e.a === id, ans = fwd ? e.b : e.a;
+      const truth = A + ' ' + e.rel + ' ' + B + '.';
+      pool.push({ prompt: 'Which idea completes the link?', text: fwd ? A + ' ' + e.rel + ' …' : '… ' + e.rel + ' ' + B, options: shuffle([ans, ...shuffle(others, r).slice(0, 3)].map(k => IDEAS[k].t), r), answer: IDEAS[ans].t, explain: truth, link: e });
+      pool.push({ prompt: 'True or false?', text: truth, options: ['True', 'False'], answer: 'True', explain: truth, link: e });
+    });
+    pool.push({ prompt: 'What kind of idea is it?', text: IDEAS[id].t + ' is a…', options: ['Quantity', 'Tool', 'Motion'], answer: IDEAS[id].c, explain: IDEAS[id].t + ' is a ' + IDEAS[id].c.toLowerCase() + '.', link: null });
+    const falses = [], used = new Set();
+    for (let k = 0; falses.length < Math.max(2, n - pool.length) && k < 60; k++) {
+      const l = L[k % L.length], e = l.e, fwd = e.a === id, x = others[Math.floor(r() * others.length)];
+      const text = fwd ? IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[x].t + '.' : IDEAS[x].t + ' ' + e.rel + ' ' + IDEAS[e.b].t + '.';
+      if (used.has(text)) continue;
+      used.add(text);
+      falses.push({ prompt: 'True or false?', text, options: ['True', 'False'], answer: 'False', explain: 'The map says: ' + IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[e.b].t + '.', link: e });
+    }
+    return shuffle(pool.concat(falses), r).slice(0, n);
+  }
+  startQuiz(id) {
+    const seed = this.state.quizSeed + 1;
+    this.setState({ view: 'quiz', quizSeed: seed, practice: null, buddyOpen: false,
+      quiz: { id, seed, qs: this.genQuiz(id, seed, this.cfg().qn), i: 0, picks: [], combo: 0, bestCombo: 0, xp: 0, done: false } });
+    this.miloDo('happy', this.pick('quizStart'), 1500);
+  }
+  answer(opt) {
+    const s = this.state, q = s.quiz;
+    if (!q || q.done || q.picks[q.i] !== undefined) return;
+    const ok = opt === q.qs[q.i].answer, combo = ok ? q.combo + 1 : 0, gained = ok ? 10 * multOf(combo) : 0;
+    const picks = q.picks.slice(); picks[q.i] = opt;
+    this.setState({ quiz: { ...q, picks, combo, bestCombo: Math.max(q.bestCombo, combo), xp: q.xp + gained }, xp: s.xp + gained });
+    if (ok && combo >= 3) this.miloDo('excited', this.pick('combo', { m: multOf(combo) }), 2600);
+    else if (ok) this.miloDo('aha', this.pick('correct'), 2200);
+    else this.miloDo('confused', this.pick('wrong'), 2600);
+  }
+  nextQ() {
+    const q = this.state.quiz;
+    if (!q) return;
+    if (q.i + 1 < q.qs.length) this.setState({ quiz: { ...q, i: q.i + 1 } });
+    else this.finishQuiz();
+  }
+  finishQuiz() {
+    const s = this.state, q = s.quiz, { thr } = this.cfg(), n = q.qs.length;
+    const score = q.picks.filter((p, i) => p === q.qs[i].answer).length, pct = Math.round(score / n * 100), pass = pct > thr;
+    const done = { ...q, done: true, score, pct, pass };
+    const t = IDEAS[q.id].t;
+    if (!pass) {
+      const missed = q.qs.map((qq, i) => ({ ...qq, pick: q.picks[i] })).filter(m => m.pick !== m.answer);
+      const seen = new Set(), rows = [];
+      missed.forEach(m => { if (m.link && !seen.has(m.link.key)) { seen.add(m.link.key); rows.push({ e: m.link, blank: m.link.a === q.id ? 'b' : 'a', filled: null }); } });
+      if (!rows.length) this.links(q.id).slice(0, 2).forEach(l => rows.push({ e: l.e, blank: l.e.a === q.id ? 'b' : 'a', filled: null }));
+      this.setState({ quiz: done, practice: { rows, sel: 0, msg: '' } });
+      this.miloDo('confused', this.pick('fail'), 3500);
+      this.ask('fix:' + q.id + ':' + q.seed, TUTOR, null, { api: [{ role: 'user', content: 'I just took a quiz about ' + t + ' and scored ' + score + ' out of ' + n + '. I missed these questions:\n' + missed.map(m => '- ' + m.prompt + ' "' + m.text + '" I answered "' + m.pick + '". The right answer was "' + m.answer + '". ' + m.explain).join('\n') + '\nPlease kindly explain what I mixed up, then encourage me to rebuild those links in the hands-on review before I try again.' }], msgs: [] });
+      return;
+    }
+    const M2 = s.mastered.includes(q.id) ? s.mastered : [...s.mastered, q.id];
+    const perfect = score === n, V = s.visited || [];
+    const opened = Object.keys(IDEAS).filter(k => !this.isOpen(k, s.mastered, V) && this.isOpen(k, M2, V));
+    const u = unitOf(q.id), unitDone = u.ids.every(k => M2.includes(k)) && !u.ids.every(k => s.mastered.includes(k));
+    const bump = !s.streakBumped, days = s.streakDays + (bump ? 1 : 0);
+    const bonus = 50 + (perfect ? 50 : 0);
+    const rewards = [{ kind: 'idea', id: q.id, shiny: perfect || !!(s.cards[q.id] && s.cards[q.id].shiny), perfect, xp: q.xp + bonus, bestCombo: q.bestCombo, opened, streak: bump ? days : null }];
+    if (unitDone) rewards.push({ kind: 'unit', unit: u.n, xp: 200 });
+    this.setState({ quiz: done, mastered: M2, cards: { ...s.cards, [q.id]: { shiny: rewards[0].shiny } }, xp: s.xp + bonus + (unitDone ? 200 : 0),
+      rewards, revealPhase: 'charge', pendingFx: opened, streakDays: days, streakBumped: true });
+    const fl = this.links(q.id)[0];
+    this.miloDo('aha', this.pick('pass', { L: fl ? fl.text : t, T: t }), 9000);
+  }
+  practicePickRow(i) { this.setState(s => ({ practice: { ...s.practice, sel: i, msg: '' } })); }
+  practicePickChip(id) {
+    const p = this.state.practice;
+    if (!p || p.sel === null) return;
+    const row = p.rows[p.sel], ans = row.blank === 'b' ? row.e.b : row.e.a;
+    if (id === ans) {
+      const rows = p.rows.map((r, i) => i === p.sel ? { ...r, filled: id } : r);
+      const nextSel = rows.findIndex(r => !r.filled);
+      this.miloDo('aha', this.pick('practiceOk'), 2000);
+      this.setState({ practice: { rows, sel: nextSel < 0 ? null : nextSel, msg: nextSel < 0 ? 'All links rebuilt. You can retry the quiz now.' : 'Nice, that link is right.' }, xp: this.state.xp + 5 });
+    } else {
+      this.miloDo('confused', this.pick('practiceNo'), 2000);
+      this.setState({ practice: { ...p, msg: IDEAS[id].t + ' does not fit there. Try another, or open the link to explore it.' } });
+      const el = this._root && this._root.querySelector('[data-prow="' + p.sel + '"]');
+      if (el) el.animate([0, -6, 6, -4, 4, 0].map(x => ({ transform: 'translateX(' + x + 'px)' })), { duration: 380 });
+    }
+  }
+revealRef = el => { this._rv = el; };
+  curTier() {
+    const rw = this.state.rewards[0];
+    if (!rw) return 'Common';
+    if (rw.kind !== 'idea') return 'Legendary';
+    return this.rarityFor(rw.id);
+  }
+  rq(sel) { return this._rv ? this._rv.querySelector(sel) : null; }
+  fxStart() {
+    const cv = this.rq('[data-fx-canvas]');
+    if (!cv) return false;
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    this._fxCv = cv; this._fxS = { dpr, w: r.width, h: r.height };
+    const cs = getComputedStyle(this._root || cv);
+    this._fxCols = ['--color-accent-100', '--color-accent-200', '--color-accent-300', '--color-accent', '--color-neutral-100'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+    if (!this._fxCols.length) this._fxCols = ['#c9c1f2', '#9184d9'];
+    this._parts = this._parts || []; this._emit = this._emit || [];
+    if (!this._fxRaf) this._fxRaf = requestAnimationFrame(this.fxTick);
+    return true;
+  }
+  fxCenter() {
+    const cv = this._fxCv, w = this.rq('[data-card-wrap]');
+    if (!cv || !w) return { x: 480, y: 300, hw: 100, hh: 140 };
+    const a = cv.getBoundingClientRect(), b = w.getBoundingClientRect(), k = this._fxS.w / (a.width || 1);
+    return { x: (b.left + b.width / 2 - a.left) * k, y: (b.top + b.height / 2 - a.top) * k, hw: b.width / 2 * k, hh: b.height / 2 * k };
+  }
+  col(i) { const c = this._fxCols; return c[(i == null ? Math.floor(Math.random() * c.length) : i) % c.length]; }
+  burst(n, speed) {
+    const c = this.fxCenter();
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = speed * (0.35 + Math.random() * 0.9);
+      this._parts.push({ t: Math.random() < 0.35 ? 'streak' : 'spark', x: c.x, y: c.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 0.05, drag: 0.955, life: 0, max: 45 + Math.random() * 55, size: 1.4 + Math.random() * 2.6, col: this.col(i) });
+    }
+  }
+  spawn(kind) {
+    const c = this.fxCenter(), S = this._fxS;
+    if (kind === 'conv') {
+      const a = Math.random() * Math.PI * 2, d = 240 + Math.random() * 180, sp = 3 + Math.random() * 3;
+      this._parts.push({ t: 'conv', x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, g: 0, drag: 1, life: 0, max: d / sp, size: 1 + Math.random() * 1.8, col: this.col() });
+    } else if (kind === 'confetti') {
+      this._parts.push({ t: 'shard', x: Math.random() * S.w, y: -12, vx: (Math.random() - 0.5) * 1.6, vy: 1.6 + Math.random() * 2.4, g: 0.025, drag: 0.996, life: 0, max: 300, size: 4 + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.25, flip: Math.random() * 6, col: this.col() });
+    } else if (kind === 'twinkle') {
+      const side = Math.random() < 0.5 ? -1 : 1, onX = Math.random() < 0.5;
+      const x = onX ? c.x + (Math.random() * 2 - 1) * c.hw * 1.15 : c.x + side * c.hw * (1 + Math.random() * 0.25);
+      const y = onX ? c.y + side * c.hh * (1 + Math.random() * 0.2) : c.y + (Math.random() * 2 - 1) * c.hh * 1.1;
+      this._parts.push({ t: 'twinkle', x, y, vx: 0, vy: -0.2, g: 0, drag: 1, life: 0, max: 36 + Math.random() * 30, size: 2 + Math.random() * 3, col: this.col(0) });
+    }
+  }
+  fxTick = () => {
+    const cv = this._fxCv;
+    if (!cv || !cv.isConnected) { this._fxRaf = null; this._parts = []; this._emit = []; return; }
+    const ctx = cv.getContext('2d'), { dpr, w, h } = this._fxS, now = performance.now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h); ctx.globalCompositeOperation = 'lighter';
+    this._emit = this._emit.filter(e => now < e.until);
+    this._emit.forEach(e => { e.acc = (e.acc || 0) + e.rate; while (e.acc >= 1) { e.acc -= 1; this.spawn(e.kind); } });
+    this._parts = this._parts.filter(p => p.life < p.max && p.y < h + 30);
+    this._parts.forEach(p => {
+      p.vx *= p.drag; p.vy = p.vy * p.drag + p.g; p.x += p.vx; p.y += p.vy; p.life++;
+      const k = p.life / p.max;
+      ctx.fillStyle = p.col; ctx.strokeStyle = p.col;
+      if (p.t === 'spark' || p.t === 'conv') {
+        const al = p.t === 'conv' ? Math.min(1, p.life / 12) * (1 - k * 0.3) : 1 - k;
+        ctx.globalAlpha = al * 0.22; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 3.2, 0, 7); ctx.fill();
+        ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill();
+      } else if (p.t === 'streak') {
+        ctx.globalAlpha = 1 - k; ctx.lineWidth = p.size * 0.8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(p.x - p.vx * 3.5, p.y - p.vy * 3.5); ctx.lineTo(p.x, p.y); ctx.stroke();
+      } else if (p.t === 'shard') {
+        p.rot += p.vr; p.flip += 0.12;
+        ctx.globalAlpha = Math.min(1, (p.max - p.life) / 40) * 0.9;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.flip)); ctx.fillRect(-p.size, -p.size * 0.35, p.size * 2, p.size * 0.7); ctx.restore();
+      } else if (p.t === 'twinkle') {
+        const al = Math.sin(Math.PI * k), L = p.size * 3 * al;
+        ctx.globalAlpha = al; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(p.x - L, p.y); ctx.lineTo(p.x + L, p.y); ctx.moveTo(p.x, p.y - L); ctx.lineTo(p.x, p.y + L); ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.5, 0, 7); ctx.fill();
+      }
+    });
+    ctx.globalAlpha = 1;
+    if (this._parts.length || this._emit.length) this._fxRaf = requestAnimationFrame(this.fxTick);
+    else { this._fxRaf = null; ctx.clearRect(0, 0, w, h); }
+  };
+  playCharge() {
+    const R = this._rv; if (!R) return;
+    const tok = this._rvTok = (this._rvTok || 0) + 1, T = TIERS[this.curTier()];
+    if (this._root) { const rt = this._root.getBoundingClientRect(); if (rt.top < 0 || rt.top > window.innerHeight * 0.4) window.scrollBy(0, rt.top); }
+    R.querySelectorAll('[data-card-wrap],[data-flip],[data-back-orb],[data-aura],[data-rays],[data-slam],[data-sheen],[data-kicker],[data-stage],[data-flash],[data-foil]').forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    const tilt = this.rq('[data-tilt]'); if (tilt) tilt.style.transform = '';
+    const rings = this.rq('[data-rings]'); if (rings) rings.innerHTML = '';
+    this._emit = []; this._parts = [];
+    this.fxStart();
+    this.rq('[data-card-wrap]').animate([{ transform: 'translateY(-460px) rotate(-16deg) scale(.6)', opacity: 0 }, { transform: 'translateY(16px) rotate(3deg) scale(1.04)', opacity: 1, offset: 0.7 }, { transform: 'none', opacity: 1 }], { duration: 720, easing: 'cubic-bezier(.2,.9,.3,1.15)' });
+    this.rq('[data-kicker]').animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 400, delay: 350, fill: 'backwards' });
+    this.rq('[data-back-orb]').animate([{ transform: 'scale(1)' }, { transform: 'scale(' + (1.06 + T.lvl * 0.05) + ')' }], { duration: T.pulse, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
+    this.rq('[data-aura]').animate([{ opacity: T.aura[0] * 0.6, transform: 'translate(-50%,-50%) scale(.85)' }, { opacity: T.aura[1], transform: 'translate(-50%,-50%) scale(' + (1 + T.lvl * 0.08) + ')' }], { duration: T.pulse, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
+    const flip = this.rq('[data-flip]');
+    if (T.lvl === 2) flip.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-6px)' }], { duration: 900, delay: 720, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
+    if (T.lvl === 3) flip.animate([0, 1, 2, 3, 4, 5].map(i => ({ transform: 'translate(' + (i % 2 ? 2 : -2) + 'px,' + (i % 3 - 1) + 'px) rotate(' + (i % 2 ? 0.8 : -0.8) + 'deg)' })), { duration: 260, delay: 720, iterations: Infinity });
+    if (T.conv) setTimeout(() => { if (tok === this._rvTok && this.state.revealPhase === 'charge') { this._emit.push({ kind: 'conv', rate: T.conv, until: Infinity, tag: 'charge' }); this.fxStart(); } }, 700);
+  }
+  playReveal() {
+    const R = this._rv; if (!R) return;
+    const tok = this._rvTok, T = TIERS[this.curTier()], rw = this.state.rewards[0], shiny = !!(rw && rw.shiny);
+    ['[data-flip]', '[data-back-orb]', '[data-aura]'].forEach(sel => { const el = this.rq(sel); if (el) el.getAnimations().forEach(a => a.cancel()); });
+    this._emit = this._emit.filter(e => e.tag !== 'charge');
+    this.fxStart();
+    this.rq('[data-card-wrap]').animate([{ transform: 'scale(1)' }, { transform: 'scale(.9)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+    this.rq('[data-flip]').animate([{ transform: 'rotateY(0deg) scale(1)' }, { transform: 'rotateY(' + (T.deg / 2) + 'deg) scale(' + (1.08 + T.lvl * 0.06) + ')', offset: 0.45 }, { transform: 'rotateY(' + T.deg + 'deg) scale(1)' }], { duration: T.flipMs, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
+    const hit = T.flipMs * 0.45;
+    setTimeout(() => {
+      if (tok !== this._rvTok) return;
+      if (T.flash) this.rq('[data-flash]').animate([{ opacity: 0 }, { opacity: T.flash, offset: 0.15 }, { opacity: 0 }], { duration: 520, easing: 'ease-out' });
+      if (T.shake) { const A = T.shake; this.rq('[data-stage]').animate([0, -1, 0.8, -0.6, 0.4, -0.2, 0].map((m, i) => ({ transform: 'translate(' + m * A + 'px,' + (i % 2 ? -m * A * 0.4 : m * A * 0.3) + 'px)' })), { duration: 440, easing: 'ease-out' }); }
+      const rings = this.rq('[data-rings]');
+      for (let i = 0; i < T.rings; i++) {
+        const d = document.createElement('div');
+        d.style.cssText = 'position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:50%;border:' + (3 - i * 0.6) + 'px solid var(--color-accent-200);box-shadow:0 0 18px var(--color-accent-500);opacity:0';
+        rings.appendChild(d);
+        d.animate([{ transform: 'scale(.3)', opacity: 1 }, { transform: 'scale(' + (9 + i * 5) + ')', opacity: 0 }], { duration: 800 + i * 200, delay: i * 130, easing: 'cubic-bezier(.1,.7,.3,1)', fill: 'both' }).onfinish = () => d.remove();
+      }
+      this.burst(T.parts, T.speed);
+      if (T.lvl === 3) setTimeout(() => { if (tok === this._rvTok) this.burst(60, T.speed * 0.6); }, 260);
+      if (T.rays) {
+        const rays = this.rq('[data-rays]');
+        rays.animate([{ opacity: 0 }, { opacity: T.rays }], { duration: 700, fill: 'forwards' });
+        rays.animate([{ transform: 'rotate(0deg) scale(1)' }, { transform: 'rotate(360deg) scale(1)' }], { duration: T.lvl === 3 ? 16000 : 26000, iterations: Infinity });
+      }
+      if (T.slam) this.rq('[data-slam]').animate([{ opacity: 0, transform: 'scale(2.6)', letterSpacing: '.6em' }, { opacity: 1, transform: 'scale(.95)', letterSpacing: '.16em', offset: 0.55 }, { opacity: 0.5, transform: 'scale(1)', letterSpacing: '.18em' }], { duration: 650, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+      this.rq('[data-aura]').animate([{ opacity: 1, transform: 'translate(-50%,-50%) scale(1.8)' }, { opacity: T.aura[1] * 0.7, transform: 'translate(-50%,-50%) scale(1.1)' }], { duration: 900, easing: 'ease-out', fill: 'forwards' });
+      const sheen = this.rq('[data-sheen]'), sw = [{ left: '-60%' }, { left: '140%' }];
+      sheen.animate(sw, { duration: 900, delay: 200, easing: 'ease-in-out' });
+      if (shiny || T.lvl === 3) sheen.animate(sw, { duration: 1100, delay: 1500, endDelay: shiny ? 900 : 2200, iterations: Infinity, easing: 'ease-in-out' });
+      if (T.confetti) this._emit.push({ kind: 'confetti', rate: 2.2, until: performance.now() + T.confetti });
+      if (shiny || T.lvl >= 2) this._emit.push({ kind: 'twinkle', rate: shiny ? 0.45 : T.lvl === 3 ? 0.3 : 0.12, until: Infinity });
+      this.fxStart();
+    }, hit);
+    setTimeout(() => { if (tok === this._rvTok) this.setState({ revealPhase: 'done' }); }, T.flipMs + 120);
+  }
+  playInfo() {
+    const R = this._rv, rw = this.state.rewards[0]; if (!R || !rw) return;
+    const tok = this._rvTok, info = this.rq('[data-info]');
+    if (info) info.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'ease-out' });
+    R.querySelectorAll('[data-line]').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 320, delay: 500 + i * 150, fill: 'backwards' }));
+    const xpEl = this.rq('[data-xp]'); if (!xpEl) return;
+    const total = rw.xp, t0 = performance.now(), dur = 950;
+    const step = now => {
+      if (tok !== this._rvTok || !xpEl.isConnected) return;
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      xpEl.textContent = '+' + Math.round(total * e) + ' XP';
+      if (k < 1) requestAnimationFrame(step);
+      else xpEl.animate([{ transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    };
+    requestAnimationFrame(step);
+  }
+  tiltCard = ev => {
+    if (this.state.revealPhase !== 'done') return;
+    const el = ev.currentTarget, r = el.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width - 0.5, py = (ev.clientY - r.top) / r.height - 0.5;
+    const tilt = this.rq('[data-tilt]'), foil = this.rq('[data-foil]');
+    if (tilt) tilt.style.transform = 'rotateX(' + (-py * 18) + 'deg) rotateY(' + (px * 22) + 'deg)';
+    if (foil) { foil.style.setProperty('--mx', (50 - px * 100) + '%'); foil.style.setProperty('--my', (50 - py * 100) + '%'); }
+  };
+  untiltCard = () => { const tilt = this.rq('[data-tilt]'); if (tilt) tilt.style.transform = ''; };
+  replayCard(id, shiny) { this.setState({ rewards: [{ kind: 'idea', id, shiny, replay: true, perfect: false, xp: 0, bestCombo: 0, opened: [], streak: null }], revealPhase: 'charge' }); }
+  closeReward() {
+    const s = this.state, rest = s.rewards.slice(1);
+    if (rest.length) { this.setState({ rewards: rest, revealPhase: 'charge' }); return; }
+    if (s.view === 'quiz') this.setState({ rewards: [], view: 'map', quiz: null, fx: s.pendingFx, pendingFx: [], ...this.fitFocus((s.hist || [this.start()]).slice(-1)[0], s.objOpen), mode: 'idea' });
+    else this.setState({ rewards: [] });
+  }
+
+  openTeach(unitN, retryIds, prior) {
+    const u = UNITS.find(x => x.n === unitN), probes = PROBES[unitN].filter(p => !retryIds || retryIds.includes(p.id));
+    clearInterval(this._rec);
+    const intro = retryIds ? 'Can we go over ' + (probes.length > 1 ? 'a few parts' : 'one part') + ' again? I still have ' + probes.length + ' question' + (probes.length > 1 ? 's' : '') + '.'
+      : 'Hi! I missed the whole unit on "' + u.t + '". I have ' + probes.length + ' questions for you. Explain however you like: type, talk, or show me on video.';
+    this.setState({ view: 'teach', lock: null, buddyOpen: false, missionsOpen: false,
+      teach: { unit: unitN, token: Date.now(), probes, qi: 0, qStart: 1, followed: false, results: prior || {}, mode: 'type', input: '', transcript: '',
+        rec: { on: false, secs: 0, done: false }, loading: false, finished: false, error: null,
+        thread: [{ from: 'milo', text: intro }, { from: 'milo', text: probes[0].q, tag: 'Question 1 of ' + probes.length }] } });
+    this.miloDo('curious', this.pick('teachStart'), 2500);
+  }
+  setTeach(patch) { this.setState(s => ({ teach: { ...s.teach, ...patch } })); }
+  threadRef = el => { this._thread = el; };
+  recStart() {
+    clearInterval(this._rec);
+    this.setTeach({ rec: { on: true, secs: 0, done: false } });
+    this._rec = setInterval(() => this.setState(s => s.teach ? { teach: { ...s.teach, rec: { ...s.teach.rec, secs: s.teach.rec.secs + 1 } } } : null), 1000);
+  }
+  recStop() { clearInterval(this._rec); this.setState(s => ({ teach: { ...s.teach, rec: { ...s.teach.rec, on: false, done: true } } })); }
+  async submitAnswer(text, via) {
+    const t = this.state.teach;
+    if (!t || t.loading || t.finished || !text || !text.trim()) return;
+    const p = t.probes[t.qi], answer = text.trim();
+    const thread = [...t.thread, { from: 'me', text: answer, via }];
+    this.setTeach({ thread, loading: true, input: '', transcript: '', rec: { on: false, secs: 0, done: false }, error: null });
+    this.miloDo('thinking', '', 60000);
+    const convo = thread.slice(t.qStart).map(m => (m.from === 'me' ? 'Student: ' : 'Milo: ') + m.text).join('\n');
+    const content = 'Lesson objective: ' + IDEAS[p.id].o + '\nIdea: ' + IDEAS[p.id].t + '. ' + IDEAS[p.id].b + '\nQuestion Milo asked: ' + p.q + '\nKey points: ' + p.keys + '\nfollowUpAllowed: ' + !t.followed + '\n\nConversation for this question:\n' + convo;
+    let j = null;
+    try {
+      const r = await window.claude.complete({ system: PROBE_GRADER, messages: [{ role: 'user', content }], max_tokens: 400 });
+      j = JSON.parse((r.match(/\{[\s\S]*\}/) || ['{}'])[0]);
+      if (!['got', 'partial', 'miss'].includes(j.verdict)) j = null;
+    } catch (err) { j = null; }
+    const cur = this.state.teach;
+    if (!cur || cur.token !== t.token) return;
+    if (!j) { this.miloDo('idle', ''); this.setTeach({ loading: false, thread: t.thread, input: via === 'Typed' ? answer : '', error: 'Milo could not check that just now. Please send it again.' }); return; }
+    const nt = [...cur.thread, { from: 'milo', text: j.milo || 'Okay!' }];
+    this.miloDo(j.verdict === 'got' ? 'aha' : j.verdict === 'partial' ? 'curious' : 'confused', this.pick(j.verdict === 'got' ? 'teachGot' : j.verdict === 'partial' ? 'teachPartial' : 'teachMiss'), 3500);
+    if (j.verdict !== 'got' && !cur.followed) { this.setTeach({ thread: nt, loading: false, followed: true }); return; }
+    const results = { ...cur.results, [p.id]: { verdict: j.verdict, note: j.note || '' } };
+    const qi = cur.qi + 1;
+    if (qi < cur.probes.length) {
+      nt.push({ from: 'milo', text: cur.probes[qi].q, tag: 'Question ' + (qi + 1) + ' of ' + cur.probes.length });
+      this.setTeach({ thread: nt, loading: false, results, qi, followed: false, qStart: nt.length - 1 });
+      return;
+    }
+    const gaps = PROBES[cur.unit].filter(pp => (results[pp.id] || {}).verdict !== 'got');
+    nt.push({ from: 'milo', text: gaps.length ? 'Thanks! I get most of it now. I\'m still a bit confused about ' + gaps.map(g => IDEAS[g.id].t).join(', ') + '.' : 'Wow, I get the whole unit now! You\'re a really good teacher.' });
+    this.setTeach({ thread: nt, loading: false, results, finished: true });
+    if (!gaps.length) this.miloDo('excited', this.pick('teachPass'), 6000);
+    if (!gaps.length) this.setState(s => ({ taught: s.taught.includes(cur.unit) ? s.taught : [...s.taught, cur.unit], xp: s.xp + 300, revealPhase: 'charge', rewards: [{ kind: 'teach', unit: cur.unit, xp: 300, summary: 'Milo understood every question in the unit.' }] }));
+  }
+
+  renderVals() {
+    const G = this.graph(), P = G.pos, { thr, qn } = this.cfg();
+    const s = this.state, M = s.mastered, z = s.zoom;
+    const hist = s.hist || [G.rank[0]], V = s.visited || hist;
+    const curId = hist[hist.length - 1], cp = P[curId];
+    this._curPos = cp;
+    const camX = cp.x + s.pan.x, camY = cp.y + s.pan.y;
+    const near = this.links(curId), nearIds = near.map(n => n.id);
+    const st = { [curId]: 'current' };
+    near.forEach(n => { st[n.id] = this.isOpen(n.id, M, V) ? 'nbr' : 'locked'; });
+    V.forEach(id => { if (!st[id]) st[id] = 'visited'; });
+    near.filter(n => st[n.id] === 'nbr').forEach(n => this.links(n.id).forEach(k => { if (!st[k.id]) st[k.id] = 'preview'; }));
+    Object.keys(IDEAS).forEach(id => { if (!st[id]) st[id] = this.links(id).some(k => V.includes(k.id)) ? 'fog' : 'unconn'; });
+    const ls = z < 1 ? Math.min(1 / z, 1.7) : 1;
+    this._ls = ls;
+    const compact = s.mode === 'all' || (s.mode === null && z < 0.5);
+    const overview = s.mode === 'all' || s.mode === 'area' || (s.mode === null && z < 0.65);
+    const relTo = id => (near.find(n => n.id === id) || {}).text || '';
+    const need = Math.floor(thr * qn / 100) + 1;
+    const lockReason = id => {
+      const ex = LOCKS[id], rq = this.reqs(id).filter(r => !M.includes(r));
+      if (rq.length) return 'Requires ' + rq.map(r => IDEAS[r].t).join(', ');
+      if (ex && M.length < ex.count) return 'Master any ' + ex.count + ' ideas';
+      return 'Master ' + IDEAS[curId].t + ' first';
+    };
+    const IPROF = window.IdeaInterests ? window.IdeaInterests.profile() : null, hk = id => window.IdeaInterests ? window.IdeaInterests.hookFor(id, IPROF) : null;
+    const mk = id => ({
+      id, title: IDEAS[id].t, hasHook: !!hk(id), hookIcon: hk(id) ? 'ph ph-' + hk(id).icon : '', hookTip: hk(id) ? 'Connects to ' + hk(id).label : '', x: P[id].x, y: P[id].y, s: ls, mastered: M.includes(id),
+      cat: IDEAS[id].c + ' · Unit ' + unitOf(id).n + (M.includes(id) ? ' · mastered' : ''),
+      req: lockReason(id),
+      go: () => this.go(id), lock: () => this.lockClick(id),
+      enter: () => this.setState({ hover: id, hoverEdge: null }),
+      leave: () => this.setState(p => p.hover === id ? { hover: null } : null)
+    });
+    const of = t => Object.keys(IDEAS).filter(id => st[id] === t).map(mk);
+    const nearE = [], path = [], far = [], ghost = [];
+    const vis = x => x === 'current' || x === 'visited' || x === 'nbr' || x === 'locked';
+    G.kept.forEach(e => {
+      const sa = st[e.a], sb = st[e.b], pa = P[e.a], pb = P[e.b], L = line(pa.x, pa.y, pb.x, pb.y);
+      const other = sa === 'current' ? sb : sb === 'current' ? sa : null, oid = sa === 'current' ? e.b : e.a;
+      if (other === 'nbr' || other === 'locked') {
+        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const hwA = (e.a === curId ? 95 : 70) * ls, hhA = (e.a === curId ? 34 : 24) * ls, hwB = (e.b === curId ? 95 : 70) * ls, hhB = (e.b === curId ? 34 : 24) * ls;
+        const t0 = exitT(hwA, hhA, dx, dy), t1 = 1 - exitT(hwB, hhB, dx, dy);
+        const tm = t1 > t0 ? (t0 + t1) / 2 : 0.5, ta = t1 > t0 ? Math.max(t0, t1 - 8 * ls / L.len) : 0.8;
+        const hot = s.hoverEdge === e.key || s.hover === oid, lk = other === 'locked';
+        nearE.push({ ...L, key: e.key, op: hot ? 1 : lk ? 0.45 : 0.6, w: (hot ? 2 : 1) * Math.max(1, 1 / z), style: lk ? 'dashed' : 'solid', hit: 14 * ls,
+          bx: pa.x + dx * tm, by: pa.y + dy * tm, ax: pa.x + dx * ta, ay: pa.y + dy * ta,
+          icon: e.media ? 'ph ph-play' : 'ph ph-chalkboard-teacher', media: !!e.media,
+          text: IDEAS[e.a].t + ' ' + e.rel + ' ' + IDEAS[e.b].t,
+          open: () => this.openLink(e),
+          enter: () => this.setState({ hoverEdge: e.key, hover: null }),
+          leave: () => this.setState(p => p.hoverEdge === e.key ? { hoverEdge: null } : null) });
+      } else if (vis(sa) && vis(sb)) path.push(L);
+      else if ((sa === 'nbr' && sb === 'preview') || (sb === 'nbr' && sa === 'preview')) far.push(L);
+      else ghost.push(L);
+    });
+    const hoverText = id => {
+      const t = st[id];
+      if (t === 'nbr') return relTo(id);
+      if (t === 'locked') return relTo(id) + ' · ' + lockReason(id).toLowerCase();
+      if (t === 'visited') return 'Visited · click to jump back';
+      if (t === 'fog') return 'Explore nearby to reveal';
+      if (t === 'unconn') return 'Locked: explore a connected idea first';
+      return '';
+    };
+    const toScreen = (x, y) => ({ x: (x - camX) * z + W / 2, y: (y - camY) * z + H / 2 });
+    let labels = [];
+    if (s.hoverEdge) {
+      const ne = nearE.find(n => n.key === s.hoverEdge);
+      if (ne) { const p = toScreen(ne.bx, ne.by); labels = [{ text: ne.text + (ne.media ? ' · watch the video' : ' · ask Ms. Ivy'), x: Math.min(Math.max(p.x, 170), W - 170), y: p.y > 70 ? p.y - 26 : p.y + 26 }]; }
+    } else if (s.hover && st[s.hover]) {
+      const p = toScreen(P[s.hover].x, P[s.hover].y), off = 26 * ls * z + 14, text = hoverText(s.hover);
+      if (text) labels = [{ text, x: Math.min(Math.max(p.x, 150), W - 150), y: p.y > 90 ? p.y - off : p.y + off }];
+    }
+    let lockCard = {};
+    if (s.lock) {
+      const id = s.lock;
+      if (st[id] === 'unconn' || st[id] === 'fog') lockCard = { title: 'Hidden idea', rel: 'Not connected to anything you have explored', text: 'Master an idea linked to this one and it will open up.' };
+      else if (st[id] === 'locked') {
+        const ex = LOCKS[id] && M.length < LOCKS[id].count, rqm = this.reqs(id).filter(r => !M.includes(r));
+        lockCard = { title: IDEAS[id].t, rel: relTo(id),
+          text: rqm.length ? 'Master ' + rqm.map(r => IDEAS[r].t).join(' and ') + ' first. Your teacher set these as prerequisites.' : ex ? 'Master any ' + LOCKS[id].count + ' ideas to open this one. You have mastered ' + M.length + '.' : 'To move on, master ' + IDEAS[curId].t + ': score more than ' + thr + '% (' + need + ' of ' + qn + ') on its quiz.',
+          hasBtn: !rqm.length && !ex && !M.includes(curId), btn: 'Take the ' + IDEAS[curId].t + ' quiz', go: () => this.startQuiz(curId) };
+      }
+    }
+    const modeBtn = (m, label) => { const on = s.mode === m; return { label, pick: () => this.setMode(m, cp), bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent-600)' : 'transparent', color: on ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' }; };
+    const level = (s.mode === 'all' || (s.mode === null && z < 0.5)) ? 'map' : (s.mode === 'area' || (s.mode === null && z < 0.65)) ? 'unit' : 'idea';
+    const cu = unitOf(curId), cuDone = cu.ids.filter(id => M.includes(id)).length;
+    const objRow = (lv, label, text, extra) => ({ label, text, bg: level === lv ? 'var(--color-accent-900)' : 'transparent', labelColor: level === lv ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', color: level === lv ? 'var(--color-neutral-100)' : 'var(--color-neutral-400)', hasBar: false, canTeach: false, teachLocked: false, ...extra });
+    const objectives = [
+      objRow('map', 'Whole map', MAP_OBJ, { hasBar: true, pct: Math.round(M.length / Object.keys(IDEAS).length * 100), barText: M.length + '/' + Object.keys(IDEAS).length + ' mastered' }),
+      objRow('unit', 'Unit ' + cu.n + ' · ' + cu.t, cu.o, { hasBar: true, pct: Math.round(cuDone / cu.ids.length * 100), barText: cuDone + '/' + cu.ids.length + ' mastered', canTeach: cuDone === cu.ids.length, teachLocked: cuDone < cu.ids.length, teach: () => this.openTeach(cu.n) }),
+      objRow('idea', 'This idea · ' + IDEAS[curId].t, IDEAS[curId].o)
+    ];
+    const showUnits = z <= 0.7;
+    if (!this._unitPos || this._unitG !== G) {
+      // Fixed world positions, worked out once: just outside each unit's ideas, in a spot clear of every card and other label.
+      this._unitG = G; const placed = [], LS = 1.6, cw = 80 * LS, ch = 28 * LS;
+      this._unitPos = UNITS.map(u => {
+        const xs = u.ids.map(id => P[id].x), ys = u.ids.map(id => P[id].y);
+        const cx = xs.reduce((a, b) => a + b, 0) / xs.length, cy = ys.reduce((a, b) => a + b, 0) / ys.length, d = Math.hypot(cx, cy) || 1, ux = cx / d, uy = cy / d;
+        const title = 'Unit ' + u.n + ' · ' + u.t, hw = title.length * 4.4 * LS + 14, hh = 12 * LS + 6;
+        const reach = Math.max(...u.ids.map(id => P[id].x * ux + P[id].y * uy)) + 80;
+        const hits = (x, y) => Object.keys(IDEAS).filter(id => Math.abs(P[id].x - x) < cw + hw && Math.abs(P[id].y - y) < ch + hh).length + placed.filter(p => Math.abs(p[0] - x) < p[2] + hw && Math.abs(p[1] - y) < p[3] + hh).length * 3;
+        let best = null;
+        for (const ex of [0, 60, 120, 200]) for (const off of [0, -60, 60, -120, 120, -200, 200]) {
+          const x = ux * (reach + ex) - uy * off, y = uy * (reach + ex) + ux * off, cost = hits(x, y) * 1000 + ex + Math.abs(off);
+          if (!best || cost < best.cost) best = { x, y, cost };
+        }
+        placed.push([best.x, best.y, hw, hh]);
+        return { title, x: best.x, y: best.y };
+      });
+    }
+    const unitLabels = [], unitKey = UNITS.map(u => ({ n: 'Unit ' + u.n, t: u.t, count: u.ids.filter(id => M.includes(id)).length + '/' + u.ids.length }));
+    const firstLink = near[0];
+    const buddyLine = firstLink ? 'Wait, how does ' + IDEAS[firstLink.e.a].t + ' connect to ' + IDEAS[firstLink.e.b].t + '? Can you explain it to me?' : 'What should we look at next?';
+    const total = Object.keys(IDEAS).length;
+    const le = s.link ? G.kept.find(k => k.key === s.link) : null;
+
+    const q = s.quiz;
+    let quiz = {};
+    if (q) {
+      const cq = q.qs[Math.min(q.i, q.qs.length - 1)], picked = q.picks[q.i], answered = picked !== undefined, mult = multOf(q.combo);
+      quiz = {
+        title: IDEAS[q.id].t, objective: IDEAS[q.id].o, n: q.qs.length, num: q.i + 1, prompt: cq.prompt, text: cq.text,
+        active: !q.done, answered, failed: q.done && !q.pass,
+        dots: q.qs.map((qq, k) => ({ bg: q.picks[k] !== undefined ? (q.picks[k] === qq.answer ? 'var(--color-accent)' : 'var(--color-neutral-500)') : k === q.i ? 'var(--color-neutral-300)' : 'var(--color-neutral-800)' })),
+        options: cq.options.map((o, k) => {
+          const isAns = o === cq.answer, isPick = o === picked;
+          return { text: o, letter: 'ABCD'[k], pick: () => this.answer(o),
+            bg: answered && isAns ? 'var(--color-accent-800)' : answered && isPick ? 'var(--color-neutral-800)' : 'var(--color-bg)',
+            border: answered && isAns ? 'var(--color-accent)' : answered && isPick ? 'var(--color-neutral-500)' : 'var(--color-neutral-700)' };
+        }),
+        feedback: answered ? (picked === cq.answer ? (q.combo >= 2 ? 'Correct! Combo x' + mult + '. ' : 'Correct! ') + cq.explain : 'Not quite. ' + cq.explain + ' Your combo resets.') : '',
+        fbColor: answered && picked === cq.answer ? 'var(--color-accent-200)' : 'var(--color-neutral-300)',
+        nextLabel: q.i + 1 < q.qs.length ? 'Next question' : 'See results',
+        comboText: q.combo >= 2 ? 'x' + mult + ' combo' : q.combo === 1 ? '1 in a row' : 'Build a combo',
+        comboSize: q.combo >= 2 ? 14 + mult * 6 : 14, comboColor: q.combo >= 2 ? 'var(--color-accent-200)' : 'var(--color-neutral-400)',
+        comboGlow: q.combo >= 2 ? '0 0 ' + (mult * 8) + 'px var(--color-accent-600)' : 'none',
+        xp: q.xp, score: q.score, pctText: q.done ? q.pct + '% · you need more than ' + thr + '%' : '',
+        needText: 'Ms. Ivy will go over what you missed. Rebuild those links below, then try a fresh set of questions.'
+      };
+    }
+    let practice = {};
+    if (s.practice) {
+      const p = s.practice, allDone = p.rows.every(r => r.filled);
+      const answers = p.rows.map(r => r.blank === 'b' ? r.e.b : r.e.a);
+      const r2 = rng(hash(curId) + p.rows.length);
+      const extra = shuffle(Object.keys(IDEAS).filter(k => !answers.includes(k) && k !== (q ? q.id : '')), r2).slice(0, 3);
+      const chipIds = shuffle([...new Set(answers)].concat(extra), r2);
+      practice = {
+        rows: p.rows.map((r, i) => {
+          const sel = p.sel === i, A = IDEAS[r.e.a].t, B = IDEAS[r.e.b].t;
+          return { idx: i, before: r.blank === 'a' ? '' : A + ' ' + r.e.rel, after: r.blank === 'a' ? r.e.rel + ' ' + B : '',
+            slot: r.filled ? IDEAS[r.filled].t : '?', slotBorder: r.filled ? 'var(--color-accent)' : 'var(--color-neutral-500)', slotColor: r.filled ? 'var(--color-accent-200)' : 'var(--color-neutral-400)',
+            bg: sel ? 'var(--color-accent-900)' : 'var(--color-bg)', border: sel ? 'var(--color-accent-600)' : r.filled ? 'var(--color-accent-700)' : 'var(--color-neutral-700)',
+            pick: () => !r.filled && this.practicePickRow(i), icon: r.e.media ? 'ph ph-play' : 'ph ph-chalkboard-teacher', explore: () => this.openLink(r.e) };
+        }),
+        chips: chipIds.map(id => { const usedUp = p.rows.some(r => r.filled === id); return { id, title: IDEAS[id].t, bg: 'var(--color-surface)', op: usedUp ? 0.35 : 1, pick: () => !usedUp && this.practicePickChip(id) }; }),
+        msg: p.msg, retryDisabled: !allDone
+      };
+    }
+    const t = s.teach;
+    let teach = {};
+    if (t) {
+      const u = UNITS.find(x => x.n === t.unit), isRec = t.mode !== 'type', mm = Math.floor(t.rec.secs / 60), sec = String(t.rec.secs % 60).padStart(2, '0');
+      const tab = (k, label, icon) => { const on = t.mode === k; return { label, icon, pick: () => { clearInterval(this._rec); this.setTeach({ mode: k, rec: { on: false, secs: 0, done: false }, transcript: '' }); }, bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent-600)' : 'transparent', color: on ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' }; };
+      const all = PROBES[t.unit], curP = t.finished ? null : t.probes[t.qi];
+      const gaps = all.filter(p => (t.results[p.id] || {}).verdict !== 'got');
+      const VIA = { Typed: 'ph ph-keyboard', 'Talked': 'ph ph-microphone', 'Video': 'ph ph-video-camera', 'Screencast': 'ph ph-monitor' };
+      const viaName = { type: 'Typed', voice: 'Talked', video: 'Video', screen: 'Screencast' }[t.mode];
+      const busy = t.loading;
+      const ST = { got: ['ph ph-check-circle', 'var(--color-accent-300)', 'Understood'], partial: ['ph ph-circle-half', 'var(--color-neutral-200)', 'Partly'], miss: ['ph ph-question', 'var(--color-neutral-200)', 'Not yet'] };
+      teach = {
+        unitName: 'Unit ' + u.n + ' · ' + u.t, unitObjective: u.o,
+        progressText: t.finished ? 'Finished' : 'Question ' + (t.qi + 1) + ' of ' + t.probes.length + (t.followed ? ' · follow-up' : ''),
+        dots: t.probes.map((p, k) => { const r = t.results[p.id]; return { bg: k < t.qi || t.finished ? (r && r.verdict === 'got' ? 'var(--color-accent)' : 'var(--color-neutral-500)') : k === t.qi ? 'var(--color-neutral-300)' : 'var(--color-neutral-800)' }; }),
+        threadH: t.finished ? 190 : isRec ? 150 : 226,
+        thread: t.thread.map(m => { const me = m.from === 'me'; return { text: m.text, align: me ? 'flex-end' : 'flex-start', bg: me ? 'var(--color-accent-900)' : m.tag ? 'var(--color-bg)' : 'transparent', border: me ? 'var(--color-accent-700)' : m.tag ? 'var(--color-accent-600)' : 'var(--color-neutral-700)', size: m.tag ? 15 : 13, hasTag: !!m.tag, tag: m.tag || '', hasVia: !!m.via, via: m.via || '', viaIcon: VIA[m.via] || '' }; }),
+        loading: t.loading, hasError: !!t.error, error: t.error || '',
+        answering: !t.finished, finished: t.finished, busy,
+        tabs: [tab('type', 'Type', 'ph ph-keyboard'), tab('voice', 'Talk', 'ph ph-microphone'), tab('video', 'Video', 'ph ph-video-camera'), tab('screen', 'Screencast', 'ph ph-monitor')],
+        isType: !isRec, isRec, previewW: t.mode === 'voice' ? 150 : 200,
+        recIcon: t.mode === 'voice' ? 'ph ph-microphone' : t.mode === 'video' ? 'ph ph-video-camera' : 'ph ph-monitor',
+        recPlaceholder: t.mode === 'voice' ? 'Microphone' : t.mode === 'video' ? 'Camera preview' : 'Screen share: point at the map while you talk',
+        recOn: t.rec.on, recDone: t.rec.done, canStart: !t.rec.on && !t.rec.done, notDone: !t.rec.done, recTime: mm + ':' + sec,
+        recStart: () => this.recStart(), recStop: () => this.recStop(), recReset: () => this.setTeach({ rec: { on: false, secs: 0, done: false }, transcript: '' }),
+        input: t.input, onInput: ev => { const v = ev.target.value; this.setTeach({ input: v }); },
+        onKey: ev => { if (ev.key === 'Enter') this.submitAnswer(this.state.teach.input, 'Typed'); },
+        sendType: () => this.submitAnswer(t.input, 'Typed'),
+        transcript: t.transcript, onTranscript: ev => { const v = ev.target.value; this.setTeach({ transcript: v }); },
+        sendTranscript: () => this.submitAnswer(t.transcript, viaName),
+        notSure: () => this.submitAnswer('I\'m not sure how to explain this yet.', viaName),
+        gotCount: all.length - gaps.length, allCount: all.length, gapCount: gaps.length,
+        passed: t.finished && !gaps.length, hasGaps: t.finished && gaps.length > 0,
+        recheck: () => this.openTeach(t.unit, gaps.map(g => g.id), Object.fromEntries(Object.entries(t.results).filter(([, r]) => r.verdict === 'got'))),
+        checklist: all.map(p => {
+          const r = t.results[p.id], isCur = curP && curP.id === p.id, st2 = r ? ST[r.verdict] : isCur ? ['ph ph-chat-circle-dots', 'var(--color-accent-200)', 'Asking now'] : ['ph ph-circle', 'var(--color-neutral-600)', t.probes.some(x => x.id === p.id) ? 'Coming up' : ''];
+          return { title: IDEAS[p.id].t, objective: IDEAS[p.id].o, icon: st2[0], iconColor: st2[1], status: st2[2], statusColor: r && r.verdict === 'got' ? 'var(--color-accent-300)' : 'var(--color-neutral-400)',
+            bg: isCur ? 'var(--color-accent-900)' : 'transparent', border: isCur ? 'var(--color-accent-700)' : 'transparent',
+            note: r && r.verdict !== 'got' ? r.note : '', hasNote: !!(r && r.verdict !== 'got' && r.note), canReview: t.finished && !!r && r.verdict !== 'got',
+            review: () => { this.go(p.id); this.toastMsg('Review ' + IDEAS[p.id].t + ', then re-check it with Milo from Missions'); } };
+        })
+      };
+    }
+    const rarityOf = id => this.rarityFor(id);
+    const cardLook = (rarity, shiny) => ({
+      border: rarity === 'Legendary' || shiny ? 'var(--color-accent)' : rarity === 'Rare' ? 'var(--color-accent-600)' : 'var(--color-neutral-600)',
+      glow: shiny ? '0 0 28px var(--color-accent-600)' : rarity === 'Legendary' ? '0 0 18px var(--color-accent-800)' : 'none',
+      bg: shiny ? 'linear-gradient(140deg, var(--color-accent-800), var(--color-surface) 45%, var(--color-accent-900))' : 'var(--color-surface)'
+    });
+    const catIcon = id => IDEAS[id].c === 'Quantity' ? 'ph ph-ruler' : IDEAS[id].c === 'Tool' ? 'ph ph-function' : 'ph ph-arrow-arc-right';
+    const rw = s.rewards[0];
+    let reward = {};
+    if (rw) {
+      if (rw.kind === 'idea') {
+        const rar = rarityOf(rw.id), look = cardLook(rar, rw.shiny);
+        reward = { kicker: rw.shiny ? 'Shiny card!' : 'New card', rarity: (rw.shiny ? 'Shiny · ' : '') + rar, title: IDEAS[rw.id].t, sub: IDEAS[rw.id].o, icon: catIcon(rw.id), iconSize: 46, w: 190, h: 260, glowSize: 380, ...look, xp: rw.xp, cta: s.rewards.length > 1 ? 'Next' : 'Back to the map',
+          lines: [rw.perfect ? 'Perfect score: shiny card and +50 bonus XP' : null, rw.bestCombo >= 2 ? 'Best combo x' + multOf(rw.bestCombo) : null, rw.opened.length ? 'Unlocked: ' + rw.opened.map(k => IDEAS[k].t).join(', ') : null, rw.streak ? 'Streak extended: ' + rw.streak + ' days' : null].filter(Boolean).map(text => ({ text })) };
+      } else if (rw.kind === 'unit') {
+        const u = UNITS.find(x => x.n === rw.unit);
+        reward = { kicker: 'Unit complete', rarity: 'Unit card', title: 'Unit ' + u.n + ': ' + u.t, sub: u.o, icon: 'ph ph-stack', iconSize: 60, w: 230, h: 310, glowSize: 460, ...cardLook('Legendary', true), xp: rw.xp, cta: 'Back to the map',
+          lines: [{ text: 'Summative unlocked: teach Milo what you learned' }] };
+      } else {
+        const u = UNITS.find(x => x.n === rw.unit);
+        reward = { kicker: 'You taught Milo!', rarity: 'Teacher trophy', title: u.t, sub: 'Unit ' + u.n + ' summative passed', icon: 'ph ph-trophy', iconSize: 64, w: 240, h: 320, glowSize: 520, ...cardLook('Legendary', true), xp: rw.xp, cta: 'Done',
+          lines: [{ text: rw.summary }] };
+      }
+    }
+    if (rw) {
+      const tier = this.curTier(), ph = s.revealPhase || 'charge', T = TIERS[tier];
+      Object.assign(reward, {
+        tier, isCharge: ph === 'charge', isDone: ph === 'done', cursor: ph === 'charge' ? 'pointer' : 'default',
+        onStage: ph === 'charge' ? () => this.openReveal() : undefined,
+        kicker: ph === 'charge' ? (rw.kind === 'idea' ? 'You earned a card' : reward.kicker) : (rw.kind === 'idea' ? (rw.shiny ? 'Shiny ' : '') + tier + ' card' + (tier === 'Common' ? '' : '!') : reward.kicker),
+        slamText: T.slam ? 'LEGENDARY' : '', hint: T.hint, foilOp: rw.shiny || T.lvl === 3 ? 1 : T.lvl === 2 ? 0.6 : 0.3,
+        hasXp: rw.xp > 0, tilt: this.tiltCard, untilt: this.untiltCard
+      });
+      if (rw.replay) reward.cta = 'Close';
+    }
+    const pv = (label, id, shiny) => ({ label, go: () => this.replayCard(id, shiny) });
+    const byRing = r => Object.keys(P).find(id => P[id].ring === r);
+    const previews = [pv('Common', byRing(2), false), pv('Rare', byRing(1), false), pv('Legendary', byRing(0), false), pv('Shiny legendary', byRing(0), true)];
+    const collection = UNITS.map(u => ({
+      title: 'Unit ' + u.n + ' · ' + u.t, count: u.ids.filter(id => s.cards[id]).length + '/' + u.ids.length,
+      cards: u.ids.map(id => {
+        const c = s.cards[id], rar = rarityOf(id);
+        if (!c) return { title: '???', meta: 'Not collected', rarity: rar, rarityColor: 'var(--color-neutral-500)', icon: 'ph ph-lock-simple', iconColor: 'var(--color-neutral-600)', bg: 'var(--color-bg)', border: 'var(--color-neutral-800)', glow: 'none', op: 0.8, cursor: 'default', replay: undefined };
+        const look = cardLook(rar, c.shiny);
+        return { title: IDEAS[id].t, meta: IDEAS[id].c + (c.shiny ? ' · shiny' : ''), rarity: rar, rarityColor: 'var(--color-accent-300)', icon: catIcon(id), iconColor: 'var(--color-accent-200)', ...look, op: 1, cursor: 'pointer', replay: () => this.replayCard(id, c.shiny) };
+      })
+    }));
+    const ccf = this.ccfg();
+    const DUE = UNITS.map((u, i) => { const iso = ccf && ccf.due[u.n], d = iso ? new Date(iso + 'T12:00:00') : null; return d && !isNaN(d) ? 'Due ' + d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ['Due Friday', 'Due next Wednesday', 'Due in 2 weeks'][i]; });
+    const ms = [];
+    const mission = (rank, o) => ms.push({ rank, ...o });
+    const close = fn => () => { this.setState({ missionsOpen: false }); fn(); };
+    UNITS.forEach((u, ui) => {
+      const left = u.ids.filter(id => !M.includes(id));
+      const title = 'Unit ' + u.n + ' assessment: teach Milo';
+      if (s.taught.includes(u.n)) mission(9, { title, sub: 'Done · trophy earned', state: 'done', icon: 'ph ph-trophy', tag: 'Done', go: close(() => this.setState({ view: 'cards' })) });
+      else if (!left.length) mission(0, { title, sub: DUE[ui] + ' · ready now', state: 'ready', icon: 'ph ph-student', tag: '+300 XP', go: close(() => this.openTeach(u.n)) });
+      else {
+        const nextId = left.find(id => this.isOpen(id, M, V)) || left[0];
+        mission(4 + ui, { title, sub: DUE[ui] + ' · master ' + left.length + ' more idea' + (left.length > 1 ? 's' : '') + ' first', state: 'todo', icon: 'ph ph-lock-simple', tag: DUE[ui].replace('Due ', ''),
+          go: close(() => { this.go(nextId); this.toastMsg('Next step for Unit ' + u.n + ': master ' + IDEAS[nextId].t); }) });
+      }
+    });
+    if (t && t.finished) {
+      const tg = PROBES[t.unit].filter(p => (t.results[p.id] || {}).verdict !== 'got');
+      if (tg.length) mission(1, { title: 'Re-check ' + tg.length + ' question' + (tg.length > 1 ? 's' : '') + ' with Milo', sub: 'Unit ' + t.unit + ': ' + tg.map(g => IDEAS[g.id].t).join(', '), state: 'ready', icon: 'ph ph-question', tag: 'Retry',
+        go: close(() => this.openTeach(t.unit, tg.map(g => g.id), Object.fromEntries(Object.entries(t.results).filter(([, r]) => r.verdict === 'got')))) });
+    }
+    if (q && q.done && !q.pass && s.practice) mission(1, { title: 'Finish the hands-on review: ' + IDEAS[q.id].t, sub: 'Rebuild the links you missed, then retry the quiz', state: 'ready', icon: 'ph ph-hand-pointing', tag: 'Retry', go: close(() => this.setState({ view: 'quiz' })) });
+    if (!M.includes(curId)) mission(2, { title: 'Pass the ' + IDEAS[curId].t + ' quiz', sub: 'Score ' + need + ' of ' + qn + ' to unlock the next ideas', state: 'todo', icon: 'ph ph-exam', tag: '+50 XP', go: close(() => this.startQuiz(curId)) });
+    mission(s.streakBumped ? 9 : 3, { title: 'Keep your streak: master one idea today', sub: s.streakBumped ? 'Done · ' + s.streakDays + '-day streak' : s.streakDays + '-day streak at risk', state: s.streakBumped ? 'done' : 'todo', icon: 'ph ph-flame', tag: s.streakBumped ? 'Done' : 'Today', go: close(() => !M.includes(curId) ? this.startQuiz(curId) : this.setState({ view: 'map' })) });
+    const anyShiny = Object.values(s.cards).some(c => c.shiny);
+    mission(anyShiny ? 9 : 8, { title: 'Get a perfect ' + qn + '/' + qn + ' on any quiz', sub: anyShiny ? 'Done · shiny card collected' : 'Earns a shiny card', state: anyShiny ? 'done' : 'todo', icon: 'ph ph-sparkle', tag: anyShiny ? 'Done' : 'Bonus', go: close(() => this.startQuiz(curId)) });
+    const missions = ms.sort((a, b) => a.rank - b.rank).map(m => {
+      const ready = m.state === 'ready', done = m.state === 'done';
+      return { ...m, bg: ready ? 'var(--color-accent-900)' : 'transparent', border: ready ? 'var(--color-accent-700)' : 'transparent', op: done ? 0.55 : 1, strike: done ? 'line-through' : 'none',
+        iconBorder: ready ? 'var(--color-accent)' : 'var(--color-neutral-700)', iconColor: ready ? 'var(--color-accent-200)' : done ? 'var(--color-neutral-400)' : 'var(--color-neutral-200)',
+        tagBorder: ready ? 'var(--color-accent-600)' : 'var(--color-neutral-700)', tagColor: ready ? 'var(--color-accent-200)' : 'var(--color-neutral-300)' };
+    });
+    const ghostOp = overview ? Math.max(0.12, Math.min(0.25, (1 - z) * 0.6)) : 0;
+    const curMastered = M.includes(curId), curShiny = !!(s.cards[curId] && s.cards[curId].shiny);
+    return {
+      ...this.exVals(curId),
+      rootRef: this.rootRef,
+      headerTitle: (() => { const c = this.ccfg(); return c ? c.subject + ' · ' + c.topic : 'Physics · Kinematics'; })(),
+      milo: (() => {
+        const k = this.miloKnow(), st = this.miloStage(), nx = MILO_STAGES[st], cs = MILO_STAGES[st - 1];
+        const bc = s.chats['buddy:' + curId], thinking = (s.view === 'teach' && t && t.loading) || (s.buddyOpen && bc && bc.loading);
+        return { mood: thinking ? 'thinking' : s.milo.mood, stage: st, pulse: s.milo.pulse, stageName: cs.n,
+          pct: nx ? Math.round((k - cs.at) / (nx.at - cs.at) * 100) : 100,
+          nextText: nx ? 'Milo learns when you master ideas and teach him. ' + (nx.at - k) + ' more to become a ' + nx.n + '.' : 'Fully evolved. Milo is a Scholar!',
+          say: s.milo.say || buddyLine, quizSay: s.milo.say || 'Let\'s do this together!', react: s.milo.say, hasReact: !!s.milo.say };
+      })(),
+      missions, missionCount: missions.filter(m => m.state !== 'done').length, missionsOpen: !!s.missionsOpen,
+      toggleMissions: () => this.setState(p => ({ missionsOpen: !p.missionsOpen, buddyOpen: false })),
+      ruleText: 'Most-connected ideas in the centre · top ' + this._gMax + ' links in and out per idea · ' + G.hidden.length + ' weaker links hidden',
+      cur: { ...(() => { const k = hk(curId); return { hasHook: !!k, hookIcon: k ? 'ph ph-' + k.icon : '', hookLabel: k ? k.label : '', hookText: k ? k.hook : '' }; })(), title: IDEAS[curId].t, cat: IDEAS[curId].c, unit: 'Unit ' + cu.n + ' · ' + cu.t, blurb: IDEAS[curId].b, objective: IDEAS[curId].o, x: cp.x, y: cp.y, mastered: curMastered,
+        hint: curMastered ? IDEAS[curId].c + ' · mastered · click to open' : 'Click to open · master it to move on' },
+      tx: W / 2 - camX * z, ty: H / 2 - camY * z, z, ls,
+      trans: s.instant ? 'none' : 'transform 450ms cubic-bezier(.2,.7,.2,1)',
+      lw: Math.max(1, 1 / z), ghostOp, ringOp: Math.min(0.6, ghostOp * 2.4), unitOp: Math.min(0.9, ghostOp * 3.6),
+      nbrs: of('nbr'), locked: of('locked'), visited: of('visited'), preview: of('preview'), fog: compact ? [] : of('fog'), unconn: of('unconn'),
+      nearEdges: nearE, pathEdges: path, farEdges: far, ghostEdges: ghost, unitLabels, unitKey, showUnits,
+      fxItems: s.fx.map(id => ({ x: P[id].x, y: P[id].y })),
+      labels, canvasRef: this.canvasRef, down: this.onDown,
+      hasLock: !!s.lock && !!lockCard.title, lockCard, closeLock: () => this.setState({ lock: null }),
+      objectives, objOpen: s.objOpen, objChevron: s.objOpen ? 'ph ph-caret-up' : 'ph ph-caret-down', toggleObj: () => this.setState(p => ({ objOpen: !p.objOpen })),
+      buddyLine, buddyOpen: s.buddyOpen, buddyClosed: !s.buddyOpen, openBuddy: () => { this.openBuddy(curId, buddyLine); this.miloDo('happy', null, 1200); }, closeBuddy: () => this.setState({ buddyOpen: false }),
+      buddyChat: this.chatP('buddy:' + curId, PEER, { tag: 'Study buddy', placeholder: 'Explain it to Milo…', height: 250, suggestions: ['Let me explain it', 'What confuses you?'] }),
+      pct: Math.round(z * 100), zoomIn: () => this.zoomBy(1.2), zoomOut: () => this.zoomBy(1 / 1.2),
+      modes: [modeBtn('idea', 'Idea'), modeBtn('area', 'Unit'), modeBtn('all', 'Whole map')],
+      trail: hist.map((id, i) => ({ title: IDEAS[id].t, sep: i > 0, go: () => this.go(id) })),
+      isMap: s.view === 'map', isPage: s.view === 'page', isLink: s.view === 'link' && !!le, isQuiz: s.view === 'quiz' && !!q, isTeach: s.view === 'teach' && !!t, isCards: s.view === 'cards',
+      openPage: () => { if (!this._suppress) this.showPage(curId); },
+      backToMap: () => { clearInterval(this._rec); this.setState({ view: 'map' }); },
+      openCards: () => this.setState({ view: 'cards', buddyOpen: false }),
+      masteredCount: M.length, totalCount: total, cardCount: Object.keys(s.cards).length, xp: s.xp, streakDays: s.streakDays,
+      quizInfo: curMastered ? (curShiny ? 'Mastered with a perfect score.' : 'Mastered. Retake and score ' + qn + '/' + qn + ' for a shiny card.') : qn + ' questions · score more than ' + thr + '% (' + need + ' of ' + qn + ') to master it and unlock the next ideas.',
+      quizCta: curMastered ? 'Retake quiz' : 'Start quiz', startQuiz: () => this.startQuiz(curId),
+      pageChat: this.chatP('page:' + curId, TUTOR, { placeholder: 'Ask Ms. Ivy…', height: 300, suggestions: ['Explain it more simply', 'Give me an example', 'Quiz me with one question'] }),
+      quiz, nextQ: () => this.nextQ(), quitQuiz: () => this.showPage(q ? q.id : curId),
+      retryQuiz: () => { if (s.practice && s.practice.rows.every(r => r.filled)) this.startQuiz(q.id); },
+      practice,
+      fixChat: q ? this.chatP('fix:' + q.id + ':' + q.seed, TUTOR, { tag: 'Going over your quiz', placeholder: 'Ask about a question you missed…', height: 300 }) : {},
+      link: le ? { a: IDEAS[le.a].t, b: IDEAS[le.b].t, rel: le.rel, hasMedia: !!le.media, mediaTitle: le.media ? le.media.t : '', mediaDur: le.media ? le.media.d : '' } : {},
+      showVideo: !!le && !!le.media && s.linkMode === 'video', showAI: !!le && (!le.media || s.linkMode === 'ai'),
+      toAI: () => { this.setState({ linkMode: 'ai' }); if (le) this.linkTutor(le); }, toVideo: () => this.setState({ linkMode: 'video' }),
+      linkChat: le ? this.chatP('link:' + le.key, TUTOR, { tag: le.media ? '' : 'No video for this link yet', placeholder: 'Ask your own question…', height: 260, suggestions: ['Give me an everyday example', 'Say it more simply', 'What would happen without this?'] }) : {},
+      linkIdeas: le ? [le.a, le.b].map(id => ({ title: IDEAS[id].t, cat: IDEAS[id].c, blurb: IDEAS[id].b })) : [],
+      backFromLink: () => this.setState({ view: s.linkFrom === 'quiz' && q ? 'quiz' : 'map' }),
+      backLinkLabel: s.linkFrom === 'quiz' && q ? '← Back to review' : '← Back to map',
+      teach, threadRef: this.threadRef,
+      collection, previews, revealRef: this.revealRef,
+      hasReward: !!rw, reward, closeReward: () => this.closeReward(),
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

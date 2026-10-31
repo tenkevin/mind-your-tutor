@@ -27,19 +27,24 @@ This summary is written so it can be checked against a data processing agreement
 
 | Data | Default | District setting | Deleted by |
 |---|---|---|---|
-| Typed student text (chat, teach-back answers, transcripts) | 90 days | `organization.text_retention_days` (1 to 3650) | Retention job, daily |
+| Typed student text (chat, teach-back answers, challenges, transcripts) | 90 days | `organization.text_retention_days` (1 to 3650) | Retention job, daily |
 | AI transcripts (model requests and responses) | 90 days | `organization.ai_retention_days` (1 to 3650) | Retention job, daily |
 | Export files (student records, reports) | 7 days | `organization.export_retention_days` (1 to 365) | Retention job, daily |
 | Sign-in sessions (when and through which provider a user signed in) | 30 days after the session expires or is revoked | `organization.session_retention_days` (1 to 365) | Retention job, daily; a FERPA delete removes a student's at once |
-| Tracker events, generated map views, AI output shown to students | While the student's account exists | — | Pseudonymised by a FERPA delete; removed with the district at contract end |
+| Tracker events, generated map views, AI output shown to students | While the student is enrolled in the district (D22) | — | Deleted when the student leaves the district and on a FERPA delete; removed with the district at contract end |
 | Accounts (name, email, roster ids) | While the district keeps the user | — | FERPA delete, or the district removing the user |
 | Audit log | For the length of the agreement | — | Never edited or deleted by the app; removed with the district at contract end |
 | Curriculum and class settings (no student data) | For the length of the agreement | — | Teachers and authors in the app; with the district at contract end |
 
 **FERPA requests.** An admin of the district can, for one student:
 
-- **Export**: one JSON file with every record held about the student (account, classes, events, typed text, map views, AI output, AI transcripts, progress, sign-in sessions without their token hashes). The file expires after the export period (7 days by default).
-- **Delete**: removes the student's name, email and roster ids, everything they typed, their AI transcripts, their progress cache and class memberships, their sign-in sessions (signing them out everywhere), and any export file that could hold their name. Their tracker events stay, linked only to the random id that no longer leads to a person, so class-level reports stay correct. The deletion is recorded in the audit log with the random id only.
+- **Export**: one JSON file with every record held about the student (account, classes, events, typed text, map views, AI output, AI transcripts, progress, tracing opt-out, event numbering, sign-in sessions without their token hashes). The file expires after the export period (7 days by default).
+- **Delete**: removes the student's name, email and roster ids, everything they typed, their AI transcripts, their tracker events with the map views and AI output those point to (D22), their progress cache, class memberships and tracing opt-out, their sign-in sessions (signing them out everywhere), and any export file that could hold their name. Anonymous class aggregates, with small groups suppressed, are not about any one student and stay. The account keeps only its random id, so nothing left leads to a person. The deletion is recorded in the audit log with the random id only.
+- **Left the district** (D22): when a student leaves, the admin records it and everything the delete above removes goes the same way, audited as an unenrolment.
+
+**Tracing opt-out (D24).** A district admin can opt a student out of tracing, for the district or for a family, and back in; each change is audited. The student keeps using the app and keeps their progress, which it needs. Events recorded while they are opted out carry a mark, and fairness audits, aggregates and research leave out every event with it.
+
+**Privacy misses (D26).** Typed text is anonymised on the student's device before it is sent. The server checks again for real roster names and contact details; anything found is removed before the text is stored, and counted (a number per text, never the text or the name).
 
 Teachers, students, and admins of other districts can't make these requests.
 
@@ -143,14 +148,18 @@ Teachers should not upload documents that contain student information; uploads a
 
 ## Student activity (the tracker)
 
-These rows are the source of truth for progress (§8). They are append-only: nothing in the app can edit or delete them. They hold the pseudonymous id, never a name or anything the student typed.
+These rows are the source of truth for progress (§8). They are append-only: nothing in the app can edit them, and the only deletion is a district admin's FERPA delete or unenrolment of one student (D22), through one database function. They hold the pseudonymous id, never a name or anything the student typed.
 
 | Field | What it is for | Student personal data? | Comes from | Who can see it | Kept for | How it is deleted |
 |---|---|---|---|---|---|---|
-| `interaction_event.id`, `interaction_event.org_id`, `interaction_event.seq`, `interaction_event.recorded_at` | Event id (to drop resends), district, the student's sequence number and when it was stored | Student record | System | The class's teacher; admins; the student (as progress) | While the student's account exists | Pseudonymised by a FERPA delete (the id no longer leads to a person); with the district |
+| `interaction_event.id`, `interaction_event.org_id`, `interaction_event.seq`, `interaction_event.recorded_at` | Event id (to drop resends), district, the student's sequence number and when it was stored | Student record | System | The class's teacher; admins; the student (as progress) | While the student is enrolled in the district (D22) | Unenrolment from the district; FERPA delete; with the district |
 | `interaction_event.student_id`, `interaction_event.class_id`, `interaction_event.version_id` | Which student (random id), class and curriculum version | Student record | System | As above | As above | As above |
 | `interaction_event.at`, `interaction_event.type` | When and what the student did, for example opened an idea or answered a quiz question | Student record | Student | As above | As above | As above |
 | `interaction_event.payload` | Details of the action (which idea, which answer). Typed text is never here, only a reference to it | Student record | Student | As above | As above | As above; referenced text is deleted separately and shows as "removed" |
+| `interaction_event.level` | The event's educational level (participating, teaching or other), fixed by its type (§8.1) | Student record | System | As above | As above | As above |
+| `interaction_event.tracing_opted_out` | The student was opted out of tracing (D24) when the event was stored; audits, aggregates and research leave these events out | Student record | System | The class's teacher; admins | As above | As above |
+| `tracing_opt_out.student_id`, `tracing_opt_out.org_id`, `tracing_opt_out.opted_out_at`, `tracing_opt_out.set_by` | A student the district opted out of tracing (D24), when, and which admin recorded it | Student record | Staff | Admins | While opted out | Opting back in; unenrolment; FERPA delete; with the district |
+| `student_event_seq.student_id`, `student_event_seq.org_id`, `student_event_seq.last_seq` | The student's last event sequence number, so each new batch is numbered on from it | Student record | System | Nobody directly | While the student is enrolled in the district (D22) | With the student's events (unenrolment, FERPA delete); with the district |
 | `interaction_event_key.id`, `interaction_event_key.org_id`, `interaction_event_key.student_id`, `interaction_event_key.seq`, `interaction_event_key.recorded_at` | A copy of each event's keys, to keep ids and sequence numbers unique | Student record | System | Nobody directly | As the event | As the event |
 | `generated_map_view.id`, `generated_map_view.org_id`, `generated_map_view.class_id`, `generated_map_view.student_id`, `generated_map_view.version_id`, `generated_map_view.created_at` | Record keys of a map the student was shown | Student record | System | The class's teacher; admins | As the student's events | As the student's events |
 | `generated_map_view.generator`, `generated_map_view.view` | Which generator made the map, and the map itself (positions, locks), stored so replays never regenerate it (§8.4) | Student record | System | As above | As above | As above |
@@ -166,8 +175,9 @@ The only places that hold what a student wrote, and what the AI said in a conver
 | Field | What it is for | Student personal data? | Comes from | Who can see it | Kept for | How it is deleted |
 |---|---|---|---|---|---|---|
 | `interaction_text.id`, `interaction_text.org_id`, `interaction_text.class_id`, `interaction_text.student_id`, `interaction_text.created_at` | Keys of a piece of typed text, and when it was written | Student record | System | The class's teacher; admins; the student | `text_retention_days` (default 90) | Retention job; FERPA delete |
-| `interaction_text.kind`, `interaction_text.body` | What the student typed: a chat turn, a teach-back answer or a transcript, redacted before storage | Student record | Student | The class's teacher; admins; the student | `text_retention_days` (default 90) | Retention job; FERPA delete |
+| `interaction_text.kind`, `interaction_text.body` | What the student typed: a chat turn, a teach-back answer, a challenge to feedback or a transcript, anonymised on the device and checked again by the server before storage (D26) | Student record | Student | The class's teacher; admins; the student | `text_retention_days` (default 90) | Retention job; FERPA delete |
 | `interaction_text.redacted_at` | When personal details were redacted from the text | No | System | The class's teacher; admins | As the text | As the text |
+| `privacy_miss.id`, `privacy_miss.org_id`, `privacy_miss.class_id`, `privacy_miss.source`, `privacy_miss.names`, `privacy_miss.emails`, `privacy_miss.phones`, `privacy_miss.created_at` | How many real names, emails and phone numbers the server's check removed from one typed text that the device should already have anonymised (D26). Counts only: no text, name or student | No | System | Admins | Length of the agreement | With the class or the district |
 | `ai_interaction.id`, `ai_interaction.org_id`, `ai_interaction.class_id`, `ai_interaction.user_id`, `ai_interaction.created_at` | Keys of one AI call: which class and user (random id), and when | Student record | System | The class's teacher; admins | `ai_retention_days` (default 90) | Retention job; FERPA delete |
 | `ai_interaction.persona`, `ai_interaction.model` | Which persona and model answered | No | System | The class's teacher; admins | As the transcript | As the transcript |
 | `ai_interaction.request`, `ai_interaction.response` | The redacted conversation sent to and received from the model (A1 gateway: the filled system prompt, the blurred turns, the provider and the count of identifiers the server backstop blurred; the reply or the failure kind); pseudonymous ids only, no names | Student record | Student and AI | The class's teacher; admins | `ai_retention_days` (default 90) | Retention job; FERPA delete |
@@ -222,7 +232,7 @@ These hold no student data. They support database migrations and the background 
 ## How deletion works
 
 - **Retention job** (`apps/worker`, daily): runs as a separate database role, `ideamap_retention`, which can see and delete only rows already past their district's period, and can't read their text. It works in batches of 5,000 rows, each its own transaction, so it never holds long locks, an interrupted run loses nothing, and a rerun carries on. It never touches tracker events; an event that refers to deleted text shows that text as "removed" (§8.2), and progress replays unchanged.
-- **FERPA delete** (district admin only): as in the summary. It is safe to repeat, which is what lets deletions be re-applied after a backup restore.
+- **FERPA delete and unenrolment** (district admin only): as in the summary. Tracker rows are append-only for every role; the one exception is `app.purge_student_events`, which these call. It runs only for an admin of the student's own district and deletes only that student's rows. Both are safe to repeat, which is what lets deletions be re-applied after a backup restore.
 - **District removal at contract end**: an operator procedure that deletes the district's rows and files.
 - **Backups**: deleted data ages out within 35 days, as in the summary.
 

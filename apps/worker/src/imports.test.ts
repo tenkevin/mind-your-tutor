@@ -12,6 +12,7 @@ import {
 } from '../../../packages/connectors/src/testing/build.js';
 import { registerWorkers } from './index.js';
 import {
+  getCurriculumData,
   getImportJob,
   runImport,
   startImport,
@@ -296,6 +297,71 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     expect(await versions(a.curriculumId)).toHaveLength(1);
   });
 
+  // F1e-F9: Teacher Settings → Curriculum data reads the newest job, its version and the
+  // newest version as separate statements. A worker commit can land between any two of
+  // them; the answer must still agree (a succeeded job always comes with its version).
+  it.each([
+    [1, false],
+    [2, false],
+    [3, false],
+    [4, false],
+    [5, false],
+    [6, false],
+    [1, true],
+    [3, true],
+  ])(
+    'F1e-F9: a worker commit after read %i of the curriculum data gives a consistent answer (job already running: %s)',
+    async (after, running) => {
+      const stopped = { ...deps, boss: { send: () => Promise.resolve(null) } } as ImportDeps;
+      const job = await startImport(stopped, a.teacher, {
+        curriculumId: a.curriculumId,
+        file: xlsxFile(),
+      });
+      const payload = { org_id: a.orgId, import_job_id: job.job.id };
+      if (running) {
+        const killed: RunDeps = {
+          ...deps,
+          afterStep: (step) => {
+            if (step === 'Check data') throw new Error('SIGKILL');
+          },
+        };
+        await expect(runImport(killed, payload)).rejects.toThrow('SIGKILL');
+      }
+      let reads = 0;
+      let committed = false;
+      const commit = async () => {
+        committed = true;
+        expect(await runImport(deps, payload)).toBe('succeeded');
+      };
+      const interleaved: ImportDeps = {
+        ...deps,
+        scope: (orgId, fn, options) =>
+          deps.scope(
+            orgId,
+            (trx) =>
+              fn(
+                trx.withPlugin({
+                  transformQuery: ({ node }) => node,
+                  transformResult: async ({ result }) => {
+                    if (++reads === after && !committed) await commit();
+                    return result;
+                  },
+                }),
+              ),
+            options,
+          ),
+      };
+      const data = await getCurriculumData(interleaved, a.teacher, a.curriculumId);
+      if (!committed) await commit();
+      // One snapshot: the commit landed after it was taken, so none of it shows, and the
+      // job and the version agree whichever read the commit came after.
+      expect(data.job?.status).toBe(running ? 'running' : 'queued');
+      expect(data.job?.version ?? null).toBeNull();
+      expect(data.version).toBeNull();
+      expect(data.unchanged).toBe(false);
+    },
+  );
+
   it('C4-F7: a job left running by a killed worker completes on its next delivery', async () => {
     const stopped = { ...deps, boss: { send: () => Promise.resolve(null) } } as ImportDeps;
     const job = await startImport(stopped, a.teacher, {
@@ -438,7 +504,7 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     const done = await finished(a.teacher, (await upload(a, xlsxFile())).id);
     const ms = performance.now() - started;
     expect(done.status).toBe('succeeded');
-    expect(ms).toBeLessThan(5000);
+    expect(ms, `C4-P1 sample import took ${ms.toFixed(0)} ms, budget 5000 ms`).toBeLessThan(5000);
   });
 
   it('C4-P3: five organizations importing at once each get their own draft', async () => {
@@ -458,7 +524,10 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
       expect(vs.every((v) => v.org_id === org.orgId)).toBe(true);
     }
     // One worker takes jobs one at a time; with polling, five take about five singles.
-    expect(all).toBeLessThan(Math.max(2 * one, 5 * one + 2000));
+    expect(
+      all,
+      `C4-P3 five imports took ${all.toFixed(0)} ms, one took ${one.toFixed(0)} ms, budget ${Math.max(2 * one, 5 * one + 2000).toFixed(0)} ms`,
+    ).toBeLessThan(Math.max(2 * one, 5 * one + 2000));
   });
 });
 
@@ -558,7 +627,7 @@ describe.skipIf(!hasDatabase)('large imports (C4-P2)', () => {
       expect(done.error).toBeNull();
       expect(done.status).toBe('succeeded');
       expect(done.steps[0]!.result).toBe('2,000 ideas, 4,000 links');
-      expect(ms).toBeLessThan(30_000);
+      expect(ms, `scale import took ${ms.toFixed(0)} ms, budget 30000 ms`).toBeLessThan(30_000);
       expect(peak).toBeLessThan(512 * 1024 * 1024);
     } finally {
       clearInterval(sampler);
