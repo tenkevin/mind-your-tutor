@@ -241,7 +241,7 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       org_id: orgId,
       class_id: classId,
       student_id: studentId,
-      kind: 'chat',
+      kind: 'teachback',
       body: 'Why does rain fall?',
     })
     .returning('id')
@@ -256,14 +256,21 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
   await db
     .insertInto('interaction_event')
     .values([
-      { ...base, id: testUlid(), seq: 1, at: new Date(), type: 'session.started' },
+      {
+        ...base,
+        id: testUlid(),
+        seq: 1,
+        at: new Date(),
+        type: 'idea.opened',
+        payload: json({ ideaId: 'rain' }),
+      },
       {
         ...base,
         id: testUlid(),
         seq: 2,
         at: new Date(),
-        type: 'chat.turn',
-        payload: json({ persona: 'tutor', text_ref: text.id }),
+        type: 'teachback.done',
+        payload: json({ unitId: 1, textRef: text.id }),
       },
     ])
     .execute();
@@ -326,6 +333,22 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       persona: 'tutor',
       model: 'test-model',
       request: json({ messages: [] }),
+    })
+    .execute();
+  await db.insertInto('tracing_opt_out').values({ org_id: orgId, student_id: studentId }).execute();
+  await db
+    .insertInto('student_event_seq')
+    .values({ org_id: orgId, student_id: studentId, last_seq: 2 })
+    .execute();
+  await db
+    .insertInto('privacy_miss')
+    .values({
+      org_id: orgId,
+      class_id: classId,
+      source: 'event_ingest',
+      names: 1,
+      emails: 0,
+      phones: 0,
     })
     .execute();
 

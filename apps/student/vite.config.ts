@@ -20,6 +20,7 @@ export default defineConfig({
     proxy: {
       '/auth': { target: 'http://localhost:3000', changeOrigin: false },
       '/api': { target: 'http://localhost:3000', changeOrigin: false },
+      '/events': { target: 'http://localhost:3000', changeOrigin: false },
     },
   },
   build: {

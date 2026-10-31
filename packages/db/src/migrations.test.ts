@@ -30,6 +30,8 @@ const ENTITIES = {
   ExportJob: 'export_job',
   AuditEvent: 'audit_event',
   AiInteraction: 'ai_interaction',
+  'Tracing opt-out (D24)': 'tracing_opt_out',
+  'Privacy miss (D26)': 'privacy_miss',
 } as const;
 
 async function tables(t: TestDatabase): Promise<string[]> {
@@ -125,7 +127,9 @@ describe.skipIf(!hasDatabase)('migrations', () => {
   });
 
   it('run in under 30 seconds (F4-P1)', () => {
-    expect(t.migrateMs).toBeLessThan(30_000);
+    expect(t.migrateMs, `F4-P1 migrations took ${t.migrateMs} ms, budget 30000 ms`).toBeLessThan(
+      30_000,
+    );
   });
 
   it('are a no-op when run again (F4-F7)', async () => {
@@ -160,7 +164,8 @@ describe.skipIf(!hasDatabase)('migrations down and up', () => {
     await sql`INSERT INTO organization (name) VALUES ('Leftover District')`.execute(t.db);
     const started = performance.now();
     await resetDatabase(t.db);
-    expect(performance.now() - started).toBeLessThan(10_000);
+    const took = performance.now() - started;
+    expect(took, `F4-U3 reset took ${took.toFixed(0)} ms, budget 10000 ms`).toBeLessThan(10_000);
     const orgs = await sql<{ n: number }>`SELECT count(*)::int AS n FROM organization`.execute(
       t.db,
     );

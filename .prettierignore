@@ -11,3 +11,5 @@ AGENTS.md
 CLAUDE.md
 # Kept byte-for-byte with project/_ds/nocturne-*/styles.css so the two diff cleanly.
 packages/ui/styles.css
+# Generated from src/themes/*.ts (F8)
+packages/ui/themes.css
