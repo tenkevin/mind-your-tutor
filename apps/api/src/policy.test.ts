@@ -46,6 +46,9 @@ const ROUTE_URLS = [
   '/api/classes/:classId/library',
   '/api/classes/:classId/library/:libraryDocId',
   '/api/curricula/:curriculumId/defaults',
+  '/api/curricula/:curriculumId/versions',
+  '/api/curricula/:curriculumId/versions/:versionId/data/:tab',
+  '/api/curricula/:curriculumId/column-mapping',
   '/api/users/:userId/role',
   '/api/roster/import',
   '/events',
@@ -342,6 +345,28 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/curricula/${curricula.a}/defaults`,
         body: { course: { grade: '6' } },
       },
+      // T6: the read-only data views and the column mapping.
+      {
+        route: '/api/curricula/:curriculumId/versions',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/versions`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/versions/:versionId/data/:tab',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/versions/${versionId}/data/prerequisites`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/column-mapping',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/column-mapping`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/column-mapping',
+        method: 'PUT',
+        url: `/api/curricula/${curricula.a}/column-mapping`,
+        body: { mapping: [] },
+      },
       {
         route: '/api/users/:userId/role',
         method: 'PUT',
@@ -508,6 +533,14 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     ],
     // A teacher reads the defaults of a curriculum they teach (A2 also uses curriculum A).
     'GET /api/curricula/:curriculumId/defaults': ['admin', 'otherClassTeacher'],
+    // T6: a teacher of the curriculum reads its data views and mapping; only its author
+    // or an admin changes the mapping (the default, admin only, here).
+    'GET /api/curricula/:curriculumId/versions': ['admin', 'otherClassTeacher'],
+    'GET /api/curricula/:curriculumId/versions/:versionId/data/:tab': [
+      'admin',
+      'otherClassTeacher',
+    ],
+    'GET /api/curricula/:curriculumId/column-mapping': ['admin', 'otherClassTeacher'],
     // C4: staff in the curriculum's org may import into it and read its jobs.
     'POST /api/curricula/:curriculumId/imports': ['admin', 'otherClassTeacher'],
     'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],

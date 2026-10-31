@@ -15,6 +15,7 @@ import {
 } from './auth/session';
 import { SignIn } from './auth/SignIn';
 import { CurriculumData } from './curriculum/CurriculumData';
+import { DataTabs } from './data/DataTabs';
 import { NotForStudents, Shell, type HeaderState } from './shell/Shell';
 import { sectionFor } from './shell/sections';
 
@@ -107,6 +108,7 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
   const hash = useHash();
   const [header, setHeader] = useState<HeaderState>('loading');
   const [curriculumId, setCurriculumId] = useState<string | null>(null);
+  const [latestVersionId, setLatestVersionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client) return;
@@ -206,6 +208,15 @@ export function App({ initial = { kind: 'loading' } }: { initial?: View }) {
             curriculumId={curriculumId}
             csrf={view.me.csrfToken}
             onSignedOut={() => location.assign(signInPath(here()))}
+            onVersionChange={setLatestVersionId}
+          />
+        ) : null,
+        'sec-data': curriculumId ? (
+          <DataTabs
+            curriculumId={curriculumId}
+            csrf={view.me.csrfToken}
+            onSignedOut={() => location.assign(signInPath(here()))}
+            latestVersionId={latestVersionId}
           />
         ) : null,
       }}

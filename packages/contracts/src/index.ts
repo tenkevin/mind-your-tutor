@@ -23,5 +23,6 @@ export * from './curriculum-data.js';
 export * from './ai.js';
 export * from './publish.js';
 export * from './events.js';
+export * from './data-tabs.js';
 export * from './ingest.js';
 export * from './student-map.js';
