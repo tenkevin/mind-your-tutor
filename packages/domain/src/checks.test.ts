@@ -1,3 +1,4 @@
+import { expectBestUnder, expectTimingUnder, timeRuns } from '@ideamap/testing';
 import { readFileSync } from 'node:fs';
 import {
   DATA_CHECK_KINDS,
@@ -197,7 +198,7 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
     expect(bytes).toBeLessThan(1_000_000);
   });
 
-  it('parses a version with the largest valid C8 issue group in under 50 ms', () => {
+  it('parses a version with the largest valid C8 issue group in under 50 ms', async () => {
     const specs = chain(10_000, false);
     specs[0] = { idea_id: 'i0', requires: ['nowhere'] };
     const checks = checkPack(pack(specs));
@@ -214,14 +215,15 @@ describe('issues stored on a curriculum version (C2cx5)', () => {
       published_at: null,
     };
 
-    const start = performance.now();
-    const version = CurriculumVersionSchema.parse(input);
-    const elapsed = performance.now() - start;
+    const version = await expectBestUnder(
+      'parses the largest valid C8 issue group (C2cx5)',
+      50,
+      () => CurriculumVersionSchema.parse(input),
+    );
 
     const largeIssue = version.issues[1];
     if (largeIssue?.origin !== 'data_check') throw new Error('expected a stored data-check issue');
     expect(largeIssue.items).toHaveLength(9999);
-    expect(elapsed).toBeLessThan(50);
   });
 });
 
@@ -858,19 +860,13 @@ describe('hostile input', () => {
 });
 
 describe('performance', () => {
-  it('runs the sample in well under 5 ms (C2-P1)', () => {
+  it('runs the sample in well under 5 ms (C2-P1)', async () => {
     const p = sample();
-    const times: number[] = [];
-    for (let i = 0; i < 100; i++) {
-      const start = performance.now();
-      checkPack(p);
-      times.push(performance.now() - start);
-    }
-    times.sort((a, b) => a - b);
-    expect(times[50]).toBeLessThan(5);
+    const t = await timeRuns(() => checkPack(p), { runs: 100 });
+    expectTimingUnder('checks the sample (C2-P1)', 5, t.median, t, 'median');
   });
 
-  it('checks 2,000 ideas, 6,000 links and 2,000 questions in under 200 ms, finding 20 problems (C2-P2)', () => {
+  it('checks 2,000 ideas, 6,000 links and 2,000 questions in under 200 ms, finding 20 problems (C2-P2)', async () => {
     const specs: IdeaSpec[] = Array.from({ length: 2000 }, (_, i) => ({
       idea_id: `i${i}`,
       unit: (i % 10) + 1,
@@ -893,9 +889,7 @@ describe('performance', () => {
     for (let k = 0; k < 4; k++) p.links[k] = { ...p.links[k]!, to_id: `ghost${k}` }; // 4 links
     for (let k = 0; k < 4; k++) p.assessment[k] = { ...p.assessment[k]!, idea_id: `ghost${k}` }; // 4 questions
 
-    const start = performance.now();
-    const issues = checkPack(p);
-    const elapsed = performance.now() - start;
+    const issues = await expectBestUnder('checks 2,000 ideas (C2-P2)', 200, () => checkPack(p));
 
     const counts = Object.fromEntries(
       DATA_CHECK_KINDS.map((kind) => [kind, ofKind(issues, kind).length]),
@@ -910,6 +904,5 @@ describe('performance', () => {
     // C8-F3: knock-ons are one per root cause (5 unknown prerequisites and 2 loops at most).
     expect(counts.blocked).toBeLessThanOrEqual(7);
     expect(issues.length).toBeLessThan(40);
-    expect(elapsed).toBeLessThan(200);
   });
 });

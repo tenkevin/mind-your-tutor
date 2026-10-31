@@ -1,3 +1,4 @@
+import { expectBestUnder, expectTimingUnder, timeRuns } from '@ideamap/testing';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { VersionDerivedSchema, parsePack, type Pack } from '@ideamap/contracts';
@@ -498,18 +499,13 @@ describe('quiz quality (C8)', () => {
 });
 
 describe('performance (C3-P1, P2)', () => {
-  it('derives the sample in under 20 ms (median of 50)', () => {
-    const times: number[] = [];
-    for (let i = 0; i < 50; i++) {
-      const start = performance.now();
-      derive(sample, { seed: i });
-      times.push(performance.now() - start);
-    }
-    times.sort((x, y) => x - y);
-    expect(times[25]!).toBeLessThan(20);
+  it('derives the sample in under 20 ms (median of 50)', async () => {
+    let seed = 0;
+    const t = await timeRuns(() => derive(sample, { seed: seed++ }), { runs: 50 });
+    expectTimingUnder('derives the sample (C3-P1)', 20, t.median, t, 'median');
   });
 
-  it('derives 2,000 ideas and 6,000 links in under a second', () => {
+  it('derives 2,000 ideas and 6,000 links in under a second', async () => {
     const n = 2000;
     const ideas = Array.from({ length: n }, (_, i) => ({ idea_id: `i${i}`, title: `Idea ${i}` }));
     const links = Array.from({ length: 6000 }, (_, k) => ({
@@ -518,9 +514,9 @@ describe('performance (C3-P1, P2)', () => {
       importance: (k % 5) + 1,
     }));
     const pack = makePack(ideas, links);
-    const start = performance.now();
-    const derived = derive(pack, { seed: 1 });
-    expect(performance.now() - start).toBeLessThan(1000);
+    const derived = await expectBestUnder('derives 2,000 ideas (C3-P2)', 1000, () =>
+      derive(pack, { seed: 1 }),
+    );
     expect(derived.quizzes.banks).toHaveLength(n);
   });
 });

@@ -1,6 +1,7 @@
 // The styles live in ../styles.css (import '@ideamap/ui/styles.css' once per app).
 // This module only carries names, so it has no runtime cost beyond constants.
-export { cssVar, tokens, type Token } from './tokens.js';
+export { cssVar, layoutTokens, tokens, type Token } from './tokens.js';
+export * from './themes/index.js';
 
 /** Component classes in styles.css, grouped as in the design-system readme. */
 export const classes = {
