@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/styles.css">
+<script src="_ds/nocturne-a7d07a3c-adc6-4530-b19c-86c8e5a12152/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="kinematics-graph.js"></script>
+<script src="interests.js"></script>
+<script src="study-plan.js"></script>
+<style>html{background:var(--color-bg)}body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}a{color:var(--color-accent-300)}a:hover{color:var(--color-accent-200)}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 22px;box-shadow:0 1px 0 var(--color-divider)">
+    <span style="font:500 14px var(--font-heading);white-space:nowrap">Idea Map</span>
+    <span style="font-size:13px;color:var(--color-neutral-300);white-space:nowrap">Physics · Kinematics</span>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <sc-for list="{{ stepDots }}" as="d"><span style="width:{{ d.w }}px;height:6px;border-radius:3px;background:{{ d.c }};transition:width .3s, background .3s"></span></sc-for>
+    </div>
+    <a href="Kinematics Explorer.dc.html" style="font-size:12px;color:var(--color-neutral-400);white-space:nowrap">Skip for now</a>
+  </div>
+
+  <div ref="{{ outerRef }}" style="display:grid;grid-template-columns:{{ cols }};align-items:start;gap:20px;padding:20px;max-width:1440px;box-sizing:border-box">
+    <div ref="{{ wrapRef }}" style="order:{{ mapOrder }};min-width:0;height:{{ wrapH }}px;position:relative;border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 0 0 1px var(--color-divider)">
+      <div style="position:absolute;left:0;top:0;width:1000px;height:680px;transform-origin:0 0;transform:scale({{ scale }});background:radial-gradient(ellipse at 50% 50%, var(--color-accent-900), var(--color-bg) 62%)">
+        <div style="position:absolute;left:60px;top:50px;width:880px;height:580px;border-radius:50%;border:1px dashed var(--color-neutral-700);opacity:{{ ringOp }};transition:opacity .6s"></div>
+        <svg width="1000" height="680" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible">
+          <sc-for list="{{ lines }}" as="l">
+            <path d="{{ l.d }}" fill="none" style="stroke:{{ l.c }};stroke-width:{{ l.w }};opacity:{{ l.op }};transition:opacity .4s, stroke-width .3s"></path>
+          </sc-for>
+        </svg>
+        <sc-for list="{{ ideas }}" as="n" hint-placeholder-count="19">
+          <div title="{{ n.tip }}" style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;transform:translate(-50%,-50%) scale({{ n.sc }});display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--radius-md);background:{{ n.bg }};border:1px solid {{ n.bc }};box-shadow:{{ n.glow }};color:{{ n.tc }};font:500 12px var(--font-body);white-space:nowrap;opacity:{{ n.op }};transition:all .4s">
+            {{ n.title }}
+            <sc-for list="{{ n.badges }}" as="b"><i class="{{ b.icon }}" style="font-size:12px;color:var(--color-accent-300)"></i></sc-for>
+          </div>
+        </sc-for>
+        <sc-for list="{{ bubbles }}" as="b" hint-placeholder-count="18">
+          <button onClick="{{ b.toggle }}" onMouseEnter="{{ b.enter }}" onMouseLeave="{{ b.leave }}" aria-pressed="{{ b.on }}" style="position:absolute;left:{{ b.x }}px;top:{{ b.y }}px;transform:translate(-50%,-50%) scale({{ b.sc }});width:96px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;background:none;border:0;color:{{ b.tc }};font:500 11px var(--font-body);cursor:{{ b.cur }};opacity:{{ b.op }};transition:transform .35s cubic-bezier(.2,.9,.3,1.3), opacity .4s">
+            <span style="width:52px;height:52px;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;background:{{ b.bg }};border:1.5px solid {{ b.bc }};box-shadow:{{ b.glow }};font-size:22px;color:{{ b.ic }};transition:all .3s"><i class="{{ b.icon }}"></i></span>
+            <span style="white-space:nowrap">{{ b.label }}</span>
+          </button>
+        </sc-for>
+        <sc-if value="{{ showCenter }}">
+          <div style="position:absolute;left:500px;top:340px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 26px;border-radius:var(--radius-lg);background:var(--color-accent-900);border:1px solid var(--color-accent);box-shadow:0 0 40px var(--color-accent-800);text-align:center">
+            <span style="font:500 22px var(--font-heading);white-space:nowrap">{{ centerTitle }}</span>
+            <span style="font-size:12px;color:var(--color-accent-200);white-space:nowrap">{{ centerSub }}</span>
+          </div>
+        </sc-if>
+        <div style="position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider);font-size:12px;color:var(--color-neutral-300)">
+          <i class="ph ph-graph" style="color:var(--color-accent-300)"></i>{{ connectText }}
+        </div>
+      </div>
+    </div>
+
+    <div style="min-width:0;display:grid;grid-template-columns:{{ cardCols }};align-items:start;gap:14px">
+      <div style="display:flex;align-items:flex-end;gap:10px">
+        <dc-import name="Milo" mood="{{ mood }}" stage="2" pulse="{{ pulse }}" size="84" hint-size="84px,84px"></dc-import>
+        <div style="flex:1;margin-bottom:14px;padding:10px 13px;border-radius:var(--radius-md) var(--radius-md) var(--radius-md) 2px;background:var(--color-surface);font-size:14px;line-height:1.5;color:var(--color-neutral-100);text-wrap:pretty">{{ say }}</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:var(--radius-lg);background:var(--color-surface)">
+        <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-300)">{{ stepLabel }}</span>
+
+        <sc-if value="{{ isName }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">First, what should we call you?</span>
+          <input class="input" value="{{ name }}" onChange="{{ setName }}" onKeyDown="{{ nameKey }}" placeholder="First name or nickname" autofocus="{{ true }}"></input>
+          <div class="seg" style="display:flex;width:max-content;max-width:100%;flex-wrap:wrap;align-self:flex-start">
+            <sc-for list="{{ grades }}" as="g"><label class="seg-opt"><input type="radio" name="ob-grade" checked="{{ g.on }}" onChange="{{ g.pick }}"></input>{{ g.label }}</label></sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isPick }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">Tap what you're into</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">Pick up to 5 on the map. Watch where each one connects to physics.</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px">
+            <sc-for list="{{ chosen }}" as="c">
+              <button onClick="{{ c.remove }}" style="display:flex;align-items:center;gap:5px;padding:3px 6px 3px 9px;border-radius:999px;border:1px solid var(--color-accent-600);background:var(--color-accent-900);color:var(--color-accent-100);font:400 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-400)"><i class="{{ c.icon }}"></i>{{ c.label }}<i class="ph ph-x" style="font-size:11px;color:var(--color-accent-300)"></i></button>
+            </sc-for>
+            <sc-if value="{{ noneChosen }}"><span style="font-size:12px;color:var(--color-neutral-500)">Nothing picked yet.</span></sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isMore }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">Tell me more about one</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ moreChips }}" as="c">
+              <button onClick="{{ c.pick }}" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:1px solid {{ c.bc }};background:{{ c.bg }};color:{{ c.tc }};font:400 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)"><i class="{{ c.icon }}"></i>{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <textarea class="input" rows="3" value="{{ detail }}" onChange="{{ setDetail }}" placeholder="{{ detailPh }}" style="resize:vertical;font:inherit"></textarea>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ starters }}" as="s">
+              <button onClick="{{ s.use }}" style="padding:3px 9px;border-radius:999px;border:1px dashed var(--color-neutral-600);background:none;color:var(--color-neutral-300);font:400 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500);color:var(--color-accent-200)">{{ s.text }}…</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isStyle }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">How should examples feel?</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ styleOpts }}" as="o">
+              <button onClick="{{ o.pick }}" aria-pressed="{{ o.on }}" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--radius-md);border:1px solid {{ o.bc }};background:{{ o.bg }};color:var(--color-text);font:500 13px var(--font-body);text-align:left;cursor:pointer" style-hover="border-color:var(--color-accent-500)"><i class="{{ o.icon }}" style="font-size:16px;color:var(--color-accent-300)"></i>{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider)">
+            <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-neutral-400)"><i class="ph ph-chalkboard-teacher" style="color:var(--color-accent-300)"></i>Ms. Ivy might say</span>
+            <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-100);text-wrap:pretty">{{ stylePreview }}</span>
+          </div>
+          <input class="input" value="{{ avoid }}" onChange="{{ setAvoid }}" placeholder="Anything to leave out? (optional)"></input>
+        </sc-if>
+
+        <sc-if value="{{ isGoal }}">
+          <span style="display:flex;align-items:center;gap:8px;font:500 20px/1.25 var(--font-heading)"><span style="width:30px;height:30px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--color-accent-900);border:1px solid var(--color-accent-600);font-size:16px;color:var(--color-accent-200)"><i class="ph ph-chalkboard-teacher"></i></span>A few questions from Ms. Ivy</span>
+          <div ref="{{ ivRef }}" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding:2px 2px 4px">
+            <sc-for list="{{ ivMsgs }}" as="m">
+              <div style="display:flex;justify-content:{{ m.align }}"><span style="max-width:88%;padding:8px 11px;border-radius:{{ m.radius }};background:{{ m.bg }};border:1px solid {{ m.bc }};font-size:13px;line-height:1.45;color:var(--color-neutral-100);text-wrap:pretty">{{ m.text }}</span></div>
+            </sc-for>
+            <sc-if value="{{ ivTyping }}"><span style="font-size:12px;color:var(--color-neutral-400)">Ms. Ivy is typing…</span></sc-if>
+          </div>
+          <sc-if value="{{ ivChips }}">
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ ivOpts }}" as="c">
+                <button onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;border:1px solid {{ c.bc }};background:{{ c.bg }};color:{{ c.tc }};font:400 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)"><i class="{{ c.icon }}"></i>{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ ivMany }}"><button class="btn btn-secondary" onClick="{{ ivDoneMany }}" style="align-self:flex-start;white-space:nowrap"><i class="ph ph-check"></i>That's it</button></sc-if>
+          <sc-if value="{{ ivText }}">
+            <div style="display:flex;gap:6px">
+              <input class="input" value="{{ ivInput }}" onChange="{{ ivSetInput }}" onKeyDown="{{ ivKey }}" placeholder="{{ ivPh }}" style="flex:1;min-width:0"></input>
+              <button class="btn btn-primary" onClick="{{ ivSend }}" style="white-space:nowrap">{{ ivSendLabel }}</button>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isWeek }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">When will you study?</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">Tap the times you can usually fit in physics. Small, regular blocks beat one long cram.</span>
+          <div class="seg" style="display:flex;width:max-content;max-width:100%;flex-wrap:wrap;align-self:flex-start">
+            <sc-for list="{{ sessionOpts }}" as="o"><label class="seg-opt" style="white-space:nowrap"><input type="radio" name="ob-sess" checked="{{ o.on }}" onChange="{{ o.pick }}"></input>{{ o.label }}</label></sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:72px repeat(7,minmax(0,1fr));gap:4px;align-items:center">
+            <span></span>
+            <sc-for list="{{ days }}" as="d"><span style="font-size:10px;text-align:center;color:var(--color-neutral-400)">{{ d }}</span></sc-for>
+            <sc-for list="{{ grid }}" as="row">
+              <span title="{{ row.time }}" style="font-size:11px;color:var(--color-neutral-300);white-space:nowrap">{{ row.label }}</span>
+              <sc-for list="{{ row.cells }}" as="c">
+                <button onClick="{{ c.toggle }}" aria-pressed="{{ c.on }}" title="{{ c.tip }}" style="height:28px;padding:0;border-radius:6px;border:1px solid {{ c.bc }};background:{{ c.bg }};color:var(--color-accent-100);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--color-accent-500)"><i class="{{ c.ic }}"></i></button>
+              </sc-for>
+            </sc-for>
+          </div>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-accent-200)"><i class="ph ph-clock"></i>{{ weekText }}</span>
+          </sc-if>
+
+        <sc-if value="{{ isCheck }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">Reminders and check-ins</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">A quick look back after studying is how you notice what's working.</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--color-neutral-300)">How early should Milo ping you?</span>
+            <div class="seg" style="display:flex;width:max-content;max-width:100%;flex-wrap:wrap;align-self:flex-start">
+              <sc-for list="{{ leadOpts }}" as="o"><label class="seg-opt" style="white-space:nowrap"><input type="radio" name="ob-lead" checked="{{ o.on }}" onChange="{{ o.pick }}"></input>{{ o.label }}</label></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ remindOpts }}" as="r">
+              <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+                <input type="checkbox" checked="{{ r.on }}" onChange="{{ r.toggle }}" style="margin-top:2px;accent-color:var(--color-accent)"></input>
+                <span style="display:flex;flex-direction:column;gap:1px"><span style="font-size:13px;font-weight:500">{{ r.label }}</span><span style="font-size:12px;color:var(--color-neutral-400)">{{ r.desc }}</span></span>
+              </label>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--color-neutral-300)">Check in on how it went</span>
+            <div class="seg" style="display:flex;width:max-content;max-width:100%;flex-wrap:wrap;align-self:flex-start">
+              <sc-for list="{{ reflectOpts }}" as="o"><label class="seg-opt" style="white-space:nowrap"><input type="radio" name="ob-refl" checked="{{ o.on }}" onChange="{{ o.pick }}"></input>{{ o.label }}</label></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ reflectOn }}">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:12px;color:var(--color-neutral-300)">Questions I'll answer (pick up to 3)</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ promptOpts }}" as="c">
+                  <button onClick="{{ c.toggle }}" aria-pressed="{{ c.on }}" style="padding:4px 10px;border-radius:999px;border:1px solid {{ c.bc }};background:{{ c.bg }};color:{{ c.tc }};font:400 12px var(--font-body);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-500)">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider)">
+              <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-neutral-400)"><i class="ph ph-notebook" style="color:var(--color-accent-300)"></i>{{ checkWhen }}</span>
+              <sc-for list="{{ promptPreview }}" as="q"><span style="font-size:13px;line-height:1.45;color:var(--color-neutral-100)">{{ q }}</span></sc-for>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isPlan }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">Your study plan</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">{{ planNote }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ planStats }}" as="st"><span class="tag tag-neutral" style="display:flex;align-items:center;gap:5px;white-space:nowrap"><i class="{{ st.icon }}"></i>{{ st.text }}</span></sc-for>
+          </div>
+          <sc-for list="{{ tactics }}" as="t">
+            <span style="display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;color:var(--color-neutral-200)"><i class="ph ph-shield-check" style="margin-top:2px;color:var(--color-accent-300)"></i><span><span style="color:var(--color-neutral-100);font-weight:500">{{ t.barrier }}:</span> {{ t.tactic }}</span></span>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding-right:2px">
+            <sc-for list="{{ planDays }}" as="d" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:12px;font-weight:500;color:var(--color-neutral-100);white-space:nowrap">{{ d.label }}</span>
+                  <span style="font-size:11px;color:var(--color-neutral-400);white-space:nowrap">{{ d.time }}</span>
+                  <div style="flex:1"></div>
+                  <span title="Cognitive load used / limit" style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-neutral-400);white-space:nowrap"><span style="width:44px;height:4px;border-radius:2px;background:var(--color-neutral-800);overflow:hidden;display:flex"><span style="width:{{ d.pct }}%;background:var(--color-accent-400)"></span></span>{{ d.loadText }}</span>
+                </div>
+                <sc-for list="{{ d.items }}" as="it">
+                  <span style="display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.4;color:{{ it.c }}"><i class="{{ it.icon }}" style="margin-top:2px;color:var(--color-accent-300)"></i>{{ it.text }}</span>
+                </sc-for>
+              </div>
+            </sc-for>
+            <sc-if value="{{ moreDays }}"><span style="font-size:12px;color:var(--color-neutral-400)">{{ moreDaysText }}</span></sc-if>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+            <button class="btn btn-secondary" onClick="{{ aiPlan }}" disabled="{{ spLoading }}" style="white-space:nowrap"><i class="ph ph-chalkboard-teacher"></i>{{ aiPlanLabel }}</button>
+            <span style="font-size:11px;color:var(--color-neutral-500)">{{ planSource }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDone }}">
+          <span style="font:500 20px/1.25 var(--font-heading)">Your map is ready</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-300);text-wrap:pretty">{{ doneText }}</span>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-bg);box-shadow:0 0 0 1px var(--color-divider)">
+            <sc-for list="{{ planSummary }}" as="ps">
+              <span style="display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;color:var(--color-neutral-100)"><i class="{{ ps.icon }}" style="margin-top:2px;color:var(--color-accent-300)"></i>{{ ps.text }}</span>
+            </sc-for>
+          </div>
+          <sc-for list="{{ shares }}" as="sh">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="checkbox" checked="{{ sh.on }}" onChange="{{ sh.toggle }}" style="margin-top:2px;accent-color:var(--color-accent)"></input>
+              <span style="display:flex;flex-direction:column;gap:1px"><span style="font-size:13px;font-weight:500">{{ sh.label }}</span><span style="font-size:12px;color:var(--color-neutral-400)">{{ sh.desc }}</span></span>
+            </label>
+          </sc-for>
+          <span style="font-size:11px;line-height:1.5;color:var(--color-neutral-500)">Your teacher can see this. Classmates can't, and it's never graded. Change it any time from “My interests”.</span>
+        </sc-if>
+
+        <div style="display:flex;align-items:center;gap:8px;padding-top:2px">
+          <sc-if value="{{ canBack }}"><button class="btn btn-ghost" onClick="{{ back }}" style="white-space:nowrap"><i class="ph ph-arrow-left"></i>Back</button></sc-if>
+          <div style="flex:1"></div>
+          <sc-if value="{{ notDone }}"><button class="btn btn-primary" onClick="{{ next }}" disabled="{{ nextDisabled }}" style="white-space:nowrap">{{ nextLabel }}<i class="ph ph-arrow-right"></i></button></sc-if>
+          <sc-if value="{{ isDone }}"><button class="btn btn-primary" onClick="{{ finish }}" style="white-space:nowrap"><i class="ph ph-compass"></i>Start exploring</button></sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STEPS = ['Say hi', 'Your interests', 'Go deeper', 'Your style', 'Ms. Ivy', 'Your week', 'Check-ins', 'Your plan', 'Ready'];
+const LAST = STEPS.length - 1;
+const STYLES = [['life', 'Everyday life', 'ph ph-house-line'], ['story', 'Short stories', 'ph ph-book-open-text'], ['data', 'Real numbers and records', 'ph ph-chart-line-up'], ['visual', 'Picture it first', 'ph ph-eye']];
+const STARTERS = { default: ['My favourite part is', 'Every week I', 'I’m best at'], 'Basketball': ['I play', 'My best shot is'], 'Track & running': ['I run the', 'My best time is'], 'Video games': ['My favourite game is', 'I main'], 'Music': ['I play', 'I listen to'], 'Cars & bikes': ['I ride a', 'My dream car is'], 'Soccer': ['I play', 'My team is'] };
+const MAX = 5, CX = 500, CY = 340, RX = 440, RY = 290;
+const A = n => `var(--color-accent-${n})`, N = n => `var(--color-neutral-${n})`;
+const EMPTY = { name: '', grade: '10', interests: [], detail: '', detailOf: null, style: 'life', avoid: '', share: { tutor: true, peer: true } };
+class Component extends DCLogic {
+  state = { iv: { i: 0, msgs: [], typing: false, text: '' }, sp: null, spLoading: false, wide: true, step: 0, p: { ...EMPTY }, hover: null, fresh: null, say: null, mood: 'happy', pulse: 0, scale: 1, ready: false };
+  wrapRef = React.createRef(); outerRef = React.createRef(); ivRef = React.createRef();
+  componentDidUpdate(pp, ps) { if (ps.iv !== this.state.iv && this.ivRef.current) this.ivRef.current.scrollTop = 1e6; }
+  ivNext(label, ackP) {
+    const SP = window.StudyPlan, Q = SP.INTERVIEW, n = this.state.iv.i + 1, nm = this.state.p.name.trim() || 'there';
+    this.setState(s => ({ iv: { ...s.iv, msgs: [...s.iv.msgs, { who: 'me', text: label }], typing: true, text: '' } }));
+    const cont = ack => {
+      const next = n < Q.length ? Q[n].ask(nm) : `Thanks, ${nm}. That's everything I need. Next, pick when you can study and I'll fit the plan around it.`;
+      this.setState(s => ({ iv: { ...s.iv, i: n, typing: false, msgs: [...s.iv.msgs, ...(ack ? [{ who: 'ivy', text: ack }] : []), { who: 'ivy', text: next }] } }));
+      if (n >= Q.length) this.talk('Ms. Ivy has what she needs. Hit Next and we’ll pick your study times.', 'happy');
+    };
+    if (ackP) ackP.then(cont); else setTimeout(() => cont(null), 450);
+  }
+  ivAck(field, text) {
+    const fb = field === 'goal' ? 'That’s a clear goal. I’ll plan toward it.' : 'Good. We’ll come back to that when it gets hard.';
+    if (!window.claude || !window.claude.complete) return Promise.resolve(fb);
+    const q = window.StudyPlan.INTERVIEW.find(x => x.field === field).ask('');
+    const call = window.claude.complete({ system: 'You are Ms. Ivy, a calm physics tutor interviewing a Grade ' + this.state.p.grade + ' student to build their kinematics study plan. Reply with ONE short sentence that acknowledges their answer warmly and specifically. Do not ask a question. No markdown.', messages: [{ role: 'user', content: 'You asked: "' + q + '" They answered: "' + text + '"' }], max_tokens: 80 }).then(r => (typeof r === 'string' && r.trim()) ? r.trim() : fb).catch(() => fb);
+    return Promise.race([call, new Promise(r => setTimeout(() => r(fb), 7000))]);
+  }
+  async aiPlan() {
+    this.setState({ spLoading: true }); this.talk('Ms. Ivy is writing your plan…', 'curious');
+    const sp = await window.StudyPlan.generateAI(this.state.p);
+    this.setState({ sp, spLoading: false }); this.talk(sp.source === 'ai' ? 'Ms. Ivy rewrote it just for you. Take a look!' : 'Couldn’t reach Ms. Ivy, so this is the standard plan. Still a good one!', 'happy');
+  }
+  ivVals(pl, chip, M) {
+    const SP = window.StudyPlan, iv = this.state.iv, q = SP.INTERVIEW[iv.i], asking = !!q && !iv.typing && this.state.step === 4, f = q && q.field, many = !!q && q.type === 'many';
+    const raw = !q ? [] : f === 'goalKind' ? M.GOALS.map(([id, label, icon]) => ({ id, label, icon })) : f === 'deadline' ? SP.DEADLINES.map(([id, label]) => ({ id, label, icon: 'ph ph-calendar-blank' })) : f === 'confidence' ? M.CONFIDENCE.map((label, i) => ({ id: i + 1, label, icon: '' })) : f === 'barriers' ? SP.BARRIERS.map(([id, label]) => ({ id, label, icon: '' })) : f === 'stuck' ? M.STUCK.map(([id, label, icon]) => ({ id, label, icon })) : [];
+    const ivOpts = raw.map(o => { const on = many && pl[f].includes(o.id); return chip(on, { label: o.label, icon: o.icon, pick: () => {
+      if (!many) { this.updPlan({ [f]: o.id }); this.ivNext(o.label); return; }
+      if (f === 'barriers' && o.id === 'none') { this.updPlan({ barriers: on ? [] : ['none'] }); return; }
+      const cur = pl[f].filter(x => x !== 'none'); this.updPlan({ [f]: cur.includes(o.id) ? cur.filter(x => x !== o.id) : [...cur, o.id] }); } }); });
+    const sendText = () => { const t = iv.text.trim(); this.updPlan({ [f]: t }); this.ivNext(t || 'Skip for now', t ? this.ivAck(f, t) : null); };
+    return {
+      ivMsgs: iv.msgs.map(m => m.who === 'me' ? { text: m.text, align: 'flex-end', bg: A(900), bc: A(700), radius: '10px 10px 2px 10px' } : { text: m.text, align: 'flex-start', bg: 'var(--color-bg)', bc: N(700), radius: '10px 10px 10px 2px' }),
+      ivTyping: iv.typing, ivChips: asking && q.type !== 'text', ivMany: asking && many, ivText: asking && q.type === 'text', ivOpts,
+      ivInput: iv.text, ivSetInput: e => { const v = e.target.value; this.setState(s => ({ iv: { ...s.iv, text: v } })); }, ivKey: e => { if (e.key === 'Enter') sendText(); }, ivSend: sendText, ivSendLabel: iv.text.trim() ? 'Send' : 'Skip', ivPh: (q && q.ph) || '',
+      ivDoneMany: () => { const sel = raw.filter(o => pl[f].includes(o.id)).map(o => o.label); this.ivNext(sel.length ? sel.join(', ') : 'Not sure yet'); }
+    };
+  }
+  planVals(M) {
+    const sp = this.state.sp; if (!sp) return {};
+    const fmt = d => new Date(d + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), SHOW = 10;
+    const ic = { learn: 'ph ph-book-open-text', review: 'ph ph-arrows-clockwise', reflect: 'ph ph-notebook', goal: 'ph ph-target' };
+    return {
+      planNote: sp.note, tactics: sp.tactics || [],
+      planStats: [{ icon: 'ph ph-stack', text: sp.pace + (sp.pace > 1 ? ' ideas' : ' idea') + ' per study day' }, { icon: 'ph ph-brain', text: 'Load limit ' + sp.budget + ' per session' }, ...(sp.finish ? [{ icon: 'ph ph-flag-checkered', text: 'Done by ' + fmt(sp.finish) }] : []), ...(sp.useDefault ? [{ icon: 'ph ph-calendar-blank', text: 'Weekdays after school' }] : [])],
+      planDays: sp.days.slice(0, SHOW).map(d => ({ label: fmt(d.date), time: (M.blockLabel(d.block).split(' · ')[1]) || '', pct: Math.min(100, Math.round(100 * d.used / sp.budget)), loadText: d.used + '/' + sp.budget,
+        items: d.items.map(x => ({ icon: ic[x.kind] || 'ph ph-dot', c: x.kind === 'learn' ? 'var(--color-neutral-100)' : 'var(--color-neutral-300)',
+          text: x.kind === 'learn' ? 'Learn ' + x.title + (x.extra ? ', ' + x.extra : '') : x.kind === 'review' ? 'Review ' + x.title : x.kind === 'reflect' ? 'Reflect: ' + (((x.prompts || []).join(' ')) || 'how did it go?') : x.text })) })),
+      moreDays: sp.days.length > SHOW, moreDaysText: '…and ' + (sp.days.length - SHOW) + ' more study days. Ms. Ivy adjusts these as you go.',
+      aiPlan: () => this.aiPlan(), spLoading: this.state.spLoading, aiPlanLabel: this.state.spLoading ? 'Writing…' : sp.source === 'ai' ? 'Ask Ms. Ivy again' : 'Have Ms. Ivy personalise it',
+      planSource: sp.source === 'ai' ? 'Written by Ms. Ivy' : 'Built from your answers'
+    };
+  }
+  componentDidMount() {
+    const boot = () => {
+      if (!window.KinGraph || !window.IdeaInterests) { this._bt = setTimeout(boot, 50); return; }
+      const saved = window.IdeaInterests.profile();
+      const p = saved ? { ...EMPTY, ...saved } : { ...EMPTY };
+      this.setState({ ready: true, p: { ...p, plan: window.IdeaInterests.META.normPlan(p.plan) } });
+    };
+    boot();
+    const fit = () => { const el = this.wrapRef.current, o = this.outerRef.current; this.setState({ scale: el ? Math.min(1, el.clientWidth / 1000) : 1, wide: o ? o.clientWidth >= 1140 : true }); };
+    this._ro = new ResizeObserver(fit); [this.wrapRef.current, this.outerRef.current].forEach(el => el && this._ro.observe(el)); fit();
+  }
+  componentWillUnmount() { clearTimeout(this._bt); clearTimeout(this._ft); this._ro && this._ro.disconnect(); }
+  upd(patch) { this.setState(s => ({ p: { ...s.p, ...patch } })); }
+  updPlan(patch) { this.setState(s => ({ p: { ...s.p, plan: { ...s.p.plan, ...patch } } })); }
+  togglePlan(key, v) { const a = this.state.p.plan[key]; this.updPlan({ [key]: a.includes(v) ? a.filter(x => x !== v) : [...a, v] }); }
+  talk(say, mood) { this.setState(s => ({ say, mood, pulse: s.pulse + 1 })); }
+  toggle(label) {
+    const p = this.state.p, I = window.IdeaInterests.byLabel[label];
+    if (p.interests.includes(label)) { this.upd({ interests: p.interests.filter(x => x !== label) }); this.talk(p.interests.length > 1 ? 'Okay, dropped that one.' : 'Pick anything that sounds like you.', 'idle'); return; }
+    if (p.interests.length >= MAX) { this.talk('That’s five already! Tap one to swap it out.', 'curious'); return; }
+    this.upd({ interests: [...p.interests, label] });
+    this.setState({ fresh: label }); clearTimeout(this._ft); this._ft = setTimeout(() => this.setState({ fresh: null }), 1400);
+    this.talk(`${label}? Nice! ${I.hook}`, 'excited');
+  }
+  go(step) {
+    const p = this.state.p, nm = p.name.trim() || 'you';
+    const lines = [
+      ['Hey! I’m Milo. I’m learning kinematics too. Before we start, I want to know a bit about you.', 'happy'],
+      [`Nice to meet you, ${nm}! Every bubble here is something people love. Tap yours and I’ll show you where it hides in physics.`, 'excited'],
+      ['Ooh, pick one and tell me something specific about it. The more real, the better the examples get.', 'curious'],
+      ['How do you like stuff explained?', 'curious'],
+      ['Ms. Ivy wants to ask you a few things so she can build your plan. Be honest, there are no wrong answers.', 'curious'],
+      ['I do better with a plan. Pick a few times that actually fit your week.', 'happy'],
+      ['I’ll ping you before each block, then ask a couple of questions after. Pick the ones that help you think.', 'curious'],
+      ['Here’s your plan. One idea a day, and never more than your brain can hold in one go.', 'excited'],
+      [`Look at that, ${nm}. Your interests are wired into the map now. Let’s go explore it!`, 'excited']
+    ];
+    const patch = { step };
+    if (step === 2 && !p.detailOf && p.interests.length) this.upd({ detailOf: p.interests[0] });
+    if (step === 4 && !this.state.iv.msgs.length) patch.iv = { i: 0, msgs: [{ who: 'ivy', text: window.StudyPlan.INTERVIEW[0].ask(p.name.trim() || 'there') }], typing: false, text: '' };
+    if (step === 7 && (!this.state.sp || this.state.sp.source === 'rules')) patch.sp = window.StudyPlan.generate(p);
+    this.setState(patch); this.talk(...lines[step]);
+  }
+  finish = () => {
+    try { localStorage.setItem(window.IdeaInterests.KEY, JSON.stringify({ ...this.state.p, studyPlan: this.state.sp || window.StudyPlan.generate(this.state.p), updated: new Date().toISOString() })); } catch (e) {}
+    window.location.href = 'Kinematics Explorer.dc.html';
+  };
+  renderVals() {
+    const s = this.state, p = s.p, step = s.step;
+    const base = { outerRef: this.outerRef, cols: s.wide ? 'minmax(0,1fr) minmax(300px,360px)' : 'minmax(0,1fr)', mapOrder: s.wide ? 0 : 2, cardCols: s.wide ? 'minmax(0,1fr)' : 'repeat(auto-fit,minmax(min(100%,300px),1fr))', stepDots: [], ideas: [], bubbles: [], lines: [], grades: [], chosen: [], moreChips: [], starters: [], styleOpts: [], shares: [], goalKinds: [], confOpts: [], stuckOpts: [], sessionOpts: [], days: [], grid: [], remindOpts: [], reflectOpts: [], planSummary: [], ivMsgs: [], ivOpts: [], planDays: [], planStats: [], tactics: [], ivRef: this.ivRef, wrapRef: this.wrapRef, wrapH: 680 * s.scale, scale: s.scale };
+    if (!s.ready || !window.StudyPlan) return base;
+    const KG = window.KinGraph, IN = window.IdeaInterests, L = IN.LIST, M = IN.META, pl = p.plan, first = M.firstBlock(pl);
+    const chip = (on, extra) => ({ on: String(on), bc: on ? 'var(--color-accent)' : N(700), bg: on ? A(900) : 'transparent', tc: on ? A(100) : N(200), ...extra });
+    const order = [...KG.IDEAS].sort((a, b) => a.unit - b.unit);
+    const ip = {}; order.forEach((n, i) => { const a = -Math.PI / 2 + (i + .5) * 2 * Math.PI / order.length; ip[n.id] = { x: CX + Math.cos(a) * RX, y: CY + Math.sin(a) * RY }; });
+    const bp = {}; L.forEach((it, i) => { bp[it.label] = { x: 250 + (i % 6) * 100, y: 250 + Math.floor(i / 6) * 92 }; });
+    const sel = p.interests, focus = s.hover || s.fresh, picking = step === 1, collapsed = step >= 2;
+    // after the pick step, chosen interests move into a ring around the centre; the rest fade away
+    if (collapsed) sel.forEach((l, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / Math.max(sel.length, 1); bp[l] = { x: CX + Math.cos(a) * 175, y: CY + Math.sin(a) * 118 }; });
+    const linked = {}; sel.forEach(l => IN.byLabel[l].links.forEach(id => { (linked[id] = linked[id] || []).push(l); }));
+    const focusLinks = focus ? IN.byLabel[focus].links : [];
+    const lines = [];
+    const showLines = step >= 1;
+    if (showLines) L.forEach(it => {
+      const on = sel.includes(it.label), f = it.label === focus;
+      if (!on && !f) return;
+      it.links.forEach(id => {
+        const a = bp[it.label], b = ip[id], mx = (a.x + b.x) / 2 + (CX - (a.x + b.x) / 2) * .25, my = (a.y + b.y) / 2 + (CY - (a.y + b.y) / 2) * .25;
+        lines.push({ d: `M${a.x} ${a.y} Q${mx} ${my} ${b.x} ${b.y}`, c: f ? A(300) : A(600), w: f ? 2.5 : 1.5, op: f ? 1 : on ? .7 : .4 });
+      });
+    });
+    const ideas = order.map(n => {
+      const q = ip[n.id], ls = linked[n.id] || [], hot = focusLinks.includes(n.id);
+      return { title: n.t, x: q.x, y: q.y, tip: ls.length ? 'Connects to ' + ls.join(', ') : n.t, sc: hot ? 1.12 : 1,
+        bg: hot ? A(800) : ls.length ? A(900) : 'var(--color-surface)', bc: hot ? A(300) : ls.length ? A(600) : N(700), glow: hot ? '0 0 22px var(--color-accent-600)' : 'none',
+        tc: ls.length || hot ? 'var(--color-text)' : N(300), op: step === 0 ? .5 : 1, badges: step >= 1 ? ls.slice(0, 3).map(l => ({ icon: 'ph ph-' + IN.byLabel[l].icon })) : [] };
+    });
+    const bubbles = L.map(it => {
+      const on = sel.includes(it.label), q = bp[it.label], full = sel.length >= MAX && !on, f = it.label === s.fresh;
+      const visible = picking || (collapsed && on);
+      return { label: it.label, icon: 'ph ph-' + it.icon, x: q.x, y: q.y, on: String(on),
+        sc: !visible ? .4 : f ? 1.18 : on ? 1.06 : 1, op: !visible ? 0 : full ? .4 : 1, cur: picking ? (full ? 'not-allowed' : 'pointer') : 'default',
+        bg: on ? A(800) : 'var(--color-bg)', bc: on ? 'var(--color-accent)' : N(600), glow: on ? '0 0 20px var(--color-accent-700)' : 'none', ic: on ? A(100) : N(200), tc: on ? A(100) : N(200),
+        toggle: () => picking && this.toggle(it.label), enter: () => picking && this.setState({ hover: it.label }), leave: () => this.setState(st => st.hover === it.label ? { hover: null } : null) };
+    });
+    const nLinked = Object.keys(linked).length, nm = p.name.trim();
+    const top = IN.byLabel[p.detailOf || sel[0]] || null;
+    const hook = top ? top.hook : 'A bus covering 300 m in 60 s is moving at 5 m/s.';
+    const prev = { life: `“${hook} Let’s work one out with numbers from your own week.”`, story: `“Quick scene: ${nm || 'you'}, ${top ? top.label.toLowerCase() : 'a normal day'}, and a problem to solve. ${hook}”`, data: `“${hook} We’ll check it against real stats and records.”`, visual: `“Picture it before any maths. ${hook}”` }[p.style];
+    const starters = (STARTERS[p.detailOf] || STARTERS.default).map(t => ({ text: t, use: () => this.upd({ detail: t + ' ' }) }));
+    return {
+      ...base, ideas, bubbles, lines,
+      stepDots: STEPS.map((_, i) => ({ w: i === step ? 22 : 8, c: i <= step ? A(400) : N(700) })),
+      stepLabel: `Step ${step + 1} of ${STEPS.length} · ${STEPS[step]}`,
+      ringOp: step === 0 ? .3 : .7,
+      showCenter: step !== 1, centerTitle: step === 0 ? 'Kinematics' : nm || 'You', centerSub: step === 0 ? '19 ideas to explore' : step === LAST ? `${nLinked} ideas connect to you` : step === 5 ? M.weekText(pl) : 'Your map',
+      connectText: step === 0 ? 'The ring is everything in this unit' : `${nLinked} of ${order.length} ideas connect to your interests`,
+      say: s.say || 'Hey! I’m Milo. I’m learning kinematics too. Before we start, I want to know a bit about you.', mood: s.mood, pulse: s.pulse,
+      isName: step === 0, isPick: step === 1, isMore: step === 2, isStyle: step === 3, isGoal: step === 4, isWeek: step === 5, isCheck: step === 6, isPlan: step === 7, isDone: step === LAST, notDone: step < LAST, canBack: step > 0,
+      goalKinds: M.GOALS.map(([id, label, icon]) => chip(pl.goalKind === id, { label, icon, pick: () => this.updPlan({ goalKind: id }) })),
+      goal: pl.goal, setGoal: e => this.updPlan({ goal: e.target.value }),
+      confOpts: M.CONFIDENCE.map((label, i) => ({ label, on: pl.confidence === i + 1, pick: () => this.updPlan({ confidence: i + 1 }) })),
+      stuckOpts: M.STUCK.map(([id, label, icon]) => chip(pl.stuck.includes(id), { label, icon, toggle: () => this.togglePlan('stuck', id) })),
+      sessionOpts: M.SESSIONS.map(m => ({ label: m + ' min', on: pl.session === m, pick: () => this.updPlan({ session: m }) })),
+      days: M.DAYS, grid: M.grid(pl, id => this.togglePlan('blocks', id)), weekText: M.weekText(pl),
+      remindOpts: [['start', 'Remind me before each block', `${pl.remind.lead} minutes ahead`], ['missed', 'Nudge me if I miss one', 'One gentle message, no streak guilt'], ['recap', 'Sunday recap', 'Time studied, ideas mastered, next week’s plan'], ['quiet', 'Quiet hours', 'No pings between 9 pm and 7 am']].map(([k, label, desc]) => ({ label, desc, on: pl.remind[k], toggle: () => this.updPlan({ remind: { ...pl.remind, [k]: !pl.remind[k] } }) })),
+      leadOpts: M.LEADS.map(m => ({ label: m + ' min before', on: pl.remind.lead === m, pick: () => this.updPlan({ remind: { ...pl.remind, lead: m } }) })),
+      reflectOn: pl.reflect !== 'off', checkWhen: pl.reflect === 'session' ? 'After each session, Milo asks' : 'Sunday evening, Milo asks',
+      promptOpts: M.PROMPTS.map(([id, label]) => { const on = pl.prompts.includes(id); return chip(on, { label, toggle: () => on ? this.togglePlan('prompts', id) : pl.prompts.length < 3 ? this.togglePlan('prompts', id) : this.talk('Three is plenty. Drop one to swap it.', 'curious') }); }),
+      promptPreview: pl.prompts.map(id => (M.PROMPTS.find(x => x[0] === id) || [, id])[1]),
+      why: pl.why, setWhy: e => this.updPlan({ why: e.target.value }), whyPh: sel.length ? `Why it matters to you (e.g. for ${sel[0].toLowerCase()})` : 'Why does it matter to you? (optional)',
+      reflectOpts: M.REFLECT.map(([id, label]) => ({ label, on: pl.reflect === id, pick: () => this.updPlan({ reflect: id }) })),
+      ...this.ivVals(pl, chip, M), ...this.planVals(M),
+      planSummary: [
+        ...(s.sp ? [{ icon: 'ph ph-path', text: `Plan: ${s.sp.pace} new idea${s.sp.pace > 1 ? 's' : ''} per study day${s.sp.finish ? ', done by ' + new Date(s.sp.finish + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}.` }] : []),
+        { icon: 'ph ph-target', text: (pl.goal.trim() ? `Goal: ${pl.goal.trim()}` : `Goal: ${M.GOALS.find(g => g[0] === pl.goalKind)[1].toLowerCase()}`) + (pl.why.trim() ? `. Why: ${pl.why.trim()}` : '') },
+        { icon: 'ph ph-lifebuoy', text: pl.stuck.length ? `When stuck: ${pl.stuck.map(id => M.STUCK.find(x => x[0] === id)[1].toLowerCase()).join(', ')}.` : 'No stuck plan yet.' },
+        { icon: 'ph ph-calendar-dots', text: first ? `${M.weekText(pl)}. First block: ${M.blockLabel(first)}.` : 'No study times yet. You can add them from “My interests”.' },
+        { icon: 'ph ph-bell', text: pl.remind.start && first ? `Milo pings you ${pl.remind.lead} min before each block.` : 'No reminders before blocks.' },
+        { icon: 'ph ph-notebook', text: pl.reflect === 'off' ? 'Reflection check-ins are off.' : `Check-in ${pl.reflect === 'session' ? 'after each session' : 'at the end of each week'}: ${pl.prompts.length ? pl.prompts.map(id => M.PROMPTS.find(x => x[0] === id)[1]).join(' ') : 'no questions picked'}` }
+      ],
+      name: p.name, setName: e => this.upd({ name: e.target.value }), nameKey: e => { if (e.key === 'Enter') this.go(1); },
+      grades: ['9', '10', '11'].map(g => ({ label: 'Grade ' + g, on: p.grade === g, pick: () => this.upd({ grade: g }) })),
+      chosen: sel.map(l => ({ label: l, icon: 'ph ph-' + IN.byLabel[l].icon, remove: () => this.toggle(l) })), noneChosen: sel.length === 0,
+      moreChips: sel.map(l => { const on = p.detailOf === l; return { label: l, icon: 'ph ph-' + IN.byLabel[l].icon, pick: () => this.upd({ detailOf: l }), bc: on ? 'var(--color-accent)' : N(700), bg: on ? A(900) : 'transparent', tc: on ? A(100) : N(200) }; }),
+      detail: p.detail, setDetail: e => this.upd({ detail: e.target.value }), detailPh: p.detailOf ? `Something specific about ${p.detailOf.toLowerCase()}…` : 'Something specific…', starters,
+      styleOpts: STYLES.map(([id, label, icon]) => { const on = p.style === id; return { label, icon, on: String(on), pick: () => this.upd({ style: id }), bc: on ? 'var(--color-accent)' : N(700), bg: on ? A(900) : 'transparent' }; }),
+      stylePreview: prev, avoid: p.avoid, setAvoid: e => this.upd({ avoid: e.target.value }),
+      doneText: sel.length ? `${sel.join(', ')} ${sel.length === 1 ? 'connects' : 'connect'} to ${nLinked} ideas. Look for their icons on the map, and Ms. Ivy and Milo will use them in examples.` : 'You didn’t pick any interests, so examples will stay general. You can add some later.',
+      shares: [['tutor', 'Ms. Ivy can use this', 'In explanations and worked examples'], ['peer', 'Milo can use this', 'When he asks you to explain things']].map(([k, label, desc]) => ({ label, desc, on: p.share[k], toggle: () => this.upd({ share: { ...p.share, [k]: !p.share[k] } }) })),
+      back: () => this.go(step - 1), next: () => this.go(step + 1), finish: this.finish,
+      nextDisabled: step === 0 && !p.name.trim(),
+      nextLabel: step === 1 ? (sel.length ? 'Next' : 'Skip this') : step === 2 && !p.detail.trim() ? 'Skip this' : step === 5 && !pl.blocks.length ? 'Skip this' : step === 4 && s.iv.i < window.StudyPlan.INTERVIEW.length ? 'Skip this' : step === 6 ? 'Build my plan' : 'Next'
+    };
+  }
+}
+</script>
+</body>
+</html>

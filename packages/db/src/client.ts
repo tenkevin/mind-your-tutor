@@ -40,16 +40,29 @@ export function createDb(connectionString: string, config: pg.PoolConfig = {}): 
   });
 }
 
+export interface OrgOptions {
+  /** Default is READ COMMITTED. `repeatable read` makes every read see one snapshot. */
+  isolation?: 'repeatable read';
+}
+
 /**
  * Run `fn` in a transaction that acts for one organization. Row-level security
  * (ARCHITECTURE.md §10) shows and accepts only that organization's rows; outside
  * `withOrg` the app role sees none.
  */
-export function withOrg<T>(db: Db, orgId: string, fn: (trx: Transaction<Database>) => Promise<T>) {
-  return db.transaction().execute(async (trx) => {
-    await sql`SELECT set_config(${ORG_SETTING}, ${orgId}, true)`.execute(trx);
-    return fn(trx);
-  });
+export function withOrg<T>(
+  db: Db,
+  orgId: string,
+  fn: (trx: Transaction<Database>) => Promise<T>,
+  options: OrgOptions = {},
+) {
+  const builder = db.transaction();
+  return (options.isolation ? builder.setIsolationLevel(options.isolation) : builder).execute(
+    async (trx) => {
+      await sql`SELECT set_config(${ORG_SETTING}, ${orgId}, true)`.execute(trx);
+      return fn(trx);
+    },
+  );
 }
 
 /** JSON text for a jsonb column. Arrays need this: pg would send them as Postgres arrays. */
