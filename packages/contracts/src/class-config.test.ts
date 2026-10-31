@@ -28,6 +28,10 @@ describe('ClassConfig follows §6 and the spec edit column (F3-F8)', () => {
     expect(Object.keys(IdeaOverrideSchema.shape)).not.toContain('explanation');
   });
 
+  it('leaves out Ideas.layer, which D41 changes only through a draft, never per class', () => {
+    expect(Object.keys(IdeaOverrideSchema.shape)).not.toContain('layer');
+  });
+
   it('leaves out Library, which §6 keeps as curriculum data', () => {
     expect(editable('Library')).toEqual(['title', 'file_url', 'use_for']);
     expect(Object.keys(ClassConfigSchema.shape)).not.toContain('library');

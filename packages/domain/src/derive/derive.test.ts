@@ -27,21 +27,31 @@ function star(spokes: number[]): Pack {
 describe('derive on the water-cycle sample (C3-F3)', () => {
   const derived = derive(sample, { seed: 1 });
 
-  it('keeps 27 links and lists the 4 it hides, as the prototype does', () => {
-    expect(derived.ranked_links.kept).toHaveLength(27);
+  it('keeps 34 links and lists the 9 it hides (C12 added 12 links)', () => {
+    expect(derived.ranked_links.kept).toHaveLength(34);
     const hidden = derived.ranked_links.hidden.map((l) => `${l.from_id}>${l.to_id}`);
-    expect(hidden.sort()).toEqual(['coll>cycle', 'sun>ocean', 'temp>climate', 'trans>cycle']);
+    expect(hidden.sort()).toEqual([
+      'climate>prec',
+      'coll>cycle',
+      'coll>evap',
+      'gravity>prec',
+      'ocean>evap',
+      'phase>cond',
+      'sun>ocean',
+      'temp>climate',
+      'trans>cycle',
+    ]);
   });
 
-  it('puts Evaporation in the centre and the prototype’s six in the inner ring', () => {
+  it('puts Evaporation in the centre and six in the inner ring', () => {
     expect(derived.layout.centre).toBe('evap');
     const inner = derived.layout.positions.filter((p) => p.ring === 1).map((p) => p.idea_id);
-    expect(inner.sort()).toEqual(['cond', 'cycle', 'ocean', 'prec', 'temp', 'vap']);
+    expect(inner.sort()).toEqual(['coll', 'cond', 'cycle', 'prec', 'temp', 'vap']);
   });
 
   it('follows every rule, with at least 8 questions per idea (C3-F5, F6)', () => {
     expectRules(sample, derived);
-    expect(derived.quizzes.banks).toHaveLength(18);
+    expect(derived.quizzes.banks).toHaveLength(23);
     for (const bank of derived.quizzes.banks) {
       expect(bank.questions.length).toBeGreaterThanOrEqual(8);
       expect(bank.short).toBe(false);

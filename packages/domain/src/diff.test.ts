@@ -36,6 +36,7 @@ describe('diffPacks (C5)', () => {
           to: { unit: 3, name: 'Water comes back' },
         },
       ],
+      layers_changed: [],
       assessment_changed: [
         {
           idea_id: 'sun',
@@ -49,6 +50,19 @@ describe('diffPacks (C5)', () => {
       ],
     });
     // The API's payload shape accepts it as it is.
+    expect(CurriculumDiffSchema.parse(diff)).toEqual(diff);
+  });
+
+  it('C12: shows a move between the process and mechanism layers', () => {
+    const before = packA();
+    const after = packA();
+    after.ideas.find((i) => i.idea_id === 'temp')!.layer = 'mechanism';
+    const diff = diffPacks(before, after);
+    expect(diff.layers_changed).toEqual([
+      { idea_id: 'temp', title: 'Temperature', from: 'process', to: 'mechanism' },
+    ]);
+    expect(diff.empty).toBe(false);
+    expect(diffPacks(before, before).layers_changed).toEqual([]);
     expect(CurriculumDiffSchema.parse(diff)).toEqual(diff);
   });
 
@@ -78,7 +92,7 @@ describe('diffPacks (C5)', () => {
     const first = diffPacks(null, packA());
     expect(first.first_publish).toBe(true);
     expect(first.empty).toBe(false);
-    expect(first.ideas_added).toHaveLength(18);
+    expect(first.ideas_added).toHaveLength(23);
     expect(first.ideas_added.map((i) => i.idea_id)).toEqual(
       packA()
         .ideas.map((i) => i.idea_id)

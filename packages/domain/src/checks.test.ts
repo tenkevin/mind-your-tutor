@@ -33,6 +33,7 @@ function idea(spec: IdeaSpec): Pack['ideas'][number] {
     explanation: null,
     standard_codes: ['CODE-1'],
     requires: [],
+    layer: 'process',
     media_url: `${spec.idea_id}.mp4`,
     rarity: 'auto',
     notes: null,
@@ -727,6 +728,81 @@ describe('spec "missing" behaviours (C8-F4, C8-F9)', () => {
   });
 });
 
+describe('two layers (C12, D41)', () => {
+  const loopLinks = (ids: string[]) =>
+    ids.map((id, i) => ({
+      from_id: id,
+      to_id: ids[(i + 1) % ids.length]!,
+      relation: 'leads to',
+      importance: 3,
+      media_url: null,
+    }));
+
+  it('C12-F2: allows the process loop in Links while requires stays acyclic', () => {
+    const ids = ['evap', 'cond', 'prec', 'coll'];
+    const p = pack([
+      { idea_id: 'heat', layer: 'mechanism' },
+      { idea_id: 'evap', requires: ['heat'] },
+      { idea_id: 'cond', requires: ['evap'] },
+      { idea_id: 'prec', requires: ['cond'] },
+      { idea_id: 'coll', requires: ['prec'] },
+    ]);
+    p.links = [...loopLinks(ids), { ...loopLinks(['heat', 'evap'])[0]!, to_id: 'evap' }];
+    expect(checkPack(p)).toEqual([]);
+  });
+
+  it('C12-F2: a requires loop is still an error in the mechanism layer, and in the process layer', () => {
+    for (const layer of ['mechanism', 'process'] as const) {
+      const issues = checkPack(
+        pack([
+          { idea_id: 'a', layer, requires: ['b'] },
+          { idea_id: 'b', layer, requires: ['a'] },
+        ]),
+      );
+      expect(ofKind(issues, 'cycle')).toHaveLength(1);
+      expect(canPublish(issues)).toBe(false);
+    }
+  });
+
+  it('C12-F3: a process idea may require mechanisms', () => {
+    const issues = checkPack(
+      pack([
+        { idea_id: 'gravity', layer: 'mechanism' },
+        { idea_id: 'prec', requires: ['gravity'] },
+      ]),
+    );
+    expect(ofKind(issues, 'layer_requires')).toEqual([]);
+    expect(issues).toEqual([]);
+  });
+
+  it('C12-F3, U1: warns, in plain words, when a mechanism requires a process idea', () => {
+    const issues = checkPack(
+      pack([
+        { idea_id: 'rain', title: 'Rain' },
+        { idea_id: 'gravity', title: 'Gravity', layer: 'mechanism', requires: ['rain'] },
+      ]),
+    );
+    const [w] = ofKind(issues, 'layer_requires');
+    expect(w).toEqual({
+      kind: 'layer_requires',
+      level: 'warning',
+      message:
+        "Gravity is a mechanism idea but requires the process idea Rain. Mechanisms underlie the process, not the other way round. Remove it from Ideas → requires, or change Gravity's layer to process.",
+      items: ['gravity', 'rain'],
+      fix: { tab: 'Ideas', column: 'requires' },
+    });
+    expect(DataCheckIssueSchema.parse(w)).toEqual(w);
+    expect(canPublish(issues)).toBe(true);
+  });
+
+  it('C12-F1: a mechanism idea without standard_codes is a warning', () => {
+    const issues = checkPack(
+      pack([{ idea_id: 'gravity', layer: 'mechanism', standard_codes: [] }]),
+    );
+    expect(ofKind(issues, 'codes')[0]).toMatchObject({ level: 'warning', items: ['gravity'] });
+  });
+});
+
 describe('every kind (C2-F9)', () => {
   it('has a test above', () => {
     const tested: DataCheckKind[] = [
@@ -748,6 +824,7 @@ describe('every kind (C2-F9)', () => {
       'no_categories',
       'assessment_unknown_unit',
       'assessment_unit_mismatch',
+      'layer_requires',
     ];
     expect([...tested].sort()).toEqual([...DATA_CHECK_KINDS].sort());
   });

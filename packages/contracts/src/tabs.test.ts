@@ -203,6 +203,7 @@ describe('spec defaults (F3-F4)', () => {
       objective: null,
       standard_codes: [],
       requires: [],
+      layer: 'process',
       media_url: null,
       rarity: 'auto',
       notes: null,

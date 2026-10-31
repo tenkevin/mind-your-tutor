@@ -76,11 +76,11 @@ describe('C1-F1 all three forms give the same pack', () => {
 
   it('has the fixture counts and Course values', async () => {
     const { pack } = await importPack(workbook());
-    expect(pack!.ideas).toHaveLength(18);
-    expect(pack!.links).toHaveLength(31);
+    expect(pack!.ideas).toHaveLength(23);
+    expect(pack!.links).toHaveLength(43);
     expect(pack!.units).toHaveLength(3);
     expect(pack!.categories).toHaveLength(3);
-    expect(pack!.assessment).toHaveLength(18);
+    expect(pack!.assessment).toHaveLength(23);
     expect(pack!.personas).toHaveLength(3);
     expect(pack!.library).toHaveLength(5);
     expect(pack!.course).toEqual({
@@ -264,7 +264,7 @@ describe('C1-F3 header matching is forgiving', () => {
     const ambiguous = errors(r).filter((i) => i.code === 'column_ambiguous');
     expect(ambiguous).toHaveLength(1);
     expect(ambiguous[0]).toMatchObject({ tab: 'Ideas', column: 'idea_id' });
-    expect(ambiguous[0]!.message).toMatch(/'idea_id' \(column A\) and 'Idea ID' \(column L\)/);
+    expect(ambiguous[0]!.message).toMatch(/'idea_id' \(column A\) and 'Idea ID' \(column M\)/);
     // The ambiguity is the only error: it isn't also reported as missing.
     expect(errors(r)).toHaveLength(1);
   });
@@ -354,7 +354,7 @@ describe('C1-F6 missing-value behaviour follows the spec', () => {
       csvFiles({ Links: (t) => setCell(4, 'importance', '')(setCell(2, 'relation', '')(t)) }),
     );
     expect(r.ok).toBe(true);
-    expect(r.pack!.links).toHaveLength(30);
+    expect(r.pack!.links).toHaveLength(42);
     const skipped = r.issues.filter((i) => i.effect === 'skips_row');
     expect(skipped).toHaveLength(1);
     expect(skipped[0]).toMatchObject({
@@ -404,7 +404,7 @@ describe('C1-F6 missing-value behaviour follows the spec', () => {
       }),
     );
     expect(r.ok).toBe(true);
-    expect(r.pack!.assessment).toHaveLength(18);
+    expect(r.pack!.assessment).toHaveLength(23);
     expect(r.pack!.assessment[0]!.question).toBeNull();
     expect(r.pack!.library[0]!.title).toBe('Water cycle unit plan');
     expect(r.pack!.personas).toHaveLength(3);

@@ -46,6 +46,8 @@ export const DATA_CHECK_KINDS = [
   'assessment_unknown_unit',
   /** An Assessment row's unit isn't its idea's unit, so it covers neither. */
   'assessment_unit_mismatch',
+  /** A mechanism idea requires a process idea; mechanisms should underlie the process. */
+  'layer_requires',
 ] as const;
 export type DataCheckKind = (typeof DATA_CHECK_KINDS)[number];
 

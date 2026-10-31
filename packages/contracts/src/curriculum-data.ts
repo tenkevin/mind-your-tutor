@@ -31,6 +31,7 @@ export const CAUSE_LABELS: Record<DataCheckKind | ImportIssueCode, string> = {
   no_categories: 'No categories',
   assessment_unknown_unit: 'Question for an unknown unit',
   assessment_unit_mismatch: 'Question in the wrong unit',
+  layer_requires: 'Mechanism that requires a process',
   file_refused: 'File refused',
   no_tabs: 'No tabs found',
   tab_missing: 'Missing tab',

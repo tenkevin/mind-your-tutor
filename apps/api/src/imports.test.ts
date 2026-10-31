@@ -270,8 +270,8 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
       expect(version.source).toMatchObject({ kind: 'xlsx', file_name: 'water-cycle.xlsx' });
       expect(version.source.checksum).toBe(data.job!.source.checksum);
       expect(data.unchanged).toBe(false);
-      expect(version.tabs.find((t) => t.tab === 'Ideas')).toEqual({ tab: 'Ideas', rows: 18 });
-      expect(version.tabs.find((t) => t.tab === 'Links')).toEqual({ tab: 'Links', rows: 31 });
+      expect(version.tabs.find((t) => t.tab === 'Ideas')).toEqual({ tab: 'Ideas', rows: 23 });
+      expect(version.tabs.find((t) => t.tab === 'Links')).toEqual({ tab: 'Links', rows: 43 });
       expect(countIssues(version.groups)).toEqual({ error: 1, warning: 1, info: 1 });
       expect(
         version.groups.map((g) => [

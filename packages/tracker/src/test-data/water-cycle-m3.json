@@ -1,0 +1,679 @@
+{
+  "version": 1,
+  "course": {
+    "subject": "Science",
+    "topic": "The water cycle",
+    "grade": "6",
+    "framework": "NGSS",
+    "map_objective": "Explain how water moves around the Earth in a never-ending cycle, and what powers it.",
+    "pass_mark": 70
+  },
+  "units": [
+    {
+      "unit": 1,
+      "name": "Water goes up",
+      "objective": "Describe how heat from the Sun turns liquid water into water vapour.",
+      "standard_codes": ["MS-ESS2-4", "MS-PS1-4"],
+      "due_date": "2026-10-30"
+    },
+    {
+      "unit": 2,
+      "name": "Water in the sky",
+      "objective": "Explain how water vapour becomes clouds and falls back as rain or snow.",
+      "standard_codes": ["MS-ESS2-4", "MS-ESS2-5"],
+      "due_date": "2026-11-06"
+    },
+    {
+      "unit": 3,
+      "name": "Water comes back",
+      "objective": "Trace where water goes after it falls and how it returns to the sea.",
+      "standard_codes": ["MS-ESS2-4"],
+      "due_date": "2026-11-13"
+    }
+  ],
+  "ideas": [
+    {
+      "idea_id": "cycle",
+      "title": "Water cycle",
+      "category": "Process",
+      "unit": 3,
+      "objective": "I can name the main stages of the water cycle in order.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["evap", "cond", "prec", "coll"],
+      "media_url": "water-cycle-overview.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "The journey water takes as it moves between the sky, the land and the sea, over and over again."
+    },
+    {
+      "idea_id": "evap",
+      "title": "Evaporation",
+      "category": "Process",
+      "unit": 1,
+      "objective": "I can explain how the Sun’s heat turns liquid water into vapour.",
+      "standard_codes": ["MS-ESS2-4", "MS-PS1-4"],
+      "requires": [],
+      "media_url": "evaporation.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "When the Sun warms water in oceans, lakes and puddles, some of it turns into an invisible gas and rises into the air."
+    },
+    {
+      "idea_id": "cond",
+      "title": "Condensation",
+      "category": "Process",
+      "unit": 2,
+      "objective": "I can explain why water vapour turns back into drops when it cools.",
+      "standard_codes": ["MS-ESS2-4", "MS-PS1-4"],
+      "requires": ["evap"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "As water vapour rises it cools down and turns back into tiny drops of liquid water."
+    },
+    {
+      "idea_id": "prec",
+      "title": "Precipitation",
+      "category": "Process",
+      "unit": 2,
+      "objective": "I can describe what makes water fall from clouds.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["cond"],
+      "media_url": "precipitation.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "When cloud drops grow too heavy, they fall back to the ground."
+    },
+    {
+      "idea_id": "coll",
+      "title": "Collection",
+      "category": "Process",
+      "unit": 3,
+      "objective": "I can list places where fallen water gathers.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["prec"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Water that falls gathers in oceans, rivers, lakes and underground, ready to start the cycle again."
+    },
+    {
+      "idea_id": "trans",
+      "title": "Transpiration",
+      "category": "Process",
+      "unit": 1,
+      "objective": "I can explain how plants put water back into the air.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["plants"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Plants pull water up from their roots and let some of it escape from their leaves as vapour."
+    },
+    {
+      "idea_id": "ice",
+      "title": "Freezing",
+      "category": "Process",
+      "unit": 3,
+      "objective": "I can explain what happens to water when it freezes.",
+      "standard_codes": ["MS-PS1-4"],
+      "requires": ["temp"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "When water gets cold enough it turns into solid ice."
+    },
+    {
+      "idea_id": "sun",
+      "title": "The Sun",
+      "category": "Force",
+      "unit": 1,
+      "objective": "I can explain why the Sun is the engine of the water cycle.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": [],
+      "media_url": "sun-energy.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "The Sun gives off heat and light. Its energy is what keeps the water cycle moving."
+    },
+    {
+      "idea_id": "temp",
+      "title": "Temperature",
+      "category": "Force",
+      "unit": 1,
+      "objective": "I can describe how warming and cooling change water.",
+      "standard_codes": ["MS-PS1-4"],
+      "requires": ["sun"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "How hot or cold something is. Warm air can hold more water vapour than cold air."
+    },
+    {
+      "idea_id": "climate",
+      "title": "Climate",
+      "category": "Force",
+      "unit": 2,
+      "objective": "I can explain how climate affects rain and snow in a place.",
+      "standard_codes": ["MS-ESS2-6"],
+      "requires": ["temp", "prec"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "The usual weather of a place over many years. It changes how much rain and snow falls."
+    },
+    {
+      "idea_id": "vap",
+      "title": "Water vapour",
+      "category": "Thing",
+      "unit": 1,
+      "objective": "I can describe water vapour and where it comes from.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["evap"],
+      "media_url": "water-vapour.png",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Water in the form of a gas. You cannot see it, but it is all around you in the air."
+    },
+    {
+      "idea_id": "clouds",
+      "title": "Clouds",
+      "category": "Thing",
+      "unit": 2,
+      "objective": "I can explain what clouds are made of.",
+      "standard_codes": ["MS-ESS2-5"],
+      "requires": ["cond"],
+      "media_url": "clouds.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Millions of tiny water drops or ice crystals floating together in the sky."
+    },
+    {
+      "idea_id": "rain",
+      "title": "Rain & snow",
+      "category": "Thing",
+      "unit": 2,
+      "objective": "I can tell the difference between rain and snow.",
+      "standard_codes": [],
+      "requires": ["prec"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "The forms precipitation takes. Snow forms when the air is cold enough to freeze the drops."
+    },
+    {
+      "idea_id": "ocean",
+      "title": "Oceans",
+      "category": "Thing",
+      "unit": 1,
+      "objective": "I can explain why oceans matter to the water cycle.",
+      "standard_codes": ["MS-ESS2-6"],
+      "requires": [],
+      "media_url": "oceans.jpg",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Huge bodies of salt water that cover most of the Earth and hold most of its water."
+    },
+    {
+      "idea_id": "rivers",
+      "title": "Rivers",
+      "category": "Thing",
+      "unit": 3,
+      "objective": "I can trace how rivers carry water back to the sea.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["rain"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Flowing fresh water that carries rain and melted snow from the land back to the sea."
+    },
+    {
+      "idea_id": "plants",
+      "title": "Plants",
+      "category": "Thing",
+      "unit": 1,
+      "objective": "I can explain how plants take in and give back water.",
+      "standard_codes": ["MS-LS1-6"],
+      "requires": [],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Living things that drink water through their roots and return some of it to the air."
+    },
+    {
+      "idea_id": "glacier",
+      "title": "Glaciers",
+      "category": "Thing",
+      "unit": 3,
+      "objective": "I can explain how glaciers store and release water.",
+      "standard_codes": ["MS-ESS2-4"],
+      "requires": ["ice"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Giant, slow rivers of ice that store fresh water for hundreds of years."
+    },
+    {
+      "idea_id": "ground",
+      "title": "Groundwater",
+      "category": "Thing",
+      "unit": 3,
+      "objective": "I can describe how water is stored underground.",
+      "standard_codes": ["MS-ESS3-1"],
+      "requires": ["coll", "aquifer"],
+      "media_url": null,
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Water that soaks into the soil and is stored between rocks underground."
+    }
+  ],
+  "links": [
+    {
+      "from_id": "sun",
+      "to_id": "evap",
+      "relation": "powers",
+      "importance": 5,
+      "media_url": "how-the-sun-powers-evaporation.mp4"
+    },
+    {
+      "from_id": "evap",
+      "to_id": "vap",
+      "relation": "creates",
+      "importance": 5,
+      "media_url": "from-puddle-to-vapour.mp4"
+    },
+    {
+      "from_id": "vap",
+      "to_id": "cond",
+      "relation": "turns into",
+      "importance": 5,
+      "media_url": "why-vapour-turns-back-into-drops.mp4"
+    },
+    {
+      "from_id": "cond",
+      "to_id": "clouds",
+      "relation": "forms",
+      "importance": 5,
+      "media_url": null
+    },
+    {
+      "from_id": "clouds",
+      "to_id": "prec",
+      "relation": "release",
+      "importance": 5,
+      "media_url": "when-clouds-get-too-heavy.mp4"
+    },
+    {
+      "from_id": "evap",
+      "to_id": "cycle",
+      "relation": "is a stage of",
+      "importance": 5,
+      "media_url": null
+    },
+    {
+      "from_id": "cond",
+      "to_id": "cycle",
+      "relation": "is a stage of",
+      "importance": 5,
+      "media_url": null
+    },
+    {
+      "from_id": "prec",
+      "to_id": "cycle",
+      "relation": "is a stage of",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "coll",
+      "to_id": "cycle",
+      "relation": "is a stage of",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "trans",
+      "to_id": "cycle",
+      "relation": "is a stage of",
+      "importance": 2,
+      "media_url": null
+    },
+    {
+      "from_id": "sun",
+      "to_id": "temp",
+      "relation": "raises",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "temp",
+      "to_id": "evap",
+      "relation": "speeds up",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "temp",
+      "to_id": "cond",
+      "relation": "controls",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "temp",
+      "to_id": "ice",
+      "relation": "causes",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "temp",
+      "to_id": "climate",
+      "relation": "shapes",
+      "importance": 2,
+      "media_url": null
+    },
+    {
+      "from_id": "ocean",
+      "to_id": "evap",
+      "relation": "supplies",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "prec",
+      "to_id": "rain",
+      "relation": "falls as",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "rain",
+      "to_id": "rivers",
+      "relation": "feeds",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "rain",
+      "to_id": "ground",
+      "relation": "soaks in as",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "rivers",
+      "to_id": "ocean",
+      "relation": "flow into",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "coll",
+      "to_id": "ocean",
+      "relation": "gathers in",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "coll",
+      "to_id": "ground",
+      "relation": "stores water as",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "plants",
+      "to_id": "trans",
+      "relation": "perform",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "trans",
+      "to_id": "vap",
+      "relation": "releases",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "ice",
+      "to_id": "glacier",
+      "relation": "builds",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "glacier",
+      "to_id": "rivers",
+      "relation": "melt into",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "climate",
+      "to_id": "prec",
+      "relation": "shapes",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "ocean",
+      "to_id": "climate",
+      "relation": "moderates",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "clouds",
+      "to_id": "climate",
+      "relation": "affect",
+      "importance": 2,
+      "media_url": null
+    },
+    {
+      "from_id": "sun",
+      "to_id": "plants",
+      "relation": "gives energy to",
+      "importance": 2,
+      "media_url": null
+    },
+    {
+      "from_id": "sun",
+      "to_id": "ocean",
+      "relation": "warms",
+      "importance": 2,
+      "media_url": null
+    }
+  ],
+  "categories": [
+    {
+      "category": "Process",
+      "icon": "arrows-clockwise",
+      "description": "Something that happens or changes"
+    },
+    {
+      "category": "Force",
+      "icon": "lightning",
+      "description": "What causes or drives a change"
+    },
+    {
+      "category": "Thing",
+      "icon": "drop",
+      "description": "An object, place or material"
+    }
+  ],
+  "assessment": [
+    {
+      "unit": 1,
+      "idea_id": "sun",
+      "question": "What does the Sun have to do with water going up into the air?",
+      "key_points": ["The Sun gives heat/energy", "that heat makes water evaporate"]
+    },
+    {
+      "unit": 1,
+      "idea_id": "temp",
+      "question": "What changes when water gets warmer?",
+      "key_points": ["Warmer water evaporates faster", "warm air can hold more water vapour"]
+    },
+    {
+      "unit": 1,
+      "idea_id": "evap",
+      "question": "What is evaporation? Can you give me an example?",
+      "key_points": [
+        "Liquid water turns into a gas (vapour) when heated",
+        "e.g. a puddle drying up"
+      ]
+    },
+    {
+      "unit": 1,
+      "idea_id": "vap",
+      "question": "If water vapour is all around us, why can't I see it?",
+      "key_points": ["Water vapour is a gas and which is invisible"]
+    },
+    {
+      "unit": 1,
+      "idea_id": "ocean",
+      "question": "Where does most of the water that evaporates come from?",
+      "key_points": ["Mostly from the oceans and which hold most of Earth's water"]
+    },
+    {
+      "unit": 1,
+      "idea_id": "plants",
+      "question": "How do plants get water, and what happens to some of it?",
+      "key_points": ["Roots take in water", "some escapes from the leaves into the air"]
+    },
+    {
+      "unit": 1,
+      "idea_id": "trans",
+      "question": "What is transpiration, and how is it like evaporation?",
+      "key_points": [
+        "Plants release water vapour from leaves",
+        "both put water vapour into the air"
+      ]
+    },
+    {
+      "unit": 2,
+      "idea_id": "cond",
+      "question": "Why does water vapour turn back into drops?",
+      "key_points": ["When vapour cools and it changes from gas back to liquid drops"]
+    },
+    {
+      "unit": 2,
+      "idea_id": "clouds",
+      "question": "What are clouds actually made of?",
+      "key_points": ["Tiny water drops or ice crystals and formed by condensation"]
+    },
+    {
+      "unit": 2,
+      "idea_id": "prec",
+      "question": "Why does water fall out of clouds?",
+      "key_points": ["Drops join and grow too heavy to float and so they fall"]
+    },
+    {
+      "unit": 2,
+      "idea_id": "rain",
+      "question": "When does it snow instead of rain?",
+      "key_points": ["When the air is cold enough to freeze the drops"]
+    },
+    {
+      "unit": 2,
+      "idea_id": "climate",
+      "question": "Why do some places get much more rain than others?",
+      "key_points": [
+        "Climate and the usual weather of a place over many years and shapes how much rain or snow falls"
+      ]
+    },
+    {
+      "unit": 3,
+      "idea_id": "coll",
+      "question": "Where does water go after it falls?",
+      "key_points": ["It gathers in oceans and rivers and lakes and underground"]
+    },
+    {
+      "unit": 3,
+      "idea_id": "rivers",
+      "question": "How do rivers help water get back to the sea?",
+      "key_points": ["Rivers carry rain and melted snow downhill into the ocean"]
+    },
+    {
+      "unit": 3,
+      "idea_id": "ground",
+      "question": "What is groundwater?",
+      "key_points": ["Water that soaks into the soil and is stored between rocks underground"]
+    },
+    {
+      "unit": 3,
+      "idea_id": "ice",
+      "question": "What happens to water when it freezes?",
+      "key_points": ["When it gets cold enough it turns into solid ice"]
+    },
+    {
+      "unit": 3,
+      "idea_id": "glacier",
+      "question": "How can a glacier store water for a long time and then give it back?",
+      "key_points": ["Ice builds up over years", "it melts slowly into rivers"]
+    },
+    {
+      "unit": 3,
+      "idea_id": "cycle",
+      "question": "Can you walk me through the whole water cycle, step by step?",
+      "key_points": [
+        "Evaporation and condensation and precipitation and collection and and it repeats"
+      ]
+    }
+  ],
+  "personas": [
+    {
+      "persona_id": "tutor",
+      "name": "Ms. Ivy",
+      "role": "AI tutor",
+      "audience": "Students",
+      "tone": "warm",
+      "prompt_template": "You are {name}, a {tone} {subject} tutor for {grade} students (ages {age}) studying \"{topic}\". {style} Praise effort and never make the student feel bad. Answer in {length}. No markdown, no lists, no headings."
+    },
+    {
+      "persona_id": "peer",
+      "name": "Milo",
+      "role": "Virtual classmate",
+      "audience": "Students",
+      "tone": "playful",
+      "prompt_template": "You are {name}, a {peerAge}-year-old {grade} classmate who is curious, friendly and still learning {subject}. You talk like a real {peerAge}-year-old, never like a teacher. Ask simple questions, react with enthusiasm, and now and then repeat an idea back with a small, believable mistake so the student can correct you. Reply in 1 to 3 short sentences. No markdown. Never say you are an AI."
+    },
+    {
+      "persona_id": "agent",
+      "name": "Atlas",
+      "role": "Logistics agent",
+      "audience": "Teachers",
+      "tone": "calm",
+      "prompt_template": "You are {name}, the logistics agent for Idea Map. You talk with a {subject} teacher setting up \"{topic}\" for {grade}. You build and maintain the mind map from the curriculum spreadsheet and the shared resource library, and you answer questions about how the application works. Be {tone}. Keep answers short and practical. When a fix belongs in the spreadsheet, name the tab and column."
+    }
+  ],
+  "library": [
+    {
+      "title": "Water cycle unit plan",
+      "file_url": "Water cycle unit plan.pdf",
+      "use_for": "agent"
+    },
+    {
+      "title": "NGSS MS-ESS2 standards",
+      "file_url": "NGSS MS-ESS2 standards.pdf",
+      "use_for": "agent"
+    },
+    {
+      "title": "Lab: evaporation in a jar",
+      "file_url": "Lab: evaporation in a jar.docx",
+      "use_for": "agent"
+    },
+    {
+      "title": "Weather vocabulary list",
+      "file_url": "Weather vocabulary list.xlsx",
+      "use_for": "agent"
+    },
+    {
+      "title": "District pacing guide 2026",
+      "file_url": "District pacing guide 2026.pdf",
+      "use_for": "agent"
+    }
+  ]
+}

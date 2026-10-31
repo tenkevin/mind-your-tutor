@@ -138,13 +138,13 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
     // Running, part-way through the pipeline.
     expect(seen[0]!.status).toBe('running');
     expect(seen[0]!.started_at).not.toBeNull();
-    expect(seen[0]!.steps[0]).toMatchObject({ status: 'done', result: '18 ideas, 31 links' });
+    expect(seen[0]!.steps[0]).toMatchObject({ status: 'done', result: '23 ideas, 43 links' });
     expect(seen[0]!.steps[1]!.status).toBe('running');
     expect(seen[0]!.steps[2]!.status).toBe('pending');
 
     // C4-U1: each step has a short result and timestamps.
     expect(done.steps.map((s) => [s.name, s.status, s.result])).toEqual([
-      ['Read sheet', 'done', '18 ideas, 31 links'],
+      ['Read sheet', 'done', '23 ideas, 43 links'],
       ['Check data', 'done', '3 notes'],
       ['Rank links', 'done', 'Top 3 in and out per idea'],
       ['Lay out map', 'done', 'Most connected in the centre'],
@@ -158,8 +158,8 @@ describe.skipIf(!hasDatabase)('import jobs (C4)', () => {
 
     const [version] = await versions(a.curriculumId);
     expect(version).toMatchObject({ id: done.version!.id, number: 1, status: 'draft' });
-    expect(version!.pack.ideas).toHaveLength(18);
-    expect(version!.derived!.ranked_links.kept).toHaveLength(27);
+    expect(version!.pack.ideas).toHaveLength(23);
+    expect(version!.derived!.ranked_links.kept).toHaveLength(34);
     expect(version!.derived!.layout.centre).toBe('evap');
     const checks = version!.issues.filter((i) => i.origin === 'data_check');
     expect(checks.map((i) => i.level).sort()).toEqual(['error', 'info', 'warning']);

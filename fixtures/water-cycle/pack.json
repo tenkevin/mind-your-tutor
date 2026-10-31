@@ -55,6 +55,7 @@
         "prec",
         "coll"
       ],
+      "layer": "process",
       "media_url": "water-cycle-overview.mp4",
       "rarity": "auto",
       "notes": "",
@@ -70,7 +71,11 @@
         "MS-ESS2-4",
         "MS-PS1-4"
       ],
-      "requires": [],
+      "requires": [
+        "thermal",
+        "phase"
+      ],
+      "layer": "process",
       "media_url": "evaporation.mp4",
       "rarity": "auto",
       "notes": "",
@@ -87,8 +92,10 @@
         "MS-PS1-4"
       ],
       "requires": [
-        "evap"
+        "evap",
+        "phase"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -104,8 +111,11 @@
         "MS-ESS2-4"
       ],
       "requires": [
-        "cond"
+        "cond",
+        "dropmass",
+        "gravity"
       ],
+      "layer": "process",
       "media_url": "precipitation.mp4",
       "rarity": "auto",
       "notes": "",
@@ -121,8 +131,11 @@
         "MS-ESS2-4"
       ],
       "requires": [
-        "prec"
+        "prec",
+        "gravity",
+        "topo"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -140,6 +153,7 @@
       "requires": [
         "plants"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -157,6 +171,7 @@
       "requires": [
         "temp"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -172,6 +187,7 @@
         "MS-ESS2-4"
       ],
       "requires": [],
+      "layer": "process",
       "media_url": "sun-energy.mp4",
       "rarity": "auto",
       "notes": "",
@@ -189,6 +205,7 @@
       "requires": [
         "sun"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -207,6 +224,7 @@
         "temp",
         "prec"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -224,6 +242,7 @@
       "requires": [
         "evap"
       ],
+      "layer": "process",
       "media_url": "water-vapour.png",
       "rarity": "auto",
       "notes": "",
@@ -241,6 +260,7 @@
       "requires": [
         "cond"
       ],
+      "layer": "process",
       "media_url": "clouds.mp4",
       "rarity": "auto",
       "notes": "",
@@ -256,6 +276,7 @@
       "requires": [
         "prec"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -271,6 +292,7 @@
         "MS-ESS2-6"
       ],
       "requires": [],
+      "layer": "process",
       "media_url": "oceans.jpg",
       "rarity": "auto",
       "notes": "",
@@ -288,6 +310,7 @@
       "requires": [
         "rain"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -303,6 +326,7 @@
         "MS-LS1-6"
       ],
       "requires": [],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -320,6 +344,7 @@
       "requires": [
         "ice"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
@@ -338,10 +363,98 @@
         "coll",
         "aquifer"
       ],
+      "layer": "process",
       "media_url": null,
       "rarity": "auto",
       "notes": "",
       "explanation": "Water that soaks into the soil and is stored between rocks underground."
+    },
+    {
+      "idea_id": "thermal",
+      "title": "Thermal energy",
+      "category": "Force",
+      "unit": 1,
+      "objective": "I can explain that adding heat makes the tiny particles in water move faster.",
+      "standard_codes": [
+        "MS-PS1-4"
+      ],
+      "requires": [],
+      "layer": "mechanism",
+      "media_url": "thermal-energy.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Heat is the energy of tiny moving particles. The more thermal energy water has, the faster its particles move."
+    },
+    {
+      "idea_id": "phase",
+      "title": "Phase change",
+      "category": "Force",
+      "unit": 1,
+      "objective": "I can explain how adding or removing thermal energy changes water between solid, liquid and gas.",
+      "standard_codes": [
+        "MS-PS1-4"
+      ],
+      "requires": [
+        "thermal"
+      ],
+      "layer": "mechanism",
+      "media_url": "phase-change.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Water changes between ice, liquid and vapour when particles gain or lose enough thermal energy."
+    },
+    {
+      "idea_id": "gravity",
+      "title": "Gravity",
+      "category": "Force",
+      "unit": 1,
+      "objective": "I can explain why gravity pulls water down toward the ground.",
+      "standard_codes": [
+        "MS-ESS2-4"
+      ],
+      "requires": [],
+      "layer": "mechanism",
+      "media_url": "gravity.mp4",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Gravity is the pull between the Earth and everything on it. It makes water fall and flow downhill."
+    },
+    {
+      "idea_id": "dropmass",
+      "title": "Droplet mass",
+      "category": "Force",
+      "unit": 2,
+      "objective": "I can explain why a cloud drop falls only once it is heavy enough.",
+      "standard_codes": [
+        "MS-PS2-4"
+      ],
+      "requires": [
+        "phase",
+        "gravity"
+      ],
+      "layer": "mechanism",
+      "media_url": "droplet-mass.png",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Tiny drops stay up in the air. When many join together they get heavy enough for gravity to pull them down."
+    },
+    {
+      "idea_id": "topo",
+      "title": "Topography",
+      "category": "Force",
+      "unit": 3,
+      "objective": "I can explain how the shape of the land decides where water flows and gathers.",
+      "standard_codes": [
+        "MS-ESS2-2"
+      ],
+      "requires": [
+        "gravity"
+      ],
+      "layer": "mechanism",
+      "media_url": "topography.jpg",
+      "rarity": "auto",
+      "notes": "",
+      "explanation": "Hills, valleys and slopes steer water downhill until it gathers in low places such as rivers, lakes and the sea."
     }
   ],
   "links": [
@@ -561,6 +674,90 @@
       "relation": "warms",
       "importance": 2,
       "media_url": null
+    },
+    {
+      "from_id": "evap",
+      "to_id": "cond",
+      "relation": "rises and cools into",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "cond",
+      "to_id": "prec",
+      "relation": "leads to",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "prec",
+      "to_id": "coll",
+      "relation": "ends up in",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "coll",
+      "to_id": "evap",
+      "relation": "feeds",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "thermal",
+      "to_id": "evap",
+      "relation": "drives",
+      "importance": 5,
+      "media_url": null
+    },
+    {
+      "from_id": "thermal",
+      "to_id": "phase",
+      "relation": "sets off a",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "phase",
+      "to_id": "cond",
+      "relation": "explains",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "phase",
+      "to_id": "dropmass",
+      "relation": "builds",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "dropmass",
+      "to_id": "prec",
+      "relation": "decides when",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "gravity",
+      "to_id": "prec",
+      "relation": "pulls down",
+      "importance": 4,
+      "media_url": null
+    },
+    {
+      "from_id": "gravity",
+      "to_id": "topo",
+      "relation": "shapes",
+      "importance": 3,
+      "media_url": null
+    },
+    {
+      "from_id": "topo",
+      "to_id": "coll",
+      "relation": "steers water into",
+      "importance": 3,
+      "media_url": null
     }
   ],
   "categories": [
@@ -729,6 +926,51 @@
       "question": "Can you walk me through the whole water cycle, step by step?",
       "key_points": [
         "Evaporation and condensation and precipitation and collection and and it repeats"
+      ]
+    },
+    {
+      "unit": 1,
+      "idea_id": "thermal",
+      "question": "What happens to water particles when they gain thermal energy?",
+      "key_points": [
+        "They move faster",
+        "heat is the energy of moving particles"
+      ]
+    },
+    {
+      "unit": 1,
+      "idea_id": "phase",
+      "question": "What happens to water when it gains enough thermal energy?",
+      "key_points": [
+        "It changes phase",
+        "liquid water becomes a gas (vapour)"
+      ]
+    },
+    {
+      "unit": 1,
+      "idea_id": "gravity",
+      "question": "Why does water fall and flow downhill?",
+      "key_points": [
+        "Gravity pulls it toward the Earth",
+        "water follows the pull"
+      ]
+    },
+    {
+      "unit": 2,
+      "idea_id": "dropmass",
+      "question": "Why do tiny cloud drops stay up until they grow?",
+      "key_points": [
+        "Tiny drops are light",
+        "they fall only when heavy enough for gravity to win"
+      ]
+    },
+    {
+      "unit": 3,
+      "idea_id": "topo",
+      "question": "How does the shape of the land change where water goes?",
+      "key_points": [
+        "Water flows downhill",
+        "it gathers in low places like rivers and lakes"
       ]
     }
   ],

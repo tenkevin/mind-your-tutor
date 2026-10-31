@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import {
   LockedIdeaResponseSchema,
   StudentIdeaResponseSchema,
   StudentMapResponseSchema,
+  parsePack,
   type Pack,
   type VersionDerived,
   type VersionSource,
@@ -50,10 +52,14 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
       .selectAll()
       .where('curriculum_id', '=', api.sample.curricula.a)
       .executeTakeFirstOrThrow();
-    baseVersion = base;
-    derived = derive(base.pack, { seed: 1 });
+    // S10 and S10b's expectations were worked out from the water-cycle pack before C12
+    // added its mechanism layer. Until C14 marks those ideas prerequisite-scope (D49), they
+    // would lock core ideas here, so these tests use the pack as S10b was reviewed.
+    const pack = beforeLayers();
+    baseVersion = { ...base, pack };
+    derived = derive(pack, { seed: 1 });
     // Published versions are immutable, so each case inserts its own.
-    v1 = await addVersion(2, 'published', base.pack);
+    v1 = await addVersion(2, 'published', pack);
     sam = await signIn(api, 'google', 'student-a1');
     terry = await signIn(api, 'google', 'teacher-a1');
   });
@@ -321,3 +327,13 @@ describe.skipIf(!hasDatabase)('student map (S10)', () => {
     expect((await as(api, null)('GET', mapUrl())).statusCode).toBe(401);
   });
 });
+
+/** The water-cycle pack as S10b was reviewed against it (before C12's mechanism layer). */
+function beforeLayers(): Pack {
+  const raw: unknown = JSON.parse(
+    readFileSync(new URL('./test/data/water-cycle-s10.json', import.meta.url), 'utf8'),
+  );
+  const result = parsePack(raw);
+  if (!result.value) throw new Error('test/data/water-cycle-s10.json did not parse');
+  return result.value;
+}
