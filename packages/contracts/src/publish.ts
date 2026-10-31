@@ -172,3 +172,24 @@ export const RepinResultSchema = z.object({
   class: PinMoveSchema,
 });
 export type RepinResult = z.infer<typeof RepinResultSchema>;
+
+/**
+ * GET /api/curricula/:curriculumId/publishing (T8): what the publish screen offers. The
+ * classes are only those the caller may publish to (their own, or every class of the
+ * organization for an admin), each with its current pin; the versions are the
+ * curriculum's published ones, newest first, which are the only ones a class can go back
+ * to (drafts and archived versions are never listed).
+ */
+export const PublishingOptionsSchema = z.object({
+  classes: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      pinned_version: VersionNumberSchema.nullable(),
+    }),
+  ),
+  published_versions: z.array(
+    VersionNumberSchema.extend({ published_at: z.iso.datetime({ offset: true }).nullable() }),
+  ),
+});
+export type PublishingOptions = z.infer<typeof PublishingOptionsSchema>;

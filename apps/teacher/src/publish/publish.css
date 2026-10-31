@@ -1,0 +1,134 @@
+/* Teacher Settings → Publish (T8). Reuses T2's .cdata layout and tokens; every colour is
+   a Nocturne token. Text pairs match curriculum.css (neutral-100 to -400 and accent-200
+   on bg, surface and accent-900, all at or above 4.5:1, D10). Added and removed entries
+   say so in words, so colour is never the only signal. */
+
+.pub-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.pub-h {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.pub-diff,
+.pub-history,
+.pub-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.pub-diff-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pub-diff-h {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.pub-list,
+.pub-questions,
+.pub-versions,
+.pub-history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-neutral-300);
+}
+.pub-questions {
+  margin: 4px 0 4px 16px;
+}
+.pub-add,
+.pub-del {
+  display: inline-block;
+  min-width: 56px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent-200);
+}
+.pub-more {
+  align-self: flex-start;
+}
+.pub-classes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.pub-class {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pub-class input {
+  width: 16px;
+  height: 16px;
+}
+.pub-audience {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.pub-count {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.pub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pub-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent-600);
+  background: var(--color-accent-900);
+  color: var(--color-neutral-100);
+  font-size: 13px;
+}
+.pub-confirm h4 {
+  margin: 0;
+  font-size: 14px;
+}
+.pub-confirm p {
+  margin: 0;
+}
+.pub-history-class {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pub-versions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pub-success {
+  margin: 0;
+}
