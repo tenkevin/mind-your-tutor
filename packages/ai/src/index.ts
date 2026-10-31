@@ -18,3 +18,4 @@ export {
 export type { PromptConfig, PromptVariable, ReadingBand } from './prompt.js';
 export { patternBackstop } from './backstop.js';
 export type { BackstopContext, BlurResult, IdentifierBackstop } from './backstop.js';
+export { DRAFT_PERSONA, draftPrompt, type DraftMaterialInput } from './drafts.js';

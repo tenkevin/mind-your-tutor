@@ -143,6 +143,17 @@ export async function seedOrg(db: Db, label: string): Promise<SeededOrg> {
       approved_by: teacherId,
     })
     .execute();
+  await db
+    .insertInto('content_draft')
+    .values({
+      org_id: orgId,
+      curriculum_id: curriculumId,
+      kind: 'unit_objective',
+      row_key: '1',
+      draft_text: 'Students will describe how water changes state.',
+      model: 'mock-model-1',
+    })
+    .execute();
 
   const doc = await db
     .insertInto('library_doc')

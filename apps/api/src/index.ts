@@ -2,7 +2,8 @@ import { pathToFileURL } from 'node:url';
 import cookie from '@fastify/cookie';
 import { FileObjectStore } from '@ideamap/connectors';
 import { createDb, DirectoryExportStore, type Db } from '@ideamap/db';
-import { createBoss, ensureQueues, orgScope } from '@ideamap/worker';
+import { createBoss, ensureQueues, orgScope, registerDraftWorker } from '@ideamap/worker';
+import type { PgBoss } from 'pg-boss';
 import Fastify, {
   type FastifyInstance,
   type FastifyRequest,
@@ -10,7 +11,9 @@ import Fastify, {
 } from 'fastify';
 import { anthropicProvider } from './ai/anthropic.js';
 import { loadAiConfig } from './ai/config.js';
+import { gatewayDraftWriter } from './ai/drafter.js';
 import { aiRoutes, type AiGatewayOptions } from './ai/gateway.js';
+import { draftRoutes, type DraftRoutesOptions } from './drafts.js';
 import { loadConfig, type AuthConfig } from './config.js';
 import { eventRoutes, type EventRoutesOptions } from './events.js';
 import { importRoutes, type ImportRoutesOptions } from './imports.js';
@@ -45,6 +48,13 @@ export {
   studentsReceiving,
   type PublishDeps,
 } from './publishing.js';
+export { gatewayDraftWriter } from './ai/drafter.js';
+export {
+  CLASS_CONTENT_POLICY,
+  DRAFT_STAFF_POLICY,
+  draftRoutes,
+  type DraftRoutesOptions,
+} from './drafts.js';
 export { privacyRoutes, STUDENT_PRIVACY_POLICY, type PrivacyRoutes } from './privacy.js';
 export { EVENTS_POLICY, VERSION_GRACE_MS, type EventRoutesOptions } from './events.js';
 
@@ -67,6 +77,8 @@ export interface ServerOptions {
   events?: EventRoutesOptions;
   /** The AI gateway (A1); left out, its routes aren't registered. */
   ai?: AiGatewayOptions;
+  /** Review of AI drafts and the approved-only student content route (A6). */
+  drafts?: DraftRoutesOptions;
 }
 
 export function buildServer(options: ServerOptions): FastifyInstance {
@@ -119,6 +131,8 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   // Admin-only FERPA requests; the policy hooks above apply (STUDENT_PRIVACY_POLICY).
   if (options.privacy) privacyRoutes(app, options.privacy);
 
+  if (options.drafts) draftRoutes(app, deps, options.drafts);
+
   // Every model call goes through the gateway; the policy hooks above apply.
   if (options.ai) {
     aiRoutes(app, { sessionSecret: config.sessionSecret, now: deps.now }, options.ai);
@@ -144,7 +158,11 @@ export async function startImports(
   db: Db,
   databaseUrl: string,
   uploadDir: string,
-): Promise<{ imports: NonNullable<ServerOptions['imports']>; stop: () => Promise<void> }> {
+): Promise<{
+  imports: NonNullable<ServerOptions['imports']>;
+  boss: PgBoss;
+  stop: () => Promise<void>;
+}> {
   // The API only sends jobs; the worker supervises the queues.
   const boss = createBoss(databaseUrl, { supervise: false });
   boss.on('error', (error) => console.error(error));
@@ -152,6 +170,7 @@ export async function startImports(
   await ensureQueues(boss);
   return {
     imports: { deps: { scope: orgScope(db), boss, store: new FileObjectStore(uploadDir) } },
+    boss,
     stop: () => boss.stop({ graceful: true }),
   };
 }
@@ -169,7 +188,7 @@ export async function startServer(
   const uploads = env.UPLOAD_DIR;
   if (!url || !uploads) throw new Error('Set DATABASE_URL and UPLOAD_DIR.');
   const db = createDb(url);
-  const { imports, stop } = await startImports(db, url, uploads);
+  const { imports, boss, stop } = await startImports(db, url, uploads);
   // FERPA export files go to EXPORT_DIR; without it the privacy routes are left out.
   const exportDir = env.EXPORT_DIR;
   // The AI gateway needs a provider key from the environment; without one it is left out.
@@ -179,6 +198,7 @@ export async function startServer(
     config,
     logger: options.logger ?? true,
     imports,
+    drafts: { boss },
     privacy: exportDir ? { store: new DirectoryExportStore(exportDir) } : undefined,
     ai: aiConfig.apiKey
       ? {
@@ -187,6 +207,18 @@ export async function startServer(
         }
       : undefined,
   });
+  // The draft queue is worked here, where the model key is (D9, D12; A6).
+  if (aiConfig.apiKey) {
+    const ai = {
+      provider: anthropicProvider({ apiKey: aiConfig.apiKey, fallbacks: aiConfig.fallbacks }),
+      config: aiConfig,
+    };
+    await registerDraftWorker({
+      boss,
+      scope: orgScope(db),
+      write: gatewayDraftWriter(ai, orgScope(db)),
+    });
+  }
   return {
     app,
     close: async () => {

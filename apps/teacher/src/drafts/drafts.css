@@ -1,0 +1,65 @@
+/* Teacher Settings → Drafts to approve (A6). Nocturne tokens only; text pairs reuse
+   the Curriculum data section's (neutral-100 to -400 on surface, all above 4.5:1, D10).
+   State is always said in words ("approved", "to review"), never by colour alone. */
+
+.drafts-tab {
+  margin: 8px 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-100);
+}
+.drafts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drafts-item {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 16px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+@media (max-width: 720px) {
+  .drafts-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.drafts-context dl {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--color-neutral-300);
+}
+.drafts-context dt {
+  color: var(--color-neutral-400);
+}
+.drafts-context dd {
+  margin: 0 0 4px;
+}
+.drafts-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-neutral-100);
+}
+.drafts-text textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-400);
+  background: var(--color-bg);
+  color: var(--color-neutral-100);
+  font: inherit;
+  resize: vertical;
+}
+.drafts-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

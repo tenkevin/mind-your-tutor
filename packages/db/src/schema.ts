@@ -131,6 +131,24 @@ export interface ApprovedExplanationTable {
   approved_at: CreatedAt;
 }
 
+/** Drafts to approve (A6): AI-drafted curriculum text waiting for a teacher (D9, D12). */
+export interface ContentDraftTable {
+  id: Generated<string>;
+  org_id: string;
+  curriculum_id: string;
+  kind: 'idea_explanation' | 'unit_objective' | 'assessment_question';
+  row_key: string;
+  status: Generated<'pending' | 'approved' | 'rejected'>;
+  draft_text: string;
+  approved_text: string | null;
+  model: string;
+  source_version_id: string | null;
+  decided_by: string | null;
+  decided_at: NullableTimestamp;
+  created_at: CreatedAt;
+  updated_at: CreatedAt;
+}
+
 export interface LibraryDocTable {
   id: Generated<string>;
   org_id: string;
@@ -434,6 +452,7 @@ export interface Database {
   curriculum_version: CurriculumVersionTable;
   curriculum_defaults: CurriculumDefaultsTable;
   approved_explanation: ApprovedExplanationTable;
+  content_draft: ContentDraftTable;
   library_doc: LibraryDocTable;
   chunk: ChunkTable;
   class: ClassTable;
@@ -520,6 +539,22 @@ export const COLUMNS = {
     'source',
     'approved_by',
     'approved_at',
+  ],
+  content_draft: [
+    'id',
+    'org_id',
+    'curriculum_id',
+    'kind',
+    'row_key',
+    'status',
+    'draft_text',
+    'approved_text',
+    'model',
+    'source_version_id',
+    'decided_by',
+    'decided_at',
+    'created_at',
+    'updated_at',
   ],
   library_doc: [
     'id',

@@ -172,7 +172,7 @@ async function loadContext(
 }
 
 /** A provider call with a hard timeout, even if the provider ignores the signal. */
-async function callWithTimeout(
+export async function callWithTimeout(
   provider: ModelProvider,
   request: Omit<Parameters<ModelProvider['complete']>[0], 'signal'>,
   timeoutMs: number,

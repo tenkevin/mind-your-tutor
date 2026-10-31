@@ -92,6 +92,7 @@ export const IdempotencyKeySchema = z
 export const QUEUES = {
   import: 'curriculum-import',
   indexLibrary: 'library-index',
+  draftMissing: 'draft-missing',
 } as const;
 
 /**
