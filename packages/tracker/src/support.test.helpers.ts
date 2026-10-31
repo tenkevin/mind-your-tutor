@@ -17,7 +17,10 @@ export const NEW_YORK = 'EST5EDT,M3.2.0,M11.1.0';
 type PackIdea = { idea_id: string; unit: number; requires: string[] };
 type PackUnit = { unit: number; due_date: string | null };
 const pack = JSON.parse(
-  readFileSync(new URL('../../../fixtures/water-cycle/pack.json', import.meta.url), 'utf8'),
+  // A pinned copy of the water-cycle pack as M3's rules were reviewed against it; the
+  // shared fixture grows with later tasks (C12's mechanism layer), and these rule tests
+  // shouldn't change with it.
+  readFileSync(new URL('./test-data/water-cycle-m3.json', import.meta.url), 'utf8'),
 ) as { ideas: PackIdea[]; units: PackUnit[] };
 
 /** T5 would resolve `auto`; the tests fix one rarity per idea. */
