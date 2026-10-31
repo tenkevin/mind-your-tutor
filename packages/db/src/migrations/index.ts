@@ -15,6 +15,8 @@ import * as m0013 from './0013_import_jobs.js';
 import * as m0014 from './0014_auth.js';
 import * as m0015 from './0015_privacy.js';
 import * as m0016 from './0016_event_ingest.js';
+import * as m0017 from './0017_safety.js';
+import * as m0018 from './0018_flag_retention.js';
 
 // Every migration, in order. Listed by hand rather than read from disk, so the same
 // list works from src (tests) and dist (the CLI). Add new ones at the end; never
@@ -36,4 +38,6 @@ export const migrations: Record<string, Migration> = {
   '0014_auth': m0014,
   '0015_privacy': m0015,
   '0016_event_ingest': m0016,
+  '0017_safety': m0017,
+  '0018_flag_retention': m0018,
 };

@@ -32,12 +32,15 @@ export interface RetentionOptions {
   onBatch?: (batch: { kind: RetentionKind; orgId: string; rows: number }) => void;
 }
 
-export type RetentionKind = 'interaction_text' | 'ai_interaction' | 'auth_session' | 'export_files';
+export type RetentionKind =
+  'interaction_text' | 'ai_interaction' | 'auth_session' | 'safety_flag' | 'export_files';
 
 export interface RetentionResult {
   interaction_text: number;
   ai_interaction: number;
   auth_session: number;
+  /** Resolved safety flags past their district's early-deletion window (D32); flags that go with their transcript aren't counted. */
+  safety_flag: number;
   export_files: number;
   /** True when the signal stopped the run before it finished. */
   aborted: boolean;
@@ -71,6 +74,7 @@ export async function runRetention(
     interaction_text: 0,
     ai_interaction: 0,
     auth_session: 0,
+    safety_flag: 0,
     export_files: 0,
     aborted: false,
   };
@@ -83,6 +87,32 @@ export async function runRetention(
   const orgs = await asRetention(db, (trx) =>
     trx.selectFrom('organization').select('id').orderBy('id').execute(),
   );
+
+  // Resolved safety flags first (D32), so they're counted before a transcript's own
+  // deletion carries away any that are still open. Each organization's early-deletion
+  // window is read here, at run time, so a change applies to flags already resolved;
+  // the role's policy shows only flags past it, and the explicit condition mirrors it.
+  for (const { id: orgId } of orgs) {
+    for (;;) {
+      if (stopped()) return result;
+      const deleted = await asRetention(db, async (trx) => {
+        const r = await sql`
+          DELETE FROM safety_flag WHERE id IN (
+            SELECT id FROM safety_flag
+            WHERE org_id = ${orgId} AND status = 'resolved'
+              AND resolved_at < app.flag_resolved_cutoff(${orgId})
+            ORDER BY resolved_at
+            LIMIT ${batchSize})
+        `.execute(trx);
+        return Number(r.numAffectedRows ?? 0);
+      });
+      if (deleted > 0) {
+        result.safety_flag += deleted;
+        options.onBatch?.({ kind: 'safety_flag', orgId, rows: deleted });
+      }
+      if (deleted < batchSize) break;
+    }
+  }
 
   for (const table of ['interaction_text', 'ai_interaction', 'auth_session'] as const) {
     const { kind, from } = DUE[table];

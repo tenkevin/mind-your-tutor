@@ -4,11 +4,12 @@ import {
   type ClassConfig,
   type Pack,
 } from '@ideamap/contracts';
-import { BUILT_IN_PERSONAS, fill } from '@ideamap/ai';
+import { BUILT_IN_PERSONAS, fill, withGuardrails } from '@ideamap/ai';
 import { json, type ExportStore } from '@ideamap/db';
 import { hasDatabase } from '@ideamap/db/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { mockModel, type MockModel } from '../test/mock-model.js';
+import { mockModeration, type MockModeration } from '../test/mock-moderation.js';
 import { as, sessionFor, startApi, type Signed, type TestApi } from '../test/harness.js';
 import type { AiGatewayOptions } from './gateway.js';
 
@@ -22,13 +23,16 @@ const builtIn = (id: string) => BUILT_IN_PERSONAS.find((p) => p.persona_id === i
 function gateway(
   model: MockModel,
   limits = { perStudent: 1000, perClass: 1000 },
+  moderation: MockModeration = mockModeration(),
 ): AiGatewayOptions {
   return {
     provider: model,
+    moderation,
     config: {
       model: 'test-model',
       maxTokens: 500,
       timeoutMs: 300,
+      moderationTimeoutMs: 300,
       limits: { ...limits, windowMs: 60_000 },
     },
   };
@@ -172,27 +176,31 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
     try {
       expect((await ask(w.who.student)).statusCode).toBe(200);
       expect(w.model.requests[0]!.system).toBe(
-        [
-          'Ms. Rowan', // pack
-          'patient and Socratic, guiding with questions', // pack tone
-          'earth science', // class course
-          'Clouds',
-          'Grade 4',
-          '9 to 10',
-          '10',
-          'Use short sentences and plain words. Give one everyday example.',
-          '3 to 4 sentences',
-          '{mystery}', // unknown: left as written
-        ].join('|'),
+        withGuardrails(
+          [
+            'Ms. Rowan', // pack
+            'patient and Socratic, guiding with questions', // pack tone
+            'earth science', // class course
+            'Clouds',
+            'Grade 4',
+            '9 to 10',
+            '10',
+            'Use short sentences and plain words. Give one everyday example.',
+            '3 to 4 sentences',
+            '{mystery}', // unknown: left as written
+          ].join('|'),
+        ),
       );
 
       // Without the class's template, the built-in template with the pack's name.
       await setClassConfig(w.api, { course: { topic: 'Clouds' } });
       expect((await ask(w.who.student)).statusCode).toBe(200);
       expect(w.model.requests[1]!.system).toBe(
-        fill(
-          { ...WATER, topic: 'Clouds' },
-          { ...builtIn('tutor'), name: 'Ms. Rowan', tone: 'socratic' },
+        withGuardrails(
+          fill(
+            { ...WATER, topic: 'Clouds' },
+            { ...builtIn('tutor'), name: 'Ms. Rowan', tone: 'socratic' },
+          ),
         ),
       );
     } finally {
@@ -341,7 +349,11 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
       const res = await ask(who, persona);
       expect(res.statusCode, `${persona}: ${res.body}`).toBe(200);
       expect(res.json().persona).toEqual({ id: persona, name: builtIn(persona).name });
-      expect(w.model.requests[0]!.system).toBe(fill(WATER, builtIn(persona)));
+      // Student-facing personas get the fixed guardrails (A2); Atlas, for teachers, doesn't.
+      const filled = fill(WATER, builtIn(persona));
+      expect(w.model.requests[0]!.system).toBe(
+        persona === 'agent' ? filled : withGuardrails(filled),
+      );
     }
   });
 
@@ -362,7 +374,7 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
       expect((await ask(w.who.student, 'tutor', { message })).statusCode).toBe(200);
     }
     for (const sent of w.model.requests) {
-      expect(sent.system).toBe(fill(WATER, builtIn('tutor')));
+      expect(sent.system).toBe(withGuardrails(fill(WATER, builtIn('tutor'))));
     }
     // Atlas is a staff route; a student can't reach it at all.
     expect((await ask(w.who.student, 'agent')).statusCode).toBe(403);
@@ -387,7 +399,9 @@ describe.skipIf(!hasDatabase)('AI gateway (A1)', () => {
       expect(res.statusCode, res.body).toBe(200);
       const sent = w.model.requests[0]!;
       expect(sent.system).toBe(
-        'You are Ms. Ivy, tutoring Person A ([email], [id]) on Person A ([email], [id]) and the water cycle.',
+        withGuardrails(
+          'You are Ms. Ivy, tutoring Person A ([email], [id]) on Person A ([email], [id]) and the water cycle.',
+        ),
       );
       const row = await w.api.t.db
         .selectFrom('ai_interaction')

@@ -349,6 +349,7 @@ All model calls go through the API's AI gateway. The browser never holds a key.
 - Fixed guardrails appended after the teacher's template, so editing a prompt cannot remove them (stay on topic, no personal data requests, age-appropriate language).
 - Concerning messages (self-harm, abuse) raise a flag to the teacher and admin, per district policy.
 - Rate limits per student and per class.
+- As built (A2): the gateway moderates the student's message before the model and the reply before the student, through a moderation provider (the gateway's own model by default). A moderator that fails or times out fails closed. A reply that asks for personal data is withheld like an unsafe one. A concerning message raises a `safety_flag` (with its transcript, in one transaction) that the class teacher and/or the org's admins see, as the district's `flag_notify` policy says; the student reads the district's help text. Raising and resolving a flag are audit events. A flag is deleted with its transcript at the district's AI retention period, or once it has been resolved for the district's early-deletion window (default 30 days, a per-district setting), whichever comes first (D32).
 
 ## 10. K-12 privacy and compliance
 

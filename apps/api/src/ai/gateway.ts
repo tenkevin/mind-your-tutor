@@ -10,10 +10,17 @@ import {
   type Pack,
 } from '@ideamap/contracts';
 import {
+  FALLBACK_MESSAGE,
+  REDIRECT_MESSAGE,
   fill,
+  flagCategory,
   patternBackstop,
+  requestsPersonalData,
   resolveEffectivePersonas,
+  supportMessage,
+  withGuardrails,
   type IdentifierBackstop,
+  type ModerationCategory,
   type PersonaDefinition,
   type PromptConfig,
 } from '@ideamap/ai';
@@ -21,8 +28,10 @@ import { json } from '@ideamap/db';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Trx } from '../db.js';
 import { ALL_ROLES, STAFF, type RoutePolicy } from '../policy.js';
+import { raiseFlag } from '../safety.js';
 import type { AiConfig } from './config.js';
 import { AiRateLimiter } from './limits.js';
+import { moderate, ModerationError, type ModerationProvider } from './moderation.js';
 import {
   checkReply,
   ModelError,
@@ -43,15 +52,23 @@ import {
 // 4. fills the template from the class's effective config (§6), and runs the
 //    identifier backstop over the filled prompt and the student's text (D26; A7 adds
 //    to it);
-// 5. calls the provider with a pseudonymous user id and a timeout;
-// 6. stores the redacted transcript in ai_interaction, which F6's retention, export and
+// 5. for a student-facing persona (A2), adds the fixed guardrails after the filled
+//    template and moderates the student's message before the model sees it: unsafe
+//    input never reaches the model, a concerning one raises a flag for the teacher
+//    and admin, and a moderator that fails closes the turn;
+// 6. calls the provider with a pseudonymous user id and a timeout;
+// 7. for a student-facing persona, checks the reply (moderation, and no request for
+//    personal data) before the student sees it, and shows a safe fallback otherwise;
+// 8. stores the redacted transcript in ai_interaction, which F6's retention, export and
 //    delete already cover, and answers with the reply or a plain error.
 //
 // Logs carry the persona, the failure kind and token counts, never text.
 
 export interface AiGatewayOptions {
   provider: ModelProvider;
-  config: Pick<AiConfig, 'model' | 'maxTokens' | 'timeoutMs' | 'limits'>;
+  config: Pick<AiConfig, 'model' | 'maxTokens' | 'timeoutMs' | 'moderationTimeoutMs' | 'limits'>;
+  /** Moderates every student turn, in and out (A2). Required: there is no unmoderated mode. */
+  moderation: ModerationProvider;
   /** Defaults to the pattern backstop; A7 replaces it. */
   backstop?: IdentifierBackstop;
 }
@@ -208,7 +225,7 @@ export function aiRoutes(
   deps: AiGatewayDeps,
   options: AiGatewayOptions,
 ): void {
-  const { provider, config } = options;
+  const { provider, config, moderation } = options;
   const backstop = options.backstop ?? patternBackstop;
   const limiter = new AiRateLimiter(config.limits, () => deps.now().getTime());
   const pseudonymKey = Buffer.from(
@@ -262,28 +279,49 @@ export function aiRoutes(
       [fill(context.course, context.persona), ...kept.map((t) => t.text)],
       { names: context.names, identifiers: context.identifiers },
     );
-    const [system, ...texts] = blurred.texts as [string, ...string[]];
+    const [template, ...texts] = blurred.texts as [string, ...string[]];
+    // A student-facing persona gets the fixed guardrails after the teacher's template,
+    // whatever the template, pack or class says (A2-F3).
+    const studentFacing = context.persona.audience === 'Students';
+    const system = studentFacing ? withGuardrails(template) : template;
     const messages: ModelTurn[] = kept.map((t, i) => ({
       role: t.role === 'student' ? 'user' : 'assistant',
       content: texts[i]!,
     }));
+    const user = pseudonym(session.orgId, session.userId);
+    const blocked: Blocked = { input: null, output: null, moderationFailure: null };
+
+    // Input moderation (A2-F1, F6): the new message, as blurred, before any model call.
+    let inputCategories: ModerationCategory[] = [];
+    if (studentFacing) {
+      try {
+        inputCategories = (
+          await moderate(
+            moderation,
+            { text: texts[texts.length - 1]!, direction: 'input', user },
+            config.moderationTimeoutMs,
+          )
+        ).categories;
+      } catch (error) {
+        blocked.moderationFailure =
+          error instanceof ModerationError ? error.failure : 'provider_error';
+      }
+    }
+    const concern = flagCategory(inputCategories);
+    if (inputCategories.length > 0) blocked.input = inputCategories;
 
     let result: ModelReply | null = null;
     let failure: ModelFailure | null = null;
-    try {
-      result = await callWithTimeout(
-        provider,
-        {
-          model: config.model,
-          system,
-          messages,
-          user: pseudonym(session.orgId, session.userId),
-          maxTokens: config.maxTokens,
-        },
-        config.timeoutMs,
-      );
-    } catch (error) {
-      failure = error instanceof ModelError ? error.failure : 'provider_error';
+    if (!blocked.moderationFailure && !blocked.input) {
+      try {
+        result = await callWithTimeout(
+          provider,
+          { model: config.model, system, messages, user, maxTokens: config.maxTokens },
+          config.timeoutMs,
+        );
+      } catch (error) {
+        failure = error instanceof ModelError ? error.failure : 'provider_error';
+      }
     }
 
     // The stored reply is blurred too, in case the model echoed an identifier.
@@ -291,29 +329,77 @@ export function aiRoutes(
       ? backstop.blur([result.text], { names: context.names, identifiers: context.identifiers })
           .texts[0]!
       : null;
-    const row = await req.withOrg((trx) =>
-      trx
+
+    // Output moderation (A2-F2, S2): the reply never reaches the student unchecked.
+    if (studentFacing && storedReply !== null) {
+      if (requestsPersonalData(storedReply)) {
+        blocked.output = { reason: 'personal_data', categories: [] };
+      } else {
+        try {
+          const verdict = await moderate(
+            moderation,
+            { text: storedReply, direction: 'output', user },
+            config.moderationTimeoutMs,
+          );
+          if (verdict.categories.length > 0) {
+            blocked.output = { reason: 'moderation', categories: verdict.categories };
+          }
+        } catch (error) {
+          blocked.moderationFailure =
+            error instanceof ModerationError ? error.failure : 'provider_error';
+        }
+      }
+    }
+
+    // What the student is shown, if not the model's reply.
+    let help: string | null = null;
+    const row = await req.withOrg(async (trx) => {
+      const stored = await trx
         .insertInto('ai_interaction')
         .values({
           org_id: session.orgId,
           class_id: classId,
           user_id: session.userId,
           persona: context.persona.persona_id,
-          model: result?.model ?? config.model,
+          model:
+            result?.model ?? (blocked.input || blocked.moderationFailure ? 'none' : config.model),
           request: json({
             provider: provider.name,
             system,
             messages,
             privacy_misses: blurred.misses,
+            ...(studentFacing ? { moderation: moderation.name } : {}),
           }),
-          response: json(result ? { text: storedReply } : { error: failure }),
+          response: json(
+            blocked.moderationFailure
+              ? { error: `moderation_${blocked.moderationFailure}` }
+              : blocked.input
+                ? { blocked: 'input', categories: blocked.input }
+                : blocked.output
+                  ? { blocked: 'output', ...blocked.output }
+                  : result
+                    ? { text: storedReply }
+                    : { error: failure },
+          ),
+          flagged: Boolean(concern) && !blocked.moderationFailure,
           input_tokens: result?.inputTokens ?? null,
           output_tokens: result?.outputTokens ?? null,
           redacted_at: deps.now(),
         })
         .returning('id')
-        .executeTakeFirstOrThrow(),
-    );
+        .executeTakeFirstOrThrow();
+      if (concern && !blocked.moderationFailure) {
+        // Raised with the transcript, in one transaction, so a flag always has its text.
+        const policy = await raiseFlag(trx, {
+          orgId: session.orgId,
+          classId,
+          interactionId: stored.id,
+          category: concern,
+        });
+        help = policy.helpText;
+      }
+      return stored;
+    });
 
     const log = {
       persona: personaId,
@@ -322,16 +408,58 @@ export function aiRoutes(
       inputTokens: result?.inputTokens,
       outputTokens: result?.outputTokens,
     };
+    if (blocked.moderationFailure) {
+      // Fails closed: nothing went to the model, or nothing came back to the student.
+      req.log.warn(
+        { ...log, failure: `moderation_${blocked.moderationFailure}` },
+        'ai call failed',
+      );
+      return fail(reply, 502, 'unavailable', AI_UNAVAILABLE_MESSAGE);
+    }
+    if (blocked.input) {
+      req.log.info({ ...log, blocked: 'input', flagged: Boolean(concern) }, 'ai turn moderated');
+      return respond(
+        reply,
+        row.id,
+        context,
+        concern ? supportMessage(help) : REDIRECT_MESSAGE,
+        concern ? 'support' : 'redirect',
+      );
+    }
     if (!result) {
       req.log.warn({ ...log, failure }, 'ai call failed');
       return fail(reply, 502, 'unavailable', AI_UNAVAILABLE_MESSAGE);
     }
+    if (blocked.output) {
+      req.log.warn(
+        { ...log, blocked: 'output', reason: blocked.output.reason },
+        'ai reply withheld',
+      );
+      return respond(reply, row.id, context, FALLBACK_MESSAGE, 'fallback');
+    }
     req.log.info(log, 'ai call');
-    const body: AiChatResponse = {
-      interactionId: row.id,
-      persona: { id: context.persona.persona_id, name: context.persona.name },
-      reply: result.text,
-    };
-    return reply.header('cache-control', 'no-store').send(body);
+    return respond(reply, row.id, context, result.text);
   }
+}
+
+interface Blocked {
+  input: ModerationCategory[] | null;
+  output: { reason: 'moderation' | 'personal_data'; categories: ModerationCategory[] } | null;
+  moderationFailure: 'timeout' | 'provider_error' | 'malformed' | null;
+}
+
+function respond(
+  reply: FastifyReply,
+  interactionId: string,
+  context: CallContext,
+  text: string,
+  safety?: AiChatResponse['safety'],
+) {
+  const body: AiChatResponse = {
+    interactionId,
+    persona: { id: context.persona.persona_id, name: context.persona.name },
+    reply: text,
+    ...(safety ? { safety } : {}),
+  };
+  return reply.header('cache-control', 'no-store').send(body);
 }

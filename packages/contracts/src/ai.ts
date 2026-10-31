@@ -28,6 +28,12 @@ export const AiChatResponseSchema = z.strictObject({
   interactionId: z.uuid(),
   persona: z.strictObject({ id: z.string(), name: z.string() }),
   reply: z.string(),
+  /**
+   * Set when the gateway answered in its own words instead of the model's (A2): a calm
+   * redirect, a supportive message with the district's help text, or a safe fallback.
+   * Never says why.
+   */
+  safety: z.enum(['redirect', 'support', 'fallback']).optional(),
 });
 
 /** Error codes the gateway answers with; the apps map them to plain messages. */
@@ -48,3 +54,51 @@ export type AiTurn = z.infer<typeof AiTurnSchema>;
 export type AiChatRequest = z.input<typeof AiChatRequestSchema>;
 export type AiChatResponse = z.infer<typeof AiChatResponseSchema>;
 export type AiError = z.infer<typeof AiErrorSchema>;
+
+// Safety flags and the district's flag policy (ARCHITECTURE.md §9; task A2).
+
+export const FLAG_NOTIFY = ['teacher_and_admin', 'teacher', 'admin'] as const;
+export const FLAG_CATEGORY_VALUES = ['self_harm', 'abuse'] as const;
+export const HELP_TEXT_MAX = 500;
+export const FLAG_RETENTION_DAYS_MAX = 3650;
+
+export const SafetyPolicySchema = z.strictObject({
+  /** Who is told when a student's message is concerning. */
+  flagNotify: z.enum(FLAG_NOTIFY),
+  /** What a student reads after such a message; null uses the default. */
+  helpText: z.string().nullable(),
+  /** Whole days a resolved flag is kept before it is deleted (D32; default 30). */
+  flagResolvedRetentionDays: z.number().int().min(1).max(FLAG_RETENTION_DAYS_MAX),
+});
+
+export const SafetyPolicyUpdateSchema = z
+  .strictObject({
+    flagNotify: z.enum(FLAG_NOTIFY).optional(),
+    helpText: z.string().trim().min(1).max(HELP_TEXT_MAX).nullable().optional(),
+    flagResolvedRetentionDays: z.number().int().min(1).max(FLAG_RETENTION_DAYS_MAX).optional(),
+  })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), {
+    message: 'Nothing to change',
+  });
+
+export const SafetyFlagSchema = z.strictObject({
+  id: z.uuid(),
+  createdAt: z.iso.datetime(),
+  status: z.enum(['open', 'resolved']),
+  resolvedAt: z.iso.datetime().nullable(),
+  classId: z.uuid(),
+  className: z.string(),
+  student: z.strictObject({ id: z.uuid(), name: z.string() }),
+  category: z.enum(FLAG_CATEGORY_VALUES),
+  /** The student's message, redacted as stored (A1), cut to a few lines. */
+  excerpt: z.string(),
+  /** What the teacher or admin should do next. */
+  nextStep: z.string(),
+});
+
+export const SafetyFlagListSchema = z.strictObject({ flags: z.array(SafetyFlagSchema) });
+
+export type FlagNotify = (typeof FLAG_NOTIFY)[number];
+export type SafetyPolicy = z.infer<typeof SafetyPolicySchema>;
+export type SafetyPolicyUpdate = z.infer<typeof SafetyPolicyUpdateSchema>;
+export type SafetyFlag = z.infer<typeof SafetyFlagSchema>;

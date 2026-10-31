@@ -18,3 +18,16 @@ export {
 export type { PromptConfig, PromptVariable, ReadingBand } from './prompt.js';
 export { patternBackstop } from './backstop.js';
 export type { BackstopContext, BlurResult, IdentifierBackstop } from './backstop.js';
+export {
+  DEFAULT_HELP_TEXT,
+  FALLBACK_MESSAGE,
+  FLAG_CATEGORIES,
+  GUARDRAILS,
+  MODERATION_CATEGORIES,
+  REDIRECT_MESSAGE,
+  flagCategory,
+  requestsPersonalData,
+  supportMessage,
+  withGuardrails,
+} from './safety.js';
+export type { FlagCategory, ModerationCategory } from './safety.js';

@@ -63,6 +63,12 @@ export interface OrganizationTable {
   export_retention_days: Generated<number>;
   /** Days sign-in sessions are kept after expiry or revocation (default 30, from 0015). */
   session_retention_days: Generated<number>;
+  /** Who is told of a concerning student message (A2, from 0017). */
+  flag_notify: Generated<FlagNotify>;
+  /** What a student reads after such a message; null means the default (A2, from 0017). */
+  help_text: string | null;
+  /** Days after a safety flag is resolved before it is deleted (D32; default 30, from 0018). */
+  flag_resolved_retention_days: Generated<number>;
 }
 
 export interface AppUserTable {
@@ -363,6 +369,23 @@ export interface AuditEventTable {
   >;
 }
 
+export type FlagNotify = 'teacher_and_admin' | 'teacher' | 'admin';
+
+/** A concerning student message raised to the teacher and/or admin (0017, A2). No text: see the transcript. */
+export interface SafetyFlagTable {
+  id: Generated<string>;
+  org_id: string;
+  class_id: string;
+  interaction_id: string;
+  category: 'self_harm' | 'abuse';
+  notify_teacher: boolean;
+  notify_admin: boolean;
+  status: Generated<'open' | 'resolved'>;
+  created_at: CreatedAt;
+  resolved_at: NullableTimestamp;
+  resolved_by: string | null;
+}
+
 export interface AiInteractionTable {
   id: Generated<string>;
   org_id: string;
@@ -456,6 +479,7 @@ export interface Database {
   export_subject: ExportSubjectTable;
   audit_event: AuditEventTable;
   ai_interaction: AiInteractionTable;
+  safety_flag: SafetyFlagTable;
   sso_tenant: SsoTenantTable;
   auth_session: AuthSessionTable;
 }
@@ -476,6 +500,9 @@ export const COLUMNS = {
     'ai_retention_days',
     'export_retention_days',
     'session_retention_days',
+    'flag_notify',
+    'help_text',
+    'flag_resolved_retention_days',
   ],
   app_user: [
     'id',
@@ -707,6 +734,19 @@ export const COLUMNS = {
     'output_tokens',
     'redacted_at',
     'created_at',
+  ],
+  safety_flag: [
+    'id',
+    'org_id',
+    'class_id',
+    'interaction_id',
+    'category',
+    'notify_teacher',
+    'notify_admin',
+    'status',
+    'created_at',
+    'resolved_at',
+    'resolved_by',
   ],
   sso_tenant: ['provider', 'tenant', 'org_id', 'created_at'],
   auth_session: [
