@@ -1,13 +1,15 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { constants, crc32, deflateRawSync, inflateRawSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { expectTimingUnder, summarize, timeRuns } from '@ideamap/testing';
 import { importPack, type ImportResult } from './index.js';
 import { TABS, file, fixtureBytes, fixtureText, xlsx, zip, type XCell } from './testing/build.js';
 
+// Best of three runs: the budgets are about the code, not a loaded runner (F1e).
 const timed = async (run: () => Promise<ImportResult>) => {
-  const started = performance.now();
-  const result = await run();
-  return { result, ms: performance.now() - started };
+  const t = await timeRuns(run, { runs: 3 });
+  const label = expect.getState().currentTestName ?? 'import';
+  return { result: t.result, ms: t.best, timing: t, label };
 };
 
 const refusal = (r: ImportResult) => {
@@ -47,11 +49,11 @@ it('the test zip bomb is a valid deflate stream of the size it claims', () => {
 describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', () => {
   it('a 60 MB CSV', async () => {
     const big = new File([Buffer.alloc(60 * 1024 * 1024, 'a,b\n')], 'Ideas.csv');
-    const { result, ms } = await timed(() => importPack(big));
+    const { result, ms, timing, label } = await timed(() => importPack(big));
     expect(refusal(result)).toBe(
       'Ideas.csv is 60 MB; the most an import accepts is 10 MB per file.',
     );
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   });
 
   it('a zip bomb (about 1 MB that unpacks to 1 GB), whatever its headers claim', async () => {
@@ -59,9 +61,11 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
     expect(bomb.data.length).toBeLessThan(1.1 * 1024 * 1024);
     for (const claimedSize of [1024 * 1024 * 1024, 1000]) {
       const archive = zip([{ name: 'Ideas.csv', data: '', deflated: bomb, claimedSize }]);
-      const { result, ms } = await timed(() => importPack(file('pack.zip', archive)));
+      const { result, ms, timing, label } = await timed(() =>
+        importPack(file('pack.zip', archive)),
+      );
       expect(refusal(result)).toMatch(/unpacks to more than 100 MB/);
-      expect(ms).toBeLessThan(2000);
+      expectTimingUnder(label, 2000, ms, timing, 'best');
     }
   }, 30_000);
 
@@ -81,9 +85,9 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
       { name: 'xl/worksheets/a.xml', data: '', deflated: part, claimedSize: 60 * 1024 * 1024 },
       { name: 'xl/worksheets/b.xml', data: '', deflated: part, claimedSize: 60 * 1024 * 1024 },
     ]);
-    const { result, ms } = await timed(() => importPack(file('big.xlsx', bombed)));
+    const { result, ms, timing, label } = await timed(() => importPack(file('big.xlsx', bombed)));
     expect(refusal(result)).toMatch(/unpacks to more than 100 MB/);
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   }, 30_000);
 
   it('preflights aggregate declared ZIP output before reading any entry', async () => {
@@ -91,9 +95,11 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
       { name: 'Ideas.csv', data: 'h', claimedSize: 60 * 1024 * 1024 },
       { name: 'Units.csv', data: 'h', claimedSize: 60 * 1024 * 1024 },
     ]);
-    const { result, ms } = await timed(() => importPack(file('declared.zip', archive)));
+    const { result, ms, timing, label } = await timed(() =>
+      importPack(file('declared.zip', archive)),
+    );
     expect(refusal(result)).toMatch(/zip unpacks to more than 100 MB based on its declared sizes/);
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   });
 
   it('detects many duplicate canonical tabs before checking their payloads', async () => {
@@ -103,11 +109,13 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
         data: Buffer.alloc(1024),
       })),
     );
-    const { result, ms } = await timed(() => importPack(file('duplicates.zip', archive)));
+    const { result, ms, timing, label } = await timed(() =>
+      importPack(file('duplicates.zip', archive)),
+    );
     expect(result.ok).toBe(false);
     expect(result.issues.filter((issue) => issue.code === 'tab_duplicate')).toHaveLength(99);
     expect(result.issues.some((issue) => issue.code === 'file_refused')).toBe(false);
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   });
 
   it('an XLSX with 1,000,000 rows', async () => {
@@ -124,18 +132,20 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
       },
     );
     expect(workbook.length).toBeLessThan(10 * 1024 * 1024);
-    const { result, ms } = await timed(() => importPack(file('rows.xlsx', workbook)));
+    const { result, ms, timing, label } = await timed(() =>
+      importPack(file('rows.xlsx', workbook)),
+    );
     expect(refusal(result)).toBe(
       'rows.xlsx › Ideas has more than 50,000 rows; the most a tab can have is 50,000.',
     );
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   }, 30_000);
 
   it('a CSV with more than 50,000 rows', async () => {
     const csv = `idea_id\n${'a\n'.repeat(60_000)}`;
-    const { result, ms } = await timed(() => importPack(file('Ideas.csv', csv)));
+    const { result, ms, timing, label } = await timed(() => importPack(file('Ideas.csv', csv)));
     expect(refusal(result)).toMatch(/Ideas\.csv has more than 50,000 rows/);
-    expect(ms).toBeLessThan(2000);
+    expectTimingUnder(label, 2000, ms, timing, 'best');
   });
 
   it('a pack JSON tab with more than 50,000 rows', async () => {
@@ -157,11 +167,13 @@ describe('C1-S2 oversized and malicious files are refused (and C1-P3: fast)', ()
       to_id: 'b',
       relation: 'r',
     }));
-    const { result, ms } = await timed(() => importPack(file('pack.json', JSON.stringify(pack))));
+    const { result, ms, timing, label } = await timed(() =>
+      importPack(file('pack.json', JSON.stringify(pack))),
+    );
     expect(result.issues.filter((i) => i.severity === 'error').map((i) => i.message)).toEqual([
       'The Links tab has 30,000 rows; the most it can have is 20,000.',
     ]);
-    expect(ms).toBeLessThan(500);
+    expectTimingUnder(label, 500, ms, timing, 'best');
   });
 
   it('a .xlsm with macros', async () => {
@@ -281,14 +293,14 @@ describe('C1-P1 the sample is fast', () => {
     ['CSV', () => TABS.map((tab) => file(`${tab}.csv`, fixtureText(`${tab}.csv`)))],
     ['XLSX', () => [file('water-cycle.xlsx', fixtureBytes('water-cycle.xlsx'))]],
     ['JSON', () => [file('pack.json', fixtureText('pack.json'))]],
-  ])('%s: median of 20 imports is under 200 ms', async (_form, files) => {
+  ])('%s: median of 20 imports is under 200 ms', async (form, files) => {
     const times: number[] = [];
     for (let i = 0; i < 20; i++) {
-      const { result, ms } = await timed(() => importPack(files()));
-      expect(result.ok).toBe(true);
-      times.push(ms);
+      const t = await timeRuns(() => importPack(files()), { runs: 1 });
+      expect(t.result.ok).toBe(true);
+      times.push(t.best);
     }
-    expect(median(times)).toBeLessThan(200);
+    expectTimingUnder(`${form} sample import`, 200, median(times), summarize(times), 'median');
   });
 });
 
@@ -357,13 +369,13 @@ describe('C1-P2 a large workbook scales', () => {
     };
     const workbook = file('big.xlsx', xlsx(sheets, { shared: true }));
     const before = process.memoryUsage().heapUsed;
-    const { result, ms } = await timed(() => importPack(workbook));
+    const { result, ms, timing, label } = await timed(() => importPack(workbook));
     const grew = process.memoryUsage().heapUsed - before;
     expect(result.ok).toBe(true);
     expect(result.pack!.ideas).toHaveLength(2000);
     expect(result.pack!.links).toHaveLength(6000);
     expect(result.pack!.assessment).toHaveLength(2000);
-    expect(ms).toBeLessThan(3000);
+    expectTimingUnder(label, 3000, ms, timing, 'best');
     expect(grew).toBeLessThan(256 * 1024 * 1024);
   }, 30_000);
 });
