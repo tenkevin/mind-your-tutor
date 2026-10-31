@@ -5,11 +5,11 @@ import { APP_ROLE } from './migrations/helpers.js';
 import { freshDatabase, hasDatabase, type TestDatabase } from './test/harness.js';
 import { seedOrg, type SeededOrg } from './test/seed.js';
 
-// 0016's field-level audit paths (T3), and the 0015 guarantees they must keep: secrets
+// 0021's field-level audit paths (T3), and the 0015 guarantees they must keep: secrets
 // redacted at any depth (F6-S2; T3 QA run 1, found during testing 1), every change
 // recorded, and one row per save.
 
-describe.skipIf(!hasDatabase)('audit field paths (0016)', () => {
+describe.skipIf(!hasDatabase)('audit field paths (0021)', () => {
   let t: TestDatabase;
   let a: SeededOrg;
   let app: Db;

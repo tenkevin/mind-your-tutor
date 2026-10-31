@@ -14,7 +14,8 @@ import * as m0012 from './0012_function_binding.js';
 import * as m0013 from './0013_import_jobs.js';
 import * as m0014 from './0014_auth.js';
 import * as m0015 from './0015_privacy.js';
-import * as m0016 from './0016_audit_field_paths.js';
+import * as m0016 from './0016_event_ingest.js';
+import * as m0021 from './0021_audit_field_paths.js';
 
 // Every migration, in order. Listed by hand rather than read from disk, so the same
 // list works from src (tests) and dist (the CLI). Add new ones at the end; never
@@ -35,5 +36,6 @@ export const migrations: Record<string, Migration> = {
   '0013_import_jobs': m0013,
   '0014_auth': m0014,
   '0015_privacy': m0015,
-  '0016_audit_field_paths': m0016,
+  '0016_event_ingest': m0016,
+  '0021_audit_field_paths': m0021,
 };

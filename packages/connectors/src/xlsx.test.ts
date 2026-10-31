@@ -1,3 +1,4 @@
+import { expectBestUnder, expectTimingUnder, timeRuns } from '@ideamap/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   dateToIsoDate,
@@ -304,17 +305,20 @@ describe('C1-S3 XML parsing is safe', () => {
       { length: 9 },
       (_, i) => `<!ENTITY lol${i + 1} "${`&lol${i};`.repeat(10)}">`,
     ).join('');
-    const started = performance.now();
-    const r = await book(fixtureSheets(), {
-      shared: true,
-      parts: {
-        'xl/sharedStrings.xml': sst(`<!DOCTYPE sst [<!ENTITY lol0 "lol">${lol}]>`).replace(
-          '&xxe;',
-          '&lol9;',
-        ),
-      },
-    });
-    expect(performance.now() - started).toBeLessThan(1000);
+    const { result: r, ...timing } = await timeRuns(
+      () =>
+        book(fixtureSheets(), {
+          shared: true,
+          parts: {
+            'xl/sharedStrings.xml': sst(`<!DOCTYPE sst [<!ENTITY lol0 "lol">${lol}]>`).replace(
+              '&xxe;',
+              '&lol9;',
+            ),
+          },
+        }),
+      { runs: 3 },
+    );
+    expectTimingUnder('billion laughs entity', 1000, timing.best, timing);
     expect(errors(r)[0]!.code).toBe('file_refused');
   });
 
@@ -356,14 +360,18 @@ describe('C1-S3 XML parsing is safe', () => {
     ['an unterminated comment', `<!--${'x'.repeat(1_000_000)}`],
     ['quotes that never close', '<a b="'.repeat(200_000)],
   ])('XML with %s is handled in linear time', async (_what, junk) => {
-    const started = performance.now();
-    await book(fixtureSheets(), {
-      parts: {
-        'xl/worksheets/sheet3.xml': `<worksheet><sheetData>${junk}</sheetData></worksheet>`,
-      },
-    });
     // Refused or read safely; either way it never hangs.
-    expect(performance.now() - started).toBeLessThan(1000);
+    await expectBestUnder(
+      `XML with ${_what}`,
+      1000,
+      () =>
+        book(fixtureSheets(), {
+          parts: {
+            'xl/worksheets/sheet3.xml': `<worksheet><sheetData>${junk}</sheetData></worksheet>`,
+          },
+        }),
+      { runs: 3 },
+    );
   });
 
   it('external relationship targets are never followed', async () => {

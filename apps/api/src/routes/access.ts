@@ -103,7 +103,7 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
       const { orgId, userId } = req.session!;
       const classId = req.params.classId;
       const config: ClassConfig = parsed.data;
-      // The audit trigger records the change field by field (0015, 0016; T3).
+      // The audit trigger records the change field by field (0015, 0021; T3).
       await req.withOrg(async (trx) => {
         await trx
           .insertInto('class_config')
@@ -252,7 +252,7 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
       const { orgId, userId } = req.session!;
       const curriculumId = req.params.curriculumId;
       const config = parsed.data;
-      // The audit trigger records the change field by field (0015, 0016; T3).
+      // The audit trigger records the change field by field (0015, 0021; T3).
       await req.withOrg(async (trx) => {
         await trx
           .insertInto('curriculum_defaults')

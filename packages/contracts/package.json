@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@ideamap/testing": "workspace:*",
     "@types/node": "catalog:",
     "ajv": "8.20.0",
     "read-excel-file": "9.3.11",

@@ -3,3 +3,4 @@ export * from './checks.js';
 export * from './derive/index.js';
 export * from './course.js';
 export * from './diff.js';
+export * from './lock.js';

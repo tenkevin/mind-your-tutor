@@ -22,7 +22,7 @@ import type { Trx } from './db.js';
 // once never overwrite each other. A reset removes the key (and an emptied `course`),
 // so the field falls back to the curriculum; it never stores an empty value.
 //
-// Audit: the row-change trigger (0015, field paths from 0016) writes the one audit
+// Audit: the row-change trigger (0015, field paths from 0021) writes the one audit
 // row for every save, `class_config.updated` or `curriculum_defaults.updated`, with
 // the actor, the class or curriculum, the field path (`config.course.topic`) and its
 // before and after values. The API writes no summary row of its own.
@@ -181,7 +181,7 @@ export async function setCourseField(
   actorId: string,
 ): Promise<void> {
   // A class or curriculum without a config row gets an empty one first, so the save
-  // itself is an update and its audit row names the field (0016).
+  // itself is an update and its audit row names the field (0021).
   if (target.table === 'class_config') {
     await trx
       .insertInto('class_config')

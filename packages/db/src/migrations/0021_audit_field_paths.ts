@@ -88,7 +88,7 @@ const ROW_CHANGE_TAIL = sql`
   END
 `;
 
-/** 0016: walk every changed column down through nested objects to the changed leaves. */
+/** 0021: walk every changed column down through nested objects to the changed leaves. */
 const NESTED_DIFF = sql`
       FOR k IN SELECT jsonb_object_keys(new_row) ORDER BY 1 LOOP
         paths := paths || k;
@@ -127,7 +127,7 @@ const NESTED_DIFF = sql`
       changed := ARRAY(SELECT unnest(changed) ORDER BY 1);
 `;
 
-/** 0016: an insert of a row that holds nothing beyond its ids writes no audit row. */
+/** 0021: an insert of a row that holds nothing beyond its ids writes no audit row. */
 const SKIP_EMPTY_INSERT = sql`
       IF NOT EXISTS (
         SELECT 1 FROM jsonb_each(new_row - TG_ARGV[1] - TG_ARGV[2] - TG_ARGV[3] - key_cols) AS e(c, v)
