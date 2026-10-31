@@ -505,7 +505,7 @@ describe.skipIf(!hasDatabase)('publishing a curriculum version (C5)', () => {
         const signed = sessions.get(r.as)!;
         return racing.inject({
           method: 'POST',
-          url: `/versions/${id}/publish`,
+          url: `/api/versions/${id}/publish`,
           headers: {
             host: new URL(ORIGIN).host,
             'x-forwarded-proto': 'https',
