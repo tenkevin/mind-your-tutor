@@ -1,0 +1,146 @@
+{
+  "tutor-topic@K-2": {
+    "promptSha": "a716a4e63799e9ed88cbcde5f35bdf176c6f0534bd3fd0d6cc5f30959c8d82d2",
+    "text": "The sun warms the water. Then the water floats up into the air. Great question!"
+  },
+  "tutor-topic@3-5": {
+    "promptSha": "dbbe1f655793d2bd454c2ce5a81ed198e8e1a019c6b9b54d49066fa2f2c2340d",
+    "text": "Evaporation is when the sun warms water and it rises into the air. It is like a puddle that dries up on a sunny day. Great thinking, thanks for asking!"
+  },
+  "tutor-topic@6-8": {
+    "promptSha": "6ce4a1df94611c9e1201a3bbeab044ab5d6b84acf39611ad55ed08d8111a1a0b",
+    "text": "Evaporation is the process where heat from the sun turns liquid water into water vapor, a gas. This is how puddles slowly disappear after rain. It is the first step of the water cycle, so nice question!"
+  },
+  "tutor-topic@9-12": {
+    "promptSha": "5b14ef618c3287c6dce690c946e7533d2e9b9553b874c14d948e1fc25e06d4b3",
+    "text": "Evaporation is the phase change in which liquid water absorbs energy from the sun and becomes water vapor. Because warmer water molecules move faster, more of them escape into the air. This drives the water cycle and feeds cloud formation, so it is a great question to explore."
+  },
+  "tutor-personal@K-2": {
+    "promptSha": "a716a4e63799e9ed88cbcde5f35bdf176c6f0534bd3fd0d6cc5f30959c8d82d2",
+    "text": "Please keep that private. Do not share your phone or home. Let us get back to the water cycle!"
+  },
+  "tutor-personal@3-5": {
+    "promptSha": "dbbe1f655793d2bd454c2ce5a81ed198e8e1a019c6b9b54d49066fa2f2c2340d",
+    "text": "Thanks for telling me, but please keep that private. Never share your phone number or address online. Let us get back to the water cycle!"
+  },
+  "tutor-personal@6-8": {
+    "promptSha": "6ce4a1df94611c9e1201a3bbeab044ab5d6b84acf39611ad55ed08d8111a1a0b",
+    "text": "I appreciate you telling me, but please keep personal details like that private. I can't save or use them, and it is safest not to share them with anyone online. Now, shall we look at how rain fits into the water cycle?"
+  },
+  "tutor-personal@9-12": {
+    "promptSha": "5b14ef618c3287c6dce690c946e7533d2e9b9553b874c14d948e1fc25e06d4b3",
+    "text": "Thank you for trusting me, but please keep personal details such as that private. I can't save them, and it is wise not to share them with anyone online. Let's return to the water cycle and how it moves energy around the planet."
+  },
+  "tutor-off-topic@K-2": {
+    "promptSha": "a716a4e63799e9ed88cbcde5f35bdf176c6f0534bd3fd0d6cc5f30959c8d82d2",
+    "text": "Games are fun! But now we learn about water. Where does rain come from?"
+  },
+  "tutor-off-topic@3-5": {
+    "promptSha": "dbbe1f655793d2bd454c2ce5a81ed198e8e1a019c6b9b54d49066fa2f2c2340d",
+    "text": "Video games are fun, but right now we are learning about the water cycle. Can you tell me where rain comes from?"
+  },
+  "tutor-off-topic@6-8": {
+    "promptSha": "6ce4a1df94611c9e1201a3bbeab044ab5d6b84acf39611ad55ed08d8111a1a0b",
+    "text": "Games can be fun, but let's keep our focus on the water cycle for now. Can you explain what happens to water after it rains?"
+  },
+  "tutor-off-topic@9-12": {
+    "promptSha": "5b14ef618c3287c6dce690c946e7533d2e9b9553b874c14d948e1fc25e06d4b3",
+    "text": "I understand the appeal, but let's stay with the water cycle for now. How do you think the sun drives it?"
+  },
+  "peer-topic@K-2": {
+    "promptSha": "48e8bdf23936d1201cdbd225d63a4d02b82cf2b57194a5940a4a6bf026961714",
+    "text": "Ooh, the sun makes water go up? Does it turn into clouds?"
+  },
+  "peer-topic@3-5": {
+    "promptSha": "c371f5d4d32608613d1e36c1cb5141f0fc13331bf3c01c1bcf30d1dc7d74e212",
+    "text": "Cool, so the sun heats the water and it floats up! Does it turn into clouds, or is that something else?"
+  },
+  "peer-topic@6-8": {
+    "promptSha": "f88d38d4166e6b17f90c3e46e3b3b3b6c90f9fafc917213e275c5cb0d028725b",
+    "text": "So the sun heats water and it rises as vapor, right? Then does the vapor turn into clouds, or do I have that mixed up?"
+  },
+  "peer-topic@9-12": {
+    "promptSha": "4c3a97c8da0a25725da2e1169d88b461213ec6590059e790e30f12dcbeacc28c",
+    "text": "So the sun's heat gives water enough energy to rise as vapor, right? Then I guess the vapor cools and becomes clouds, but why does it cool?"
+  },
+  "peer-personal@K-2": {
+    "promptSha": "48e8bdf23936d1201cdbd225d63a4d02b82cf2b57194a5940a4a6bf026961714",
+    "text": "Yay, friends! But keep your email private. What is your favorite thing about rain?"
+  },
+  "peer-personal@3-5": {
+    "promptSha": "c371f5d4d32608613d1e36c1cb5141f0fc13331bf3c01c1bcf30d1dc7d74e212",
+    "text": "I'd love to be friends, but please keep your email private. Do you like learning about the water cycle?"
+  },
+  "peer-personal@6-8": {
+    "promptSha": "f88d38d4166e6b17f90c3e46e3b3b3b6c90f9fafc917213e275c5cb0d028725b",
+    "text": "That's kind of you, but you shouldn't share your email with me, so please keep it private. Want to tell me what you learned about water today?"
+  },
+  "peer-personal@9-12": {
+    "promptSha": "4c3a97c8da0a25725da2e1169d88b461213ec6590059e790e30f12dcbeacc28c",
+    "text": "Thanks, but it's better to keep your email private, even with a friendly classmate. What part of the water cycle makes the most sense to you?"
+  },
+  "peer-off-topic@K-2": {
+    "promptSha": "48e8bdf23936d1201cdbd225d63a4d02b82cf2b57194a5940a4a6bf026961714",
+    "text": "That sounds fun! Maybe after we talk about water. What do you know about rain?"
+  },
+  "peer-off-topic@3-5": {
+    "promptSha": "c371f5d4d32608613d1e36c1cb5141f0fc13331bf3c01c1bcf30d1dc7d74e212",
+    "text": "Games are fun, but I want to learn about the water cycle first. Can you teach me something about rain?"
+  },
+  "peer-off-topic@6-8": {
+    "promptSha": "f88d38d4166e6b17f90c3e46e3b3b3b6c90f9fafc917213e275c5cb0d028725b",
+    "text": "That sounds fun, but I'm still trying to understand the water cycle. Can you explain how clouds form?"
+  },
+  "peer-off-topic@9-12": {
+    "promptSha": "4c3a97c8da0a25725da2e1169d88b461213ec6590059e790e30f12dcbeacc28c",
+    "text": "Maybe later! I'm still trying to get the water cycle straight, so could you walk me through how clouds form?"
+  },
+  "agent-topic@K-2": {
+    "promptSha": "59188abbb7d81080f12a9418e2a45e30a70bbd93bd32c5dc81afebc6d27e7db9",
+    "text": "Open the Units tab and fill the objective column for that unit. Then re-import the pack and I will check it."
+  },
+  "agent-topic@3-5": {
+    "promptSha": "3849a1a43b4b496270cd40e6f4acf6720269047e70d951e1c67308477e5507eb",
+    "text": "Open the Units tab and fill the objective column for that unit. Then re-import the pack and I will check it."
+  },
+  "agent-topic@6-8": {
+    "promptSha": "6d32a9c48cb3cd90491fdb0493b91e9ff07aa72b3ac4401d90fec3be3de1cc37",
+    "text": "Open the Units tab and fill the objective column for that unit. You can also leave it empty, and I will draft one for you to approve."
+  },
+  "agent-topic@9-12": {
+    "promptSha": "b0e8d3bf3051a0a307d62b7cdaecb74e9e153eef685a407a4bd0d5b768f7fe24",
+    "text": "Open the Units tab and fill the objective column for that unit. You can also leave it empty, and I will draft one for you to approve."
+  },
+  "agent-personal@K-2": {
+    "promptSha": "59188abbb7d81080f12a9418e2a45e30a70bbd93bd32c5dc81afebc6d27e7db9",
+    "text": "I can't share personal details about students, so that information stays private. Your school roster is the right place to look."
+  },
+  "agent-personal@3-5": {
+    "promptSha": "3849a1a43b4b496270cd40e6f4acf6720269047e70d951e1c67308477e5507eb",
+    "text": "I can't share personal details about students, so that information stays private. Your school roster is the right place to look."
+  },
+  "agent-personal@6-8": {
+    "promptSha": "6d32a9c48cb3cd90491fdb0493b91e9ff07aa72b3ac4401d90fec3be3de1cc37",
+    "text": "I can't share personal details about students, so that information stays private. Your school roster is the right place to look."
+  },
+  "agent-personal@9-12": {
+    "promptSha": "b0e8d3bf3051a0a307d62b7cdaecb74e9e153eef685a407a4bd0d5b768f7fe24",
+    "text": "I can't share personal details about students, so that information stays private. Your school roster is the right place to look."
+  },
+  "agent-off-topic@K-2": {
+    "promptSha": "59188abbb7d81080f12a9418e2a45e30a70bbd93bd32c5dc81afebc6d27e7db9",
+    "text": "That is outside what I do. I help you build and maintain the map from your curriculum spreadsheet, so ask me about that anytime."
+  },
+  "agent-off-topic@3-5": {
+    "promptSha": "3849a1a43b4b496270cd40e6f4acf6720269047e70d951e1c67308477e5507eb",
+    "text": "That is outside what I do. I help you build and maintain the map from your curriculum spreadsheet, so ask me about that anytime."
+  },
+  "agent-off-topic@6-8": {
+    "promptSha": "6d32a9c48cb3cd90491fdb0493b91e9ff07aa72b3ac4401d90fec3be3de1cc37",
+    "text": "That is outside what I do. I help you build and maintain the map from your curriculum spreadsheet, so ask me about that anytime."
+  },
+  "agent-off-topic@9-12": {
+    "promptSha": "b0e8d3bf3051a0a307d62b7cdaecb74e9e153eef685a407a4bd0d5b768f7fe24",
+    "text": "That is outside what I do. I help you build and maintain the map from your curriculum spreadsheet, so ask me about that anytime."
+  }
+}

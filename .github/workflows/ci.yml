@@ -59,6 +59,9 @@ jobs:
             cat "$f"
             echo "::notice title=M2-P1 ingest::$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' "$f")"
           fi
+      # Persona evals on recorded replies: no model key, same scores every run (A5).
+      - name: Persona evals
+        run: pnpm --filter @ideamap/ai exec vitest run src/evals
       - run: pnpm build
       # Migrate the job's database from empty, then again to show it's a no-op.
       - name: Migrations
