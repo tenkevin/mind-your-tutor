@@ -138,7 +138,7 @@ function ciSteps() {
     while (i + 1 < lines.length && (lines[i + 1].trim() === '' || lines[i + 1].search(/\S/) > indent)) {
       block.push(lines[++i].trim());
     }
-    steps.push(block.filter(Boolean).join(' && '));
+    steps.push(block.filter(Boolean).join('\n'));
   }
   return steps;
 }
@@ -146,10 +146,20 @@ const env = { ...process.env, DATABASE_URL, CI: 'true' };
 const results = [];
 if (!args.includes('--skip-ci')) {
   for (const [n, step] of ciSteps().entries()) {
+    // Runner plumbing (Docker networking for CI's service container) has no local meaning.
+    if (/\bdocker\b/.test(step)) {
+      console.log(`▷ skipped (CI runner only): ${step.split('\n')[0].slice(0, 60)}…`);
+      continue;
+    }
     const log = join(out, `${String(n + 1).padStart(2, '0')}-${step.split(' ').slice(0, 3).join('-').replace(/[^\w-]/g, '')}.log`);
-    process.stdout.write(`▶ ${step} … `);
+    process.stdout.write(`▶ ${step.split('\n')[0]}${step.includes('\n') ? ' …(multi-line)' : ''} … `);
     const t = Date.now();
-    const r = spawnSync('bash', ['-c', step], { cwd: dir, env, encoding: 'utf8', maxBuffer: 1 << 28 });
+    const r = spawnSync('bash', ['-eo', 'pipefail', '-c', step], {
+      cwd: dir,
+      env: { ...env, RUNNER_TEMP: out },
+      encoding: 'utf8',
+      maxBuffer: 1 << 28,
+    });
     writeFileSync(log, `${r.stdout || ''}${r.stderr || ''}`);
     const ok = r.status === 0;
     console.log(`${ok ? 'ok' : `FAIL (exit ${r.status})`} in ${Math.round((Date.now() - t) / 1000)} s · ${log}`);
