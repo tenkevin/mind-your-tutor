@@ -115,10 +115,11 @@ Sessions are how a signed-in browser stays signed in (task F5). The browser hold
 | `approved_explanation.text`, `approved_explanation.source` | A teacher-approved explanation of an idea (D9), and whether it came from the sheet or an AI draft | No | Staff or AI | Staff; students | Length of the agreement | Withdrawn by staff (audited); with the district |
 | `approved_explanation.approved_by`, `approved_explanation.approved_at` | Who approved it, and when | Staff | Staff | Staff in the district | Length of the agreement | With the district |
 | `library_doc.id`, `library_doc.org_id`, `library_doc.curriculum_id`, `library_doc.created_at`, `library_doc.updated_at` | Record keys and timestamps | No | System | Staff | Length of the agreement | With the district |
-| `library_doc.title`, `library_doc.file_url`, `library_doc.use_for` | A shared reference document from the Library tab, and which AI persona may use it | No | Sheet | Staff | Length of the agreement | Removed on re-import; with the district |
+| `library_doc.title`, `library_doc.file_url`, `library_doc.use_for` | A shared reference document (an author's upload, or the Library tab), where its original file is kept, and which AI persona may use it | No | Sheet or Staff | Staff | Kept permanently (D31): teaching material, no student data | Never deleted; replaced by a new version or taken out of use; with the district |
+| `library_doc.archived_at`, `library_doc.version`, `library_doc.replaces_id` | Whether the document is out of use, which version it is, and the version it replaced | No | System | Staff | Kept permanently (D31) | Never deleted; with the district |
 | `library_doc.checksum`, `library_doc.index_status`, `library_doc.indexed_at` | Indexing state of the document | No | System | Staff | Length of the agreement | With the document |
 | `chunk.id`, `chunk.org_id`, `chunk.curriculum_id`, `chunk.library_doc_id`, `chunk.ordinal`, `chunk.created_at` | Record keys and position of a passage in its document | No | System | Nobody directly (used by AI search) | As its document | With its document |
-| `chunk.content`, `chunk.embedding` | A passage of a shared document and its search vector, for AI answers | No | Sheet | Nobody directly; quoted by the AI | As its document | With its document |
+| `chunk.content`, `chunk.embedding`, `chunk.page`, `chunk.section` | A passage of a shared document, its search vector and where in the document it came from (a PDF page or a heading), for AI answers | No | Sheet | Nobody directly; quoted by the AI | As its document | With its document |
 
 ## Classes and class settings
 
@@ -136,11 +137,12 @@ Sessions are how a signed-in browser stays signed in (task F5). The browser hold
 | `class_library_setting.use_for` | How this class's AI may use a shared document, or `off` to hide it (D11) | No | Staff | The class's teacher; admins | Length of the agreement | Changed by the teacher (audited); with the class |
 | `class_library_setting.updated_by` | Who changed it | Staff | System | The class's teacher; admins | Length of the agreement | With the class |
 | `class_library_doc.id`, `class_library_doc.org_id`, `class_library_doc.class_id`, `class_library_doc.created_at`, `class_library_doc.updated_at` | Record keys and timestamps | No | System | The class's teacher (only inside that class, D11) | Length of the agreement | With the class |
-| `class_library_doc.title`, `class_library_doc.file_url`, `class_library_doc.use_for` | A document the teacher uploaded for their class only, and how the AI may use it | No | Staff | The class's teacher (only inside that class) | Until the teacher removes it | Removed by the teacher (audited); with the class |
+| `class_library_doc.title`, `class_library_doc.file_url`, `class_library_doc.use_for` | A document the teacher uploaded for their class only, where its original file is kept while it exists, and how the AI may use it | No | Staff | The class's teacher (only inside that class) | Kept with the class (D31): a teacher's own material, no student data | Deleted by the teacher, with its passages, embeddings and file (audited); replaced by a new version or archived; with the class. Outside the student FERPA delete |
+| `class_library_doc.archived_at`, `class_library_doc.version`, `class_library_doc.replaces_id` | Whether the upload is out of use, which version it is, and the version it replaced | No | System | The class's teacher | As the document | With the document |
 | `class_library_doc.checksum`, `class_library_doc.index_status`, `class_library_doc.indexed_at` | Indexing state | No | System | The class's teacher | As the document | With the document |
 | `class_library_doc.uploaded_by` | Who uploaded it | Staff | System | The class's teacher | As the document | With the document |
 | `class_chunk.id`, `class_chunk.org_id`, `class_chunk.class_id`, `class_chunk.class_library_doc_id`, `class_chunk.ordinal`, `class_chunk.created_at` | Record keys and position of a passage | No | System | Nobody directly (used by AI search for that class) | As its document | With its document |
-| `class_chunk.content`, `class_chunk.embedding` | A passage of a class upload and its search vector | No | Staff | Nobody directly; quoted by that class's AI | As its document | With its document |
+| `class_chunk.content`, `class_chunk.embedding`, `class_chunk.page`, `class_chunk.section` | A passage of a class upload, its search vector and where in the document it came from | No | Staff | Nobody directly; quoted by that class's AI | As its document | With its document |
 
 Teachers should not upload documents that contain student information; uploads are reference material such as lab sheets.
 

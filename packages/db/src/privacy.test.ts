@@ -548,7 +548,19 @@ describe.skipIf(!hasDatabase)('student export and delete (F6-F7, F6-S1, F6-S3)',
       .executeTakeFirstOrThrow();
     const ref = (textRef.payload as { textRef: string }).textRef;
 
+    // Teaching materials are outside the student delete (D31, A3-S3).
+    const materials = async () =>
+      (
+        await sql<{ n: number }>`
+          SELECT (SELECT count(*) FROM library_doc) + (SELECT count(*) FROM chunk)
+            + (SELECT count(*) FROM class_library_doc) + (SELECT count(*) FROM class_chunk) AS n
+        `.execute(t.db)
+      ).rows[0]!.n;
+    const materialsBefore = Number(await materials());
+    expect(materialsBefore).toBeGreaterThan(0);
+
     const result = await deleteStudent(app, request(a.adminId), store);
+    expect(Number(await materials())).toBe(materialsBefore);
     expect(result).toEqual({
       interactionEvents: 2,
       generatedMapViews: 1,

@@ -64,6 +64,16 @@ const PUBLISH_ROUTE_URLS = [
   '/api/versions/:versionId/publish',
   '/api/classes/:classId/pin',
 ];
+/** A3's library routes, registered when the server is given library options. */
+const LIBRARY_ROUTE_URLS = [
+  '/api/curricula/:curriculumId/library',
+  '/api/curricula/:curriculumId/library/:docId',
+  '/api/curricula/:curriculumId/library/:docId/versions',
+  '/api/classes/:classId/library/uploads',
+  '/api/classes/:classId/library/uploads/:docId',
+  '/api/classes/:classId/library/uploads/:docId/versions',
+  '/api/classes/:classId/library/search',
+];
 /** F6's FERPA routes, registered when the server is given an export store. */
 const PRIVACY_ROUTE_URLS = [
   '/api/privacy/students/:studentId/export',
@@ -187,6 +197,54 @@ describe('C5 publish routes join the registry (F5-F4)', () => {
   });
 });
 
+describe('A3 library routes join the registry (F5-F4, A3-S1)', () => {
+  it('declares a policy for each: authors edit the shared library, a class teacher or admin manages its uploads and search', async () => {
+    const app = buildServer({
+      db: undefined as never,
+      config: offlineConfig,
+      library: {} as never,
+    });
+    await app.ready();
+    const routes = app.routePolicies.filter((r) => !ROUTE_URLS.includes(r.url));
+    await app.close();
+    const edit = { kind: 'curriculum', param: 'curriculumId', edit: true };
+    const klass = { kind: 'class', param: 'classId' };
+    expect(routes.map((r) => [`${r.method} ${r.url}`, r.policy])).toEqual([
+      ['POST /api/curricula/:curriculumId/library', { roles: ['admin', 'author'], scope: edit }],
+      [
+        'GET /api/curricula/:curriculumId/library',
+        {
+          roles: ['admin', 'author', 'teacher'],
+          scope: { kind: 'curriculum', param: 'curriculumId', edit: false },
+        },
+      ],
+      [
+        'PUT /api/curricula/:curriculumId/library/:docId',
+        { roles: ['admin', 'author'], scope: edit },
+      ],
+      [
+        'POST /api/curricula/:curriculumId/library/:docId/versions',
+        { roles: ['admin', 'author'], scope: edit },
+      ],
+      ['POST /api/classes/:classId/library/uploads', { roles: ['admin', 'teacher'], scope: klass }],
+      [
+        'PUT /api/classes/:classId/library/uploads/:docId',
+        { roles: ['admin', 'teacher'], scope: klass },
+      ],
+      [
+        'DELETE /api/classes/:classId/library/uploads/:docId',
+        { roles: ['admin', 'teacher'], scope: klass },
+      ],
+      [
+        'POST /api/classes/:classId/library/uploads/:docId/versions',
+        { roles: ['admin', 'teacher'], scope: klass },
+      ],
+      ['POST /api/classes/:classId/library/search', { roles: ['admin', 'teacher'], scope: klass }],
+    ]);
+    expect(new Set(routes.map((r) => r.url))).toEqual(new Set(LIBRARY_ROUTE_URLS));
+  });
+});
+
 describe('F6 privacy routes join the registry (F5-F4, F6-S1)', () => {
   it('declares an admin-only policy for the student in the caller org', async () => {
     const app = buildServer({
@@ -244,10 +302,20 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
   >;
   let jobId = '';
   let versionId = '';
+  /** Documents the sweep may change or delete, so it leaves the sample's own alone. */
+  let sweepShared = '';
+  let sweepUploads: { update: string; remove: string; delete: string } = {
+    update: '',
+    remove: '',
+    delete: '',
+  };
   beforeAll(async () => {
     // With C4's import, C5's publish, F6's privacy and A1's AI routes registered, so the
     // sweep covers them too.
-    api = await startApi({}, { imports: true, publish: true, privacy: NO_FILES, ai: MOCK_AI });
+    api = await startApi(
+      {},
+      { imports: true, publish: true, library: true, privacy: NO_FILES, ai: MOCK_AI },
+    );
     versionId = (
       await api.t.db
         .selectFrom('curriculum_version')
@@ -262,6 +330,35 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
       otherClassTeacher: await sessionFor(api, users['teacher-a2'], orgs.a),
       otherOrgTeacher: await sessionFor(api, users['teacher-b1'], orgs.b),
       otherOrgAdmin: await sessionFor(api, users['admin-b'], orgs.b),
+    };
+    const shared = await api.t.db
+      .insertInto('library_doc')
+      .values({
+        org_id: orgs.a,
+        curriculum_id: api.sample.curricula.a,
+        title: 'Sweep doc',
+        file_url: 'sweep.pdf',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    sweepShared = shared.id;
+    const upload = async (title: string) =>
+      (
+        await api.t.db
+          .insertInto('class_library_doc')
+          .values({
+            org_id: orgs.a,
+            class_id: api.sample.classes.a1,
+            title,
+            file_url: `${title}.pdf`,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+      ).id;
+    sweepUploads = {
+      update: await upload('Sweep update'),
+      remove: await upload('Sweep remove'),
+      delete: await upload('Sweep delete'),
     };
     const started = await as(api, who.admin)(
       'POST',
@@ -444,6 +541,63 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         url: `/api/classes/${classes.a1}/ai/${persona}`,
         body: { message: 'Hello' },
       })),
+      // A3: shared library and class uploads (a new version goes after the change to the same document).
+      {
+        route: '/api/curricula/:curriculumId/library',
+        method: 'POST',
+        url: `/api/curricula/${curricula.a}/library`,
+        body: Buffer.from('Evaporation is how water becomes vapor.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'notes.txt' },
+      },
+      {
+        route: '/api/curricula/:curriculumId/library',
+        method: 'GET',
+        url: `/api/curricula/${curricula.a}/library`,
+      },
+      {
+        route: '/api/curricula/:curriculumId/library/:docId',
+        method: 'PUT',
+        url: `/api/curricula/${curricula.a}/library/${sweepShared}`,
+        body: { archived: true },
+      },
+      {
+        route: '/api/curricula/:curriculumId/library/:docId/versions',
+        method: 'POST',
+        url: `/api/curricula/${curricula.a}/library/${sweepShared}/versions`,
+        body: Buffer.from('A second version of the sweep document.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'v2.txt' },
+      },
+      {
+        route: '/api/classes/:classId/library/uploads',
+        method: 'POST',
+        url: `/api/classes/${classes.a1}/library/uploads`,
+        body: Buffer.from('Fill the jar and mark the water line.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'lab.txt' },
+      },
+      {
+        route: '/api/classes/:classId/library/uploads/:docId',
+        method: 'PUT',
+        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.update}`,
+        body: { use_for: 'both' },
+      },
+      {
+        route: '/api/classes/:classId/library/uploads/:docId',
+        method: 'DELETE',
+        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.delete}`,
+      },
+      {
+        route: '/api/classes/:classId/library/uploads/:docId/versions',
+        method: 'POST',
+        url: `/api/classes/${classes.a1}/library/uploads/${sweepUploads.remove}/versions`,
+        body: Buffer.from('A second version of the sweep upload.'),
+        headers: { 'content-type': 'application/octet-stream', 'x-file-name': 'v2.txt' },
+      },
+      {
+        route: '/api/classes/:classId/library/search',
+        method: 'POST',
+        url: `/api/classes/${classes.a1}/library/search`,
+        body: { query: 'why does water evaporate', audience: 'agent' },
+      },
       // Last, as it ends the caller's session.
       { route: '/auth/sign-out', method: 'POST', url: '/auth/sign-out' },
     ];
@@ -458,6 +612,7 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
         ...PUBLISH_ROUTE_URLS,
         ...PRIVACY_ROUTE_URLS,
         ...AI_ROUTE_URLS,
+        ...LIBRARY_ROUTE_URLS,
       ]),
     );
   });
@@ -513,6 +668,9 @@ describe.skipIf(!hasDatabase)('every route checks role and org (F5-F4)', () => {
     'GET /api/imports/:jobId': ['admin', 'otherClassTeacher'],
     // T2: the same staff read the Curriculum data section.
     'GET /api/curricula/:curriculumId/imports/latest': ['admin', 'otherClassTeacher'],
+    // A3: staff who teach the curriculum list its shared library; editing it is for
+    // authors and admins.
+    'GET /api/curricula/:curriculumId/library': ['admin', 'otherClassTeacher'],
     // M2: students only; admins and teachers are refused (their events are server-side).
     'POST /events': ['student'],
     // C5: staff of the org read a version's diff; publishing and rollback for class A1

@@ -7,7 +7,7 @@ import {
   type ClassHeaderResponse,
 } from '@ideamap/contracts';
 import { parseOneRoster, RosterError } from '@ideamap/connectors';
-import { json } from '@ideamap/db';
+import { json, librarySources } from '@ideamap/db';
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { audit } from '../db.js';
@@ -178,6 +178,8 @@ export function accessRoutes(app: FastifyInstance, deps: PolicyDeps): void {
         .orderBy('title')
         .execute();
       return {
+        // Each document with its source and use in plain words (A3-U1).
+        sources: await librarySources(trx, classId),
         shared: shared.map((d) => ({
           id: d.id,
           title: d.title,

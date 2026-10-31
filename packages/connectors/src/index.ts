@@ -1,4 +1,5 @@
 export const packageName = '@ideamap/connectors';
+export { FileRefused } from './issues.js';
 export { importPack, CONNECTORS, type ImportOptions, type ImportResult } from './import.js';
 export { csvConnector, parseCsv } from './csv.js';
 export { xlsxConnector } from './xlsx.js';
@@ -68,3 +69,17 @@ export {
   type ReportOptions,
   type ReportPack,
 } from './reports.js';
+export {
+  DEFAULT_LIBRARY_LIMITS,
+  LIBRARY_TYPES_TEXT,
+  chunkSections,
+  extractDocument,
+  screenLibraryFile,
+  type ChunkOptions,
+  type ExtractedDocument,
+  type LibraryKind,
+  type LibraryLimits,
+  type LibraryScreened,
+  type LibrarySection,
+  type TextChunk,
+} from './library.js';

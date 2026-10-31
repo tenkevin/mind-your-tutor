@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { hashEmbedder } from '@ideamap/ai';
 import { CurriculumDataResponseSchema, QUEUES, countIssues } from '@ideamap/contracts';
 import { registerWorkers, type Caller, type ImportDeps } from '@ideamap/worker';
 import type { FastifyInstance } from 'fastify';
@@ -88,7 +89,7 @@ describe.skipIf(!hasDatabase)('POST /curricula/:id/imports (C4)', () => {
     t = await freshDatabase();
     boss = await startBoss(t.url);
     const deps: ImportDeps = { scope: appScope(t.db), boss, store: store() };
-    await registerWorkers({ ...deps, boss, pollingIntervalSeconds: 0.5 });
+    await registerWorkers({ ...deps, boss, embedder: hashEmbedder(), pollingIntervalSeconds: 0.5 });
     a = await seedOrg(t.db, 'A');
     b = await seedOrg(t.db, 'B');
     callers.set('a-teacher', a.teacher).set('a-student', a.student).set('b-teacher', b.teacher);

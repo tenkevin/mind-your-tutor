@@ -3,6 +3,7 @@ import type { ExportStore } from '@ideamap/db';
 import { freshDatabase, type TestDatabase } from '@ideamap/db/testing';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { expect } from 'vitest';
+import { hashEmbedder } from '@ideamap/ai';
 import { MemoryObjectStore } from '@ideamap/connectors';
 import type { Sender } from '@ideamap/worker';
 import type { AiGatewayOptions } from '../ai/gateway.js';
@@ -17,6 +18,7 @@ import {
 } from '../dev/sample.js';
 import { startMockIdp, type MockIdp } from '../dev/mock-idp.js';
 import { buildServer } from '../index.js';
+import type { LibraryRoutesOptions } from '../library.js';
 import { SESSION_COOKIE } from '../policy.js';
 import { createSession } from '../sessions.js';
 import { csrfToken, deriveKeys, sessionCookieValue } from '../tokens.js';
@@ -34,6 +36,8 @@ export interface TestApi {
   t: TestDatabase;
   idp: MockIdp;
   sample: Sample;
+  /** A3's library routes, when started with `library: true`. */
+  library?: { store: MemoryObjectStore; jobs: { name: string; data: unknown }[] };
   /** Move the API's clock forward. */
   advance(ms: number): void;
   close(): Promise<void>;
@@ -45,6 +49,8 @@ export async function startApi(
     imports?: boolean;
     publish?: boolean;
     privacy?: ExportStore;
+    /** A3's library routes, with an in-memory store and a queue that only records jobs. */
+    library?: boolean | Partial<LibraryRoutesOptions>;
     /** The AI gateway, with a mock provider (A1). */
     ai?: AiGatewayOptions;
     /** Receives the API's JSON log lines. */
@@ -89,12 +95,29 @@ export async function startApi(
         },
       }
     : undefined;
+  const library = options.library
+    ? {
+        store: new MemoryObjectStore(),
+        jobs: [] as { name: string; data: unknown }[],
+      }
+    : undefined;
   const app = buildServer({
     db: t.db,
     config,
     now: () => new Date(Date.now() + offset),
     imports,
     publish,
+    library: library && {
+      ...(typeof options.library === 'object' ? options.library : {}),
+      store: library.store,
+      boss: {
+        send: async (name: string, data: unknown) => {
+          library.jobs.push({ name, data });
+          return 'queued';
+        },
+      } as unknown as Sender,
+      embedder: hashEmbedder(),
+    },
     privacy: options.privacy ? { store: options.privacy } : undefined,
     ai: options.ai,
     logger: options.log ? { level: 'info', stream: options.log } : false,
@@ -106,6 +129,7 @@ export async function startApi(
     t,
     idp,
     sample,
+    library,
     advance: (ms) => {
       offset += ms;
     },

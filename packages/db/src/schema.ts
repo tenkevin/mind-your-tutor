@@ -143,6 +143,11 @@ export interface LibraryDocTable {
   indexed_at: NullableTimestamp;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  /** Taken out of use (D31): search skips it. Never deleted. */
+  archived_at: NullableTimestamp;
+  /** 1, then one more for each new version that replaces it. */
+  version: Generated<number>;
+  replaces_id: string | null;
 }
 
 export interface ChunkTable {
@@ -153,6 +158,10 @@ export interface ChunkTable {
   ordinal: number;
   content: string;
   embedding: VectorText;
+  /** PDF page from 1, or null. */
+  page: number | null;
+  /** Heading in a Word or Markdown file, or null. */
+  section: string | null;
   created_at: CreatedAt;
 }
 
@@ -181,6 +190,9 @@ export interface ClassLibraryDocTable {
   uploaded_by: string | null;
   created_at: CreatedAt;
   updated_at: CreatedAt;
+  archived_at: NullableTimestamp;
+  version: Generated<number>;
+  replaces_id: string | null;
 }
 
 export interface ClassChunkTable {
@@ -191,6 +203,8 @@ export interface ClassChunkTable {
   ordinal: number;
   content: string;
   embedding: VectorText;
+  page: number | null;
+  section: string | null;
   created_at: CreatedAt;
 }
 
@@ -533,6 +547,9 @@ export const COLUMNS = {
     'indexed_at',
     'created_at',
     'updated_at',
+    'archived_at',
+    'version',
+    'replaces_id',
   ],
   chunk: [
     'id',
@@ -543,6 +560,8 @@ export const COLUMNS = {
     'content',
     'embedding',
     'created_at',
+    'page',
+    'section',
   ],
   class: [
     'id',
@@ -580,6 +599,9 @@ export const COLUMNS = {
     'uploaded_by',
     'created_at',
     'updated_at',
+    'archived_at',
+    'version',
+    'replaces_id',
   ],
   class_chunk: [
     'id',
@@ -590,6 +612,8 @@ export const COLUMNS = {
     'content',
     'embedding',
     'created_at',
+    'page',
+    'section',
   ],
   interaction_event: [
     'id',

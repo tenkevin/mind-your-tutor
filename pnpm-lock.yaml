@@ -254,6 +254,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@ideamap/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@ideamap/connectors':
         specifier: workspace:*
         version: link:../../packages/connectors
